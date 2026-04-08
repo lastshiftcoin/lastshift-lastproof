@@ -131,7 +131,7 @@ async function handleHandleChange(row: PaymentRow): Promise<DispatchResult> {
   }
 
   // Cooldown re-check (defense in depth — quote-time check is the primary gate).
-  const cooldown = checkHandleCooldown(profile.id);
+  const cooldown = await checkHandleCooldown(profile.id);
   if (!cooldown.eligible) {
     return {
       handled: false,

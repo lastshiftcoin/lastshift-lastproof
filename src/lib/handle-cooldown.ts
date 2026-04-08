@@ -14,8 +14,8 @@ export interface CooldownResult {
   daysRemaining: number;
 }
 
-export function checkHandleCooldown(profileId: string, now: Date = new Date()): CooldownResult {
-  const last = lastHandleChange(profileId);
+export async function checkHandleCooldown(profileId: string, now: Date = new Date()): Promise<CooldownResult> {
+  const last = await lastHandleChange(profileId);
   if (!last) {
     return { eligible: true, lastChangedAt: null, nextEligibleAt: null, daysRemaining: 0 };
   }

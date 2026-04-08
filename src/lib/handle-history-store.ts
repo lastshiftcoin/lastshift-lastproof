@@ -1,7 +1,6 @@
 /**
  * Handle history — immutable audit trail of every handle a profile has
- * held. Rendered as "formerly @foo" on public profiles. Supports the
- * 90-day cooldown check.
+ * held. Supports the 90-day cooldown check. Memory | dual | supabase.
  */
 
 export interface HandleHistoryRow {
@@ -47,14 +46,21 @@ export function recordHandleChange(input: {
   return row;
 }
 
-export function lastHandleChange(profileId: string): HandleHistoryRow | null {
+export async function lastHandleChange(profileId: string): Promise<HandleHistoryRow | null> {
+  if (getStoreMode("handle_history") === "supabase") {
+    const all = await handleHistoryDb.listByProfile(profileId);
+    return all.length > 0 ? all[all.length - 1] : null;
+  }
   for (let i = rows.length - 1; i >= 0; i--) {
     if (rows[i].profileId === profileId) return rows[i];
   }
   return null;
 }
 
-export function listHandleHistory(profileId?: string): HandleHistoryRow[] {
+export async function listHandleHistory(profileId?: string): Promise<HandleHistoryRow[]> {
+  if (getStoreMode("handle_history") === "supabase" && profileId) {
+    return handleHistoryDb.listByProfile(profileId);
+  }
   return profileId ? rows.filter((r) => r.profileId === profileId) : rows.slice();
 }
 

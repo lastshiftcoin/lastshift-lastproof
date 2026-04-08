@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
 
   // Handle change: enforce cooldown + single-in-flight
   if (body.kind === "handle_change") {
-    const cooldown = checkHandleCooldown(profile.id);
+    const cooldown = await checkHandleCooldown(profile.id);
     if (!cooldown.eligible) {
       return NextResponse.json(
         {
