@@ -230,7 +230,7 @@ export async function POST(req: NextRequest) {
         upsert.row.status === "pending" &&
         validated.status === "confirmed"
       ) {
-        const confirmed = markConfirmed(
+        const confirmed = await markConfirmed(
           validated.txSignature,
           validated.confirmedAt ?? undefined,
         );

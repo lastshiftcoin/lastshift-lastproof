@@ -90,7 +90,7 @@ test("payments dual-write: insert + idempotency + confirm", { skip: reason }, as
     assert.ok(fetched, "row exists in Supabase");
     assert.equal(fetched!.status, "pending");
 
-    markConfirmed(tx);
+    await markConfirmed(tx);
     await new Promise((r) => setTimeout(r, 400));
     const after = await paymentsDb.getPaymentByTxSignature(tx);
     assert.equal(after!.status, "confirmed");

@@ -146,7 +146,7 @@ async function main() {
       status: "pending",
       confirmedAt: null,
     });
-    markConfirmed(tx);
+    await markConfirmed(tx);
 
     // 5. Profile state transition + tier bump.
     await updateProfile(profile.id, {

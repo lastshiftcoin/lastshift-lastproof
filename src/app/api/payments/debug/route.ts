@@ -20,7 +20,8 @@ function forbidInProd() {
 export async function GET() {
   const blocked = forbidInProd();
   if (blocked) return blocked;
-  return NextResponse.json({ ok: true, count: listAll().length, rows: listAll() });
+  const rows = await listAll();
+  return NextResponse.json({ ok: true, count: rows.length, rows });
 }
 
 export async function DELETE() {

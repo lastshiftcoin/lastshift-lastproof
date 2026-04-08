@@ -76,50 +76,74 @@ function newId(): string {
  * explicitly in the draft rather than piggy-backing on operatorId.
  */
 export async function upsertByTxSignature(draft: PaymentDraft): Promise<UpsertResult> {
-  const existing = byTxSignature.get(draft.txSignature);
-  if (existing) {
-    // Idempotent path — do NOT mutate the existing row. Status transitions
-    // are owned by the webhook handler, which only upgrades pending→confirmed
-    // via `markConfirmed`, never via upsert.
-    return { created: false, row: existing };
-  }
-
   // Normalize operatorId: if caller left it null but profileId is set,
-  // backfill from the profiles store so downstream reporting queries
-  // (e.g. "payments by operator") don't silently miss rows. Profile
-  // store is async (supports dual / supabase modes), so we await.
+  // backfill from the profiles store. Profile store is async (supports
+  // dual / supabase modes), so we await. Dynamic import breaks the
+  // circular import with profiles-store.
   let operatorId = draft.operatorId;
   if (!operatorId && draft.profileId) {
-    // Dynamic import to avoid a circular import with profiles-store.
     const { getProfileById } = await import("./profiles-store");
     const profile = await getProfileById(draft.profileId);
     if (profile) operatorId = profile.operatorId;
+  }
+  const normalizedDraft: PaymentDraft = { ...draft, operatorId };
+
+  const mode = getStoreMode("payments");
+
+  if (mode === "supabase") {
+    // Supabase is authoritative. Check for existing row first.
+    const existing = await paymentsDb.getPaymentByTxSignature(draft.txSignature);
+    if (existing) return { created: false, row: existing };
+
+    const row: PaymentRow = {
+      id: newId(),
+      createdAt: new Date().toISOString(),
+      ...normalizedDraft,
+    };
+    await paymentsDb.insertPayment(row);
+    return { created: true, row };
+  }
+
+  // memory + dual paths — memory is source of truth.
+  const existing = byTxSignature.get(draft.txSignature);
+  if (existing) {
+    return { created: false, row: existing };
   }
 
   const row: PaymentRow = {
     id: newId(),
     createdAt: new Date().toISOString(),
-    ...draft,
-    operatorId,
+    ...normalizedDraft,
   };
   byTxSignature.set(row.txSignature, row);
 
-  const mode = getStoreMode("payments");
-  if (mode === "dual" || mode === "supabase") {
+  if (mode === "dual") {
     fireAndForget("insertPayment", paymentsDb.insertPayment(row));
   }
   return { created: true, row };
 }
 
-export function markConfirmed(txSignature: string, confirmedAt = new Date().toISOString()): PaymentRow | null {
+export async function markConfirmed(
+  txSignature: string,
+  confirmedAt = new Date().toISOString(),
+): Promise<PaymentRow | null> {
+  const mode = getStoreMode("payments");
+
+  if (mode === "supabase") {
+    const row = await paymentsDb.getPaymentByTxSignature(txSignature);
+    if (!row) return null;
+    if (row.status === "confirmed") return row;
+    await paymentsDb.markPaymentConfirmed(txSignature, confirmedAt);
+    return { ...row, status: "confirmed", confirmedAt };
+  }
+
   const row = byTxSignature.get(txSignature);
   if (!row) return null;
   if (row.status === "confirmed") return row;
   row.status = "confirmed";
   row.confirmedAt = confirmedAt;
 
-  const mode = getStoreMode("payments");
-  if (mode === "dual" || mode === "supabase") {
+  if (mode === "dual") {
     fireAndForget(
       "markConfirmed",
       paymentsDb.markPaymentConfirmed(txSignature, confirmedAt),
@@ -128,11 +152,17 @@ export function markConfirmed(txSignature: string, confirmedAt = new Date().toIS
   return row;
 }
 
-export function getByTxSignature(txSignature: string): PaymentRow | null {
+export async function getByTxSignature(txSignature: string): Promise<PaymentRow | null> {
+  if (getStoreMode("payments") === "supabase") {
+    return paymentsDb.getPaymentByTxSignature(txSignature);
+  }
   return byTxSignature.get(txSignature) || null;
 }
 
-export function listAll(): PaymentRow[] {
+export async function listAll(): Promise<PaymentRow[]> {
+  if (getStoreMode("payments") === "supabase") {
+    return paymentsDb.listAllPayments();
+  }
   return Array.from(byTxSignature.values()).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
