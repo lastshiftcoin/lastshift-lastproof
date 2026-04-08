@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet Safety — LASTPROOF</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0b0f;
+            --bg-secondary: #12131a;
+            --bg-card: #161822;
+            --bg-input: #1a1c28;
+            --border: #1e2030;
+            --border-hover: #2a2d42;
+            --text-primary: #e2e4ed;
+            --text-secondary: #8b8fa3;
+            --text-dim: #5a5e73;
+            --accent: #ff9100;
+            --accent-glow: rgba(255, 145, 0, 0.15);
+            --green: #00e676;
+            --green-dim: rgba(0, 230, 118, 0.12);
+            --red: #ff5252;
+            --mono: 'JetBrains Mono', monospace;
+            --sans: 'Inter', -apple-system, sans-serif;
+        }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--sans);
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ═══ CRT / SCANLINES / VIGNETTE ═══ */
+        .crt-overlay {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 998;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.06) 2px, rgba(0, 0, 0, 0.06) 4px);
+        }
+        .vignette {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 997;
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.45) 100%);
+        }
+        .noise {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 996;
+            opacity: 0.025;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 200px 200px;
+        }
+
+        /* ═══ SYSTEM STATUS BAR ═══ */
+        .sys-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 16px;
+            background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            flex-shrink: 0;
+            z-index: 10;
+        }
+        .sys-bar-left, .sys-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .sys-logo { width: 18px; height: 18px; object-fit: contain; }
+        .sys-tag {
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: 1.5px;
+            color: var(--text-dim);
+        }
+        .sys-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: dotPulse 2s ease-in-out infinite;
+        }
+        @keyframes dotPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* ═══ TERMINAL FRAME ═══ */
+        .terminal-frame {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--bg-secondary);
+            z-index: 10;
+        }
+
+        .terminal-titlebar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            background: rgba(0,0,0,0.25);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .titlebar-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .titlebar-dots {
+            display: flex;
+            gap: 6px;
+        }
+        .titlebar-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .titlebar-dot.red { background: #ff5f56; }
+        .titlebar-dot.yellow { background: #ffbd2e; }
+        .titlebar-dot.green { background: #27c93f; }
+        .titlebar-title {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-dim);
+            letter-spacing: 1px;
+            margin-left: 8px;
+        }
+        .titlebar-right {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: #2a2d42;
+            letter-spacing: 1px;
+        }
+
+        /* ═══ TERMINAL BODY ═══ */
+        .terminal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px 24px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+        .terminal-body::-webkit-scrollbar { width: 4px; }
+        .terminal-body::-webkit-scrollbar-track { background: transparent; }
+        .terminal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        .content-wrap {
+            max-width: 620px;
+            margin: 0 auto;
+        }
+
+        /* ═══ PAGE HEADER ═══ */
+        .page-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .page-header-logo {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 16px;
+        }
+        .page-header-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 10px rgba(255, 145, 0, 0.15));
+        }
+        .page-title {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .page-subtitle {
+            font-family: var(--sans);
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* ═══ DIVIDER ═══ */
+        .divider {
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 24px 0;
+        }
+
+        /* ═══ TRUST BLOCKS ═══ */
+        .trust-block {
+            margin-bottom: 28px;
+        }
+        .trust-block-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .trust-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.01);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .trust-icon svg {
+            width: 14px;
+            height: 14px;
+            stroke-width: 1.5;
+            fill: none;
+        }
+        .trust-icon.green svg { stroke: var(--green); }
+        .trust-icon.accent svg { stroke: var(--accent); }
+        .trust-icon.red svg { stroke: var(--red); }
+
+        .trust-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+        .trust-body {
+            font-family: var(--sans);
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.75;
+            padding-left: 38px;
+        }
+        .trust-body strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* ═══ WHAT WE ACCESS vs WHAT WE DON'T ═══ */
+        .access-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+        .access-card {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px;
+            background: rgba(255,255,255,0.01);
+        }
+        .access-card.do {
+            border-color: rgba(0, 230, 118, 0.12);
+            background: rgba(0, 230, 118, 0.015);
+        }
+        .access-card.dont {
+            border-color: rgba(255, 82, 82, 0.12);
+            background: rgba(255, 82, 82, 0.015);
+        }
+        .access-card-label {
+            font-family: var(--mono);
+            font-size: 8px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        .access-card.do .access-card-label { color: var(--green); }
+        .access-card.dont .access-card-label { color: var(--red); }
+
+        .access-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .access-item:last-child { margin-bottom: 0; }
+
+        .access-check {
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .access-check svg {
+            width: 12px;
+            height: 12px;
+            stroke-width: 2;
+            fill: none;
+        }
+        .access-card.do .access-check svg { stroke: var(--green); }
+        .access-card.dont .access-check svg { stroke: var(--red); }
+
+        .access-text {
+            font-family: var(--sans);
+            font-size: 11px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* ═══ HOW IT WORKS STEPS ═══ */
+        .steps {
+            margin-bottom: 28px;
+        }
+        .step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .step:last-child { margin-bottom: 0; }
+        .step-num {
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--accent);
+            width: 22px;
+            height: 22px;
+            border: 1px solid rgba(255, 145, 0, 0.2);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background: rgba(255, 145, 0, 0.03);
+        }
+        .step-content {
+            font-family: var(--sans);
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            padding-top: 2px;
+        }
+        .step-content strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* ═══ BOTTOM SECTION ═══ */
+        .bottom-section {
+            text-align: center;
+            padding-top: 4px;
+            padding-bottom: 8px;
+        }
+        .back-btn {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 12px 40px;
+            border: 1px solid rgba(255, 145, 0, 0.25);
+            background: rgba(255, 145, 0, 0.04);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            margin-bottom: 12px;
+        }
+        .back-btn:hover {
+            background: rgba(255, 145, 0, 0.1);
+            border-color: rgba(255, 145, 0, 0.5);
+            box-shadow: 0 0 20px rgba(255, 145, 0, 0.08);
+        }
+        .bottom-note {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: #2a2d42;
+            letter-spacing: 0.5px;
+            margin-top: 10px;
+        }
+        .bottom-note a {
+            color: var(--text-dim);
+            text-decoration: none;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .bottom-note a:hover { color: var(--text-secondary); }
+
+        /* ═══ BOTTOM BAR ═══ */
+        .bottom-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 16px;
+            background: rgba(0,0,0,0.25);
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .bottom-bar-text {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: #2a2d42;
+            letter-spacing: 1px;
+        }
+        .bottom-bar-text a { color: #2a2d42; text-decoration: none; }
+
+        /* ═══ WIREFRAME LABEL ═══ */
+        .wireframe-label {
+            position: fixed;
+            top: 28px;
+            right: 24px;
+            font-family: var(--mono);
+            font-size: 8px;
+            color: #2a2d42;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            z-index: 1000;
+        }
+
+        /* ═══ RESPONSIVE ═══ */
+        @media (max-width: 600px) {
+            .terminal-frame { margin: 8px; }
+            .terminal-body { padding: 20px 14px; }
+            .access-grid { grid-template-columns: 1fr; }
+            .trust-body { padding-left: 0; margin-top: 6px; }
+            .page-subtitle { font-size: 12px; }
+            .step-content { font-size: 11px; }
+            .access-text { font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="crt-overlay"></div>
+    <div class="vignette"></div>
+    <div class="noise"></div>
+    <div class="wireframe-label">Wireframe — Screen 1B</div>
+
+    <!-- SYSTEM STATUS BAR -->
+    <div class="sys-bar">
+        <div class="sys-bar-left">
+            <img src="PLACEHOLDER" alt="SHIFTBOT" class="sys-logo">
+            <span class="sys-tag">LASTPROOF // WALLET SAFETY</span>
+            <span class="sys-dot"></span>
+        </div>
+        <div class="sys-bar-right">
+            <span class="sys-tag" id="sysTime"></span>
+        </div>
+    </div>
+
+    <!-- TERMINAL FRAME -->
+    <div class="terminal-frame">
+        <div class="terminal-titlebar">
+            <div class="titlebar-left">
+                <div class="titlebar-dots">
+                    <span class="titlebar-dot red"></span>
+                    <span class="titlebar-dot yellow"></span>
+                    <span class="titlebar-dot green"></span>
+                </div>
+                <span class="titlebar-title">safety — lastproof — 80x24</span>
+            </div>
+            <div class="titlebar-right">READ ONLY</div>
+        </div>
+
+        <!-- TERMINAL BODY -->
+        <div class="terminal-body">
+            <div class="content-wrap">
+
+                <!-- HEADER -->
+                <div class="page-header">
+                    <div class="page-header-logo">
+                        <img src="PLACEHOLDER" alt="SHIFTBOT">
+                    </div>
+                    <div class="page-title">Your wallet is safe here</div>
+                    <div class="page-subtitle">Connecting your wallet does not give us access to your funds, your private keys, or the ability to make transactions on your behalf. Here's exactly how it works.</div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- WHAT WE ACCESS vs WHAT WE DON'T -->
+                <div class="access-grid">
+                    <div class="access-card do">
+                        <div class="access-card-label">What we access</div>
+
+                        <div class="access-item">
+                            <div class="access-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                            <div class="access-text">Your public wallet address to verify your identity</div>
+                        </div>
+                        <div class="access-item">
+                            <div class="access-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                            <div class="access-text">A read-only connection through your wallet provider</div>
+                        </div>
+                        <div class="access-item">
+                            <div class="access-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                            <div class="access-text">A one-time message signature to prove wallet ownership</div>
+                        </div>
+                    </div>
+
+                    <div class="access-card dont">
+                        <div class="access-card-label">What we never touch</div>
+
+                        <div class="access-item">
+                            <div class="access-check"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+                            <div class="access-text">Your private keys or seed phrase — ever</div>
+                        </div>
+                        <div class="access-item">
+                            <div class="access-check"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+                            <div class="access-text">The ability to move, transfer, or spend your tokens</div>
+                        </div>
+                        <div class="access-item">
+                            <div class="access-check"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+                            <div class="access-text">Any transaction approval without your explicit consent</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HOW CONNECTION WORKS -->
+                <div class="trust-block">
+                    <div class="trust-block-header">
+                        <div class="trust-icon accent">
+                            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        </div>
+                        <div class="trust-title">How connecting works</div>
+                    </div>
+                    <div class="steps">
+                        <div class="step">
+                            <div class="step-num">1</div>
+                            <div class="step-content">You click <strong>Connect Wallet</strong> and your wallet extension opens a popup asking you to approve a connection to LASTPROOF.</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">2</div>
+                            <div class="step-content">We read your <strong>public wallet address</strong> — the same address anyone can see on-chain. This is how we identify you.</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">3</div>
+                            <div class="step-content">You sign a <strong>verification message</strong> — not a transaction. This proves you own the wallet without spending anything.</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-num">4</div>
+                            <div class="step-content">That's it. You're in. No funds are moved, no permissions are granted beyond read access. You can <strong>disconnect at any time</strong>.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- TERMINAL ID SECURITY -->
+                <div class="trust-block">
+                    <div class="trust-block-header">
+                        <div class="trust-icon green">
+                            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        </div>
+                        <div class="trust-title">Your Terminal ID</div>
+                    </div>
+                    <div class="trust-body">After connecting, new operators are issued a <strong>Terminal ID</strong> — a unique key that authenticates you across every tool in the LASTSHIFT ecosystem (LASTPROOF included). It's entered once when you first register for a tool, then works automatically with your wallet after that. If it's ever compromised, you can regenerate it instantly from the dashboard, revoking access across all tools.</div>
+                </div>
+
+                <!-- DATA & PRIVACY -->
+                <div class="trust-block">
+                    <div class="trust-block-header">
+                        <div class="trust-icon green">
+                            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </div>
+                        <div class="trust-title">Data and privacy</div>
+                    </div>
+                    <div class="trust-body">We don't sell your data. We don't share your wallet address with third parties. We don't track you across other sites. The only data we store is what's needed to run the Terminal — your public address, your Terminal ID, and your tool activity within the platform. Nothing more.</div>
+                </div>
+
+                <!-- OPEN SOURCE / VERIFIABLE -->
+                <div class="trust-block">
+                    <div class="trust-block-header">
+                        <div class="trust-icon accent">
+                            <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                        </div>
+                        <div class="trust-title">Built on Solana</div>
+                    </div>
+                    <div class="trust-body">LASTPROOF runs on <strong>Solana</strong> using the <strong>Solana Wallet Adapter</strong> — the same open-source standard used by Phantom, Jupiter, and every major Solana dApp. There's nothing custom or proprietary about how we connect — it's the same secure flow you've used on any other Solana platform.</div>
+                </div>
+
+                <!-- TECH STACK -->
+                <div class="trust-block">
+                    <div class="trust-block-header">
+                        <div class="trust-icon accent">
+                            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        </div>
+                        <div class="trust-title">Our stack</div>
+                    </div>
+                    <div class="trust-body" style="padding-left:38px;">
+                        <span style="display:inline-block;font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:0.5px;padding:3px 8px;border:1px solid var(--border);border-radius:3px;margin:0 4px 6px 0;background:rgba(255,255,255,0.01);">Solana</span>
+                        <span style="display:inline-block;font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:0.5px;padding:3px 8px;border:1px solid var(--border);border-radius:3px;margin:0 4px 6px 0;background:rgba(255,255,255,0.01);">Wallet Adapter</span>
+                        <span style="display:inline-block;font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:0.5px;padding:3px 8px;border:1px solid var(--border);border-radius:3px;margin:0 4px 6px 0;background:rgba(255,255,255,0.01);">Next.js</span>
+                        <span style="display:inline-block;font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:0.5px;padding:3px 8px;border:1px solid var(--border);border-radius:3px;margin:0 4px 6px 0;background:rgba(255,255,255,0.01);">$LASTSHFT (SPL Token)</span>
+                        <div style="margin-top:10px;font-family:var(--sans);font-size:11px;color:var(--text-dim);line-height:1.6;">
+                            <a href="https://solana.com/developers/cookbook/wallets/connect-wallet-react" target="_blank" style="color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(255,145,0,0.2);font-size:11px;">Solana Wallet Adapter</a>
+                            <span style="color:#2a2d42;margin:0 6px;">|</span>
+                            <a href="https://solana.com" target="_blank" style="color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(255,145,0,0.2);font-size:11px;">Solana</a>
+                            <span style="color:#2a2d42;margin:0 6px;">|</span>
+                            <a href="https://spl.solana.com/token" target="_blank" style="color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(255,145,0,0.2);font-size:11px;">SPL Token Docs</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- CTA -->
+                <div class="bottom-section">
+                    <a class="back-btn" href="manage-profile.html">BACK TO CONNECT WALLET</a>
+                    <div class="bottom-note">Don't trust — verify.</div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- BOTTOM BAR -->
+        <div class="bottom-bar">
+            <div class="bottom-bar-text"><a href="https://lastshift.ai">lastshift.ai</a>, a company of vibe coders</div>
+            <div class="bottom-bar-text">MANAGE PROFILE // WALLET SAFETY</div>
+        </div>
+    </div>
+
+    <script>
+        function updateClock() {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('sysTime').textContent = h + ':' + m + ':' + s;
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LASTPROOF — Onboarding Interrupt v0.2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-primary:#0a0b0f;
+    --bg-secondary:#12131a;
+    --bg-card:#161822;
+    --bg-card-hover:#1a1d2a;
+    --bg-input:#0e0f16;
+    --border:#1e2030;
+    --border-2:#2a2d42;
+    --text-primary:#e2e4ed;
+    --text-secondary:#8b8fa3;
+    --text-dim:#5a5e73;
+    --green:#00e676;
+    --green-dim:rgba(0,230,118,.12);
+    --green-glow:rgba(0,230,118,.25);
+    --orange:#ff9100;
+    --orange-dim:rgba(255,145,0,.12);
+    --accent:#ff9100;
+    --accent-glow:rgba(255,145,0,.15);
+    --red:#ff5470;
+    --purple:#a78bfa;
+    --purple-dim:rgba(167,139,250,.1);
+    --purple-glow:rgba(167,139,250,.2);
+    --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:Inter,-apple-system,system-ui,sans-serif;
+    --r-card:10px;
+    --r-btn:6px;
+    --r-pill:4px;
+    --r-sm:3px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg-primary);color:var(--text-primary);font-family:var(--sans);font-size:14px;line-height:1.5;min-height:100dvh}
+  a{color:inherit;text-decoration:none}
+
+  /* Grid bg + radial glow — popup-5000 framework */
+  body::before{
+    content:"";position:fixed;inset:0;
+    background-image:
+      linear-gradient(rgba(30,32,48,.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30,32,48,.3) 1px, transparent 1px);
+    background-size:60px 60px;
+    pointer-events:none;z-index:0;
+  }
+  body::after{
+    content:"";position:fixed;top:-200px;right:-200px;width:700px;height:700px;
+    background:radial-gradient(circle,var(--accent-glow) 0%,transparent 60%);
+    pointer-events:none;z-index:0;
+  }
+  .scanlines{position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.05) 2px,rgba(0,0,0,.05) 4px);pointer-events:none;z-index:9999}
+
+  .stage{position:relative;z-index:1;min-height:100dvh;padding:60px 20px;display:flex;align-items:center;justify-content:center}
+  .stage::before{content:"";position:fixed;inset:0;background:rgba(5,6,10,.82);backdrop-filter:blur(4px);z-index:2}
+
+  @keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,145,0,.35)}50%{box-shadow:0 0 0 10px rgba(255,145,0,0)}}
+  @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:.25}}
+
+  /* MODAL — popup-5000 chrome */
+  .modal::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;z-index:1;border-radius:inherit}
+  .modal > *{position:relative;z-index:2}
+  .modal{
+    position:relative;z-index:3;width:100%;max-width:560px;
+    background:var(--bg-secondary);
+    border:1px solid var(--border);
+    border-radius:var(--r-card);
+    overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.02);
+    animation:popIn .35s ease;
+  }
+
+  /* Titlebar */
+  .titlebar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--border)}
+  .titlebar .left{display:flex;align-items:center;gap:8px}
+  .dots{display:flex;gap:5px}
+  .dots span{width:9px;height:9px;border-radius:50%}
+  .dots .r{background:#ff5f56}.dots .y{background:#ffbd2e}.dots .g{background:#27c93f}
+  .title{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-left:6px}
+  .title-right{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1.5px;display:flex;align-items:center;gap:6px}
+  .pulse{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px rgba(255,145,0,.6);animation:blink 1.2s infinite}
+
+  /* Wallet pill row */
+  .wallet-row{display:flex;justify-content:space-between;align-items:center;padding:12px 22px 0}
+  .step-counter{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1.5px}
+  .step-counter .now{color:var(--accent);font-weight:700}
+  .wallet-pill{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;color:var(--green);padding:5px 10px;border:1px solid var(--green);border-radius:var(--r-pill);background:var(--green-dim)}
+  .wallet-pill .wp-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
+
+  /* Progress bar — same look as popup-5000 .bar-track */
+  .progress-wrap{padding:10px 22px 0}
+  .bar-track{width:100%;height:4px;background:rgba(255,255,255,.04);border-radius:3px;overflow:hidden;position:relative}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--accent) 0%,#ffb347 100%);border-radius:3px;box-shadow:0 0 10px rgba(255,145,0,.5);transition:width .35s ease}
+
+  .body{padding:32px 36px 24px}
+
+  /* Eyebrow + title */
+  .pain{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;text-align:center}
+  .pain::before{content:">";color:var(--orange);margin-right:6px;opacity:.6}
+
+  h2.head{font-family:var(--sans);font-size:28px;font-weight:700;line-height:1.18;margin:0 0 14px;letter-spacing:-.3px;color:var(--text-primary);text-align:center}
+  h2.head .accent{color:var(--accent)}
+  .sub{font-family:var(--sans);font-size:13px;color:var(--text-secondary);line-height:1.65;margin:0 auto 32px;max-width:420px;text-align:center}
+
+  /* Fields */
+  .field{margin-bottom:24px;text-align:left}
+  .field:last-child{margin-bottom:0}
+  .field-key{display:block;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;font-weight:700}
+  .char-count{float:right;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.5px;font-weight:400;text-transform:none}
+  .field-input,.field-select{width:100%;background:var(--bg-input);border:1px solid var(--border-2);border-radius:var(--r-btn);color:var(--text-primary);font-family:var(--sans);font-size:14px;padding:14px 16px;outline:none;transition:border-color .15s}
+  .field-input:focus,.field-select:focus{border-color:var(--accent)}
+  textarea.field-input{resize:vertical;min-height:96px;line-height:1.55;font-family:var(--mono);font-size:12px}
+  .field-help{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.5px;margin-top:8px;line-height:1.6}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+  /* Handle field */
+  .handle-wrap{display:flex;align-items:stretch;background:var(--bg-input);border:1px solid var(--border-2);border-radius:var(--r-btn);overflow:hidden;transition:all .15s}
+  .handle-wrap.ok{border-color:var(--green);box-shadow:0 0 0 1px rgba(0,230,118,.25)}
+  .handle-wrap:focus-within{border-color:var(--accent)}
+  .handle-prefix{display:flex;align-items:center;padding:0 12px 0 14px;font-family:var(--mono);font-size:12px;color:var(--text-dim);background:rgba(0,0,0,.3);border-right:1px solid var(--border-2);white-space:nowrap}
+  .handle-prefix .at{color:var(--accent);font-weight:700}
+  .handle-input{flex:1;background:transparent;border:none;color:#fff;font-family:var(--mono);font-size:14px;padding:12px 14px;outline:none;font-weight:700;letter-spacing:.3px;min-width:0}
+  .handle-status{display:flex;align-items:center;padding:0 14px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--text-dim);white-space:nowrap}
+  .handle-status.ok{color:var(--green)}
+  .handle-status .check{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:var(--text-dim)}
+  .handle-status.ok .check{background:var(--green);box-shadow:0 0 6px var(--green)}
+
+  /* Fee callout — purple to avoid clashing with orange CTA */
+  .fee-callout{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--purple-dim);border:1px solid rgba(167,139,250,.35);border-radius:var(--r-btn);margin-top:14px}
+  .fee-callout .ico{width:14px;height:14px;flex-shrink:0;color:var(--purple);margin-top:2px}
+  .fee-callout .text{font-family:var(--mono);font-size:9px;color:var(--text-secondary);letter-spacing:.6px;line-height:1.65;text-transform:uppercase}
+  .fee-callout .text b{color:var(--purple);font-weight:700}
+
+  /* Category chips — match Build Your Profile pill style */
+  .cat-grid{display:flex;flex-wrap:wrap;gap:8px}
+  .cat-chip{font-family:var(--mono);font-size:10px;font-weight:500;padding:9px 14px;border-radius:20px;border:1px solid var(--border);color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;cursor:pointer;background:transparent;transition:all .15s;user-select:none}
+  .cat-chip:hover{color:var(--text-primary);border-color:var(--border-2)}
+  .cat-chip.active{color:var(--accent);border-color:rgba(255,145,0,.55);background:var(--orange-dim);font-weight:700}
+  .cat-chip.active:hover{color:#fff;border-color:var(--accent);background:rgba(255,145,0,.16)}
+
+  /* Done step */
+  .done-wrap{text-align:center;padding:4px 0}
+  .done-check{width:64px;height:64px;margin:0 auto 18px;border-radius:50%;background:var(--green-dim);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;box-shadow:0 0 32px var(--green-glow)}
+  .done-check svg{width:32px;height:32px;color:var(--green)}
+  .done-summary{margin-top:18px;padding:4px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-btn);text-align:left}
+  .done-summary .ds-row{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;padding:9px 0;border-bottom:1px dashed var(--border)}
+  .done-summary .ds-row:last-child{border-bottom:none}
+  .done-summary .ds-key{color:var(--text-dim);letter-spacing:1.2px;font-size:9px;text-transform:uppercase}
+  .done-summary .ds-val{color:#fff;font-weight:700;letter-spacing:.5px}
+  .done-summary .ds-val.accent{color:var(--accent)}
+
+  /* CTAs — popup-5000 framework, NOT full width */
+  .cta-row{padding:8px 36px 30px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+  .cta{
+    display:inline-flex;align-items:center;justify-content:center;padding:14px 28px;
+    color:var(--orange);
+    background:var(--orange-dim);
+    border:1px solid var(--orange);
+    border-radius:var(--r-btn);
+    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+    cursor:pointer;transition:all .15s;
+    animation:pulseGlow 2.2s infinite;
+    text-align:center;margin-left:auto;
+  }
+  .cta:hover{background:var(--orange);color:#0a0b0f;box-shadow:0 0 24px var(--accent-glow);transform:translateY(-1px)}
+  .cta:disabled{background:transparent;color:var(--text-dim);border-color:var(--border-2);cursor:not-allowed;animation:none}
+  .btn-back{
+    padding:14px 18px;
+    color:var(--text-dim);
+    background:transparent;
+    border:1px solid var(--border-2);
+    border-radius:var(--r-btn);
+    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+    cursor:pointer;transition:all .15s;
+  }
+  .btn-back:hover{color:var(--orange);border-color:var(--orange)}
+
+  .fine{padding:0 26px 18px;text-align:center;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1px}
+
+  @media (max-width:560px){
+    .stage{padding:0}
+    .modal{max-width:100%;border-radius:14px 14px 0 0;margin-top:auto}
+    .body{padding:24px 22px 18px}
+    h2.head{font-size:22px}
+    .sub{margin-bottom:24px}
+    .field-row{grid-template-columns:1fr}
+    .cta-row{padding:6px 22px 22px}
+  }
+</style>
+</head>
+<body>
+
+<div class="scanlines"></div>
+
+<div class="stage">
+  <div class="modal" id="modal">
+
+    <!-- TITLEBAR -->
+    <div class="titlebar">
+      <div class="left">
+        <div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <span class="title">lastproof — onboarding</span>
+      </div>
+      <div class="title-right"><span class="pulse"></span>SETUP</div>
+    </div>
+
+    <!-- WALLET + STEP COUNTER -->
+    <div class="wallet-row">
+      <span class="step-counter">STEP <span class="now" id="stepNow">1</span> / 4</span>
+      <div class="wallet-pill"><span class="wp-dot"></span>F7k2…9xMp</div>
+    </div>
+
+    <!-- PROGRESS BAR -->
+    <div class="progress-wrap">
+      <div class="bar-track"><div class="bar-fill" id="barFill" style="width:25%"></div></div>
+    </div>
+
+    <div class="body" id="modalBody">
+
+      <!-- ═══ STEP 1 — CLAIM HANDLE ═══ -->
+      <div class="step" data-step="1">
+        <div class="pain">QUICK SETUP · 60 SECONDS TO LIVE</div>
+        <h2 class="head">Grab <span class="accent">your handle.</span></h2>
+        <p class="sub">This is your name on the Grid. Lock it in and you're already ahead.</p>
+        <div class="field">
+          <label class="field-key">YOUR HANDLE</label>
+          <div class="handle-wrap ok">
+            <div class="handle-prefix">lastproof.app/<span class="at">@</span></div>
+            <input class="handle-input" type="text" value="cryptomark" maxlength="20">
+            <div class="handle-status ok"><span class="check"></span>AVAILABLE</div>
+          </div>
+        </div>
+        <div class="fee-callout">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div class="text">Pick well — changing later costs a <b>hefty $LASTSHFT fee</b>.</div>
+        </div>
+      </div>
+
+      <!-- ═══ STEP 2 — IDENTITY ═══ -->
+      <div class="step" data-step="2" style="display:none">
+        <div class="pain">SHOW THE GRID YOUR LANE</div>
+        <h2 class="head">What do you <span class="accent">do best?</span></h2>
+        <p class="sub">Pick your lane and your name. You're almost there.</p>
+        <div class="field">
+          <label class="field-key">DISPLAY NAME <span class="char-count">10 / 30</span></label>
+          <input class="field-input" type="text" value="CryptoMark" maxlength="30" placeholder="What people call you">
+        </div>
+        <div class="field">
+          <label class="field-key">PRIMARY CATEGORY</label>
+          <div class="cat-grid">
+            <div class="cat-chip" data-cat>Community Manager</div>
+            <div class="cat-chip" data-cat>Mod</div>
+            <div class="cat-chip" data-cat>Raid Leader</div>
+            <div class="cat-chip" data-cat>Shiller</div>
+            <div class="cat-chip" data-cat>Alpha Caller</div>
+            <div class="cat-chip" data-cat>KOL / Influencer</div>
+            <div class="cat-chip" data-cat>Space Host / AMA Host</div>
+            <div class="cat-chip" data-cat>Content Creator</div>
+            <div class="cat-chip" data-cat>Collab Manager</div>
+            <div class="cat-chip active" data-cat>Growth / Paid Media</div>
+            <div class="cat-chip" data-cat>Brand / Creative</div>
+            <div class="cat-chip" data-cat>BD / Partnerships</div>
+            <div class="cat-chip" data-cat>PR / Comms</div>
+            <div class="cat-chip" data-cat>Vibe Coder / Builder</div>
+            <div class="cat-chip" data-cat>Token Dev / Tokenomics</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ STEP 3 — REGION + LANG + BIO ═══ -->
+      <div class="step" data-step="3" style="display:none">
+        <div class="pain">HELP PROJECTS FIND YOU</div>
+        <h2 class="head">Where do you <span class="accent">ship from?</span></h2>
+        <p class="sub">Last bit. Then your profile is live.</p>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-key">REGION / TIMEZONE</label>
+            <select class="field-select">
+              <option>UTC−12 · Baker Island</option>
+              <option>UTC−11 · Pago Pago</option>
+              <option>UTC−10 · Honolulu (HST)</option>
+              <option>UTC−9 · Anchorage (AKST)</option>
+              <option>UTC−8 · Los Angeles (PST)</option>
+              <option>UTC−7 · Denver (MST)</option>
+              <option>UTC−6 · Mexico City (CST)</option>
+              <option selected>UTC−5 · New York (EST)</option>
+              <option>UTC−4 · Caracas / Halifax</option>
+              <option>UTC−3 · São Paulo / Buenos Aires</option>
+              <option>UTC−2 · South Georgia</option>
+              <option>UTC−1 · Azores</option>
+              <option>UTC+0 · London (GMT)</option>
+              <option>UTC+1 · Berlin / Paris (CET)</option>
+              <option>UTC+2 · Athens / Cairo (EET)</option>
+              <option>UTC+3 · Moscow / Istanbul</option>
+              <option>UTC+4 · Dubai</option>
+              <option>UTC+5 · Karachi / Islamabad</option>
+              <option>UTC+5:30 · Mumbai / Delhi (IST)</option>
+              <option>UTC+6 · Dhaka / Almaty</option>
+              <option>UTC+7 · Bangkok / Jakarta / HCMC</option>
+              <option>UTC+8 · Singapore / HK / Beijing</option>
+              <option>UTC+9 · Tokyo / Seoul</option>
+              <option>UTC+10 · Sydney / Melbourne</option>
+              <option>UTC+11 · Solomon Islands</option>
+              <option>UTC+12 · Auckland / Fiji</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-key">PRIMARY LANGUAGE</label>
+            <select class="field-select">
+              <option selected>English</option>
+              <option>Spanish</option>
+              <option>Mandarin</option>
+              <option>Japanese</option>
+              <option>Korean</option>
+              <option>French</option>
+              <option>German</option>
+              <option>Portuguese</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-key">ONE-LINER <span class="char-count">0 / 160</span></label>
+          <textarea class="field-input" rows="3" maxlength="160" placeholder="What you ship, in one line."></textarea>
+        </div>
+      </div>
+
+      <!-- ═══ STEP 4 — DONE / SUMMARY ═══ -->
+      <div class="step" data-step="4" style="display:none">
+        <div class="done-wrap">
+          <div class="done-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="pain">YOUR PROFILE IS READY</div>
+          <h2 class="head">You're <span class="accent">on the Grid.</span></h2>
+          <p class="sub">Next: enhance it. Add proofs, links, and screenshots to climb tiers.</p>
+          <div class="done-summary">
+            <div class="ds-row"><span class="ds-key">HANDLE</span><span class="ds-val accent">@cryptomark</span></div>
+            <div class="ds-row"><span class="ds-key">DISPLAY NAME</span><span class="ds-val">CRYPTOMARK</span></div>
+            <div class="ds-row"><span class="ds-key">PRIMARY LANE</span><span class="ds-val">GROWTH / PAID MEDIA</span></div>
+            <div class="ds-row"><span class="ds-key">REGION</span><span class="ds-val">UTC−5 · NEW YORK</span></div>
+            <div class="ds-row"><span class="ds-key">LANGUAGE</span><span class="ds-val">ENGLISH</span></div>
+            <div class="ds-row"><span class="ds-key">ONE-LINER</span><span class="ds-val">GROWTH FOR TOKEN LAUNCHES.</span></div>
+            <div class="ds-row"><span class="ds-key">WALLET</span><span class="ds-val">F7K2…9XMP</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CTA ROW -->
+    <div class="cta-row">
+      <button class="btn-back" id="btnBack" style="display:none">←</button>
+      <button class="cta" id="btnNext">
+        <span id="btnNextLabel">&gt; RESERVE HANDLE</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  var step=1, total=4;
+  var labels=['&gt; LOCK IN HANDLE','&gt; NEXT','&gt; NEXT','&gt; BUILD MY PROFILE'];
+  var stepNow=document.getElementById('stepNow');
+  var barFill=document.getElementById('barFill');
+  var btnBack=document.getElementById('btnBack');
+  var btnNext=document.getElementById('btnNext');
+  var btnNextLabel=document.getElementById('btnNextLabel');
+
+  function render(){
+    document.querySelectorAll('.step').forEach(function(s){
+      s.style.display=(parseInt(s.dataset.step,10)===step)?'block':'none';
+    });
+    stepNow.textContent=step;
+    barFill.style.width=((step/total)*100)+'%';
+    btnBack.style.display=(step===1)?'none':'inline-block';
+    btnNextLabel.innerHTML=labels[step-1];
+  }
+
+  btnNext.addEventListener('click',function(){
+    if(step<total){step++;render();}
+    else{alert('→ navigate to Build Your Profile');}
+  });
+  btnBack.addEventListener('click',function(){if(step>1){step--;render();}});
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Enter'&&document.activeElement.tagName!=='TEXTAREA'){btnNext.click();}
+  });
+
+  render();
+
+  // Single-select primary category
+  document.querySelectorAll('.cat-chip[data-cat]').forEach(function(chip){
+    chip.addEventListener('click',function(){
+      document.querySelectorAll('.cat-chip[data-cat].active').forEach(function(c){c.classList.remove('active');});
+      chip.classList.add('active');
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

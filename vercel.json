@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/subscription/cron",
+      "schedule": "5 0 * * *"
+    },
+    {
+      "path": "/api/affiliate/worker",
+      "schedule": "*/10 * * * *"
+    }
+  ]
+}
