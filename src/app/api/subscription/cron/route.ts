@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
       await recalcProfileTier(p.id, now);
       expiredFlipped++;
       // Only insert expiry notification once — dedupe on kind per profile.
-      const existing = listNotifications(p.id).find((n) => n.kind === "subscription_expired");
+      const existing = (await listNotifications(p.id)).find((n) => n.kind === "subscription_expired");
       if (!existing) {
         insertNotification({
           profileId: p.id,
@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
       // (for EA-granted profiles that have never paid). Without the
       // publishedAt fallback, EA warnings would be inserted every cron
       // tick because lastPaymentAt is null.
-      const warnings = listNotifications(p.id).filter((n) => n.kind === "subscription_warning");
+      const warnings = (await listNotifications(p.id)).filter((n) => n.kind === "subscription_warning");
       const latest = warnings[warnings.length - 1];
       const windowStart =
         p.lastPaymentAt ?? p.publishedAt ?? p.subscriptionStartedAt ?? null;

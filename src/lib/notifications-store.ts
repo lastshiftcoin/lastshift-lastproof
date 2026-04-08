@@ -1,6 +1,5 @@
 /**
- * Notifications store — in-memory stub mirroring `notifications` table.
- * Swap to Supabase later without touching callers.
+ * Notifications store — memory | dual | supabase dispatch.
  */
 
 export type NotificationKind =
@@ -52,7 +51,10 @@ export function insertNotification(input: {
   return row;
 }
 
-export function listNotifications(profileId?: string): NotificationRow[] {
+export async function listNotifications(profileId?: string): Promise<NotificationRow[]> {
+  if (getStoreMode("notifications") === "supabase" && profileId) {
+    return notificationsDb.listNotificationsByProfile(profileId);
+  }
   return profileId ? rows.filter((r) => r.profileId === profileId) : rows.slice();
 }
 

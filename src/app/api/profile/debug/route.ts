@@ -26,7 +26,7 @@ export async function GET() {
     ok: true,
     count: rows.length,
     rows,
-    notifications: listNotifications(),
+    notifications: await listNotifications(),
   });
 }
 
