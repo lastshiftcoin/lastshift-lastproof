@@ -40,12 +40,15 @@ export function __resetTierRecalcCache(): void {
   recentRecalcs.clear();
 }
 
-export function recalcProfileTier(profileId: string, now: Date = new Date()): RecalcResult {
+export async function recalcProfileTier(
+  profileId: string,
+  now: Date = new Date(),
+): Promise<RecalcResult> {
   const cached = recentRecalcs.get(profileId);
   if (cached && now.getTime() - cached.at < RECALC_DEDUPE_TTL_MS) {
     return cached.result;
   }
-  const profile = getProfileById(profileId);
+  const profile = await getProfileById(profileId);
   if (!profile) {
     return {
       ok: false,
@@ -82,7 +85,7 @@ export function recalcProfileTier(profileId: string, now: Date = new Date()): Re
   if (newTier === previousTier) {
     result = { ok: true, profileId, previousTier, newTier, changed: false };
   } else {
-    updateProfile(profile.id, { tier: newTier });
+    await updateProfile(profile.id, { tier: newTier });
     result = { ok: true, profileId, previousTier, newTier, changed: true };
   }
   recentRecalcs.set(profileId, { at: now.getTime(), result });

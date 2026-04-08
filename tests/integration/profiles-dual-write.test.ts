@@ -41,7 +41,7 @@ test("profiles dual-write: upsert + update + foreign-table read", { skip: reason
 
   try {
     const handle = `prof_dual_${Date.now()}`;
-    const row = upsertProfileByOperator({
+    const row = await upsertProfileByOperator({
       operatorId: op!.id,
       terminalWallet: tw,
       handle,
@@ -60,7 +60,7 @@ test("profiles dual-write: upsert + update + foreign-table read", { skip: reason
     assert.equal(fetched!.terminalWallet, tw, "joined from operators row");
 
     // Update via the store and verify dual-write propagates the patch.
-    updateProfile(row.id, {
+    await updateProfile(row.id, {
       isPaid: true,
       tier: 1,
       subscriptionExpiresAt: "2099-01-01T00:00:00Z",

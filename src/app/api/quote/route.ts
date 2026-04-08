@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, reason: "invalid_token" }, { status: 400 });
   }
 
-  const profile = getProfileByOperatorId(session.walletAddress);
+  const profile = await getProfileByOperatorId(session.walletAddress);
   if (!profile) {
     return NextResponse.json({ ok: false, reason: "profile_not_found" }, { status: 404 });
   }

@@ -36,13 +36,13 @@ export interface DispatchResult {
 export async function dispatchPaymentConfirmed(row: PaymentRow): Promise<DispatchResult> {
   switch (row.kind) {
     case "subscription":
-      return handleSubscription(row);
+      return await handleSubscription(row);
     case "proof":
-      return handleProof(row);
+      return await handleProof(row);
     case "dev_verification":
-      return handleDevVerification(row);
+      return await handleDevVerification(row);
     case "handle_change":
-      return handleHandleChange(row);
+      return await handleHandleChange(row);
     default: {
       const _exhaustive: never = row.kind;
       return { handled: false, kind: row.kind, note: `unknown kind: ${_exhaustive}` };
@@ -52,14 +52,14 @@ export async function dispatchPaymentConfirmed(row: PaymentRow): Promise<Dispatc
 
 // ─── Stubs — to be filled in by later skeletons ─────────────────────────────
 
-function handleSubscription(row: PaymentRow): DispatchResult {
+async function handleSubscription(row: PaymentRow): Promise<DispatchResult> {
   // Skeleton #3: real rollover math, stub profile store.
   // Future skeletons layer on: notifications row (#4), validate cache bust (#1 wiring).
   if (!row.profileId) {
     console.warn(`[payment-events] SUBSCRIPTION missing profileId tx=${row.txSignature}`);
     return { handled: false, kind: "subscription", note: "profileId missing on payment row" };
   }
-  const profile = getProfileById(row.profileId);
+  const profile = await getProfileById(row.profileId);
   if (!profile) {
     console.warn(`[payment-events] SUBSCRIPTION profile not found id=${row.profileId} tx=${row.txSignature}`);
     return { handled: false, kind: "subscription", note: `profile ${row.profileId} not found` };
@@ -69,14 +69,14 @@ function handleSubscription(row: PaymentRow): DispatchResult {
   const prevState = deriveState({ expiresAt: profile.subscriptionExpiresAt, now });
   const newExpiresAt = rolloverOnPayment({ expiresAt: profile.subscriptionExpiresAt, now });
 
-  const updated = updateProfile(profile.id, {
+  const updated = await updateProfile(profile.id, {
     subscriptionExpiresAt: newExpiresAt,
     subscriptionStartedAt: profile.subscriptionStartedAt ?? now.toISOString(),
     lastPaymentAt: now.toISOString(),
     isPaid: true,
   });
 
-  const tierResult = recalcProfileTier(profile.id, now);
+  const tierResult = await recalcProfileTier(profile.id, now);
 
   console.log(
     `[payment-events] SUBSCRIPTION confirmed — profile=${row.profileId} prev=${prevState} -> expires=${updated?.subscriptionExpiresAt} tier=${tierResult.previousTier}->${tierResult.newTier} tx=${row.txSignature}`,
@@ -88,11 +88,11 @@ function handleSubscription(row: PaymentRow): DispatchResult {
   };
 }
 
-function handleProof(row: PaymentRow): DispatchResult {
+async function handleProof(row: PaymentRow): Promise<DispatchResult> {
   if (!row.profileId) {
     return { handled: false, kind: "proof", note: "profileId missing on payment row" };
   }
-  const profile = getProfileById(row.profileId);
+  const profile = await getProfileById(row.profileId);
   if (!profile) {
     return { handled: false, kind: "proof", note: `profile ${row.profileId} not found` };
   }
@@ -110,7 +110,7 @@ function handleProof(row: PaymentRow): DispatchResult {
     body: `New proof received for work item ${row.refId ?? "(no ref)"}.`,
   });
 
-  const tierResult = recalcProfileTier(profile.id);
+  const tierResult = await recalcProfileTier(profile.id);
   console.log(
     `[payment-events] PROOF confirmed — profile=${profile.id} work_item=${row.refId} tier=${tierResult.previousTier}->${tierResult.newTier} tx=${row.txSignature}`,
   );
@@ -121,11 +121,11 @@ function handleProof(row: PaymentRow): DispatchResult {
   };
 }
 
-function handleHandleChange(row: PaymentRow): DispatchResult {
+async function handleHandleChange(row: PaymentRow): Promise<DispatchResult> {
   if (!row.profileId) {
     return { handled: false, kind: "handle_change", note: "profileId missing" };
   }
-  const profile = getProfileById(row.profileId);
+  const profile = await getProfileById(row.profileId);
   if (!profile) {
     return { handled: false, kind: "handle_change", note: `profile ${row.profileId} not found` };
   }
@@ -152,7 +152,7 @@ function handleHandleChange(row: PaymentRow): DispatchResult {
   }
 
   // Uniqueness — no other profile already owns it.
-  const taken = listProfiles().find((p) => p.handle === newHandle && p.id !== profile.id);
+  const taken = (await listProfiles()).find((p) => p.handle === newHandle && p.id !== profile.id);
   if (taken) {
     return { handled: false, kind: "handle_change", note: `handle_taken:${newHandle}` };
   }
@@ -170,7 +170,7 @@ function handleHandleChange(row: PaymentRow): DispatchResult {
   }
 
   const oldHandle = profile.handle;
-  updateProfile(profile.id, { handle: newHandle });
+  await updateProfile(profile.id, { handle: newHandle });
   recordHandleChange({
     profileId: profile.id,
     oldHandle,
@@ -192,7 +192,7 @@ function handleHandleChange(row: PaymentRow): DispatchResult {
   // in their note). Handle change does not itself move the tier, so
   // this is almost always a no-op — but returning the result in the
   // note keeps the webhook's processed[] shape uniform for logs.
-  const tierResult = recalcProfileTier(profile.id);
+  const tierResult = await recalcProfileTier(profile.id);
   return {
     handled: true,
     kind: "handle_change",
@@ -204,7 +204,7 @@ async function handleDevVerification(row: PaymentRow): Promise<DispatchResult> {
   if (!row.profileId) {
     return { handled: false, kind: "dev_verification", note: "profileId missing on payment row" };
   }
-  const profile = getProfileById(row.profileId);
+  const profile = await getProfileById(row.profileId);
   if (!profile) {
     return { handled: false, kind: "dev_verification", note: `profile ${row.profileId} not found` };
   }
@@ -252,7 +252,7 @@ async function handleDevVerification(row: PaymentRow): Promise<DispatchResult> {
     txSignature: row.txSignature,
   });
 
-  updateProfile(profile.id, { isDev: true });
+  await updateProfile(profile.id, { isDev: true });
 
   insertNotification({
     profileId: profile.id,
@@ -260,7 +260,7 @@ async function handleDevVerification(row: PaymentRow): Promise<DispatchResult> {
     body: "DEV badge earned — your wallet passed qualification.",
   });
 
-  const tierResult = recalcProfileTier(profile.id);
+  const tierResult = await recalcProfileTier(profile.id);
   console.log(
     `[payment-events] DEV_VERIFICATION confirmed — profile=${profile.id} tier=${tierResult.previousTier}->${tierResult.newTier} tx=${row.txSignature}`,
   );

@@ -12,8 +12,9 @@ export async function POST(req: NextRequest) {
   }
   const body = (await req.json().catch(() => ({}))) as { profileId?: string };
   if (body.profileId) {
-    return NextResponse.json(recalcProfileTier(body.profileId));
+    return NextResponse.json(await recalcProfileTier(body.profileId));
   }
-  const results = listProfiles().map((p) => recalcProfileTier(p.id));
+  const profiles = await listProfiles();
+  const results = await Promise.all(profiles.map((p) => recalcProfileTier(p.id)));
   return NextResponse.json({ ok: true, count: results.length, results });
 }

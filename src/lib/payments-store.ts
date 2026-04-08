@@ -75,7 +75,7 @@ function newId(): string {
  * profileId. If a future kind needs a payer-owned operator, add it
  * explicitly in the draft rather than piggy-backing on operatorId.
  */
-export function upsertByTxSignature(draft: PaymentDraft): UpsertResult {
+export async function upsertByTxSignature(draft: PaymentDraft): Promise<UpsertResult> {
   const existing = byTxSignature.get(draft.txSignature);
   if (existing) {
     // Idempotent path — do NOT mutate the existing row. Status transitions
@@ -86,13 +86,13 @@ export function upsertByTxSignature(draft: PaymentDraft): UpsertResult {
 
   // Normalize operatorId: if caller left it null but profileId is set,
   // backfill from the profiles store so downstream reporting queries
-  // (e.g. "payments by operator") don't silently miss rows.
+  // (e.g. "payments by operator") don't silently miss rows. Profile
+  // store is async (supports dual / supabase modes), so we await.
   let operatorId = draft.operatorId;
   if (!operatorId && draft.profileId) {
-    // Lazy require to avoid a circular import with profiles-store.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { getProfileById } = require("./profiles-store") as typeof import("./profiles-store");
-    const profile = getProfileById(draft.profileId);
+    // Dynamic import to avoid a circular import with profiles-store.
+    const { getProfileById } = await import("./profiles-store");
+    const profile = await getProfileById(draft.profileId);
     if (profile) operatorId = profile.operatorId;
   }
 

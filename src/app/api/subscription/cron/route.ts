@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
   }
 
   const now = new Date();
-  const profiles = listProfiles().filter((p) => p.publishedAt !== null);
+  const profiles = (await listProfiles()).filter((p) => p.publishedAt !== null);
 
   let expiredFlipped = 0;
   let warningInserted = 0;
@@ -47,8 +47,8 @@ export async function GET(req: NextRequest) {
     const state = deriveState({ expiresAt: p.subscriptionExpiresAt, now });
 
     if ((state === "expired" || state === "none") && p.isPaid) {
-      updateProfile(p.id, { isPaid: false });
-      recalcProfileTier(p.id, now);
+      await updateProfile(p.id, { isPaid: false });
+      await recalcProfileTier(p.id, now);
       expiredFlipped++;
       // Only insert expiry notification once — dedupe on kind per profile.
       const existing = listNotifications(p.id).find((n) => n.kind === "subscription_expired");

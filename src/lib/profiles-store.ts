@@ -1,13 +1,18 @@
 /**
- * Profiles store — typed stub mirroring the `profiles` Supabase table.
+ * Profiles store — async API, mode-dispatched.
  *
- * v1 is an in-memory Map keyed by profile id. Same swap pattern as
- * payments-store: reimplement the exported functions against Supabase and
- * callers do not move.
+ * Three modes (set via LASTPROOF_DB_PROFILES env, see db/mode.ts):
  *
- * Only the fields the skeletons actually touch are modeled here. The full
- * profile schema (pitch, about, work_items, screenshots, etc.) lands when
- * the Phase B / C UI wires in Supabase for real.
+ *   memory   — in-memory Map only. Tests + offline dev.
+ *   dual     — write to BOTH memory AND Supabase, READS still from memory.
+ *              Memory is the source of truth. Supabase writes are
+ *              fire-and-forget so a flaky DB cannot break user flows.
+ *   supabase — read + write Supabase only. Memory is bypassed entirely.
+ *              The source of truth is the DB.
+ *
+ * Every export is async so the same API works for all three modes. The
+ * memory + dual paths still resolve synchronously inside the promise,
+ * so per-call latency is unchanged for those modes.
  */
 
 export interface ProfileRow {
@@ -60,7 +65,45 @@ export interface CreateProfileInput {
   isEarlyAdopter: boolean;
 }
 
-export function upsertProfileByOperator(input: CreateProfileInput): ProfileRow {
+export async function upsertProfileByOperator(
+  input: CreateProfileInput,
+): Promise<ProfileRow> {
+  const mode = getStoreMode("profiles");
+
+  if (mode === "supabase") {
+    // Look up existing by operator_id, then upsert.
+    const existing = await profilesDb.getProfileByOperatorId(input.operatorId);
+    const now = new Date().toISOString();
+    const row: ProfileRow = existing
+      ? {
+          ...existing,
+          handle: input.handle,
+          displayName: input.displayName,
+          isEarlyAdopter: input.isEarlyAdopter,
+          updatedAt: now,
+        }
+      : {
+          id: newId(),
+          operatorId: input.operatorId,
+          terminalWallet: input.terminalWallet,
+          handle: input.handle,
+          displayName: input.displayName,
+          isPaid: false,
+          subscriptionStartedAt: null,
+          subscriptionExpiresAt: null,
+          lastPaymentAt: null,
+          isEarlyAdopter: input.isEarlyAdopter,
+          tier: 5,
+          isDev: false,
+          publishedAt: null,
+          createdAt: now,
+          updatedAt: now,
+        };
+    await profilesDb.upsertProfile(row);
+    return row;
+  }
+
+  // memory + dual paths
   const existingId = byOperatorId.get(input.operatorId);
   if (existingId) {
     const existing = byId.get(existingId)!;
@@ -68,8 +111,7 @@ export function upsertProfileByOperator(input: CreateProfileInput): ProfileRow {
     existing.displayName = input.displayName;
     existing.isEarlyAdopter = input.isEarlyAdopter;
     existing.updatedAt = new Date().toISOString();
-    const mode = getStoreMode("profiles");
-    if (mode === "dual" || mode === "supabase") {
+    if (mode === "dual") {
       fireAndForget("upsert", profilesDb.upsertProfile(existing));
     }
     return existing;
@@ -95,39 +137,57 @@ export function upsertProfileByOperator(input: CreateProfileInput): ProfileRow {
   byId.set(row.id, row);
   byOperatorId.set(input.operatorId, row.id);
 
-  const mode = getStoreMode("profiles");
-  if (mode === "dual" || mode === "supabase") {
+  if (mode === "dual") {
     fireAndForget("upsert", profilesDb.upsertProfile(row));
   }
   return row;
 }
 
-export function getProfileById(id: string): ProfileRow | null {
+export async function getProfileById(id: string): Promise<ProfileRow | null> {
+  if (getStoreMode("profiles") === "supabase") {
+    return profilesDb.getProfileById(id);
+  }
   return byId.get(id) || null;
 }
 
-export function getProfileByOperatorId(operatorId: string): ProfileRow | null {
+export async function getProfileByOperatorId(
+  operatorId: string,
+): Promise<ProfileRow | null> {
+  if (getStoreMode("profiles") === "supabase") {
+    return profilesDb.getProfileByOperatorId(operatorId);
+  }
   const id = byOperatorId.get(operatorId);
   return id ? byId.get(id) || null : null;
 }
 
-export function updateProfile(
+export async function updateProfile(
   id: string,
   patch: Partial<Omit<ProfileRow, "id" | "createdAt" | "operatorId">>,
-): ProfileRow | null {
+): Promise<ProfileRow | null> {
+  const mode = getStoreMode("profiles");
+
+  if (mode === "supabase") {
+    await profilesDb.updateProfileFields(id, patch);
+    return profilesDb.getProfileById(id);
+  }
+
   const row = byId.get(id);
   if (!row) return null;
   Object.assign(row, patch, { updatedAt: new Date().toISOString() });
 
-  const mode = getStoreMode("profiles");
-  if (mode === "dual" || mode === "supabase") {
+  if (mode === "dual") {
     fireAndForget("update", profilesDb.updateProfileFields(id, patch));
   }
   return row;
 }
 
-export function listProfiles(): ProfileRow[] {
-  return Array.from(byId.values()).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+export async function listProfiles(): Promise<ProfileRow[]> {
+  if (getStoreMode("profiles") === "supabase") {
+    return profilesDb.listAllProfiles();
+  }
+  return Array.from(byId.values()).sort((a, b) =>
+    a.createdAt.localeCompare(b.createdAt),
+  );
 }
 
 export function __resetProfiles(): void {

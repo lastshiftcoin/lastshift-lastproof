@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const upsert = upsertByTxSignature(validated);
+    const upsert = await upsertByTxSignature(validated);
 
     // Consume the quote ONLY on a newly-created payment row. Duplicate
     // deliveries of the same tx_signature are no-ops here: the quote

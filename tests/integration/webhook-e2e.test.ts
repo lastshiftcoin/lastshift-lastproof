@@ -54,7 +54,7 @@ test("webhook rejects missing auth header", async () => {
 });
 
 test("webhook: USDT enhanced event resolves to draft + dispatches", async () => {
-  const profile = upsertProfileByOperator({
+  const profile = await upsertProfileByOperator({
     operatorId: "op_test_1",
     terminalWallet: "WalletTest1",
     handle: "cryptomark_test",

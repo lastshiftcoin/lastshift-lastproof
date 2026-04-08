@@ -95,7 +95,7 @@ async function main() {
     if (opErr) throw new Error(`operator insert: ${opErr.message}`);
 
     // 2. Profile via the store (memory + dual-write to DB).
-    const profile = upsertProfileByOperator({
+    const profile = await upsertProfileByOperator({
       operatorId: op!.id,
       terminalWallet: op!.terminal_wallet,
       handle: `soak_${stamp}_${i}`,
@@ -131,7 +131,7 @@ async function main() {
 
     // 4. Insert a payment row pegged to the quote, then confirm.
     const tx = `TX_SOAK_${stamp}_${i}`;
-    upsertByTxSignature({
+    await upsertByTxSignature({
       kind: "subscription",
       refId: null,
       operatorId: op!.id,
@@ -149,7 +149,7 @@ async function main() {
     markConfirmed(tx);
 
     // 5. Profile state transition + tier bump.
-    updateProfile(profile.id, {
+    await updateProfile(profile.id, {
       isPaid: true,
       tier: 1,
       subscriptionExpiresAt: "2099-01-01T00:00:00Z",

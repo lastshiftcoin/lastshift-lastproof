@@ -21,10 +21,11 @@ function forbidInProd() {
 export async function GET() {
   const blocked = forbidInProd();
   if (blocked) return blocked;
+  const rows = await listProfiles();
   return NextResponse.json({
     ok: true,
-    count: listProfiles().length,
-    rows: listProfiles(),
+    count: rows.length,
+    rows,
     notifications: listNotifications(),
   });
 }
@@ -42,6 +43,6 @@ export async function PATCH(req: NextRequest) {
   const blocked = forbidInProd();
   if (blocked) return blocked;
   const body = (await req.json()) as { id: string; patch: Record<string, unknown> };
-  const row = updateProfile(body.id, body.patch as never);
+  const row = await updateProfile(body.id, body.patch as never);
   return NextResponse.json({ ok: !!row, row });
 }

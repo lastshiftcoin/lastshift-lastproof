@@ -14,7 +14,8 @@ export async function GET(
   { params }: { params: Promise<{ handle: string }> },
 ) {
   const { handle } = await params;
-  const profile = listProfiles().find((p) => p.handle === handle.toLowerCase()) || null;
+  const profile =
+    (await listProfiles()).find((p) => p.handle === handle.toLowerCase()) || null;
   const view = projectPublicView(profile);
   if (!view) {
     return NextResponse.json({ ok: false, reason: "not_found" }, { status: 404 });

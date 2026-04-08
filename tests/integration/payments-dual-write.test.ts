@@ -47,7 +47,7 @@ test("payments dual-write: insert + idempotency + confirm", { skip: reason }, as
   const tx = `TX_DUAL_${Date.now()}`;
 
   try {
-    const a = upsertByTxSignature({
+    const a = await upsertByTxSignature({
       kind: "subscription",
       refId: null,
       operatorId: null,
@@ -66,7 +66,7 @@ test("payments dual-write: insert + idempotency + confirm", { skip: reason }, as
 
     // Second call — must be a no-op idempotent return, NOT throw on the
     // unique constraint when the fire-and-forget hits the DB.
-    const b = upsertByTxSignature({
+    const b = await upsertByTxSignature({
       kind: "subscription",
       refId: null,
       operatorId: null,

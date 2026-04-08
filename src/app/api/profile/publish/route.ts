@@ -53,10 +53,10 @@ export async function POST(req: NextRequest) {
   // v1: operator id == wallet. Real id comes from the operators table.
   const operatorId = session.walletAddress;
 
-  const alreadyExisting = getProfileByOperatorId(operatorId);
+  const alreadyExisting = await getProfileByOperatorId(operatorId);
   const firstPublish = !alreadyExisting?.publishedAt;
 
-  const profile = upsertProfileByOperator({
+  const profile = await upsertProfileByOperator({
     operatorId,
     terminalWallet: session.walletAddress,
     handle,
@@ -77,13 +77,13 @@ export async function POST(req: NextRequest) {
     patch.lastPaymentAt = null; // charge-free EA window
   }
 
-  const updated = updateProfile(profile.id, patch)!;
+  const updated = (await updateProfile(profile.id, patch))!;
   // Derived isPaid after patch, in case the window was granted or is already set.
-  updateProfile(profile.id, {
+  await updateProfile(profile.id, {
     isPaid: isPaidNow({ expiresAt: updated.subscriptionExpiresAt, now }),
   });
 
-  recalcProfileTier(profile.id, now);
+  await recalcProfileTier(profile.id, now);
 
   // Enqueue affiliate confirm on FIRST publish only. Worker drains the
   // queue with retries + dead-letter; we never block publish on S2S.
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const final = updateProfile(profile.id, {})!;
+  const final = (await updateProfile(profile.id, {}))!;
 
   return NextResponse.json({
     ok: true,
