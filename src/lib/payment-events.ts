@@ -163,9 +163,9 @@ async function handleHandleChange(row: PaymentRow): Promise<DispatchResult> {
   // through. If a second payment later resolves to one of those stale
   // quotes, tolerance.validatePaymentAgainstQuote will reject it as
   // quote_expired rather than silently double-apply the change.
-  for (const q of listQuotes(profile.id)) {
+  for (const q of await listQuotes(profile.id)) {
     if (q.kind === "handle_change" && q.status === "open") {
-      markQuoteExpired(q.id);
+      await markQuoteExpired(q.id);
     }
   }
 
@@ -221,7 +221,7 @@ async function handleDevVerification(row: PaymentRow): Promise<DispatchResult> {
   let tokenMint: string | null = null;
   if (row.quoteId) {
     const { getQuote } = await import("./quotes-store");
-    const q = getQuote(row.quoteId);
+    const q = await getQuote(row.quoteId);
     const mintFromMeta = q?.metadata?.tokenMint;
     if (typeof mintFromMeta === "string") tokenMint = mintFromMeta;
   }

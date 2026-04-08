@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
         { status: 409 },
       );
     }
-    if (hasOpenHandleChangeQuote(profile.id)) {
+    if (await hasOpenHandleChangeQuote(profile.id)) {
       return NextResponse.json(
         { ok: false, reason: "handle_change_already_pending" },
         { status: 409 },

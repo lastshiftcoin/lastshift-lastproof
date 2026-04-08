@@ -1,6 +1,5 @@
 /**
- * Quotes store — in-memory, TTL-aware. Swap to Supabase later without
- * touching callers.
+ * Quotes store — in-memory + mode-dispatched Supabase.
  *
  * A quote is issued when the user clicks "Pay." It locks:
  *   - the item (kind)
@@ -12,6 +11,11 @@
  * The webhook resolves incoming payments by `quoteId` and validates
  * against THIS row. No quote → reject `quote_not_found`. Expired →
  * `quote_expired`. Token mismatch → `discount_token_mismatch`.
+ *
+ * Dispatch modes (see `LASTPROOF_DB_QUOTES`):
+ *   - memory    — RAM only
+ *   - dual      — RAM authoritative, fire-and-forget to Supabase
+ *   - supabase  — Supabase authoritative, RAM not consulted
  */
 
 import type { PaymentKindPriced, PaymentToken } from "./pricing";
@@ -20,9 +24,6 @@ import { generateReferenceBase58 } from "./base58";
 import { getStoreMode } from "./db/mode";
 import * as quotesDb from "./db/quotes-adapter";
 
-// In `dual` mode, memory is the source of truth and Supabase writes are
-// fire-and-forget so a flaky DB cannot break the user-facing flow during
-// migration. We log errors via console.error and move on.
 function fireAndForget(label: string, p: Promise<unknown>): void {
   p.catch((err) => {
     console.error(`[quotes-store] dual-write ${label} failed:`, err);
@@ -35,20 +36,14 @@ export interface QuoteRow {
   id: string;
   /**
    * Solana Pay reference key: base58-encoded 32-byte value, per
-   * https://docs.solanapay.com/spec#reference. Included as a read-only,
-   * non-signer account key in the user's transfer instruction. Validators
-   * index transactions by these account keys, so the Helius webhook
-   * filter pins on it and the parser uses it to resolve back to this
-   * quote without needing the tx signature in advance.
+   * https://docs.solanapay.com/spec#reference.
    */
   reference: string;
   profileId: string;
   kind: PaymentKindPriced;
   token: PaymentToken;
   expectedUsd: number;
-  /** Token-denominated amount locked at issue time. */
   expectedToken: number;
-  /** USD/token rate used at issue time. */
   tokenUsdRate: number;
   issuedAt: string;
   expiresAt: string;
@@ -64,7 +59,6 @@ export interface IssueQuoteInput {
   profileId: string;
   kind: PaymentKindPriced;
   token: PaymentToken;
-  /** Current token/USD rate (real: pulled from oracle; dev: stub). */
   tokenUsdRate: number;
   metadata?: Record<string, unknown>;
   now?: Date;
@@ -92,44 +86,68 @@ export function issueQuote(input: IssueQuoteInput): QuoteRow {
     status: "open",
     metadata: input.metadata,
   };
+
+  const mode = getStoreMode("quotes");
+  // Mirror into memory regardless — in supabase mode it's a harmless
+  // cache that keeps the synchronous `issueQuote` shape; dependent
+  // reads (`getQuote`, `getQuoteByReference`) go through the DB.
   rows.set(row.id, row);
   byReference.set(reference, row.id);
 
-  const mode = getStoreMode("quotes");
   if (mode === "dual" || mode === "supabase") {
     fireAndForget("insertQuote", quotesDb.insertQuote(row));
   }
   return row;
 }
 
-export function getQuote(id: string): QuoteRow | null {
+export async function getQuote(id: string): Promise<QuoteRow | null> {
+  if (getStoreMode("quotes") === "supabase") {
+    return quotesDb.getQuoteById(id);
+  }
   return rows.get(id) ?? null;
 }
 
-export function getQuoteByReference(reference: string): QuoteRow | null {
+export async function getQuoteByReference(
+  reference: string,
+): Promise<QuoteRow | null> {
+  if (getStoreMode("quotes") === "supabase") {
+    return quotesDb.getQuoteByReference(reference);
+  }
   const id = byReference.get(reference);
   return id ? (rows.get(id) ?? null) : null;
 }
 
-export function markQuoteConsumed(id: string, txSignature: string): QuoteRow | null {
+export async function markQuoteConsumed(
+  id: string,
+  txSignature: string,
+): Promise<QuoteRow | null> {
+  const mode = getStoreMode("quotes");
+  if (mode === "supabase") {
+    const row = await quotesDb.getQuoteById(id);
+    if (!row) return null;
+    await quotesDb.markConsumed(id, txSignature);
+    return { ...row, status: "consumed", consumedTxSignature: txSignature };
+  }
   const row = rows.get(id);
   if (!row) return null;
   row.status = "consumed";
   row.consumedTxSignature = txSignature;
-
-  const mode = getStoreMode("quotes");
-  if (mode === "dual" || mode === "supabase") {
+  if (mode === "dual") {
     fireAndForget("markConsumed", quotesDb.markConsumed(id, txSignature));
   }
   return row;
 }
 
-export function markQuoteExpired(id: string): void {
+export async function markQuoteExpired(id: string): Promise<void> {
+  const mode = getStoreMode("quotes");
+  if (mode === "supabase") {
+    await quotesDb.markExpired(id);
+    return;
+  }
   const row = rows.get(id);
   if (row && row.status === "open") {
     row.status = "expired";
-    const mode = getStoreMode("quotes");
-    if (mode === "dual" || mode === "supabase") {
+    if (mode === "dual") {
       fireAndForget("markExpired", quotesDb.markExpired(id));
     }
   }
@@ -137,13 +155,13 @@ export function markQuoteExpired(id: string): void {
 
 /**
  * Sweep all open quotes whose TTL has elapsed and flip them to expired.
- * Returns the count flipped. Called by the subscription cron daily and
- * can also be called opportunistically. This is the belt-and-suspenders
- * counterpart to the lazy expiry check in tolerance.ts — tolerance
- * rejects a specific payment against an expired quote, but until the
- * sweep runs the quote row itself lies in the store as `open`.
+ * Belt-and-suspenders to the lazy expiry check in tolerance.ts.
  */
-export function sweepExpiredQuotes(now: Date = new Date()): number {
+export async function sweepExpiredQuotes(now: Date = new Date()): Promise<number> {
+  const mode = getStoreMode("quotes");
+  if (mode === "supabase") {
+    return quotesDb.sweepExpired(now.toISOString());
+  }
   const cutoff = now.getTime();
   let flipped = 0;
   for (const row of rows.values()) {
@@ -152,14 +170,19 @@ export function sweepExpiredQuotes(now: Date = new Date()): number {
       flipped++;
     }
   }
-  const mode = getStoreMode("quotes");
-  if (flipped > 0 && (mode === "dual" || mode === "supabase")) {
+  if (flipped > 0 && mode === "dual") {
     fireAndForget("sweepExpired", quotesDb.sweepExpired(now.toISOString()));
   }
   return flipped;
 }
 
-export function listQuotes(profileId?: string): QuoteRow[] {
+export async function listQuotes(profileId?: string): Promise<QuoteRow[]> {
+  if (getStoreMode("quotes") === "supabase") {
+    if (!profileId) {
+      throw new Error("[quotes-store] listQuotes without profileId not supported in supabase mode");
+    }
+    return quotesDb.listByProfile(profileId);
+  }
   const all = Array.from(rows.values());
   return profileId ? all.filter((r) => r.profileId === profileId) : all;
 }
@@ -169,7 +192,19 @@ export function __resetQuotes(): void {
   byReference.clear();
 }
 
-export function hasOpenHandleChangeQuote(profileId: string, now: Date = new Date()): boolean {
+export async function hasOpenHandleChangeQuote(
+  profileId: string,
+  now: Date = new Date(),
+): Promise<boolean> {
+  if (getStoreMode("quotes") === "supabase") {
+    const all = await quotesDb.listByProfile(profileId);
+    return all.some(
+      (r) =>
+        r.kind === "handle_change" &&
+        r.status === "open" &&
+        new Date(r.expiresAt) > now,
+    );
+  }
   for (const r of rows.values()) {
     if (
       r.profileId === profileId &&

@@ -71,7 +71,7 @@ test("quotes dual-write: issue → row in Supabase", { skip: reason }, async () 
 
     // markConsumed dual-writes
     const { markQuoteConsumed } = await import("../../src/lib/quotes-store");
-    markQuoteConsumed(row.id, "TEST_TX_SIG_DUAL");
+    await markQuoteConsumed(row.id, "TEST_TX_SIG_DUAL");
     await new Promise((r) => setTimeout(r, 300));
     const after = await quotesDb.getQuoteById(row.id);
     assert.equal(after!.status, "consumed");

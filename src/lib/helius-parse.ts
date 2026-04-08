@@ -58,7 +58,7 @@ export type HeliusTokenTransfer = HeliusTokenTransferV1;
 
 // ─── Resolver hook — caller supplies the quote lookup ───────────────────────
 
-export type QuoteResolver = (reference: string) => QuoteRow | null;
+export type QuoteResolver = (reference: string) => Promise<QuoteRow | null>;
 
 export interface ParseResult {
   drafts: PaymentDraft[];
@@ -70,13 +70,13 @@ export interface ParseResult {
  * draft. Events with no reference match, errored txs, or non-treasury
  * destinations are skipped (logged for audit).
  */
-export function parseHeliusEvents(
+export async function parseHeliusEvents(
   events: HeliusEvent[],
   opts: {
     treasuryWallet: string;
     resolveQuote: QuoteResolver;
   },
-): ParseResult {
+): Promise<ParseResult> {
   const drafts: PaymentDraft[] = [];
   const skipped: ParseResult["skipped"] = [];
 
@@ -99,7 +99,7 @@ export function parseHeliusEvents(
     const matched: QuoteRow[] = [];
     const seenQuoteIds = new Set<string>();
     for (const key of allReferencedKeys) {
-      const found = opts.resolveQuote(key);
+      const found = await opts.resolveQuote(key);
       if (found && !seenQuoteIds.has(found.id)) {
         seenQuoteIds.add(found.id);
         matched.push(found);

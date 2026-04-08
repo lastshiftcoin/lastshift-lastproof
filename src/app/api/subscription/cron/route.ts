@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
   // Belt-and-suspenders: flip any stale open quotes to expired so the
   // quotes table reflects reality. Tolerance already rejects expired
   // quotes lazily, but Grid/dev-tool consumers read status directly.
-  const quotesSwept = sweepExpiredQuotes(now);
+  const quotesSwept = await sweepExpiredQuotes(now);
 
   return NextResponse.json({
     ok: true,

@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
       accepted.push(ev);
     }
     const treasury = process.env.TREASURY_WALLET || "LASTPROOF_TREASURY_STUB";
-    const parsed = parseHeliusEvents(accepted, {
+    const parsed = await parseHeliusEvents(accepted, {
       treasuryWallet: treasury,
       resolveQuote: getQuoteByReference,
     });
@@ -188,9 +188,9 @@ export async function POST(req: NextRequest) {
     // record, making the user unable to retry. `validatePaymentAgainstQuote`
     // must tolerate a re-run on the same still-open quote for this to
     // be safe.
-    let resolvedQuote: ReturnType<typeof getQuote> = null;
+    let resolvedQuote: Awaited<ReturnType<typeof getQuote>> = null;
     if (validated.quoteId) {
-      resolvedQuote = getQuote(validated.quoteId);
+      resolvedQuote = await getQuote(validated.quoteId);
       const check = validatePaymentAgainstQuote({
         quote: resolvedQuote,
         paidToken: validated.token,
@@ -209,7 +209,7 @@ export async function POST(req: NextRequest) {
     // deliveries of the same tx_signature are no-ops here: the quote
     // is already consumed from the first delivery.
     if (upsert.created && resolvedQuote) {
-      markQuoteConsumed(resolvedQuote.id, validated.txSignature);
+      await markQuoteConsumed(resolvedQuote.id, validated.txSignature);
     }
 
     let dispatched = false;
