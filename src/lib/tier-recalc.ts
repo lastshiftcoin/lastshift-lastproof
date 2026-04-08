@@ -70,7 +70,8 @@ export async function recalcProfileTier(
   );
 
   const proofsConfirmed =
-    countConfirmedProofs(profile.id) + countDevVerifications(profile.id);
+    (await countConfirmedProofs(profile.id)) +
+    (await countDevVerifications(profile.id));
 
   const newTier = computeTier({
     isPaid: paid,

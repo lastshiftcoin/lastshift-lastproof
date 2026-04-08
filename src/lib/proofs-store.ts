@@ -1,10 +1,9 @@
 /**
- * Proofs store — in-memory stub mirroring `proofs` + `dev_verifications`
- * tables. Swap to Supabase later without touching callers.
+ * Proofs store — memory | dual | supabase dispatch.
  *
  * A proof row is created ONCE per confirmed payment (idempotency held
  * upstream by payments-store via tx_signature). DEV verifications are a
- * distinct kind — same store, different row shape flag.
+ * distinct kind — same store, different `kind` flag.
  */
 
 export interface ProofRow {
@@ -33,29 +32,45 @@ export function insertProof(input: Omit<ProofRow, "id" | "createdAt">): ProofRow
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
   };
-  rows.push(row);
-
   const mode = getStoreMode("proofs");
+  // Mirror into memory regardless so sync callers keep working; in
+  // supabase mode reads go through the adapter so memory is just a
+  // harmless local cache.
+  rows.push(row);
   if (mode === "dual" || mode === "supabase") {
     fireAndForget("insertProof", proofsDb.insertProofRow(row));
   }
   return row;
 }
 
-export function countConfirmedProofs(profileId: string): number {
+export async function countConfirmedProofs(profileId: string): Promise<number> {
+  if (getStoreMode("proofs") === "supabase") {
+    return proofsDb.countProofsByProfile(profileId, "proof");
+  }
   return rows.filter((r) => r.profileId === profileId && r.kind === "proof").length;
 }
 
-export function countDevVerifications(profileId: string): number {
+export async function countDevVerifications(profileId: string): Promise<number> {
+  if (getStoreMode("proofs") === "supabase") {
+    return proofsDb.countProofsByProfile(profileId, "dev_verification");
+  }
   return rows.filter((r) => r.profileId === profileId && r.kind === "dev_verification")
     .length;
 }
 
-export function hasProofForTx(txSignature: string): boolean {
+export async function hasProofForTx(txSignature: string): Promise<boolean> {
+  if (getStoreMode("proofs") === "supabase") {
+    // Rare path — scan by profile would require an index; for now no
+    // caller uses this in supabase mode. Fall back to memory cache.
+    return rows.some((r) => r.txSignature === txSignature);
+  }
   return rows.some((r) => r.txSignature === txSignature);
 }
 
-export function listProofs(profileId?: string): ProofRow[] {
+export async function listProofs(profileId?: string): Promise<ProofRow[]> {
+  if (getStoreMode("proofs") === "supabase" && profileId) {
+    return proofsDb.listProofsByProfile(profileId);
+  }
   return profileId ? rows.filter((r) => r.profileId === profileId) : rows.slice();
 }
 
