@@ -1,17 +1,21 @@
 /**
  * Tier computation — pure function, zero I/O.
  *
- * Tier system (locked):
- *   T5 — FREE / unlisted (default; never published or not paid)
- *   T1 — NEW         (paid + published, <  T2 proof threshold)
- *   T2 — VERIFIED    (meets verified threshold)
- *   T3 — EXPERIENCED (meets experienced threshold)
- *   T4 — LEGEND      (meets legend threshold)
+ * Tier system (LOCKED to wireframes — see CLAUDE.md):
  *
- * NOTE on thresholds: the numeric cutoffs below are PLACEHOLDERS pinned
- * here so the recalc pipeline wires cleanly. They will be tuned from
- * real Grid telemetry before launch. DO NOT hard-code these numbers in
- * callers — always go through `computeTier`.
+ *   TIER 1 · NEW         — paid + published, 0+ proofs
+ *   TIER 2 · VERIFIED    — 10+ proofs
+ *   TIER 3 · EXPERIENCED — 25+ proofs
+ *   TIER 4 · LEGEND      — 50+ proofs
+ *
+ * Pure proof count, no age gates, no dispute gates. Thresholds match
+ * `lastproof-profile-public.html` trust-tier bar tick labels:
+ *   0+ NEW · 10+ VERIFIED · 25+ EXPERIENCED · 50+ LEGEND
+ *
+ * The internal sentinel `5` is returned for unpaid/unpublished profiles
+ * to mark "not on the tier ladder at all." It is NEVER rendered as a
+ * word — the free-variant wireframe branches on it upstream and strips
+ * the tier UI entirely. Treat `5` as a null-ish "unlisted" value.
  *
  * Inputs are deliberately flat so this function can be called from:
  *   - webhook handler (after a proof confirms)
@@ -25,46 +29,34 @@ export type Tier = 1 | 2 | 3 | 4 | 5;
 export interface TierInputs {
   isPaid: boolean;
   isPublished: boolean;
-  proofsConfirmed: number; // lifetime confirmed proofs owned by this profile
-  disputesLost: number; // lifetime disputes resolved against the profile
-  accountAgeDays: number; // days since profile.createdAt
+  /** Lifetime confirmed proofs owned by this profile. */
+  proofsConfirmed: number;
+  /**
+   * Reserved for future use — currently ignored. Wireframe-canonical
+   * tier math has no dispute gate. Kept on the interface so we don't
+   * have to thread a new signature when/if it comes back.
+   */
+  disputesLost?: number;
+  /** Reserved for future use — currently ignored. */
+  accountAgeDays?: number;
 }
 
-/** Placeholder thresholds — tune with real data. */
+/** Wireframe-canonical thresholds. Locked. */
 export const TIER_THRESHOLDS = {
-  verifiedProofs: 5,
+  verifiedProofs: 10,
   experiencedProofs: 25,
-  legendProofs: 100,
-  legendMinAgeDays: 90,
-  maxDisputesLostForLegend: 0,
-  maxDisputesLostForExperienced: 1,
+  legendProofs: 50,
 } as const;
 
 export function computeTier(input: TierInputs): Tier {
+  // Not on the ladder at all — free-variant renders for these.
   if (!input.isPaid || !input.isPublished) return 5;
 
-  const {
-    proofsConfirmed,
-    disputesLost,
-    accountAgeDays,
-  } = input;
+  const { proofsConfirmed } = input;
 
-  if (
-    proofsConfirmed >= TIER_THRESHOLDS.legendProofs &&
-    accountAgeDays >= TIER_THRESHOLDS.legendMinAgeDays &&
-    disputesLost <= TIER_THRESHOLDS.maxDisputesLostForLegend
-  ) {
-    return 4;
-  }
-  if (
-    proofsConfirmed >= TIER_THRESHOLDS.experiencedProofs &&
-    disputesLost <= TIER_THRESHOLDS.maxDisputesLostForExperienced
-  ) {
-    return 3;
-  }
-  if (proofsConfirmed >= TIER_THRESHOLDS.verifiedProofs) {
-    return 2;
-  }
+  if (proofsConfirmed >= TIER_THRESHOLDS.legendProofs) return 4;
+  if (proofsConfirmed >= TIER_THRESHOLDS.experiencedProofs) return 3;
+  if (proofsConfirmed >= TIER_THRESHOLDS.verifiedProofs) return 2;
   return 1;
 }
 
@@ -73,5 +65,15 @@ export const TIER_LABEL: Record<Tier, string> = {
   2: "VERIFIED",
   3: "EXPERIENCED",
   4: "LEGEND",
-  5: "FREE",
+  5: "UNLISTED", // internal only — never shown in UI
 };
+
+/**
+ * Canonical "TIER N · NAME" render helper. Use this everywhere a tier
+ * label appears in the UI so we can't drift from the pairing rule.
+ * Returns null for tier 5 (unlisted) so callers can branch cleanly.
+ */
+export function formatTierLabel(tier: Tier): string | null {
+  if (tier === 5) return null;
+  return `TIER ${tier} · ${TIER_LABEL[tier]}`;
+}
