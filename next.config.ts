@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   // parallel-route syntax, so we rewrite to a real folder internally.
   async rewrites() {
     return [
-      { source: "/@:handle", destination: "/_profile/:handle" },
+      { source: "/@:handle", destination: "/profile/:handle" },
     ];
   },
 };
