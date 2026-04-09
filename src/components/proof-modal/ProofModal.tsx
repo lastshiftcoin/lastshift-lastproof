@@ -204,6 +204,69 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
     ticker,
   ]);
 
+  /**
+   * Kicks off the step 7 signing pipeline against the currently-held
+   * quote. Used by step 6's SIGN button AND by step 8's retry CTAs
+   * (user_rejected, blockhash_expired, rpc_degraded, unknown).
+   *
+   * NOTE: re-uses the same quote_id. Backend's /build-tx is idempotent
+   * per quote within its TTL — safe to call multiple times as long as
+   * the quote hasn't hit `quote_expired_hard` or `lock_lost`. Those
+   * two failure modes route through handleRefreshQuote instead.
+   */
+  const kickOffSigning = useCallback(() => {
+    if (!elig.quote || !path || !connected) return;
+    setStep(7);
+    startSign({
+      quoteId: elig.quote.quote_id,
+      pubkey: connected.pubkey,
+      handle,
+      ticker,
+      path,
+      signTransactionBase64: async (txBase64) => {
+        const adapter = walletAdapter?.adapter as
+          | { signTransaction?: (tx: unknown) => Promise<unknown> }
+          | undefined;
+        if (!adapter?.signTransaction || mockConnected) {
+          return txBase64;
+        }
+        const { Transaction } = await import("@solana/web3.js");
+        const tx = Transaction.from(
+          Uint8Array.from(atob(txBase64), (c) => c.charCodeAt(0)),
+        );
+        const signed = (await adapter.signTransaction(tx)) as {
+          serialize: () => Uint8Array;
+        };
+        const bytes = signed.serialize();
+        let bin = "";
+        bytes.forEach((b) => (bin += String.fromCharCode(b)));
+        return btoa(bin);
+      },
+    });
+  }, [elig.quote, path, connected, handle, ticker, walletAdapter, mockConnected, startSign]);
+
+  /**
+   * Step 8 recovery: user needs a fresh quote. Routes back to step 4,
+   * clears the streamed-token marker so the 4→5 transition re-fires
+   * eligibility against a new quote. Used by quote_expired_hard,
+   * lock_lost, dev_slot_taken (COLLAB path retry only).
+   */
+  const handleRefreshQuote = useCallback(() => {
+    resetSign();
+    setStreamedToken(null);
+    setStep(4);
+  }, [resetSign]);
+
+  /**
+   * Step 8 recovery: user needs to change token (insufficient_balance).
+   * Back to step 4 but keeps the current eligibility stream cached —
+   * re-fires only if they actually pick a different token.
+   */
+  const handleChangeToken = useCallback(() => {
+    resetSign();
+    setStep(4);
+  }, [resetSign]);
+
   const handleTryNewWallet = useCallback(() => {
     reset();
     setStep(1);
@@ -314,51 +377,16 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
               comment={comment}
               pubkey={connected?.pubkey ?? ""}
               onStartOver={handleTryNewWallet}
-              onSign={() => {
-                if (!elig.quote || !path || !connected) return;
-                setStep(7);
-                startSign({
-                  quoteId: elig.quote.quote_id,
-                  pubkey: connected.pubkey,
-                  handle,
-                  ticker,
-                  path,
-                  signTransactionBase64: async (txBase64) => {
-                    // Real wallet path: deserialize, sign, re-serialize.
-                    // Dev-mock path (no adapter.signTransaction): return
-                    // the input unchanged — broadcast mock accepts any
-                    // base64 string.
-                    const adapter = walletAdapter?.adapter as
-                      | {
-                          signTransaction?: (tx: unknown) => Promise<unknown>;
-                        }
-                      | undefined;
-                    if (!adapter?.signTransaction || mockConnected) {
-                      return txBase64;
-                    }
-                    // Real adapters need @solana/web3.js Transaction.
-                    // Dynamic import keeps it out of the initial bundle
-                    // if the user never reaches step 7.
-                    const { Transaction } = await import("@solana/web3.js");
-                    const tx = Transaction.from(
-                      Uint8Array.from(atob(txBase64), (c) => c.charCodeAt(0)),
-                    );
-                    const signed = (await adapter.signTransaction(tx)) as {
-                      serialize: () => Uint8Array;
-                    };
-                    const bytes = signed.serialize();
-                    let bin = "";
-                    bytes.forEach((b) => (bin += String.fromCharCode(b)));
-                    return btoa(bin);
-                  },
-                });
-              }}
+              onSign={kickOffSigning}
             />
           )}
           {step === 7 && <Step7Signing sign={sign} />}
           {step === 8 && (
             <Step8Outcome
               sign={sign}
+              onRetrySign={kickOffSigning}
+              onRefreshQuote={handleRefreshQuote}
+              onChangeToken={handleChangeToken}
               onStartOver={handleTryNewWallet}
               onClose={onClose}
             />
@@ -1035,10 +1063,16 @@ function Step7Signing({ sign }: { sign: ReturnType<typeof useSignFlow>["state"] 
  */
 function Step8Outcome({
   sign,
+  onRetrySign,
+  onRefreshQuote,
+  onChangeToken,
   onStartOver,
   onClose,
 }: {
   sign: ReturnType<typeof useSignFlow>["state"];
+  onRetrySign: () => void;
+  onRefreshQuote: () => void;
+  onChangeToken: () => void;
   onStartOver: () => void;
   onClose: () => void;
 }) {
@@ -1076,9 +1110,30 @@ function Step8Outcome({
     );
   }
 
-  // Failure — skeleton v1. Full 10-branch tailored copy ships next commit.
+  // Failure — full 10-code tree. Each code maps to tailored copy plus
+  // a primary recovery action and an optional secondary fallback.
   const reason: FailureReason = sign.failure ?? "unknown";
   const copy = FAILURE_COPY[reason] ?? FAILURE_COPY.unknown;
+
+  const runAction = (kind: RecoveryKind) => {
+    switch (kind) {
+      case "retry_sign":
+        onRetrySign();
+        return;
+      case "refresh_quote":
+        onRefreshQuote();
+        return;
+      case "change_token":
+        onChangeToken();
+        return;
+      case "start_over":
+        onStartOver();
+        return;
+      case "close":
+        onClose();
+        return;
+    }
+  };
 
   return (
     <>
@@ -1093,65 +1148,126 @@ function Step8Outcome({
         <div className="pm-outcome-sig">reason: {reason}</div>
       </div>
       <div className="pm-cta-bar" style={{ marginTop: 18, padding: 0, border: 0 }}>
-        <button type="button" className="pm-cta" onClick={onStartOver}>
-          &gt; TRY AGAIN
+        <button
+          type="button"
+          className="pm-cta"
+          onClick={() => runAction(copy.primary.kind)}
+        >
+          &gt; {copy.primary.label}
         </button>
       </div>
-      <button
-        type="button"
-        className="pm-cta-ghost"
-        style={{ marginTop: 10, padding: "8px 12px", fontSize: 11 }}
-        onClick={onClose}
-      >
-        CLOSE
-      </button>
+      {copy.secondary && (
+        <button
+          type="button"
+          className="pm-cta-ghost"
+          style={{ marginTop: 10, padding: "8px 12px", fontSize: 11 }}
+          onClick={() => runAction(copy.secondary!.kind)}
+        >
+          {copy.secondary.label}
+        </button>
+      )}
     </>
   );
 }
 
 /**
- * Skeleton failure copy table. Replaced in the next commit with the
- * full tailored per-code copy + distinct recovery CTAs per branch.
+ * Failure recovery action kinds, consumed by Step8Outcome's recovery
+ * dispatch. Each FailureReason maps to a primary (and optional
+ * secondary) Recovery below. Keep these aligned with the handlers
+ * wired in ProofModal — adding a new kind means wiring a new prop.
  */
-const FAILURE_COPY: Record<FailureReason, { title: string; sub: string }> = {
+type RecoveryKind =
+  | "retry_sign"        // same quote, re-run step 7 (build-tx is idempotent)
+  | "refresh_quote"     // back to step 4 with cleared stream → new quote
+  | "change_token"      // back to step 4, stream preserved unless they flip
+  | "start_over"        // wipe everything back to step 1
+  | "close";            // abandon, close modal
+
+interface Recovery {
+  kind: RecoveryKind;
+  label: string;
+}
+
+/**
+ * Full 10-code failure tree. Each code → tailored title/sub plus a
+ * primary recovery action and an optional secondary fallback.
+ *
+ * Recovery routing logic:
+ *   - retry_sign     → user-recoverable failures where the same quote
+ *                      is still valid (wallet declined, transient RPC,
+ *                      transient blockhash). Same quote_id is re-used;
+ *                      /build-tx is idempotent within quote TTL.
+ *   - refresh_quote  → quote itself is dead (expired, lock released,
+ *                      dev slot gone). Route back to step 4 to pick
+ *                      up a fresh eligibility + quote stream.
+ *   - change_token   → balance shortfall. User may want to swap to
+ *                      a token they hold more of.
+ *   - start_over     → adversarial / hard failures. Wipe state, force
+ *                      the user to reconnect their wallet fresh.
+ *   - close          → nothing to recover, abandon cleanly.
+ */
+const FAILURE_COPY: Record<
+  FailureReason,
+  { title: string; sub: string; primary: Recovery; secondary?: Recovery }
+> = {
   user_rejected: {
     title: "YOU CANCELLED",
-    sub: "You declined the signature in your wallet. No money moved. Try again when you're ready.",
+    sub: "You declined the signature in your wallet. No money moved. The quote is still live — try again when you're ready.",
+    primary: { kind: "retry_sign", label: "TRY SIGNING AGAIN" },
+    secondary: { kind: "close", label: "CLOSE" },
   },
   insufficient_balance: {
     title: "INSUFFICIENT BALANCE",
-    sub: "Your wallet doesn't have enough to cover the proof cost plus network fees.",
+    sub: "This wallet doesn't hold enough to cover the proof cost plus network fees. Pick a different token or top this one up.",
+    primary: { kind: "change_token", label: "PICK A DIFFERENT TOKEN" },
+    secondary: { kind: "close", label: "CLOSE" },
   },
   blockhash_expired: {
     title: "BLOCKHASH EXPIRED",
-    sub: "The transaction sat too long before broadcasting. Try again — a fresh tx will be built.",
+    sub: "The signed transaction sat too long before landing. A fresh tx will be built and signed — one more tap.",
+    primary: { kind: "retry_sign", label: "RETRY" },
+    secondary: { kind: "start_over", label: "START OVER" },
   },
   tx_reverted: {
     title: "TRANSACTION REVERTED",
-    sub: "The network rejected the transaction. This usually means a balance change between sign and broadcast.",
+    sub: "The network rejected the transaction. This usually means your balance changed between signing and broadcast. Start over with a fresh check.",
+    primary: { kind: "start_over", label: "START OVER" },
+    secondary: { kind: "close", label: "CLOSE" },
   },
   rpc_degraded: {
     title: "NETWORK DEGRADED",
-    sub: "Solana RPC is unhealthy right now. Wait a moment and try again.",
+    sub: "Solana RPC is unhealthy right now. Your quote is still locked — wait a moment, then retry.",
+    primary: { kind: "retry_sign", label: "RETRY" },
+    secondary: { kind: "close", label: "CLOSE" },
   },
   quote_expired_hard: {
     title: "QUOTE EXPIRED",
-    sub: "Your locked price timed out. Start over to get a fresh quote.",
+    sub: "Your locked price timed out before the tx landed. Grab a fresh quote — takes a few seconds.",
+    primary: { kind: "refresh_quote", label: "GET A FRESH QUOTE" },
+    secondary: { kind: "close", label: "CLOSE" },
   },
   lock_lost: {
     title: "SESSION DROPPED",
-    sub: "Your proof-session lock was released. Start over — the data is fine.",
+    sub: "Your proof-session lock was released — usually a long network stall. Nothing was charged. Grab a fresh quote to try again.",
+    primary: { kind: "refresh_quote", label: "GET A FRESH QUOTE" },
+    secondary: { kind: "close", label: "CLOSE" },
   },
   dev_slot_taken: {
     title: "DEV SLOT CLAIMED",
-    sub: "Another wallet claimed the DEV proof slot for this project while you were signing.",
+    sub: "Another wallet claimed the DEV proof slot for this project while you were signing. Only one dev proof per project. You can still file a COLLAB proof from the start.",
+    primary: { kind: "start_over", label: "TRY AS COLLABORATOR" },
+    secondary: { kind: "close", label: "CLOSE" },
   },
   signature_invalid: {
     title: "SIGNATURE REJECTED",
-    sub: "The signed transaction didn't match what we expected. Reconnect your wallet and try again.",
+    sub: "The signed transaction didn't match what the backend expected. This is usually a stale wallet adapter. Reconnect your wallet and start fresh.",
+    primary: { kind: "start_over", label: "RECONNECT WALLET" },
+    secondary: { kind: "close", label: "CLOSE" },
   },
   unknown: {
     title: "SOMETHING WENT WRONG",
-    sub: "An unexpected error occurred. Nothing has been charged. Try again or contact support.",
+    sub: "An unexpected error occurred. Nothing has been charged. You can retry the signing step or close out.",
+    primary: { kind: "retry_sign", label: "TRY AGAIN" },
+    secondary: { kind: "close", label: "CLOSE" },
   },
 };
