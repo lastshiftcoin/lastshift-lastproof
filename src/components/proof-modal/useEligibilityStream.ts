@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import type { EligibilityState, ProofPath } from "./types";
+import type { ProofToken } from "@/lib/proof-tokens";
 
 /**
  * SSE client for POST /api/proof/eligibility.
@@ -28,6 +29,14 @@ const INITIAL: EligibilityState = {
 
 export interface StartEligibilityArgs {
   path: ProofPath;
+  /**
+   * Token input — eligibility's balance row is token-specific, so the
+   * server needs to know which token the user plans to pay in before
+   * it can answer. Per spec + backend reply: this fires at step 2→3
+   * with the default (`LASTSHFT`) and re-fires at step 4→5 if the
+   * user picked a different token.
+   */
+  token: ProofToken;
   /** Only used by the mock today — real endpoint infers from session. */
   scenario?: "eligible" | "ineligible";
   pubkey?: string;
@@ -60,6 +69,7 @@ export function useEligibilityStream() {
         },
         body: JSON.stringify({
           path: args.path,
+          token: args.token.toLowerCase(),
           scenario: args.scenario ?? "eligible",
           pubkey: args.pubkey,
           project: args.project,

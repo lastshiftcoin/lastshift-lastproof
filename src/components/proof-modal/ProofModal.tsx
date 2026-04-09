@@ -5,9 +5,20 @@ import { useWallet, type Wallet } from "@solana/wallet-adapter-react";
 import "./proof-modal.css";
 import type { ProofPath, ProofStep } from "./types";
 import { useEligibilityStream } from "./useEligibilityStream";
-import { useConnected } from "@/lib/wallet/use-connected";
+import { useConnected, type ConnectedWallet } from "@/lib/wallet/use-connected";
 import { WALLET_META, WALLET_ORDER, shouldUseDeepLinks } from "@/lib/wallet/deep-link";
 import { classifyWallet, type KnownWallet } from "@/lib/wallet-policy";
+import {
+  PROOF_TOKENS,
+  PROOF_BASE_PRICE_USD,
+  LASTSHFT_DISCOUNT_LABEL,
+  BUY_LASTSHFT_URL,
+  getProofPriceUsd,
+  type ProofToken,
+} from "@/lib/proof-tokens";
+
+/** Comment char cap — matches backend spec §3 step 3 (NOT Twitter's 280). */
+const COMMENT_MAX = 140;
 
 /**
  * ProofModal — the "VERIFY THIS WORK" modal.
@@ -41,63 +52,142 @@ export interface ProofModalProps {
 export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofModalProps) {
   const [step, setStep] = useState<ProofStep>(1);
   const [path, setPath] = useState<ProofPath | null>(null);
+  const [comment, setComment] = useState<string>("");
+  const [token, setToken] = useState<ProofToken>("LASTSHFT");
+  /**
+   * Tracks which token the currently-cached eligibility stream was
+   * run for. When the user changes token on step 4 and advances to
+   * step 5, we compare `token` vs `streamedToken` and re-fire if they
+   * differ. Null when no stream has been kicked off yet.
+   */
+  const [streamedToken, setStreamedToken] = useState<ProofToken | null>(null);
   /** WIREFRAME-ONLY toggle — lets us flip mock scenario without a real wallet. */
   const [forceIneligible, setForceIneligible] = useState(false);
+  /**
+   * DEV-ONLY: mock wallet bypass. Lets us smoke-test steps 3+ in a
+   * headless browser where wallet extensions don't exist. Tree-shaken
+   * in production builds via `process.env.NODE_ENV !== "production"`.
+   */
+  const [mockConnected, setMockConnected] = useState<ConnectedWallet | null>(null);
 
   const { state: elig, start, reset } = useEligibilityStream();
-  const connected = useConnected();
+  const realConnected = useConnected();
+  const connected = realConnected ?? mockConnected;
 
   // Reset on close
   useEffect(() => {
     if (!open) {
       setStep(1);
       setPath(null);
+      setComment("");
+      setToken("LASTSHFT");
+      setStreamedToken(null);
       setForceIneligible(false);
+      setMockConnected(null);
       reset();
     }
   }, [open, reset]);
 
-  // Auto-advance step 2 → 5 once wallet is connected & allowlisted
+  /**
+   * Step 2 → 3 auto-advance + eligibility prefetch (Option A per spec §5).
+   * As soon as a wallet is connected we fire `/eligibility` with the
+   * default token (LASTSHFT) so the stream can run in the background
+   * while the user writes their comment on step 3. Saves ~3.5s of
+   * terminal-stream wall clock that the user would otherwise watch
+   * on step 5.
+   */
   useEffect(() => {
-    if (step === 2 && connected) {
-      setStep(5);
-    }
-  }, [step, connected]);
-
-  // When user advances to step 5, fire the stream with the connected
-  // pubkey (or the hardcoded dev-mode fallback when the wireframe
-  // toggle is flipped without a real wallet).
-  useEffect(() => {
-    if (step === 5 && path && elig.status === "idle") {
+    if (step === 2 && connected && path) {
+      setStep(3);
       start({
         path,
+        token,
         scenario: forceIneligible ? "ineligible" : "eligible",
-        pubkey:
-          connected?.pubkey ?? "F7k2QJm9Np8xWv3sH5cB4aRtY6eZu1oKdL2fVgXpN9xMp",
+        pubkey: connected.pubkey,
         project: ticker,
       });
+      setStreamedToken(token);
     }
-  }, [step, path, elig.status, start, forceIneligible, ticker, connected]);
+    // token/forceIneligible intentionally omitted — we only want this
+    // to fire on connect, not on every token flip.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, connected, path]);
 
   const handleContinue = useCallback(() => {
     if (step === 1 && path) {
-      setStep(connected ? 5 : 2);
-    } else if (step === 5 && elig.status === "done" && elig.eligible) {
+      setStep(2);
+      return;
+    }
+    if (step === 3) {
+      setStep(4);
+      return;
+    }
+    if (step === 4) {
+      // Re-fire eligibility if the user changed token away from the
+      // one the background stream was run against. Mock hits warm
+      // cache for everything except the balance row (~200ms).
+      if (path && connected && token !== streamedToken) {
+        start({
+          path,
+          token,
+          scenario: forceIneligible ? "ineligible" : "eligible",
+          pubkey: connected.pubkey,
+          project: ticker,
+        });
+        setStreamedToken(token);
+      }
+      setStep(5);
+      return;
+    }
+    if (step === 5 && elig.status === "done" && elig.eligible) {
       setStep(6);
     }
-  }, [step, path, elig.status, elig.eligible, connected]);
+  }, [
+    step,
+    path,
+    elig.status,
+    elig.eligible,
+    connected,
+    token,
+    streamedToken,
+    start,
+    forceIneligible,
+    ticker,
+  ]);
 
   const handleTryNewWallet = useCallback(() => {
     reset();
     setStep(1);
     setPath(null);
+    setComment("");
+    setToken("LASTSHFT");
+    setStreamedToken(null);
     setForceIneligible(false);
+    setMockConnected(null);
   }, [reset]);
+
+  const handleToggleIneligible = useCallback(() => {
+    // Re-fire the stream with the flipped scenario, reusing the
+    // currently-selected token + pubkey.
+    if (!path || !connected) return;
+    const next = !forceIneligible;
+    setForceIneligible(next);
+    start({
+      path,
+      token,
+      scenario: next ? "ineligible" : "eligible",
+      pubkey: connected.pubkey,
+      project: ticker,
+    });
+    setStreamedToken(token);
+  }, [path, connected, forceIneligible, token, start, ticker]);
 
   if (!open) return null;
 
+  const commentTooLong = comment.length > COMMENT_MAX;
   const continueDisabled =
     (step === 1 && !path) ||
+    (step === 3 && commentTooLong) ||
     (step === 5 && (elig.status !== "done" || !elig.eligible));
 
   // Step 2 drives its own CTA (per-wallet buttons). Hide the global
@@ -127,7 +217,34 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
             />
           )}
           {step === 2 && (
-            <Step2WalletPicker onBack={() => setStep(1)} />
+            <Step2WalletPicker
+              onBack={() => setStep(1)}
+              onDevMockConnect={
+                process.env.NODE_ENV !== "production"
+                  ? () =>
+                      setMockConnected({
+                        adapterName: "DevMock",
+                        pubkey: "F7k2QJm9Np8xWv3sH5cB4aRtY6eZu1oKdL2fVgXpN9xMp",
+                        canonical: "phantom",
+                        supportsTransferRequestUri: true,
+                      })
+                  : undefined
+              }
+            />
+          )}
+          {step === 3 && (
+            <Step3Comment
+              comment={comment}
+              onChange={setComment}
+              tooLong={commentTooLong}
+            />
+          )}
+          {step === 4 && (
+            <Step4TokenPicker
+              path={path!}
+              token={token}
+              onPick={setToken}
+            />
           )}
           {step === 5 && (
             <Step5Eligibility
@@ -135,10 +252,7 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
               elig={elig}
               onTryNewWallet={handleTryNewWallet}
               forceIneligible={forceIneligible}
-              onToggleIneligible={() => {
-                setForceIneligible((v) => !v);
-                reset();
-              }}
+              onToggleIneligible={handleToggleIneligible}
             />
           )}
           {step === 6 && (
@@ -234,7 +348,13 @@ function Step1PathSelect({
  * Picker shows a transient "connecting" row while the adapter
  * negotiates.
  */
-function Step2WalletPicker({ onBack }: { onBack: () => void }) {
+function Step2WalletPicker({
+  onBack,
+  onDevMockConnect,
+}: {
+  onBack: () => void;
+  onDevMockConnect?: () => void;
+}) {
   const { wallets, select, connect, connecting, wallet: selectedWallet } = useWallet();
   const [err, setErr] = useState<string | null>(null);
   const useDeepLinks = useMemo(() => shouldUseDeepLinks(), []);
@@ -341,6 +461,129 @@ function Step2WalletPicker({ onBack }: { onBack: () => void }) {
       >
         ← BACK
       </button>
+
+      {onDevMockConnect && (
+        <button
+          type="button"
+          className="pm-cta-ghost"
+          style={{
+            marginTop: 10,
+            padding: "8px 12px",
+            fontSize: 10,
+            letterSpacing: "0.1em",
+            width: "100%",
+          }}
+          onClick={onDevMockConnect}
+          data-testid="pm-dev-mock-connect"
+        >
+          DEV: SKIP WALLET (MOCK)
+        </button>
+      )}
+    </>
+  );
+}
+
+// ─── Step 3 ─────────────────────────────────────────────────────────────
+
+function Step3Comment({
+  comment,
+  onChange,
+  tooLong,
+}: {
+  comment: string;
+  onChange: (s: string) => void;
+  tooLong: boolean;
+}) {
+  const remaining = COMMENT_MAX - comment.length;
+  return (
+    <>
+      <div className="pm-eyebrow">LEAVE A NOTE</div>
+      <h2 className="pm-head">
+        Add a <span className="pm-accent">receipt.</span>
+      </h2>
+      <p className="pm-sub">
+        One line about what you shipped with them. Optional. Lives on the public profile next to the
+        proof. No URLs, no emoji spam.
+      </p>
+
+      <div className="pm-comment-wrap">
+        <textarea
+          className="pm-comment"
+          placeholder="e.g. Shipped the meme engine with them — 40k impressions in week 1."
+          value={comment}
+          onChange={(e) => onChange(e.target.value)}
+          maxLength={COMMENT_MAX + 20 /* soft cap, hard cap enforced by disabled CTA */}
+        />
+        <div className={`pm-comment-count${tooLong ? " pm-over" : ""}`}>
+          {remaining} / {COMMENT_MAX}
+        </div>
+      </div>
+      <div className="pm-comment-hint">
+        Optional — skip to continue. Eligibility is running in the background while you type.
+      </div>
+    </>
+  );
+}
+
+// ─── Step 4 ─────────────────────────────────────────────────────────────
+
+function Step4TokenPicker({
+  path,
+  token,
+  onPick,
+}: {
+  path: ProofPath;
+  token: ProofToken;
+  onPick: (t: ProofToken) => void;
+}) {
+  const basePrice = PROOF_BASE_PRICE_USD[path];
+  return (
+    <>
+      <div className="pm-eyebrow">PICK YOUR TOKEN</div>
+      <h2 className="pm-head">
+        Pay with <span className="pm-accent">$LASTSHFT</span> — 40% off.
+      </h2>
+      <p className="pm-sub">
+        Three options, all permissionless. Paying in $LASTSHFT unlocks the operator discount and
+        routes straight to the buy-back wallet.
+      </p>
+
+      <div className="pm-tokens">
+        {PROOF_TOKENS.map((t) => {
+          const price = getProofPriceUsd(path, t.key);
+          const selected = t.key === token;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              className={`pm-token${selected ? " pm-selected" : ""}`}
+              onClick={() => onPick(t.key)}
+            >
+              <span className="pm-token-label">
+                {t.label}
+                {t.hasDiscountBadge && (
+                  <span className="pm-token-badge">{LASTSHFT_DISCOUNT_LABEL}</span>
+                )}
+              </span>
+              <span className="pm-token-price">
+                {t.hasDiscountBadge && (
+                  <span className="pm-token-strike">${basePrice.toFixed(2)}</span>
+                )}
+                ${price.toFixed(2)}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <a
+        className="pm-buy-lastshft"
+        href={BUY_LASTSHFT_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        BUY $LASTSHFT ↗
+      </a>
     </>
   );
 }

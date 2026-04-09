@@ -134,6 +134,104 @@
   font-weight: 700;
 }
 
+/* Comment textarea (step 3) */
+.pm-comment-wrap {
+  position: relative;
+  margin-top: 6px;
+}
+.pm-comment {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  background: #050505;
+  border: 1px solid var(--pm-line);
+  border-radius: 6px;
+  padding: 14px 16px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--pm-fg);
+  box-sizing: border-box;
+}
+.pm-comment::placeholder { color: var(--pm-dim); }
+.pm-comment:focus { outline: none; border-color: var(--pm-accent); }
+.pm-comment-count {
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--pm-dim);
+  pointer-events: none;
+}
+.pm-comment-count.pm-over { color: var(--pm-red); }
+.pm-comment-hint {
+  margin-top: 6px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--pm-dim);
+}
+
+/* Token picker (step 4) */
+.pm-tokens {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+.pm-token {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: transparent;
+  border: 1px solid var(--pm-line);
+  border-radius: 6px;
+  color: var(--pm-fg);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  transition: border-color 120ms, background 120ms;
+}
+.pm-token:hover { border-color: var(--pm-accent); }
+.pm-token.pm-selected {
+  border-color: var(--pm-accent);
+  background: rgba(255, 107, 44, 0.08);
+}
+.pm-token-label { flex: 1; font-weight: 700; letter-spacing: 0.04em; }
+.pm-token-price { font-weight: 700; color: var(--pm-green); font-size: 13px; }
+.pm-token-strike {
+  color: var(--pm-dim);
+  text-decoration: line-through;
+  margin-right: 6px;
+  font-weight: 400;
+}
+.pm-token-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 3px 8px;
+  background: rgba(255, 215, 0, 0.12);
+  border: 1px solid var(--pm-gold);
+  color: var(--pm-gold);
+  border-radius: 999px;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+}
+.pm-buy-lastshft {
+  display: block;
+  margin-top: 12px;
+  text-align: center;
+  color: var(--pm-dim);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  padding: 8px;
+  border: 1px dashed var(--pm-line);
+  border-radius: 6px;
+}
+.pm-buy-lastshft:hover { color: var(--pm-gold); border-color: var(--pm-gold); }
+
 /* Terminal log (step 5) */
 .pm-term {
   background: #050505;
