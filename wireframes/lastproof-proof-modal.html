@@ -596,31 +596,32 @@
         <div class="term-log" id="termLogCollab">
           <div class="term-line" data-delay="0">&gt; lastproof verify --wallet F7k2…9xMp --project $LASTSHFT --role collaborator</div>
           <div class="term-line ok" data-delay="600">&nbsp;&nbsp;[✓] UNIQUENESS   wallet has not proofed this project</div>
-          <div class="term-line ok" data-delay="1200">&nbsp;&nbsp;[✓] BALANCE      1,250.00 $LASTSHFT · need 1.67 $LASTSHFT</div>
-          <div class="term-line ok" data-delay="1800">&nbsp;&nbsp;[✓] SLOT         collaborator slot open</div>
+          <div class="term-line ok" data-delay="1200">&nbsp;&nbsp;[✓] SLOT         collaborator slot open</div>
+          <div class="term-line ok" data-delay="1800">&nbsp;&nbsp;[✓] BALANCE      1,250.00 $LASTSHFT · need 1.67 $LASTSHFT</div>
           <div class="term-line done" data-delay="2400">&gt; all checks passed · ready to sign<span class="term-cursor">█</span></div>
         </div>
 
         <!-- OK: all checks passed (DEV variant) -->
         <div class="term-log" id="termLogDev" style="display:none">
           <div class="term-line" data-delay="0">&gt; lastproof verify --wallet F7k2…9xMp --project $LASTSHFT --role dev</div>
-          <div class="term-line ok" data-delay="500">&nbsp;&nbsp;[✓] UNIQUENESS   wallet has not proofed this project</div>
-          <div class="term-line ok" data-delay="1000">&nbsp;&nbsp;[✓] DEV SLOT     no dev proof yet on this project</div>
-          <div class="term-line ok" data-delay="1500">&nbsp;&nbsp;[✓] DEPLOYER     F7k2…9xMp matches mint authority</div>
-          <div class="term-line ok" data-delay="2000">&nbsp;&nbsp;[✓] FIRST-5      slot 3 of mint distribution</div>
-          <div class="term-line ok" data-delay="2500">&nbsp;&nbsp;[✓] BALANCE      1,250.00 $LASTSHFT · need 8.33 $LASTSHFT</div>
-          <div class="term-line done" data-delay="3100">&gt; dev wallet verified · ready to sign<span class="term-cursor">█</span></div>
+          <div class="term-line ok" data-delay="500">&nbsp;&nbsp;[✓] UNIQUENESS      wallet has not proofed this project</div>
+          <div class="term-line ok" data-delay="1000">&nbsp;&nbsp;[✓] SLOT            no dev proof yet on this project</div>
+          <div class="term-line ok" data-delay="1500">&nbsp;&nbsp;[✓] BALANCE         1,250.00 $LASTSHFT · need 8.33 $LASTSHFT</div>
+          <div class="term-line ok" data-delay="2100">&nbsp;&nbsp;[✓] MINT-AUTHORITY  F7k2…9xMp is current mint authority</div>
+          <div class="term-line ok" data-delay="2800">&nbsp;&nbsp;[✓] DEPLOYER        F7k2…9xMp signed mint tx · slot 3 of first-5 holders</div>
+          <div class="term-line done" data-delay="3400">&gt; dev wallet verified · ready to sign<span class="term-cursor">█</span></div>
         </div>
 
         <!-- INELIGIBLE: wallet failed a check -->
         <div class="term-log fail" id="termLogFail" style="display:none">
           <div class="term-line" data-delay="0">&gt; lastproof verify --wallet F7k2…9xMp --project $LASTSHFT --role <span id="failRole">dev</span></div>
-          <div class="term-line ok" data-delay="500">&nbsp;&nbsp;[✓] UNIQUENESS   wallet has not proofed this project</div>
-          <div class="term-line ok" data-delay="1000">&nbsp;&nbsp;[✓] DEV SLOT     no dev proof yet on this project</div>
-          <div class="term-line no" data-delay="1500">&nbsp;&nbsp;[✗] DEPLOYER     does not match mint authority</div>
-          <div class="term-line no" data-delay="2000">&nbsp;&nbsp;[✗] FIRST-5      wallet not in first-5 holder set</div>
-          <div class="term-line no" data-delay="2500">&nbsp;&nbsp;[✗] FOUNDER      not a multisig signer</div>
-          <div class="term-line err" data-delay="3100">&gt; ERROR: wallet not eligible for dev proof on this project</div>
+          <div class="term-line ok" data-delay="500">&nbsp;&nbsp;[✓] UNIQUENESS      wallet has not proofed this project</div>
+          <div class="term-line ok" data-delay="1000">&nbsp;&nbsp;[✓] SLOT            no dev proof yet on this project</div>
+          <div class="term-line ok" data-delay="1500">&nbsp;&nbsp;[✓] BALANCE         1,250.00 $LASTSHFT · need 8.33 $LASTSHFT</div>
+          <div class="term-line no" data-delay="2100">&nbsp;&nbsp;[✗] MINT-AUTHORITY  not the current mint authority</div>
+          <div class="term-line no" data-delay="2800">&nbsp;&nbsp;[✗] DEPLOYER        did not sign mint tx · not in first-5 holders</div>
+          <div class="term-line no" data-delay="3400">&nbsp;&nbsp;[✗] FOUNDER         not a multisig signer</div>
+          <div class="term-line err" data-delay="4000">&gt; ERROR: wallet not eligible for dev proof on this project</div>
         </div>
 
         <!-- INELIGIBLE EXPLAINER + AUTO-DISCONNECT -->
@@ -670,6 +671,15 @@
           <div class="review-row"><span class="review-key">RATE</span><span class="review-val"><span id="liveRate">1 $LASTSHFT ≈ $0.00012</span> · <span class="live-age" id="liveAge">UPDATED 0s AGO</span></span></div>
         </div>
         <div class="field-help" style="text-align:center;margin-top:10px">PRICE REFRESHES EVERY 5S FROM JUPITER AGGREGATOR · LOCKED AT SIGNATURE</div>
+
+        <!-- QUOTE EXPIRED SUB-STATE (poll trips at T-30s) -->
+        <div class="quote-expired" id="quoteExpired" style="display:none;margin-top:14px;padding:14px;border:1px dashed var(--red);border-radius:6px;text-align:center">
+          <div style="color:var(--red);font-weight:700;letter-spacing:.08em;margin-bottom:10px">QUOTE EXPIRED — REFRESH PRICE</div>
+          <button class="cta" id="btnRefreshQuote">&gt; REFRESH PRICE</button>
+        </div>
+
+        <!-- WIREFRAME TOGGLE -->
+        <div class="outcome-toggle" style="margin-top:14px"><button type="button" id="quoteExpiredToggle">⟳ TOGGLE QUOTE EXPIRED (WIREFRAME)</button></div>
       </div>
 
       <!-- ═══ STEP 7 — WAITING FOR WALLET SIGNATURE ═══ -->
@@ -1035,6 +1045,20 @@
       step=2;
       showPicker();
       render();
+    });
+  }
+  // Step 6 — quote expired toggle (wireframe only)
+  var quoteExpiredToggle=document.getElementById('quoteExpiredToggle');
+  var quoteExpired=document.getElementById('quoteExpired');
+  var btnRefreshQuote=document.getElementById('btnRefreshQuote');
+  if(quoteExpiredToggle&&quoteExpired){
+    quoteExpiredToggle.addEventListener('click',function(){
+      quoteExpired.style.display=(quoteExpired.style.display==='none')?'block':'none';
+    });
+  }
+  if(btnRefreshQuote){
+    btnRefreshQuote.addEventListener('click',function(){
+      quoteExpired.style.display='none';
     });
   }
   // Outcome toggle (wireframe only) + failure actions

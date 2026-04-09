@@ -165,26 +165,13 @@ Logos sourced via Google favicon API in the wireframe; production will use the `
 - Fetch USD prices for the same three via Jupiter Price API (or whatever we're standardizing on).
 - Return a single payload so we're not making 3 round trips.
 
-**Proposed endpoint:**
-```
-GET /api/proof/wallet-context?pubkey={base58}&project={ticker}
-→ {
-    balances: {
-      lastshft: { raw: "1250000000", ui: 1250.00, usd: 0.15 },
-      sol:      { raw: "428000000", ui: 0.428,   usd: 78.12 },
-      usdt:     { raw: "42300000",  ui: 42.30,   usd: 42.30 }
-    },
-    prices: {
-      lastshft_usd: 0.00012,
-      sol_usd:      182.50,
-      usdt_usd:     1.00
-    },
-    cached_until: "2026-04-09T18:22:05Z"
-  }
-```
+**Endpoint (folded into `/eligibility` per backend contract):**
+`/wallet-context` is **gone**. Balances + prices are returned as part of the `/api/proof/eligibility` response so the balance shown on step 4 is the exact same balance enforced on step 5. This kills the race window between "balance displayed" and "balance checked."
+
+FE call timing: fire `/eligibility` on the **step 2→3 transition** (right after wallet connect, while the user is typing a comment). By the time they hit continue on step 4, the response is already cached. If the user lands on step 5 before the call resolves, the step 5 terminal log animates live off the SSE stream.
 
 **Backend questions:**
-6. Do we already have a wallet-context endpoint, or should I design this one? Ideally it's cached 30s per `{pubkey, project}` pair to survive tab switches.
+6. ~~wallet-context endpoint~~ — **RESOLVED**: folded into `/eligibility`.
 7. For the `BUY $LASTSHFT` button — is `https://lastshiftcoin.com/buy` the canonical buy page, or should it be a Jupiter swap link? User said `lastshiftcoin.com/buy`.
 8. What happens if `BAL < required` when they try to proceed? Right now the wireframe doesn't block — backend needs to block at quote time (step 5/6) and surface a specific error. Is "insufficient balance" a pre-sign check or does it fall through to a signature failure?
 
@@ -200,30 +187,31 @@ GET /api/proof/wallet-context?pubkey={base58}&project={ticker}
 ```
 > lastproof verify --wallet F7k2…9xMp --project $LASTSHFT --role collaborator
   [✓] UNIQUENESS   wallet has not proofed this project
-  [✓] BALANCE      1,250.00 $LASTSHFT · need 1.67 $LASTSHFT
   [✓] SLOT         collaborator slot open
+  [✓] BALANCE      1,250.00 $LASTSHFT · need 1.67 $LASTSHFT
 > all checks passed · ready to sign█
 ```
 
 #### 5b. DEV · eligible
 ```
 > lastproof verify --wallet F7k2…9xMp --project $LASTSHFT --role dev
-  [✓] UNIQUENESS   wallet has not proofed this project
-  [✓] DEV SLOT     no dev proof yet on this project
-  [✓] DEPLOYER     F7k2…9xMp matches mint authority
-  [✓] FIRST-5      slot 3 of mint distribution
-  [✓] BALANCE      1,250.00 $LASTSHFT · need 8.33 $LASTSHFT
+  [✓] UNIQUENESS      wallet has not proofed this project
+  [✓] SLOT            no dev proof yet on this project
+  [✓] BALANCE         1,250.00 $LASTSHFT · need 8.33 $LASTSHFT
+  [✓] MINT-AUTHORITY  F7k2…9xMp is current mint authority
+  [✓] DEPLOYER        F7k2…9xMp signed mint tx · slot 3 of first-5 holders
 > dev wallet verified · ready to sign█
 ```
 
 #### 5c. DEV · INELIGIBLE (the critical trust gate)
 ```
 > lastproof verify --wallet F7k2…9xMp --project $LASTSHFT --role dev
-  [✓] UNIQUENESS   wallet has not proofed this project
-  [✓] DEV SLOT     no dev proof yet on this project
-  [✗] DEPLOYER     does not match mint authority
-  [✗] FIRST-5      wallet not in first-5 holder set
-  [✗] FOUNDER      not a multisig signer
+  [✓] UNIQUENESS      wallet has not proofed this project
+  [✓] SLOT            no dev proof yet on this project
+  [✓] BALANCE         1,250.00 $LASTSHFT · need 8.33 $LASTSHFT
+  [✗] MINT-AUTHORITY  not the current mint authority
+  [✗] DEPLOYER        did not sign mint tx · not in first-5 holders
+  [✗] FOUNDER         not a multisig signer
 > ERROR: wallet not eligible for dev proof on this project
 ```
 
@@ -358,7 +346,7 @@ GET /api/proof/quote/{quote_id}/refresh
 
 **Backend questions:**
 15. Does refreshing a quote generate a new `quote_id` or extend the existing one? FE prefers the latter so the signing payload doesn't drift between the review screen and the sign screen.
-16. If the quote expires on step 6, what do we show? Wireframe currently just re-fetches silently. Should expiration force a re-eligibility pass (in case balance dropped below needed during the sit)?
+16. **Quote expired sub-state (RESOLVED).** FE polls at T-30s before `expires_at`. If the quote ages out while user is on step 6, the review card is replaced by an inline red dashed banner `QUOTE EXPIRED — REFRESH PRICE` with a single `> REFRESH PRICE` button that re-hits `/refresh`. No bounce back to step 1. Open sub-question: should `/refresh` also re-run eligibility if it's been >60s since the initial check, in case balance dropped below needed during the sit?
 
 ---
 
@@ -443,7 +431,7 @@ body: { quote_id, signed_tx_base64 }
     - insufficient balance at signing time (race with eligibility)
     - blockhash expired (need rebuild)
     - tx reverted (on-chain error)
-    - RPC/network error (transient, retry-safe)
+    - RPC/network error (transient, retry-safe) → `rpc_degraded` → copy: **"network busy — retry in a few seconds"**
     - quote expired after sign but before broadcast
     Each needs a specific user-facing copy. I'd like you to confirm which of these you can distinguish and propose error codes.
 22. **Retry from failure.** Clicking `RETRY PROOF` should either re-use the existing quote if still valid, or silently re-issue eligibility + new quote. Which?
@@ -513,6 +501,13 @@ Already specified in §5c above. Key point: **the disconnect is automatic and fo
                           └─▶ DISC
 ```
 
+**FE call timing (locked with backend):**
+- `/api/proof/eligibility` fires on the **step 2→3 transition** (right after wallet connect, while the user types a comment). Response is SSE-streamed so step 5's terminal log can animate off live events.
+- If the ineligible response arrives while the user is still on step 3 or 4, FE short-circuits forward to step 5 in its failure state on continue (no wasted comment/token selection).
+- `/eligibility` is the single source of wallet balances + prices — `/wallet-context` is folded in. No race window between displayed and enforced balance.
+
+**Scaffold context:** public profile route shipped as Step A in commit range `73a9a29..8ff5008` on `main`. The `VERIFY THIS WORK` button in `src/components/profile/WorkItemCard.tsx` is a dead stub marked with `// TODO(proof-modal)` — grep trail for wire-up.
+
 ---
 
 ## 6. Consolidated backend questions (master list)
@@ -527,7 +522,7 @@ Already specified in §5c above. Key point: **the disconnect is automatic and fo
 5. Server-side moderation/profanity layer?
 
 **Wallet context + pricing**
-6. Existing wallet-context endpoint, or new one?
+6. ~~Existing wallet-context endpoint, or new one?~~ RESOLVED — folded into `/eligibility`.
 7. Buy $LASTSHFT URL canonical (`lastshiftcoin.com/buy`)?
 8. Insufficient-balance handling — pre-sign or post-sign?
 
