@@ -28,6 +28,49 @@ export const dynamic = "force-dynamic";
 
 type Path = "collab" | "dev";
 type Scenario = "eligible" | "ineligible";
+type Token = "lastshft" | "sol" | "usdt";
+
+/**
+ * Mock balances per token. Realistic enough for the FE smoke test to
+ * visibly differ across step 4 → step 5 re-fires.
+ */
+const MOCK_BALANCES: Record<Token, { ui: string; symbol: string }> = {
+  lastshft: { ui: "1,250.00", symbol: "$LASTSHFT" },
+  sol: { ui: "0.428", symbol: "SOL" },
+  usdt: { ui: "42.30", symbol: "USDT" },
+};
+
+/**
+ * Path-aware USD price → token amount. Mirrors PROOF_PRICES_USD in
+ * src/lib/proof-tokens.ts. Kept inline here so the mock has zero
+ * runtime dependencies on app code.
+ */
+const MOCK_NEED: Record<Path, Record<Token, { ui: string; symbol: string }>> = {
+  collab: {
+    lastshft: { ui: "1.67", symbol: "$LASTSHFT" }, // $0.60 / 0.00036 ≈ 1.67
+    sol: { ui: "0.0064", symbol: "SOL" }, // $1.00 @ ~$156/SOL
+    usdt: { ui: "1.00", symbol: "USDT" },
+  },
+  dev: {
+    lastshft: { ui: "8.33", symbol: "$LASTSHFT" }, // $3.00 / 0.00036 ≈ 8.33
+    sol: { ui: "0.032", symbol: "SOL" }, // $5.00 @ ~$156/SOL
+    usdt: { ui: "5.00", symbol: "USDT" },
+  },
+};
+
+/** Raw amount (smallest unit as string) for the done event's quote row. */
+const MOCK_QUOTE_RAW: Record<Path, Record<Token, { amount_ui: number; amount_raw: string; usd: number }>> = {
+  collab: {
+    lastshft: { amount_ui: 1.67, amount_raw: "1670000", usd: 0.6 },
+    sol: { amount_ui: 0.0064, amount_raw: "6400000", usd: 1.0 },
+    usdt: { amount_ui: 1.0, amount_raw: "1000000", usd: 1.0 },
+  },
+  dev: {
+    lastshft: { amount_ui: 8.33, amount_raw: "8330000", usd: 3.0 },
+    sol: { amount_ui: 0.032, amount_raw: "32000000", usd: 5.0 },
+    usdt: { amount_ui: 5.0, amount_raw: "5000000", usd: 5.0 },
+  },
+};
 
 interface CheckEvent {
   id: string;
@@ -41,7 +84,9 @@ interface CheckEvent {
 const MOCK_PUBKEY = "F7k2QJm9Np8xWv3sH5cB4aRtY6eZu1oKdL2fVgXpN9xMp";
 const MOCK_MINT = "5zHrdYRtUzjkQwnq6HkS6Vq7KCeEQPysmaUmwKqfFLqB"; // LASTSHFT
 
-function buildChecks(path: Path, scenario: Scenario): CheckEvent[] {
+function buildChecks(path: Path, scenario: Scenario, token: Token): CheckEvent[] {
+  const bal = MOCK_BALANCES[token];
+  const need = MOCK_NEED[path][token];
   const base: CheckEvent[] = [
     {
       id: "uniqueness",
@@ -64,7 +109,7 @@ function buildChecks(path: Path, scenario: Scenario): CheckEvent[] {
       id: "balance",
       label: "BALANCE",
       ok: true,
-      detail: `1,250.00 $LASTSHFT · need ${path === "dev" ? "8.33" : "1.67"} $LASTSHFT`,
+      detail: `${bal.ui} ${bal.symbol} · need ${need.ui} ${need.symbol}`,
       delayMs: 300,
     },
   ];
@@ -109,8 +154,8 @@ function sse(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-async function buildStream(path: Path, scenario: Scenario): Promise<ReadableStream<Uint8Array>> {
-  const checks = buildChecks(path, scenario);
+async function buildStream(path: Path, scenario: Scenario, token: Token): Promise<ReadableStream<Uint8Array>> {
+  const checks = buildChecks(path, scenario, token);
   const encoder = new TextEncoder();
   const quoteId = `qt_mock_${Date.now().toString(36)}`;
   const expiresAt = new Date(Date.now() + 90_000).toISOString();
@@ -146,15 +191,16 @@ async function buildStream(path: Path, scenario: Scenario): Promise<ReadableStre
       // Eligible if every real (non-null) check is ok=true
       const eligible = checks.every((c) => c.ok !== false);
       if (eligible) {
+        const q = MOCK_QUOTE_RAW[path][token];
         write(
           sse("done", {
             eligible: true,
             quote: {
-              token: "lastshft",
-              amount_ui: path === "dev" ? 8.33 : 1.67,
-              amount_raw: path === "dev" ? "8330000" : "1670000",
-              usd: path === "dev" ? 3.0 : 0.6,
-              usd_rate: 0.00012,
+              token,
+              amount_ui: q.amount_ui,
+              amount_raw: q.amount_raw,
+              usd: q.usd,
+              usd_rate: token === "lastshft" ? 0.00012 : token === "sol" ? 156.25 : 1.0,
               quote_id: quoteId,
               expires_at: expiresAt,
             },
@@ -179,22 +225,29 @@ async function buildStream(path: Path, scenario: Scenario): Promise<ReadableStre
 function parseInputs(req: NextRequest, body: Record<string, unknown>): {
   path: Path;
   scenario: Scenario;
+  token: Token;
 } {
   const url = new URL(req.url);
   const path = (body.path ?? url.searchParams.get("path") ?? "dev") as Path;
   const scenario = (body.scenario ??
     url.searchParams.get("scenario") ??
     "eligible") as Scenario;
+  const tokenRaw = String(
+    body.token ?? url.searchParams.get("token") ?? "lastshft",
+  ).toLowerCase();
+  const token: Token =
+    tokenRaw === "sol" ? "sol" : tokenRaw === "usdt" ? "usdt" : "lastshft";
   return {
     path: path === "collab" ? "collab" : "dev",
     scenario: scenario === "ineligible" ? "ineligible" : "eligible",
+    token,
   };
 }
 
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-  const { path, scenario } = parseInputs(req, body);
-  const stream = await buildStream(path, scenario);
+  const { path, scenario, token } = parseInputs(req, body);
+  const stream = await buildStream(path, scenario, token);
 
   return new Response(stream, {
     headers: {
@@ -208,8 +261,8 @@ export async function POST(req: NextRequest) {
 
 // GET is a convenience for manual curl/wireframe probing — same params via query string.
 export async function GET(req: NextRequest) {
-  const { path, scenario } = parseInputs(req, {});
-  const stream = await buildStream(path, scenario);
+  const { path, scenario, token } = parseInputs(req, {});
+  const stream = await buildStream(path, scenario, token);
 
   return new Response(stream, {
     headers: {
