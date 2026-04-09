@@ -6,7 +6,8 @@ import "./proof-modal.css";
 import type { ProofPath, ProofStep } from "./types";
 import { useEligibilityStream } from "./useEligibilityStream";
 import { useQuoteRefresh } from "./useQuoteRefresh";
-import type { ProofQuote } from "./types";
+import { useSignFlow, type SignPhase } from "./useSignFlow";
+import type { ProofQuote, FailureReason } from "./types";
 import { useConnected, type ConnectedWallet } from "@/lib/wallet/use-connected";
 import { WALLET_META, WALLET_ORDER, shouldUseDeepLinks } from "@/lib/wallet/deep-link";
 import { classifyWallet, type KnownWallet } from "@/lib/wallet-policy";
@@ -73,12 +74,47 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
   const [mockConnected, setMockConnected] = useState<ConnectedWallet | null>(null);
 
   const { state: elig, start, reset } = useEligibilityStream();
+  const { state: sign, start: startSign, reset: resetSign } = useSignFlow();
   const realConnected = useConnected();
+  const { wallet: walletAdapter } = useWallet();
   const connected = realConnected ?? mockConnected;
+
+  /**
+   * Abandon-on-close plumbing. Per backend reply §6:
+   *   - modal close during steps 1–4 → no /abandon call (no quote yet)
+   *   - modal close during steps 5–7 pre-broadcast → fire /abandon
+   *   - modal close during step 7 post-broadcast → skip (quote consumed)
+   *   - modal close during step 8 → skip (lock already released)
+   * /abandon is idempotent; backend returns {released:false} for
+   * already-consumed quotes, which is a no-op we ignore.
+   */
+  const fireAbandon = useCallback((quoteId: string) => {
+    try {
+      fetch("/api/mock/proof/abandon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quote_id: quoteId }),
+        keepalive: true,
+      }).catch(() => {
+        /* fire-and-forget */
+      });
+    } catch {
+      /* noop */
+    }
+  }, []);
 
   // Reset on close
   useEffect(() => {
     if (!open) {
+      // Only call /abandon if we have a quote AND haven't broadcast yet.
+      const hasQuote = elig.quote?.quote_id;
+      const preBroadcast =
+        sign.phase === "idle" ||
+        sign.phase === "building" ||
+        sign.phase === "awaiting_signature";
+      if (hasQuote && preBroadcast && (step === 5 || step === 6 || step === 7)) {
+        fireAbandon(elig.quote!.quote_id);
+      }
       setStep(1);
       setPath(null);
       setComment("");
@@ -87,8 +123,19 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
       setForceIneligible(false);
       setMockConnected(null);
       reset();
+      resetSign();
     }
-  }, [open, reset]);
+    // Intentionally only re-run on `open` changes — inner state snapshot
+    // reads are fine via closure capture at close time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  // Step 7 → 8 auto-advance on confirmed OR failed terminal phase.
+  useEffect(() => {
+    if (step === 7 && (sign.phase === "confirmed" || sign.phase === "failed")) {
+      setStep(8);
+    }
+  }, [step, sign.phase]);
 
   /**
    * Step 2 → 3 auto-advance + eligibility prefetch (Option A per spec §5).
@@ -192,11 +239,12 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
     (step === 3 && commentTooLong) ||
     (step === 5 && (elig.status !== "done" || !elig.eligible));
 
-  // Step 2 drives its own CTA (per-wallet buttons). Hide the global
-  // continue bar there entirely.
+  // Steps 2/6/7/8 drive their own CTAs. Hide the global continue bar.
   const hideCta =
     step === 2 ||
     step === 6 ||
+    step === 7 ||
+    step === 8 ||
     (step === 5 && elig.status === "done" && !elig.eligible);
 
   return (
@@ -266,7 +314,53 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
               comment={comment}
               pubkey={connected?.pubkey ?? ""}
               onStartOver={handleTryNewWallet}
-              onSign={() => setStep(7)}
+              onSign={() => {
+                if (!elig.quote || !path || !connected) return;
+                setStep(7);
+                startSign({
+                  quoteId: elig.quote.quote_id,
+                  pubkey: connected.pubkey,
+                  handle,
+                  ticker,
+                  path,
+                  signTransactionBase64: async (txBase64) => {
+                    // Real wallet path: deserialize, sign, re-serialize.
+                    // Dev-mock path (no adapter.signTransaction): return
+                    // the input unchanged — broadcast mock accepts any
+                    // base64 string.
+                    const adapter = walletAdapter?.adapter as
+                      | {
+                          signTransaction?: (tx: unknown) => Promise<unknown>;
+                        }
+                      | undefined;
+                    if (!adapter?.signTransaction || mockConnected) {
+                      return txBase64;
+                    }
+                    // Real adapters need @solana/web3.js Transaction.
+                    // Dynamic import keeps it out of the initial bundle
+                    // if the user never reaches step 7.
+                    const { Transaction } = await import("@solana/web3.js");
+                    const tx = Transaction.from(
+                      Uint8Array.from(atob(txBase64), (c) => c.charCodeAt(0)),
+                    );
+                    const signed = (await adapter.signTransaction(tx)) as {
+                      serialize: () => Uint8Array;
+                    };
+                    const bytes = signed.serialize();
+                    let bin = "";
+                    bytes.forEach((b) => (bin += String.fromCharCode(b)));
+                    return btoa(bin);
+                  },
+                });
+              }}
+            />
+          )}
+          {step === 7 && <Step7Signing sign={sign} />}
+          {step === 8 && (
+            <Step8Outcome
+              sign={sign}
+              onStartOver={handleTryNewWallet}
+              onClose={onClose}
             />
           )}
         </div>
@@ -867,3 +961,197 @@ function Step6Review({
     </>
   );
 }
+
+// ─── Step 7 ─────────────────────────────────────────────────────────────
+
+/**
+ * Signing ladder. Rungs map to SignPhase:
+ *   building             → BUILDING TRANSACTION
+ *   awaiting_signature   → AWAITING WALLET SIGNATURE
+ *   broadcasting         → BROADCASTING
+ *   confirming           → CONFIRMING
+ *   confirmed            → (auto-advances to step 8)
+ *   failed               → (auto-advances to step 8 failure card)
+ */
+function Step7Signing({ sign }: { sign: ReturnType<typeof useSignFlow>["state"] }) {
+  const rungs: { key: SignPhase; label: string }[] = [
+    { key: "building", label: "BUILDING TRANSACTION" },
+    { key: "awaiting_signature", label: "AWAITING WALLET SIGNATURE" },
+    { key: "broadcasting", label: "BROADCASTING" },
+    { key: "confirming", label: "CONFIRMING ON-CHAIN" },
+  ];
+  const order: SignPhase[] = [
+    "idle",
+    "building",
+    "awaiting_signature",
+    "broadcasting",
+    "confirming",
+    "confirmed",
+    "failed",
+  ];
+  const idx = order.indexOf(sign.phase);
+
+  return (
+    <>
+      <div className="pm-eyebrow">SIGNING ON-CHAIN</div>
+      <h2 className="pm-head">
+        Hold <span className="pm-accent">steady.</span>
+      </h2>
+      <p className="pm-sub">
+        Don&apos;t close this window. Your wallet will prompt you to approve. After you sign, we
+        broadcast and wait for confirmation.
+      </p>
+
+      <div className="pm-ladder">
+        {rungs.map((r) => {
+          const rungIdx = order.indexOf(r.key);
+          const active = r.key === sign.phase;
+          const done = rungIdx < idx && sign.phase !== "idle";
+          const mark = done ? "✓" : active ? "◆" : " ";
+          const cls = active ? "pm-rung pm-active" : done ? "pm-rung pm-done" : "pm-rung";
+          return (
+            <div key={r.key} className={cls}>
+              <span className="pm-rung-mark">{mark}</span>
+              <span className="pm-rung-label">{r.label}</span>
+              {active && sign.phase === "confirming" && (
+                <span className="pm-rung-meta">{Math.floor(sign.elapsedMs / 100) / 10}s</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+// ─── Step 8 ─────────────────────────────────────────────────────────────
+
+/**
+ * Outcome card. Renders either the success card (signature + Solscan
+ * link) or a generic failure card keyed on `sign.failure`. The full
+ * 10-code failure branch tree with tailored copy per code lands in a
+ * follow-up commit — this commit ships the skeleton so end-to-end
+ * step 7 → 8 is functional.
+ */
+function Step8Outcome({
+  sign,
+  onStartOver,
+  onClose,
+}: {
+  sign: ReturnType<typeof useSignFlow>["state"];
+  onStartOver: () => void;
+  onClose: () => void;
+}) {
+  if (sign.phase === "confirmed") {
+    return (
+      <>
+        <div className="pm-eyebrow">PROOF MINTED</div>
+        <h2 className="pm-head">
+          It&apos;s <span className="pm-accent">on-chain.</span>
+        </h2>
+        <div className="pm-outcome pm-success">
+          <div className="pm-outcome-mark">✓</div>
+          <div className="pm-outcome-title">CONFIRMED</div>
+          <div className="pm-outcome-sub">
+            Your proof is permanent. It&apos;s on the profile now and the operator gets a
+            notification.
+          </div>
+          {sign.signature && (
+            <div className="pm-outcome-sig">
+              {sign.signature.slice(0, 14)}…{sign.signature.slice(-14)}
+            </div>
+          )}
+          {sign.solscanUrl && (
+            <a href={sign.solscanUrl} target="_blank" rel="noopener noreferrer">
+              VIEW ON SOLSCAN ↗
+            </a>
+          )}
+        </div>
+        <div className="pm-cta-bar" style={{ marginTop: 18, padding: 0, border: 0 }}>
+          <button type="button" className="pm-cta" onClick={onClose}>
+            &gt; DONE
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  // Failure — skeleton v1. Full 10-branch tailored copy ships next commit.
+  const reason: FailureReason = sign.failure ?? "unknown";
+  const copy = FAILURE_COPY[reason] ?? FAILURE_COPY.unknown;
+
+  return (
+    <>
+      <div className="pm-eyebrow">PROOF NOT MINTED</div>
+      <h2 className="pm-head">
+        Something <span className="pm-accent">didn&apos;t land.</span>
+      </h2>
+      <div className="pm-outcome pm-fail">
+        <div className="pm-outcome-mark">!</div>
+        <div className="pm-outcome-title">{copy.title}</div>
+        <div className="pm-outcome-sub">{copy.sub}</div>
+        <div className="pm-outcome-sig">reason: {reason}</div>
+      </div>
+      <div className="pm-cta-bar" style={{ marginTop: 18, padding: 0, border: 0 }}>
+        <button type="button" className="pm-cta" onClick={onStartOver}>
+          &gt; TRY AGAIN
+        </button>
+      </div>
+      <button
+        type="button"
+        className="pm-cta-ghost"
+        style={{ marginTop: 10, padding: "8px 12px", fontSize: 11 }}
+        onClick={onClose}
+      >
+        CLOSE
+      </button>
+    </>
+  );
+}
+
+/**
+ * Skeleton failure copy table. Replaced in the next commit with the
+ * full tailored per-code copy + distinct recovery CTAs per branch.
+ */
+const FAILURE_COPY: Record<FailureReason, { title: string; sub: string }> = {
+  user_rejected: {
+    title: "YOU CANCELLED",
+    sub: "You declined the signature in your wallet. No money moved. Try again when you're ready.",
+  },
+  insufficient_balance: {
+    title: "INSUFFICIENT BALANCE",
+    sub: "Your wallet doesn't have enough to cover the proof cost plus network fees.",
+  },
+  blockhash_expired: {
+    title: "BLOCKHASH EXPIRED",
+    sub: "The transaction sat too long before broadcasting. Try again — a fresh tx will be built.",
+  },
+  tx_reverted: {
+    title: "TRANSACTION REVERTED",
+    sub: "The network rejected the transaction. This usually means a balance change between sign and broadcast.",
+  },
+  rpc_degraded: {
+    title: "NETWORK DEGRADED",
+    sub: "Solana RPC is unhealthy right now. Wait a moment and try again.",
+  },
+  quote_expired_hard: {
+    title: "QUOTE EXPIRED",
+    sub: "Your locked price timed out. Start over to get a fresh quote.",
+  },
+  lock_lost: {
+    title: "SESSION DROPPED",
+    sub: "Your proof-session lock was released. Start over — the data is fine.",
+  },
+  dev_slot_taken: {
+    title: "DEV SLOT CLAIMED",
+    sub: "Another wallet claimed the DEV proof slot for this project while you were signing.",
+  },
+  signature_invalid: {
+    title: "SIGNATURE REJECTED",
+    sub: "The signed transaction didn't match what we expected. Reconnect your wallet and try again.",
+  },
+  unknown: {
+    title: "SOMETHING WENT WRONG",
+    sub: "An unexpected error occurred. Nothing has been charged. Try again or contact support.",
+  },
+};

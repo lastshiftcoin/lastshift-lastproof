@@ -429,6 +429,132 @@
   margin-top: 10px;
 }
 
+/* Sign ladder (step 7) */
+.pm-ladder {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 18px 20px;
+  background: #050505;
+  border: 1px solid var(--pm-line);
+  border-radius: 6px;
+}
+.pm-rung {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--pm-dim);
+}
+.pm-rung-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--pm-line);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 800;
+}
+.pm-rung-label { flex: 1; }
+.pm-rung-meta { color: var(--pm-dim); font-size: 10px; letter-spacing: 0.1em; }
+.pm-rung.pm-active {
+  color: var(--pm-fg);
+  border-color: var(--pm-accent);
+  background: rgba(255, 107, 44, 0.06);
+}
+.pm-rung.pm-active .pm-rung-mark {
+  border-color: var(--pm-accent);
+  color: var(--pm-accent);
+  animation: pm-pulse 1.2s ease-in-out infinite;
+}
+.pm-rung.pm-done {
+  color: var(--pm-fg);
+}
+.pm-rung.pm-done .pm-rung-mark {
+  border-color: var(--pm-green);
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--pm-green);
+}
+@keyframes pm-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255, 107, 44, 0.5); }
+  50% { opacity: 0.5; box-shadow: 0 0 0 6px rgba(255, 107, 44, 0); }
+}
+
+/* Step 8 outcome cards */
+.pm-outcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 32px 20px;
+  border-radius: 6px;
+  text-align: center;
+  margin-top: 6px;
+}
+.pm-outcome.pm-success {
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+.pm-outcome.pm-fail {
+  background: rgba(255, 77, 77, 0.06);
+  border: 1px solid rgba(255, 77, 77, 0.45);
+}
+.pm-outcome-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  font-size: 28px;
+  font-weight: 800;
+}
+.pm-outcome.pm-success .pm-outcome-mark {
+  background: rgba(16, 185, 129, 0.15);
+  border: 2px solid var(--pm-green);
+  color: var(--pm-green);
+  box-shadow: 0 0 28px rgba(16, 185, 129, 0.28);
+}
+.pm-outcome.pm-fail .pm-outcome-mark {
+  background: rgba(255, 77, 77, 0.12);
+  border: 2px solid var(--pm-red);
+  color: var(--pm-red);
+  box-shadow: 0 0 22px rgba(255, 77, 77, 0.25);
+}
+.pm-outcome-title {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+.pm-outcome.pm-success .pm-outcome-title { color: var(--pm-green); }
+.pm-outcome.pm-fail .pm-outcome-title { color: var(--pm-red); }
+.pm-outcome-sub {
+  color: var(--pm-dim);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  max-width: 420px;
+}
+.pm-outcome-sig {
+  font-size: 10px;
+  color: var(--pm-dim);
+  font-family: var(--pm-mono, ui-monospace, monospace);
+  word-break: break-all;
+  padding: 8px 12px;
+  background: #050505;
+  border: 1px dashed var(--pm-line);
+  border-radius: 4px;
+}
+.pm-outcome a { color: var(--pm-accent); text-decoration: none; }
+.pm-outcome a:hover { text-decoration: underline; }
+
 /* Ineligible banner (step 5 fail) */
 .pm-inel {
   margin-top: 14px;
