@@ -1,9 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useWallet, type Wallet } from "@solana/wallet-adapter-react";
 import "./proof-modal.css";
 import type { ProofPath, ProofStep } from "./types";
 import { useEligibilityStream } from "./useEligibilityStream";
+import { useConnected } from "@/lib/wallet/use-connected";
+import { WALLET_META, WALLET_ORDER, shouldUseDeepLinks } from "@/lib/wallet/deep-link";
+import { classifyWallet, type KnownWallet } from "@/lib/wallet-policy";
 
 /**
  * ProofModal — the "VERIFY THIS WORK" modal.
@@ -41,6 +45,7 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
   const [forceIneligible, setForceIneligible] = useState(false);
 
   const { state: elig, start, reset } = useEligibilityStream();
+  const connected = useConnected();
 
   // Reset on close
   useEffect(() => {
@@ -52,26 +57,35 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
     }
   }, [open, reset]);
 
-  // When user advances to step 5, fire the stream
+  // Auto-advance step 2 → 5 once wallet is connected & allowlisted
+  useEffect(() => {
+    if (step === 2 && connected) {
+      setStep(5);
+    }
+  }, [step, connected]);
+
+  // When user advances to step 5, fire the stream with the connected
+  // pubkey (or the hardcoded dev-mode fallback when the wireframe
+  // toggle is flipped without a real wallet).
   useEffect(() => {
     if (step === 5 && path && elig.status === "idle") {
       start({
         path,
         scenario: forceIneligible ? "ineligible" : "eligible",
-        pubkey: "F7k2QJm9Np8xWv3sH5cB4aRtY6eZu1oKdL2fVgXpN9xMp",
+        pubkey:
+          connected?.pubkey ?? "F7k2QJm9Np8xWv3sH5cB4aRtY6eZu1oKdL2fVgXpN9xMp",
         project: ticker,
       });
     }
-  }, [step, path, elig.status, start, forceIneligible, ticker]);
+  }, [step, path, elig.status, start, forceIneligible, ticker, connected]);
 
   const handleContinue = useCallback(() => {
     if (step === 1 && path) {
-      // Skip wallet/comment/token stubs for now — jump straight to eligibility
-      setStep(5);
+      setStep(connected ? 5 : 2);
     } else if (step === 5 && elig.status === "done" && elig.eligible) {
       setStep(6);
     }
-  }, [step, path, elig.status, elig.eligible]);
+  }, [step, path, elig.status, elig.eligible, connected]);
 
   const handleTryNewWallet = useCallback(() => {
     reset();
@@ -85,6 +99,13 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
   const continueDisabled =
     (step === 1 && !path) ||
     (step === 5 && (elig.status !== "done" || !elig.eligible));
+
+  // Step 2 drives its own CTA (per-wallet buttons). Hide the global
+  // continue bar there entirely.
+  const hideCta =
+    step === 2 ||
+    step === 6 ||
+    (step === 5 && elig.status === "done" && !elig.eligible);
 
   return (
     <div className="pm-backdrop" onClick={onClose} role="dialog" aria-modal="true">
@@ -105,6 +126,9 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
               handle={handle}
             />
           )}
+          {step === 2 && (
+            <Step2WalletPicker onBack={() => setStep(1)} />
+          )}
           {step === 5 && (
             <Step5Eligibility
               path={path!}
@@ -122,7 +146,7 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
           )}
         </div>
 
-        {step !== 6 && !(step === 5 && elig.status === "done" && !elig.eligible) && (
+        {!hideCta && (
           <div className="pm-cta-bar">
             <button
               type="button"
@@ -187,6 +211,136 @@ function Step1PathSelect({
           <div className="pm-path-price">$5 · $3 with $LASTSHFT</div>
         </button>
       </div>
+    </>
+  );
+}
+
+// ─── Step 2 ─────────────────────────────────────────────────────────────
+
+/**
+ * Wallet picker.
+ *
+ * Renders the four-wallet static allowlist merged with the live
+ * `useWallet().wallets` array (which is populated by
+ * `useStandardWalletAdapters()` under the hood — Jupiter + Binance
+ * appear here after they self-register via Wallet Standard).
+ *
+ * Click handler branches:
+ *   - allowlisted + adapter present → `select()` + `connect()`
+ *   - allowlisted + adapter missing  → on desktop: install hint;
+ *                                      on mobile: deep-link bounce
+ *
+ * Once connected, the parent auto-advances to step 5 via effect.
+ * Picker shows a transient "connecting" row while the adapter
+ * negotiates.
+ */
+function Step2WalletPicker({ onBack }: { onBack: () => void }) {
+  const { wallets, select, connect, connecting, wallet: selectedWallet } = useWallet();
+  const [err, setErr] = useState<string | null>(null);
+  const useDeepLinks = useMemo(() => shouldUseDeepLinks(), []);
+
+  /**
+   * Map canonical wallet id → live adapter (if registered). Lookup is
+   * loose via classifyWallet so adapter-name variants ("Jupiter
+   * Mobile", "Binance Wallet", etc.) all funnel into the right slot.
+   */
+  const liveByCanonical = useMemo(() => {
+    const map = new Map<KnownWallet, Wallet>();
+    for (const w of wallets) {
+      const c = classifyWallet(w.adapter.name).canonical;
+      if (c && !map.has(c)) map.set(c, w);
+    }
+    return map;
+  }, [wallets]);
+
+  const handleClick = useCallback(
+    async (canonical: KnownWallet) => {
+      setErr(null);
+      const live = liveByCanonical.get(canonical);
+      if (!live) {
+        setErr(
+          `${WALLET_META[canonical].label} isn't available in this browser. Install the extension or open this page inside the wallet app.`,
+        );
+        return;
+      }
+      try {
+        select(live.adapter.name);
+        // `connect()` reads from the currently-selected wallet; the
+        // select() call above is synchronous state so this is safe.
+        await connect();
+      } catch (e) {
+        setErr(e instanceof Error ? e.message : "wallet connect failed");
+      }
+    },
+    [liveByCanonical, select, connect],
+  );
+
+  return (
+    <>
+      <div className="pm-eyebrow">CONNECT YOUR WALLET</div>
+      <h2 className="pm-head">
+        Pick a <span className="pm-accent">wallet.</span>
+      </h2>
+      <p className="pm-sub">
+        One wallet, one proof per project. We&apos;ll verify it hasn&apos;t proofed this project
+        before you sign — no gas until you approve.
+      </p>
+
+      <div className="pm-wallets">
+        {WALLET_ORDER.map((id) => {
+          const meta = WALLET_META[id];
+          const live = liveByCanonical.get(id);
+          const isConnecting =
+            connecting && selectedWallet?.adapter.name === live?.adapter.name;
+
+          if (useDeepLinks && !live) {
+            const href =
+              typeof window !== "undefined" ? meta.buildDeepLink(window.location.href) : "#";
+            return (
+              <a
+                key={id}
+                className="pm-wallet"
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span className="pm-wallet-label">{meta.label}</span>
+                <span className="pm-wallet-hint">OPEN IN APP →</span>
+              </a>
+            );
+          }
+
+          return (
+            <button
+              key={id}
+              type="button"
+              className={`pm-wallet${isConnecting ? " pm-connecting" : ""}`}
+              onClick={() => handleClick(id)}
+              disabled={connecting}
+            >
+              <span className="pm-wallet-label">{meta.label}</span>
+              <span className="pm-wallet-hint">
+                {isConnecting ? "CONNECTING…" : live ? "DETECTED" : "NOT INSTALLED"}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {err && (
+        <div className="pm-inel" style={{ marginTop: 14 }}>
+          {err}
+        </div>
+      )}
+
+      <button
+        type="button"
+        className="pm-cta-ghost"
+        style={{ marginTop: 14, padding: "8px 12px", fontSize: 11 }}
+        onClick={onBack}
+      >
+        ← BACK
+      </button>
     </>
   );
 }

@@ -196,6 +196,65 @@
 }
 .pm-cta-ghost:hover { color: var(--pm-fg); border-color: var(--pm-fg); }
 
+/* Wallet picker (step 2) */
+.pm-wallets {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+.pm-wallet {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: transparent;
+  border: 1px solid var(--pm-line);
+  border-radius: 6px;
+  color: var(--pm-fg);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  transition: border-color 120ms, background 120ms, transform 120ms;
+  text-decoration: none;
+}
+.pm-wallet:hover {
+  border-color: var(--pm-accent);
+  background: rgba(255, 107, 44, 0.06);
+  transform: translateX(2px);
+}
+.pm-wallet[disabled] { opacity: 0.5; cursor: not-allowed; }
+.pm-wallet.pm-connecting {
+  border-color: var(--pm-accent);
+  background: rgba(255, 107, 44, 0.1);
+}
+.pm-wallet-label { flex: 1; font-weight: 700; letter-spacing: 0.04em; }
+.pm-wallet-hint { color: var(--pm-dim); font-size: 10px; letter-spacing: 0.1em; }
+
+.pm-wallet-verified {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 20px;
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 6px;
+  text-align: center;
+}
+.pm-wallet-verified .pm-wv-title {
+  color: var(--pm-green);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  font-size: 11px;
+}
+.pm-wallet-verified .pm-wv-addr {
+  color: var(--pm-fg);
+  font-weight: 700;
+  font-size: 13px;
+}
+.pm-wallet-verified .pm-wv-addr b { color: var(--pm-accent); }
+
 /* Ineligible banner (step 5 fail) */
 .pm-inel {
   margin-top: 14px;
