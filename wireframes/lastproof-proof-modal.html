@@ -1,0 +1,1063 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LASTPROOF — Proof This Work v0.1</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-primary:#0a0b0f;
+    --bg-secondary:#12131a;
+    --bg-card:#161822;
+    --bg-card-hover:#1a1d2a;
+    --bg-input:#0e0f16;
+    --border:#1e2030;
+    --border-2:#2a2d42;
+    --text-primary:#e2e4ed;
+    --text-secondary:#8b8fa3;
+    --text-dim:#5a5e73;
+    --green:#00e676;
+    --green-dim:rgba(0,230,118,.12);
+    --green-glow:rgba(0,230,118,.25);
+    --orange:#ff9100;
+    --orange-dim:rgba(255,145,0,.12);
+    --accent:#ff9100;
+    --accent-glow:rgba(255,145,0,.15);
+    --red:#ff5470;
+    --red-dim:rgba(255,84,112,.1);
+    --purple:#a78bfa;
+    --purple-dim:rgba(167,139,250,.1);
+    --purple-glow:rgba(167,139,250,.2);
+    --gold:#ffd700;
+    --gold-dim:rgba(255,215,0,.1);
+    --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:Inter,-apple-system,system-ui,sans-serif;
+    --r-card:10px;
+    --r-btn:6px;
+    --r-pill:4px;
+    --r-sm:3px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg-primary);color:var(--text-primary);font-family:var(--sans);font-size:14px;line-height:1.5;min-height:100dvh}
+  a{color:inherit;text-decoration:none}
+
+  /* Grid bg + radial glow — mirrors onboarding/popup-5000 */
+  body::before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(30,32,48,.3) 1px, transparent 1px),linear-gradient(90deg, rgba(30,32,48,.3) 1px, transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+  body::after{content:"";position:fixed;top:-200px;right:-200px;width:700px;height:700px;background:radial-gradient(circle,var(--accent-glow) 0%,transparent 60%);pointer-events:none;z-index:0}
+  .scanlines{position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.05) 2px,rgba(0,0,0,.05) 4px);pointer-events:none;z-index:9999}
+
+  .stage{position:relative;z-index:1;min-height:100dvh;padding:60px 20px;display:flex;align-items:center;justify-content:center}
+  .stage::before{content:"";position:fixed;inset:0;background:rgba(5,6,10,.82);backdrop-filter:blur(4px);z-index:2}
+
+  @keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,145,0,.35)}50%{box-shadow:0 0 0 10px rgba(255,145,0,0)}}
+  @keyframes pulseGreen{0%,100%{box-shadow:0 0 0 0 rgba(0,230,118,.35)}50%{box-shadow:0 0 0 10px rgba(0,230,118,0)}}
+  @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:.25}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* MODAL — popup-5000 chrome */
+  .modal::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;z-index:1;border-radius:inherit}
+  .modal > *{position:relative;z-index:2}
+  .modal{position:relative;z-index:3;width:100%;max-width:600px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--r-card);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.02);animation:popIn .35s ease}
+
+  /* Titlebar */
+  .titlebar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--border)}
+  .titlebar .left{display:flex;align-items:center;gap:8px}
+  .dots{display:flex;gap:5px}
+  .dots span{width:9px;height:9px;border-radius:50%}
+  .dots .r{background:#ff5f56}.dots .y{background:#ffbd2e}.dots .g{background:#27c93f}
+  .title{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-left:6px}
+  .title-right{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1.5px;display:flex;align-items:center;gap:6px}
+  .pulse{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px rgba(255,145,0,.6);animation:blink 1.2s infinite}
+
+  /* Top row: project ref + step counter */
+  .ref-row{display:flex;justify-content:space-between;align-items:center;padding:12px 22px 0;gap:12px;flex-wrap:wrap}
+  .ref-chip{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:9px;font-weight:700;color:var(--text-dim);letter-spacing:1px;padding:6px 10px;border:1px solid var(--border-2);border-radius:var(--r-pill);background:rgba(0,0,0,.25);text-transform:uppercase}
+  .ref-chip .ticker{color:var(--green);font-weight:800}
+  .step-counter{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1.5px;margin-left:auto}
+  .step-counter .now{color:var(--accent);font-weight:700}
+
+  .progress-wrap{padding:10px 22px 0}
+  .bar-track{width:100%;height:4px;background:rgba(255,255,255,.04);border-radius:3px;overflow:hidden;position:relative}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--accent) 0%,#ffb347 100%);border-radius:3px;box-shadow:0 0 10px rgba(255,145,0,.5);transition:width .35s ease}
+
+  .body{padding:28px 36px 22px}
+
+  /* Eyebrow + headline */
+  .pain{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;text-align:center}
+  .pain::before{content:">";color:var(--orange);margin-right:6px;opacity:.6}
+  h2.head{font-family:var(--sans);font-size:26px;font-weight:700;line-height:1.18;margin:0 0 12px;letter-spacing:-.3px;color:var(--text-primary);text-align:center}
+  h2.head .accent{color:var(--accent)}
+  h2.head .green{color:var(--green)}
+  .sub{font-family:var(--sans);font-size:13px;color:var(--text-secondary);line-height:1.65;margin:0 auto 24px;max-width:460px;text-align:center}
+
+  /* Project detail card (anchored top of modal body, persistent) */
+  .proj-card{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-btn);margin-bottom:22px}
+  .proj-ticker{font-family:var(--mono);font-size:18px;font-weight:800;color:var(--green);letter-spacing:.5px}
+  .proj-meta{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .proj-role{font-family:var(--sans);font-size:13px;font-weight:600;color:#fff;line-height:1.2}
+  .proj-dates{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.8px;text-transform:uppercase}
+  .proj-tags{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+  .proj-tag{font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:1px;padding:3px 7px;border-radius:var(--r-sm);text-transform:uppercase}
+  .proj-tag.minted{color:var(--gold);background:var(--gold-dim);border:1px solid rgba(255,215,0,.5)}
+  .proj-tag.current{color:var(--green);background:var(--green-dim);border:1px solid var(--green)}
+
+  /* Path selector cards (step 1) */
+  .path-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:6px}
+  .path-card{padding:22px 18px;background:var(--bg-card);border:1px solid var(--border-2);border-radius:var(--r-btn);cursor:pointer;transition:all .15s;text-align:center;position:relative}
+  .path-card:hover{border-color:var(--border-2);background:var(--bg-card-hover)}
+  .path-card.selected{border-color:var(--accent);background:var(--orange-dim);box-shadow:0 0 24px var(--accent-glow)}
+  .path-card.selected.dev{border-color:var(--green);background:var(--green-dim);box-shadow:0 0 24px var(--green-glow)}
+  .path-icon{width:34px;height:34px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary)}
+  .path-card.selected .path-icon{color:var(--accent)}
+  .path-card.selected.dev .path-icon{color:var(--green)}
+  .path-label{font-family:var(--mono);font-size:11px;font-weight:800;letter-spacing:1.2px;color:#fff;text-transform:uppercase;margin-bottom:6px}
+  .path-price{font-family:var(--sans);font-size:22px;font-weight:800;color:var(--accent);letter-spacing:-.3px;line-height:1}
+  .path-card.dev .path-price{color:var(--green)}
+  .path-desc{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.5px;margin-top:8px;line-height:1.55}
+  .path-card .lim{position:absolute;top:8px;right:8px;font-family:var(--mono);font-size:7px;font-weight:700;letter-spacing:.8px;color:var(--text-dim);text-transform:uppercase;background:rgba(0,0,0,.4);padding:2px 5px;border-radius:var(--r-sm)}
+
+  /* Dev signal display (step 2 — when dev path) */
+  .dev-signal{padding:14px 16px;background:var(--green-dim);border:1px solid var(--green);border-radius:var(--r-btn);margin-bottom:18px}
+  .dev-signal-head{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:9px;font-weight:800;color:var(--green);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px}
+  .dev-signal-head svg{width:13px;height:13px}
+  .dev-signal-list{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:10px;color:var(--text-secondary);line-height:1.5}
+  .dev-signal-list .ok{color:var(--green)}
+  .dev-signal-list .ok::before{content:"✓ ";color:var(--green);font-weight:700;margin-right:3px}
+  .dev-signal-list .no{color:var(--text-dim)}
+  .dev-signal-list .no::before{content:"– ";color:var(--text-dim);margin-right:3px}
+
+  /* Comment field */
+  .field{margin-bottom:18px;text-align:left}
+  .field-key{display:block;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;font-weight:700}
+  .char-count{float:right;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.5px;font-weight:400;text-transform:none}
+  .field-input{width:100%;background:var(--bg-input);border:1px solid var(--border-2);border-radius:var(--r-btn);color:var(--text-primary);font-family:var(--mono);font-size:12px;padding:12px 14px;outline:none;transition:border-color .15s;line-height:1.55}
+  .field-input:focus{border-color:var(--accent)}
+  textarea.field-input{resize:vertical;min-height:80px}
+  .field-help{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.5px;margin-top:6px;line-height:1.6}
+
+  /* Token selector (step 3) */
+  .token-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:8px}
+  .token-card{display:grid;grid-template-columns:44px 1fr minmax(110px,auto) 140px;column-gap:14px;align-items:center;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border-2);border-radius:var(--r-btn);cursor:pointer;transition:all .15s;position:relative}
+  .token-card:hover{background:var(--bg-card-hover);border-color:var(--border-2)}
+  .token-card.selected{border-color:var(--accent);background:var(--orange-dim);box-shadow:0 0 18px var(--accent-glow)}
+  .token-icon{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:800;background:#fff;overflow:hidden;flex-shrink:0}
+  .token-icon.lastshft{background:#0a0b0f;color:var(--accent)}
+  .token-icon.sol{background:#0a0b0f}
+  .token-icon.usdc{background:#fff;color:#26a17b}
+  .token-meta{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .token-name{font-family:var(--mono);font-size:11px;font-weight:800;color:#fff;letter-spacing:.5px}
+  .token-sub{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.5px}
+  .token-price{font-family:var(--sans);font-size:18px;font-weight:800;color:#fff;letter-spacing:-.3px;text-align:right;line-height:1.1}
+  .token-price .strike{font-family:var(--mono);font-size:10px;color:var(--text-dim);text-decoration:line-through;display:block;font-weight:500}
+  .token-price.discount{color:var(--accent)}
+  .token-card .pp-discount-pill{position:absolute;top:-7px;right:14px;font-family:var(--mono);font-size:8px;font-weight:800;color:#0a0b0f;background:var(--accent);padding:2px 7px;border-radius:var(--r-pill);letter-spacing:1px;text-transform:uppercase}
+
+  /* Wallet connect panel (step 4) */
+  /* CONNECTED WALLET PILL (persistent after step 2) */
+  .conn-pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.45);border-radius:999px;font-family:var(--mono);font-size:9px;letter-spacing:1.2px;color:var(--green);cursor:pointer;transition:all .15s ease;position:relative;overflow:hidden}
+  .conn-pill:hover{background:rgba(255,77,77,.1);border-color:rgba(255,77,77,.6);color:var(--red)}
+  .conn-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulseDot 2s ease-in-out infinite}
+  .conn-pill:hover .conn-dot{background:var(--red);box-shadow:0 0 8px var(--red);animation:none}
+  @keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.4}}
+  .conn-label{font-weight:700}
+  .conn-addr{color:var(--text);opacity:.85}
+  .conn-pill:hover .conn-label,.conn-pill:hover .conn-addr{display:none}
+  .conn-hover{display:none;font-weight:800;letter-spacing:1.5px}
+  .conn-pill:hover .conn-hover{display:inline}
+
+  /* WALLET BADGES */
+  .wp-badge{font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:1px;padding:4px 8px;border-radius:4px;flex-shrink:0}
+  .wp-badge.verified{background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.4);color:var(--green)}
+  .wp-badge.warn{background:rgba(255,176,0,.1);border:1px solid rgba(255,176,0,.4);color:#ffb000}
+
+  /* WALLET CONNECTING STATE */
+  .wallet-connecting{display:flex;flex-direction:column;align-items:center;gap:14px;padding:40px 20px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-btn)}
+  .wc-status{font-family:var(--mono);font-size:12px;letter-spacing:1.5px;color:var(--text);font-weight:700}
+  .wc-status span{color:var(--accent)}
+  .wc-hint{font-family:var(--mono);font-size:9px;letter-spacing:1.2px;color:var(--text-dim)}
+  .btn-link{background:transparent;border:0;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--text-dim);cursor:pointer;margin-top:6px;padding:6px 12px;text-decoration:underline}
+  .btn-link:hover{color:var(--red)}
+
+  /* DISCONNECT CONFIRMATION */
+  .disc-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-btn);padding:16px;margin-bottom:18px}
+  .disc-row{display:flex;justify-content:space-between;padding:8px 0;font-family:var(--mono);font-size:10px;letter-spacing:1px;border-bottom:1px dashed var(--border)}
+  .disc-row:last-child{border-bottom:0}
+  .disc-key{color:var(--text-dim)}
+  .disc-val{color:var(--text);font-weight:700}
+  .disc-actions{display:flex;gap:10px;flex-wrap:wrap}
+  .disc-actions .cta{flex:1;min-width:200px}
+  .disc-back{background:transparent;border:1px solid var(--border);color:var(--text)}
+  .disc-back:hover{border-color:var(--text);background:rgba(255,255,255,.04)}
+  .disc-reconnect{background:transparent;border:1px solid var(--accent);color:var(--accent)}
+  .disc-reconnect:hover{background:rgba(255,107,0,.08)}
+
+  .wallet-providers{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+  .wallet-prov{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-btn);color:var(--text);text-align:left;cursor:pointer;font-family:inherit;transition:all .15s ease}
+  .wallet-prov:hover{border-color:var(--accent);background:rgba(255,107,0,.06);transform:translateX(2px)}
+  .wallet-prov.connecting{border-color:var(--accent);background:rgba(255,107,0,.1)}
+  .wp-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;background:#0a0b0f;border:1px solid rgba(255,255,255,.06)}
+  .wp-icon img{width:100%;height:100%;object-fit:cover;display:block}
+  .wp-icon svg{display:block}
+
+  /* WALLET VERIFIED (step 2, post-connect) */
+  .wallet-verified{display:flex;flex-direction:column;align-items:center;gap:10px;padding:36px 20px;background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.4);border-radius:var(--r-btn);text-align:center}
+  .wv-check{width:58px;height:58px;border-radius:50%;background:rgba(0,230,118,.15);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;box-shadow:0 0 28px rgba(0,230,118,.28);margin-bottom:4px}
+  .wv-check svg{width:30px;height:30px;color:var(--green)}
+  .wv-title{font-family:var(--mono);font-size:11px;font-weight:800;color:var(--green);letter-spacing:1.6px}
+  .wv-wallet{font-family:var(--mono);font-size:13px;color:var(--text);font-weight:700;letter-spacing:.5px}
+  .wv-wallet span:first-child{color:var(--accent)}
+  .wv-sub{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-bottom:10px}
+  .wallet-verified .cta{margin-top:4px;min-width:200px}
+
+  /* SIGNATURE WAIT (step 7) */
+  .sign-wrap{display:flex;flex-direction:column;align-items:center;gap:20px;padding:28px 20px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-btn);margin-bottom:14px}
+  .sign-phone{position:relative;width:90px;height:90px;display:flex;align-items:center;justify-content:center;color:var(--accent)}
+  .sign-spin{position:absolute;inset:0;border:2px solid rgba(255,145,0,.15);border-top-color:var(--accent);border-radius:50%;animation:spin 1.4s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .sign-log{font-family:var(--mono);font-size:11px;line-height:1.9;letter-spacing:.8px;width:100%}
+  .sign-log .ok{color:var(--green)}
+  .sign-log .ok::before{content:"✓ ";font-weight:800;margin-right:4px}
+  .sign-log .pending{color:var(--accent)}
+  .sign-log .pending::before{content:"… ";font-weight:800;margin-right:4px;animation:blink 1s steps(1) infinite}
+
+  /* DISCONNECT ICON */
+  .disc-icon{width:62px;height:62px;margin:0 auto 14px;border-radius:50%;background:rgba(255,84,112,.1);border:2px solid var(--red);display:flex;align-items:center;justify-content:center;color:var(--red);box-shadow:0 0 24px rgba(255,84,112,.25)}
+  .disc-val.red{color:var(--red);font-weight:800}
+
+  /* BUY BUTTON INSIDE TOKEN CARD */
+  /* TOKEN CARD — two-column flex layout (override old grid) */
+  .token-card{display:flex!important;align-items:center;justify-content:space-between;gap:16px;padding:16px 18px}
+  .tc-left{display:flex;align-items:center;gap:14px;flex:1;min-width:0}
+  .tc-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
+  .token-icon{width:40px!important;height:40px!important;overflow:hidden;background:#0a0b0f!important;flex-shrink:0;border-radius:50%}
+  .token-icon img{width:100%;height:100%;object-fit:contain;padding:4px;display:block;background:#0a0b0f}
+  .token-meta{min-width:0}
+  .token-live{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.5px;font-weight:500;text-align:right;display:block}
+  .buy-btn{display:inline-block;padding:6px 12px;background:rgba(255,145,0,.12);border:1px solid var(--accent);border-radius:6px;color:var(--accent);font-family:var(--mono);font-size:9px;font-weight:800;letter-spacing:1.2px;text-decoration:none;white-space:nowrap;transition:all .15s ease;flex-shrink:0}
+  .buy-btn:hover{background:var(--accent);color:#0a0b0f;box-shadow:0 0 14px rgba(255,145,0,.4)}
+  .token-card .pp-discount-pill{top:-8px;right:16px}
+
+  /* FAILURE OUTCOME (step 8) */
+  .done-check.fail{background:rgba(255,84,112,.12);border-color:var(--red);box-shadow:0 0 32px rgba(255,84,112,.3);animation:none}
+  .done-check.fail svg{color:var(--red)}
+  .ok-actions{display:flex;justify-content:center;margin-top:18px}
+  .ok-back{background:rgba(0,230,118,.12);border:1px solid var(--green);color:var(--green);min-width:260px;animation:pulseGreen 2.2s infinite}
+  .ok-back:hover{background:var(--green);color:#0a0b0f;box-shadow:0 0 24px var(--green-glow)}
+  .fail-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;justify-content:center}
+  .fail-actions .cta{flex:1;min-width:180px}
+  .fail-retry{background:rgba(255,145,0,.1);border-color:var(--accent);color:var(--accent)}
+  .fail-retry:hover{background:var(--accent);color:#0a0b0f}
+  .fail-back{background:transparent;border:1px solid var(--border);color:var(--text)}
+  .fail-back:hover{border-color:var(--text)}
+  .outcome-toggle{margin-top:20px;text-align:center}
+  .outcome-toggle button{background:transparent;border:1px dashed var(--border);color:var(--text-dim);font-family:var(--mono);font-size:9px;letter-spacing:1.2px;padding:6px 12px;border-radius:4px;cursor:pointer}
+  .outcome-toggle button:hover{color:var(--accent);border-color:var(--accent)}
+
+  /* TERMINAL CHECK LOG (step 5) */
+  .term-log{background:#05060a;border:1px solid var(--border);border-radius:var(--r-btn);padding:18px 20px;font-family:var(--mono);font-size:12px;line-height:1.9;color:var(--text-dim);min-height:180px}
+  .term-line{opacity:0;transform:translateY(4px);transition:opacity .25s ease,transform .25s ease;white-space:pre-wrap}
+  .term-line.show{opacity:1;transform:translateY(0)}
+  .term-line.ok{color:var(--green)}
+  .term-line.done{color:var(--accent);margin-top:6px}
+  .term-line.no{color:var(--red)}
+  .term-line.err{color:var(--red);margin-top:6px;font-weight:700}
+  .term-log.fail{border-color:var(--red);background:rgba(255,84,112,.04)}
+
+  /* INELIGIBLE EXPLAINER */
+  .ineligible-card{margin-top:16px;padding:18px 20px;background:rgba(255,84,112,.06);border:1px solid var(--red);border-radius:var(--r-btn)}
+  .inel-head{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;font-weight:800;color:var(--red);letter-spacing:1.2px;margin-bottom:12px}
+  .inel-head svg{width:18px;height:18px}
+  .inel-disc-note{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;font-weight:800;color:var(--red);letter-spacing:1.4px;padding:8px 12px;background:rgba(255,84,112,.08);border:1px dashed var(--red);border-radius:6px;margin-bottom:14px}
+  .inel-body{font-family:var(--mono);font-size:11px;line-height:1.7;color:var(--text);margin-bottom:14px}
+  .inel-body b{color:var(--accent)}
+  .inel-body ul{margin:10px 0;padding-left:20px;color:var(--text-dim)}
+  .inel-body li{margin:4px 0}
+  .inel-body li b{color:var(--green)}
+  .inel-actions{display:flex;gap:10px;flex-wrap:wrap}
+  .inel-actions .cta{flex:1;min-width:200px}
+  .inel-disconnect{background:rgba(255,145,0,.1);border-color:var(--accent);color:var(--accent)}
+  .inel-disconnect:hover{background:var(--accent);color:#0a0b0f}
+  .inel-back{background:transparent;border:1px solid var(--border);color:var(--text)}
+  .inel-back:hover{border-color:var(--text)}
+  .term-cursor{display:inline-block;margin-left:4px;animation:blink 1s steps(1) infinite;color:var(--accent)}
+  @keyframes blink{0%,50%{opacity:1}50.01%,100%{opacity:0}}
+
+  /* LIVE PRICE PILL (step 6) */
+  .live-pill{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:8px;font-weight:800;color:var(--green);background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.4);padding:2px 7px;border-radius:999px;letter-spacing:1.2px;margin-left:8px;vertical-align:middle}
+  .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulseDot 1.4s ease-in-out infinite}
+  .live-age{color:var(--text-dim);font-size:9px;letter-spacing:1px}
+  #liveAmount{transition:opacity .18s ease}
+  #liveAmount.flash{opacity:.35}
+
+  /* TOKEN CARD LIVE RATE */
+  .token-live{color:var(--text-dim);font-size:9px;letter-spacing:.5px;display:block;margin-top:3px;font-weight:500;font-family:var(--mono)}
+  .token-price{text-align:right}
+  .buy-spacer{display:block;width:1px;height:1px}
+  /* Mobile: stack buy button below, keep alignment */
+  @media (max-width:560px){
+    .token-card{grid-template-columns:40px 1fr auto;row-gap:10px}
+    .buy-btn{grid-column:1 / -1;margin-left:0;justify-content:center;width:100%}
+    .buy-spacer{display:none}
+  }
+  .wp-meta{flex:1;min-width:0}
+  .wp-name{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:1px;color:var(--text)}
+  .wp-sub{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1.2px;margin-top:3px}
+  .wp-arrow{font-size:18px;color:var(--text-dim);font-weight:700}
+  .wallet-prov:hover .wp-arrow{color:var(--accent)}
+  .wallet-panel{padding:20px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-btn);text-align:center;margin-bottom:14px}
+  .wallet-icon{width:48px;height:48px;margin:0 auto 12px;border-radius:50%;background:var(--orange-dim);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;color:var(--accent)}
+  .wallet-icon svg{width:22px;height:22px}
+  .wallet-status{font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;letter-spacing:.5px;margin-bottom:6px}
+  .wallet-addr{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.8px}
+  .wallet-checks{display:flex;flex-direction:column;gap:7px;padding:14px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-btn);margin-top:14px}
+  .wallet-check{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:10px;color:var(--text-secondary);letter-spacing:.4px}
+  .wallet-check svg{width:12px;height:12px;flex-shrink:0}
+  .wallet-check.ok{color:var(--green)}
+  .wallet-check.ok svg{color:var(--green)}
+
+  /* Payment review (step 5) */
+  .review-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-btn);overflow:hidden;margin-bottom:14px}
+  .review-row{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-bottom:1px dashed var(--border);font-family:var(--mono);font-size:10px;letter-spacing:.5px}
+  .review-row:last-child{border-bottom:none;background:rgba(255,145,0,.04)}
+  .review-key{color:var(--text-dim);letter-spacing:1.2px;text-transform:uppercase;font-size:9px}
+  .review-val{color:#fff;font-weight:700}
+  .review-val.green{color:var(--green)}
+  .review-val.accent{color:var(--accent);font-size:13px}
+
+  /* Pending state (step 6) */
+  .pending-wrap{text-align:center;padding:18px 0 6px}
+  .spinner{width:56px;height:56px;margin:0 auto 18px;border-radius:50%;border:3px solid rgba(255,145,0,.18);border-top-color:var(--accent);animation:spin 1s linear infinite}
+  .pending-status{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
+  .pending-log{padding:12px 14px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-btn);font-family:var(--mono);font-size:10px;color:var(--text-secondary);text-align:left;line-height:1.7}
+  .pending-log .ok{color:var(--green)}
+  .pending-log .ok::before{content:"✓ ";color:var(--green);font-weight:700}
+  .pending-log .pending::before{content:"… ";color:var(--accent)}
+  .pending-log .pending{color:var(--accent)}
+
+  /* Success (step 7) */
+  .done-wrap{text-align:center;padding:6px 0 0}
+  .done-check{width:64px;height:64px;margin:0 auto 16px;border-radius:50%;background:var(--green-dim);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;box-shadow:0 0 32px var(--green-glow);animation:pulseGreen 2.4s infinite}
+  .done-check svg{width:32px;height:32px;color:var(--green)}
+  .done-check.dev{background:var(--gold-dim);border-color:var(--gold);box-shadow:0 0 32px rgba(255,215,0,.3)}
+  .done-check.dev svg{color:var(--gold)}
+  .proof-summary{margin-top:14px;padding:6px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-btn);text-align:left}
+  .ps-row{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;padding:9px 0;border-bottom:1px dashed var(--border)}
+  .ps-row:last-child{border-bottom:none}
+  .ps-key{color:var(--text-dim);letter-spacing:1.2px;font-size:9px;text-transform:uppercase}
+  .ps-val{color:#fff;font-weight:700;letter-spacing:.5px}
+  .ps-val.green{color:var(--green)}
+  .ps-val.gold{color:var(--gold)}
+  .ps-val a{color:var(--accent);text-decoration:none}
+  .ps-val a:hover{text-decoration:underline}
+
+  /* Error overlay */
+  .err-card{padding:18px;background:var(--red-dim);border:1px solid var(--red);border-radius:var(--r-btn);margin-bottom:16px;text-align:left}
+  .err-head{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;font-weight:800;color:var(--red);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:8px}
+  .err-head svg{width:14px;height:14px}
+  .err-body{font-family:var(--mono);font-size:10px;color:var(--text-secondary);line-height:1.6}
+
+  /* CTA row */
+  .cta-row{padding:8px 36px 26px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+  .cta{display:inline-flex;align-items:center;justify-content:center;padding:14px 28px;color:var(--orange);background:var(--orange-dim);border:1px solid var(--orange);border-radius:var(--r-btn);font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .15s;animation:pulseGlow 2.2s infinite;text-align:center;margin-left:auto}
+  .cta:hover{background:var(--orange);color:#0a0b0f;box-shadow:0 0 24px var(--accent-glow);transform:translateY(-1px)}
+  .cta:disabled{background:transparent;color:var(--text-dim);border-color:var(--border-2);cursor:not-allowed;animation:none}
+  .cta.green{color:var(--green);background:var(--green-dim);border-color:var(--green);animation:pulseGreen 2.2s infinite}
+  .cta.green:hover{background:var(--green);color:#0a0b0f;box-shadow:0 0 24px var(--green-glow)}
+  .btn-back{padding:14px 18px;color:var(--text-dim);background:transparent;border:1px solid var(--border-2);border-radius:var(--r-btn);font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .15s}
+  .btn-back:hover{color:var(--orange);border-color:var(--orange)}
+
+  .fine{padding:0 26px 18px;text-align:center;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1px}
+
+  @media (max-width:600px){
+    .stage{padding:0}
+    .modal{max-width:100%;border-radius:14px 14px 0 0;margin-top:auto}
+    .body{padding:24px 20px 18px}
+    h2.head{font-size:21px}
+    .path-grid{grid-template-columns:1fr}
+    .cta-row{padding:6px 22px 22px}
+    .proj-card{grid-template-columns:1fr;text-align:center}
+    .proj-tags{justify-content:center}
+  }
+</style>
+</head>
+<body>
+
+<div class="scanlines"></div>
+
+<div class="stage">
+  <div class="modal" id="modal">
+
+    <!-- TITLEBAR -->
+    <div class="titlebar">
+      <div class="left">
+        <div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <span class="title">lastproof — verify this work</span>
+      </div>
+      <div class="title-right"><span class="pulse"></span>PROOF</div>
+    </div>
+
+    <!-- STEP COUNTER + CONNECTED WALLET PILL -->
+    <div class="ref-row" style="justify-content:space-between">
+      <div class="conn-pill" id="connPill" style="display:none">
+        <span class="conn-dot"></span>
+        <span class="conn-label">CONNECTED</span>
+        <span class="conn-addr" id="connAddr">PHANTOM · F7k2…9xMp</span>
+        <span class="conn-hover">DISCONNECT</span>
+      </div>
+      <span class="step-counter">STEP <span class="now" id="stepNow">1</span> / 8</span>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="progress-wrap">
+      <div class="bar-track"><div class="bar-fill" id="barFill" style="width:14%"></div></div>
+    </div>
+
+    <div class="body" id="modalBody">
+
+      <!-- ═══ STEP 1 — PATH SELECT (opener: parallel to "VERIFY THIS WORK") ═══ -->
+      <div class="step" data-step="1">
+        <div class="pain">&gt; VERIFY THIS WORK ON-CHAIN</div>
+        <h2 class="head">You're proofing <span class="accent">@cryptomark</span>.</h2>
+        <p class="sub">Every proof is a permanent on-chain signal that this operator actually did the work. Pick the lane that matches your relationship to the project below.</p>
+
+        <div class="proj-card">
+          <div class="proj-ticker">$LASTSHFT</div>
+          <div class="proj-meta">
+            <div class="proj-role">Growth Lead</div>
+            <div class="proj-dates">SEP 2025 — PRESENT</div>
+          </div>
+          <div class="proj-tags">
+            <span class="proj-tag current">CURRENT</span>
+          </div>
+        </div>
+
+        <div class="path-grid">
+          <div class="path-card selected" data-path="collab">
+            <span class="lim">1 PER WALLET</span>
+            <div class="path-icon">
+              <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="17" cy="7" r="4" opacity=".55"/><path d="M22 21v-2a4 4 0 0 0-3-3.87" opacity=".55"/></svg>
+            </div>
+            <div class="path-label">COLLABORATOR</div>
+            <div class="path-price">$1</div>
+            <div class="path-desc">Worked with the project — raids, content, mod, growth.</div>
+          </div>
+          <div class="path-card dev" data-path="dev">
+            <span class="lim">1 DEV PROOF / PROJECT</span>
+            <div class="path-icon">
+              <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+            <div class="path-label">TOKEN DEV</div>
+            <div class="path-price">$5</div>
+            <div class="path-desc">Deployer, founder, mint wallet, or first-5 holder. Live-checked.</div>
+          </div>
+        </div>
+        <div class="field-help" style="text-align:center;margin-top:12px">PROOFS ARE PERMANENT · ONCE PAID, NO REFUND · 1 WALLET PER PROJECT</div>
+      </div>
+
+      <!-- ═══ STEP 2 — CONNECT WALLET ═══ -->
+      <div class="step" data-step="2" style="display:none">
+        <div class="pain">SELECT WALLET</div>
+        <h2 class="head">Connect your <span class="accent">Solana wallet.</span></h2>
+        <p class="sub">No LASTPROOF account needed. Pick a wallet — we only use it to sign the proof and send the payment. LASTPROOF never custodies funds.</p>
+
+        <!-- DEFAULT: provider picker -->
+        <div class="wallet-providers" id="walletPicker">
+          <button class="wallet-prov" data-prov="phantom">
+            <div class="wp-icon"><img src="https://www.google.com/s2/favicons?domain=phantom.app&sz=128" alt="Phantom" onerror="this.style.display='none'"/></div>
+            <div class="wp-meta"><div class="wp-name">PHANTOM</div><div class="wp-sub">BROWSER EXTENSION + MOBILE</div></div>
+            <span class="wp-arrow">→</span>
+          </button>
+          <button class="wallet-prov" data-prov="solflare">
+            <div class="wp-icon"><img src="https://www.google.com/s2/favicons?domain=solflare.com&sz=128" alt="Solflare" onerror="this.style.display='none'"/></div>
+            <div class="wp-meta"><div class="wp-name">SOLFLARE</div><div class="wp-sub">BROWSER EXTENSION + MOBILE</div></div>
+            <span class="wp-arrow">→</span>
+          </button>
+          <button class="wallet-prov" data-prov="jupiter">
+            <div class="wp-icon"><img src="https://www.google.com/s2/favicons?domain=jup.ag&sz=128" alt="Jupiter" onerror="this.style.display='none'"/></div>
+            <div class="wp-meta"><div class="wp-name">JUPITER</div><div class="wp-sub">BROWSER EXTENSION + MOBILE</div></div>
+            <span class="wp-arrow">→</span>
+          </button>
+          <button class="wallet-prov" data-prov="binance">
+            <div class="wp-icon"><img src="https://www.google.com/s2/favicons?domain=binance.com&sz=128" alt="Binance" onerror="this.style.display='none'"/></div>
+            <div class="wp-meta"><div class="wp-name">BINANCE WALLET</div><div class="wp-sub">BROWSER EXTENSION + MOBILE</div></div>
+            <span class="wp-arrow">→</span>
+          </button>
+        </div>
+
+        <!-- CONNECTING: waiting for wallet approval -->
+        <div class="wallet-connecting" id="walletConnecting" style="display:none">
+          <div class="spinner"></div>
+          <div class="wc-status">WAITING FOR <span id="wcName">PHANTOM</span>…</div>
+          <div class="wc-hint">APPROVE THE CONNECTION REQUEST IN YOUR WALLET</div>
+          <button class="btn-link" id="wcCancel">CANCEL</button>
+        </div>
+
+        <!-- VERIFIED: connected — user must click CONTINUE -->
+        <div class="wallet-verified" id="walletVerified" style="display:none">
+          <div class="wv-check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="wv-title">WALLET CONNECTED</div>
+          <div class="wv-wallet"><span id="wvName">PHANTOM</span> · <span id="wvAddr">F7k2k9aH4z…9xMp</span></div>
+          <div class="wv-sub">Signature verified. Your wallet is ready to proof.</div>
+          <button class="cta" id="btnWvContinue"><span>&gt; CONTINUE</span></button>
+        </div>
+
+        <div class="field-help" style="text-align:center;margin-top:14px">
+          LASTPROOF NEVER HOLDS OR CUSTODIES FUNDS · YOU SIGN EVERY TRANSACTION
+        </div>
+      </div>
+
+      <!-- ═══ STEP 3 — COMMENT ═══ -->
+      <div class="step" data-step="3" style="display:none">
+        <div class="pain">LEAVE A NOTE (OPTIONAL)</div>
+        <h2 class="head">Anything you want to <span class="accent">add?</span></h2>
+        <p class="sub">A short note that other operators and devs can see. Plain text, no links.</p>
+
+        <div class="proj-card">
+          <div class="proj-ticker">$LASTSHFT</div>
+          <div class="proj-meta">
+            <div class="proj-role">Growth Lead</div>
+            <div class="proj-dates">SEP 2025 — PRESENT</div>
+          </div>
+          <div class="proj-tags"><span class="proj-tag current">CURRENT</span></div>
+        </div>
+
+        <div class="field">
+          <label class="field-key">COMMENT <span class="char-count">0 / 140</span></label>
+          <textarea class="field-input" rows="3" maxlength="140" placeholder="e.g. shipped the v1 launch — onboarded 4k holders in 30 days."></textarea>
+          <div class="field-help">PLAIN TEXT ONLY · NO URLS · 140 CHAR LIMIT</div>
+        </div>
+      </div>
+
+      <!-- ═══ STEP 4 — TOKEN SELECT ═══ -->
+      <div class="step" data-step="4" style="display:none">
+        <div class="pain">PICK YOUR PAYMENT RAIL</div>
+        <h2 class="head">Pay with <span class="accent">$LASTSHFT</span> for 40% off.</h2>
+        <p class="sub">Holding the project token? Save 40% on every proof.</p>
+
+        <div class="token-grid">
+          <div class="token-card selected" data-token="lastshft">
+            <span class="pp-discount-pill">40% OFF</span>
+            <div class="tc-left">
+              <div class="token-icon lastshft"><img src="https://lastshiftcoin.com/$LASTSHFT%20Coin%20Logo.png" alt="$LASTSHFT" onerror="this.outerHTML='LP'"/></div>
+              <div class="token-meta">
+                <div class="token-name">$LASTSHFT</div>
+                <div class="token-sub">BAL: 1,250.00 · ≈ $0.15</div>
+              </div>
+            </div>
+            <div class="tc-right">
+              <div class="token-price discount">
+                <span class="strike" id="priceLsStrike">$1.00</span>
+                <span id="priceLs">$0.60</span>
+              </div>
+              <a class="buy-btn" href="https://lastshiftcoin.com/buy" target="_blank" rel="noreferrer" onclick="event.stopPropagation()">BUY $LASTSHFT ↗</a>
+            </div>
+          </div>
+          <div class="token-card" data-token="sol">
+            <div class="tc-left">
+              <div class="token-icon sol"><img src="https://cryptologos.cc/logos/solana-sol-logo.svg" alt="SOL" onerror="this.outerHTML='SOL'"/></div>
+              <div class="token-meta">
+                <div class="token-name">SOL</div>
+                <div class="token-sub">BAL: 0.428 · ≈ $78.12</div>
+              </div>
+            </div>
+            <div class="tc-right">
+              <div class="token-price"><span id="priceSol">$1.00</span></div>
+              <div class="token-live" id="priceSolSub">≈ 0.00549 SOL</div>
+            </div>
+          </div>
+          <div class="token-card" data-token="usdt">
+            <div class="tc-left">
+              <div class="token-icon usdc"><img src="https://cryptologos.cc/logos/tether-usdt-logo.svg" alt="USDT" onerror="this.outerHTML='$'"/></div>
+              <div class="token-meta">
+                <div class="token-name">USDT</div>
+                <div class="token-sub">BAL: 42.30 · ≈ $42.30</div>
+              </div>
+            </div>
+            <div class="tc-right">
+              <div class="token-price"><span id="priceUsdt">$1.00</span></div>
+              <div class="token-live" id="priceUsdtSub">≈ 1.00 USDT</div>
+            </div>
+          </div>
+        </div>
+        <div class="field-help" style="text-align:center;margin-top:12px">PAYMENT GOES TO $LASTSHFT AR WALLET · MEMO INCLUDES PROOF ID</div>
+      </div>
+
+      <!-- ═══ STEP 5 — WALLET UNIQUENESS CHECK ═══ -->
+      <div class="step" data-step="5" style="display:none">
+        <div class="pain">VERIFYING YOUR WALLET</div>
+        <h2 class="head">Quick <span class="accent">eligibility check.</span></h2>
+        <p class="sub">One wallet, one proof per project. We check that this wallet hasn't already proofed this project before you sign.</p>
+
+        <!-- OK: all checks passed (COLLAB variant) -->
+        <div class="term-log" id="termLogCollab">
+          <div class="term-line" data-delay="0">&gt; lastproof verify --wallet F7k2…9xMp --project $LASTSHFT --role collaborator</div>
+          <div class="term-line ok" data-delay="600">&nbsp;&nbsp;[✓] UNIQUENESS   wallet has not proofed this project</div>
+          <div class="term-line ok" data-delay="1200">&nbsp;&nbsp;[✓] BALANCE      1,250.00 $LASTSHFT · need 1.67 $LASTSHFT</div>
+          <div class="term-line ok" data-delay="1800">&nbsp;&nbsp;[✓] SLOT         collaborator slot open</div>
+          <div class="term-line done" data-delay="2400">&gt; all checks passed · ready to sign<span class="term-cursor">█</span></div>
+        </div>
+
+        <!-- OK: all checks passed (DEV variant) -->
+        <div class="term-log" id="termLogDev" style="display:none">
+          <div class="term-line" data-delay="0">&gt; lastproof verify --wallet F7k2…9xMp --project $LASTSHFT --role dev</div>
+          <div class="term-line ok" data-delay="500">&nbsp;&nbsp;[✓] UNIQUENESS   wallet has not proofed this project</div>
+          <div class="term-line ok" data-delay="1000">&nbsp;&nbsp;[✓] DEV SLOT     no dev proof yet on this project</div>
+          <div class="term-line ok" data-delay="1500">&nbsp;&nbsp;[✓] DEPLOYER     F7k2…9xMp matches mint authority</div>
+          <div class="term-line ok" data-delay="2000">&nbsp;&nbsp;[✓] FIRST-5      slot 3 of mint distribution</div>
+          <div class="term-line ok" data-delay="2500">&nbsp;&nbsp;[✓] BALANCE      1,250.00 $LASTSHFT · need 8.33 $LASTSHFT</div>
+          <div class="term-line done" data-delay="3100">&gt; dev wallet verified · ready to sign<span class="term-cursor">█</span></div>
+        </div>
+
+        <!-- INELIGIBLE: wallet failed a check -->
+        <div class="term-log fail" id="termLogFail" style="display:none">
+          <div class="term-line" data-delay="0">&gt; lastproof verify --wallet F7k2…9xMp --project $LASTSHFT --role <span id="failRole">dev</span></div>
+          <div class="term-line ok" data-delay="500">&nbsp;&nbsp;[✓] UNIQUENESS   wallet has not proofed this project</div>
+          <div class="term-line ok" data-delay="1000">&nbsp;&nbsp;[✓] DEV SLOT     no dev proof yet on this project</div>
+          <div class="term-line no" data-delay="1500">&nbsp;&nbsp;[✗] DEPLOYER     does not match mint authority</div>
+          <div class="term-line no" data-delay="2000">&nbsp;&nbsp;[✗] FIRST-5      wallet not in first-5 holder set</div>
+          <div class="term-line no" data-delay="2500">&nbsp;&nbsp;[✗] FOUNDER      not a multisig signer</div>
+          <div class="term-line err" data-delay="3100">&gt; ERROR: wallet not eligible for dev proof on this project</div>
+        </div>
+
+        <!-- INELIGIBLE EXPLAINER + AUTO-DISCONNECT -->
+        <div class="ineligible-card" id="ineligibleCard" style="display:none">
+          <div class="inel-head">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            THIS WALLET ISN'T ELIGIBLE
+          </div>
+          <div class="inel-disc-note">
+            <span class="conn-dot" style="background:var(--red);box-shadow:0 0 8px var(--red);animation:none"></span>
+            YOU'VE BEEN AUTOMATICALLY DISCONNECTED
+          </div>
+          <div class="inel-body">
+            To file a <b>DEV proof</b>, the connected wallet must match at least one of the on-chain signals for <b>$LASTSHFT</b>:
+            <ul>
+              <li><b>DEPLOYER</b> — signed the token mint transaction</li>
+              <li><b>MINT AUTHORITY</b> — current mint authority wallet</li>
+              <li><b>FIRST-5 HOLDER</b> — one of the first 5 holders at mint distribution</li>
+              <li><b>FOUNDER MULTISIG</b> — verified signer on the project treasury multisig</li>
+            </ul>
+            If you're a collaborator (not a dev), go back and pick the <b>COLLABORATOR</b> path instead.
+          </div>
+          <div class="inel-actions">
+            <button class="cta inel-disconnect" id="btnInelDisconnect">&gt; TRY A NEW WALLET</button>
+          </div>
+        </div>
+
+        <!-- WIREFRAME TOGGLE -->
+        <div class="outcome-toggle" style="margin-top:14px"><button type="button" id="eligibilityToggle">⟳ TOGGLE ELIGIBILITY (WIREFRAME)</button></div>
+      </div>
+
+      <!-- ═══ STEP 6 — PAYMENT REVIEW ═══ -->
+      <div class="step" data-step="6" style="display:none">
+        <div class="pain">REVIEW BEFORE YOU SIGN</div>
+        <h2 class="head">One last <span class="accent">look.</span></h2>
+        <p class="sub">Confirm everything below. After you sign, the proof is permanent — no edit, no delete, no refund.</p>
+
+        <div class="review-card">
+          <div class="review-row"><span class="review-key">PROJECT</span><span class="review-val green">$LASTSHFT</span></div>
+          <div class="review-row"><span class="review-key">ROLE</span><span class="review-val">GROWTH LEAD</span></div>
+          <div class="review-row"><span class="review-key">PROOF TYPE</span><span class="review-val">COLLABORATOR</span></div>
+          <div class="review-row"><span class="review-key">COMMENT</span><span class="review-val">SHIPPED V1 LAUNCH…</span></div>
+          <div class="review-row"><span class="review-key">FROM WALLET</span><span class="review-val">F7K2…9XMP</span></div>
+          <div class="review-row"><span class="review-key">TO</span><span class="review-val">$LASTSHFT AR WALLET</span></div>
+          <div class="review-row"><span class="review-key">PAY WITH</span><span class="review-val">$LASTSHFT (−40%)</span></div>
+          <div class="review-row"><span class="review-key">AMOUNT</span><span class="review-val accent"><span id="liveAmount">$0.60 = 5,000.00 $LASTSHFT</span> <span class="live-pill"><span class="live-dot"></span>LIVE</span></span></div>
+          <div class="review-row"><span class="review-key">RATE</span><span class="review-val"><span id="liveRate">1 $LASTSHFT ≈ $0.00012</span> · <span class="live-age" id="liveAge">UPDATED 0s AGO</span></span></div>
+        </div>
+        <div class="field-help" style="text-align:center;margin-top:10px">PRICE REFRESHES EVERY 5S FROM JUPITER AGGREGATOR · LOCKED AT SIGNATURE</div>
+      </div>
+
+      <!-- ═══ STEP 7 — WAITING FOR WALLET SIGNATURE ═══ -->
+      <div class="step" data-step="7" style="display:none">
+        <div class="pain">WAITING FOR WALLET APPROVAL</div>
+        <h2 class="head">Approve in <span class="accent" id="signWallet">Phantom</span>.</h2>
+        <p class="sub">Open your wallet and approve the transaction. Your wallet will verify keys and sign the proof — LASTPROOF never sees your private key.</p>
+
+        <div class="sign-wrap">
+          <div class="sign-phone">
+            <div class="sign-spin"></div>
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/><path d="M9 6h6"/></svg>
+          </div>
+          <div class="sign-log">
+            <div class="ok">WALLET CONNECTED · F7K2…9XMP</div>
+            <div class="ok">TRANSACTION BUILT · PROOF PAYLOAD READY</div>
+            <div class="pending">AWAITING SIGNATURE IN WALLET…</div>
+          </div>
+        </div>
+        <div class="field-help" style="text-align:center;margin-top:12px">DO NOT CLOSE THIS WINDOW · TIMES OUT AFTER 60 SECONDS</div>
+      </div>
+
+      <!-- ═══ STEP 8 — FINAL OUTCOME (success OR failure) ═══ -->
+      <div class="step" data-step="8" style="display:none">
+        <!-- SUCCESS OUTCOME -->
+        <div class="outcome" data-outcome="ok" id="outcomeOk">
+          <div class="done-wrap">
+            <div class="done-check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="pain">PROOFED ON-CHAIN</div>
+            <h2 class="head"><span class="accent">@cryptomark</span> thanks you. <span class="green">It's done.</span></h2>
+            <p class="sub">Your proof is live. The operator's count just ticked up by 1.</p>
+            <div class="proof-summary">
+              <div class="ps-row"><span class="ps-key">PROJECT</span><span class="ps-val green">$LASTSHFT</span></div>
+              <div class="ps-row"><span class="ps-key">ROLE</span><span class="ps-val">GROWTH LEAD</span></div>
+              <div class="ps-row"><span class="ps-key">PROOF TYPE</span><span class="ps-val">COLLABORATOR</span></div>
+              <div class="ps-row"><span class="ps-key">FROM</span><span class="ps-val">F7K2…9XMP</span></div>
+              <div class="ps-row"><span class="ps-key">PAID</span><span class="ps-val">5,000 $LASTSHFT ($0.60)</span></div>
+              <div class="ps-row"><span class="ps-key">SOLSCAN</span><span class="ps-val"><a href="#" target="_blank" rel="noreferrer">5HxV…b3Qm ↗</a></span></div>
+            </div>
+            <div class="ok-actions">
+              <button class="cta ok-back" id="btnOkBack">&gt; BACK TO PROFILE</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FAILURE OUTCOME -->
+        <div class="outcome" data-outcome="fail" id="outcomeFail" style="display:none">
+          <div class="done-wrap">
+            <div class="done-check fail">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <div class="pain" style="color:var(--red)">TRANSACTION FAILED</div>
+            <h2 class="head">Proof did <span style="color:var(--red)">not broadcast.</span></h2>
+            <p class="sub">Nothing was charged. The transaction either reverted on-chain or was rejected by your wallet. You can retry below.</p>
+            <div class="proof-summary">
+              <div class="ps-row"><span class="ps-key">PROJECT</span><span class="ps-val green">$LASTSHFT</span></div>
+              <div class="ps-row"><span class="ps-key">FROM</span><span class="ps-val">F7K2…9XMP</span></div>
+              <div class="ps-row"><span class="ps-key">ATTEMPTED</span><span class="ps-val">5,000 $LASTSHFT ($0.60)</span></div>
+              <div class="ps-row"><span class="ps-key">ERROR</span><span class="ps-val" style="color:var(--red)">INSUFFICIENT COMPUTE · BLOCKHASH EXPIRED</span></div>
+              <div class="ps-row"><span class="ps-key">CHARGED</span><span class="ps-val green">$0.00 · NOTHING SENT</span></div>
+              <div class="ps-row"><span class="ps-key">SOLSCAN</span><span class="ps-val"><a href="#" target="_blank" rel="noreferrer">5HxV…b3Qm (failed) ↗</a></span></div>
+            </div>
+            <div class="fail-actions">
+              <button class="cta fail-retry" id="btnFailRetry">&gt; RETRY PROOF</button>
+              <button class="cta fail-back" id="btnFailBack">&gt; BACK TO PROFILE</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- DEV toggle (wireframe only) -->
+        <div class="outcome-toggle">
+          <button type="button" id="outcomeToggle">⟳ TOGGLE OUTCOME (WIREFRAME)</button>
+        </div>
+      </div>
+
+      <!-- ═══ ERROR OVERLAY (reachable from steps 4–6) ═══ -->
+      <div class="step" data-step="err" style="display:none">
+        <div class="pain">SOMETHING WENT WRONG</div>
+        <h2 class="head">Proof <span style="color:var(--red)">failed.</span></h2>
+        <p class="sub">No charge was made. You can retry or back out.</p>
+        <div class="err-card">
+          <div class="err-head">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            WALLET REJECTED SIGNATURE
+          </div>
+          <div class="err-body">User declined the transaction in Phantom. Nothing was sent on-chain. Try again or pick a different wallet.</div>
+        </div>
+      </div>
+
+      <!-- ═══ DISCONNECT CONFIRMATION — already done ═══ -->
+      <div class="step" data-step="disc" style="display:none">
+        <div class="disc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg>
+        </div>
+        <div class="pain">SESSION ENDED</div>
+        <h2 class="head">Wallet <span class="accent">disconnected.</span></h2>
+        <p class="sub">Your wallet is no longer connected to LASTPROOF. This session has been terminated — no proof was created.</p>
+
+        <div class="disc-card">
+          <div class="disc-row"><span class="disc-key">LAST WALLET</span><span class="disc-val" id="discAddr">PHANTOM · F7k2…9xMp</span></div>
+          <div class="disc-row"><span class="disc-key">STATUS</span><span class="disc-val red">◉ DISCONNECTED</span></div>
+        </div>
+
+        <div class="disc-actions">
+          <button class="cta disc-back" id="btnDiscBack">&gt; BACK TO PROFILE</button>
+          <button class="cta disc-reconnect" id="btnDiscReconnect">&gt; RECONNECT &amp; START OVER</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CTA ROW -->
+    <div class="cta-row">
+      <button class="btn-back" id="btnBack" style="display:none">←</button>
+      <button class="cta" id="btnNext"><span id="btnNextLabel">&gt; CONTINUE</span></button>
+    </div>
+
+    <div class="fine">PROOFS ARE PERMANENT · 1 WALLET PER PROJECT · 1 DEV PROOF PER PROJECT</div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  var step=1, total=8, path='collab', connected=false, prevStep=1;
+  var labels=['&gt; CONTINUE','&gt; PICK A WALLET ABOVE','&gt; CONTINUE','&gt; CONTINUE','&gt; CONTINUE','&gt; VERIFY THIS PROOF','&gt; SIGN & BROADCAST','&gt; BACK TO PROFILE'];
+  var stepNow=document.getElementById('stepNow');
+  var barFill=document.getElementById('barFill');
+  var btnBack=document.getElementById('btnBack');
+  var btnNext=document.getElementById('btnNext');
+  var btnNextLabel=document.getElementById('btnNextLabel');
+  var eligible=true;
+  var connPill=document.getElementById('connPill');
+  var connAddr=document.getElementById('connAddr');
+  var walletPicker=document.getElementById('walletPicker');
+  var walletConnecting=document.getElementById('walletConnecting');
+  var walletVerified=document.getElementById('walletVerified');
+  var wcName=document.getElementById('wcName');
+  var wvName=document.getElementById('wvName');
+  var wvAddr=document.getElementById('wvAddr');
+  var signWallet=document.getElementById('signWallet');
+  var wcCancel=document.getElementById('wcCancel');
+  var btnWvContinue=document.getElementById('btnWvContinue');
+  var outcomeOk=document.getElementById('outcomeOk');
+  var outcomeFail=document.getElementById('outcomeFail');
+  var outcomeToggle=document.getElementById('outcomeToggle');
+  var btnFailRetry=document.getElementById('btnFailRetry');
+  var btnFailBack=document.getElementById('btnFailBack');
+  var currentOutcome='ok';
+  var signTimer=null;
+
+  var WALLET_LABEL={phantom:'PHANTOM',solflare:'SOLFLARE',jupiter:'JUPITER MOBILE',binance:'BINANCE APP'};
+
+  function render(){
+    var isDisc=(step==='disc');
+    document.querySelectorAll('.step').forEach(function(s){
+      s.style.display=(s.dataset.step==String(step))?'block':'none';
+    });
+    if(!isDisc){
+      stepNow.textContent=step;
+      barFill.style.width=((step/total)*100)+'%';
+      // No back button on 1 (first), 2 (connect), 3 (post-connect), 5 (verify), 7 (sig wait), 8 (done)
+      btnBack.style.display=(step===1||step===2||step===3||step===5||step===7||step===8)?'none':'inline-block';
+      btnNextLabel.innerHTML=labels[step-1];
+      btnNext.classList.toggle('green', false);
+      // Steps 2, 7, 8 manage their own CTAs; step 5 hides CTA when ineligible
+      var hideCta=(step===2||step===7||step===8||(step===5&&!eligible));
+      document.querySelector('.cta-row').style.display=hideCta?'none':'flex';
+      // Step 4 — apply path-aware pricing
+      if(step===4){applyPathPricing();}
+    }else{
+      document.querySelector('.cta-row').style.display='none';
+    }
+    // Pill visible only when connected AND past connect screen
+    connPill.style.display=(connected && !isDisc && typeof step==='number' && step>=3)?'inline-flex':'none';
+    // Step 5 — sequential terminal reveal
+    if(step===5){playTermLog();}
+    // Step 6 — live price ticker
+    if(step===6){startLiveTicker();}else{stopLiveTicker();}
+    // Step 7 — simulate wallet signature, auto-advance to step 8
+    if(step===7){
+      if(signTimer)clearTimeout(signTimer);
+      signTimer=setTimeout(function(){step=8;render();},2600);
+    }
+    // Step 8 — reflect outcome
+    if(step===8){
+      outcomeOk.style.display=(currentOutcome==='ok')?'block':'none';
+      outcomeFail.style.display=(currentOutcome==='fail')?'block':'none';
+    }
+  }
+
+  // === PATH-AWARE PRICING (step 4) ===
+  function applyPathPricing(){
+    var isDev=(path==='dev');
+    var base=isDev?5:1;                // USD
+    var disc=isDev?3:0.60;             // USD with 40% off
+    var ls=document.getElementById('priceLs');
+    var lsStrike=document.getElementById('priceLsStrike');
+    var sol=document.getElementById('priceSol');
+    var solSub=document.getElementById('priceSolSub');
+    var usdt=document.getElementById('priceUsdt');
+    var usdtSub=document.getElementById('priceUsdtSub');
+    if(ls)ls.textContent='$'+disc.toFixed(2);
+    if(lsStrike)lsStrike.textContent='$'+base.toFixed(2);
+    if(sol)sol.textContent='$'+base.toFixed(2);
+    if(solSub)solSub.textContent='≈ '+(base*0.00549).toFixed(5)+' SOL';
+    if(usdt)usdt.textContent='$'+base.toFixed(2);
+    if(usdtSub)usdtSub.textContent='≈ '+base.toFixed(2)+' USDT';
+  }
+
+  // === TERMINAL LOG REVEAL (step 5) ===
+  var termTimers=[];
+  function playTermLog(){
+    termTimers.forEach(clearTimeout);termTimers=[];
+    // Pick active log: fail (ineligible) wins; else dev vs collab
+    var collab=document.getElementById('termLogCollab');
+    var dev=document.getElementById('termLogDev');
+    var fail=document.getElementById('termLogFail');
+    var inel=document.getElementById('ineligibleCard');
+    var failRole=document.getElementById('failRole');
+    if(failRole)failRole.textContent=(path==='dev')?'dev':'collaborator';
+    collab.style.display='none';dev.style.display='none';fail.style.display='none';
+    if(inel)inel.style.display='none';
+    var active;
+    if(!eligible){active=fail;if(inel){/* delay showing explainer until log finishes */}}
+    else if(path==='dev'){active=dev;}
+    else{active=collab;}
+    active.style.display='block';
+    var lines=active.querySelectorAll('.term-line');
+    lines.forEach(function(l){l.classList.remove('show');});
+    lines.forEach(function(l){
+      var d=parseInt(l.dataset.delay||'0',10);
+      termTimers.push(setTimeout(function(){l.classList.add('show');},d));
+    });
+    if(!eligible && inel){
+      termTimers.push(setTimeout(function(){
+        inel.style.display='block';
+        // Auto-disconnect the wallet — ineligible sessions end immediately
+        connected=false;
+        connPill.style.display='none';
+      },3400));
+    }
+  }
+
+  // === LIVE PRICE TICKER (step 6) ===
+  var liveTimer=null, liveAge=0;
+  var liveAmtEl=document.getElementById('liveAmount');
+  var liveRateEl=document.getElementById('liveRate');
+  var liveAgeEl=document.getElementById('liveAge');
+  function startLiveTicker(){
+    if(liveTimer)return;
+    liveAge=0;
+    if(liveAgeEl)liveAgeEl.textContent='UPDATED 0s AGO';
+    liveTimer=setInterval(function(){
+      liveAge++;
+      if(liveAgeEl)liveAgeEl.textContent='UPDATED '+liveAge+'s AGO';
+      if(liveAge>=5){
+        var isDev=(path==='dev');
+        var usd=isDev?3:0.60;
+        var base=isDev?25000:5000, j=Math.round((Math.random()*40-20));
+        var amt=(base+j).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+        var rate=(0.00012+(Math.random()*0.000008-0.000004)).toFixed(6);
+        if(liveAmtEl){
+          liveAmtEl.classList.add('flash');
+          setTimeout(function(){
+            liveAmtEl.textContent='$'+usd.toFixed(2)+' = '+amt+' $LASTSHFT';
+            liveAmtEl.classList.remove('flash');
+          },180);
+        }
+        if(liveRateEl)liveRateEl.textContent='1 $LASTSHFT ≈ $'+rate;
+        liveAge=0;
+      }
+    },1000);
+  }
+  function stopLiveTicker(){if(liveTimer){clearInterval(liveTimer);liveTimer=null;}}
+
+  btnNext.addEventListener('click',function(){
+    if(step===2 && !connected){return;} // block advance until wallet connected
+    if(step<total){step++;render();}
+    else{alert('→ close modal, soft-update profile state');}
+  });
+  btnBack.addEventListener('click',function(){
+    if(typeof step==='number' && step>1){step--;render();}
+  });
+
+  // Path select
+  document.querySelectorAll('.path-card[data-path]').forEach(function(c){
+    c.addEventListener('click',function(){
+      document.querySelectorAll('.path-card').forEach(function(x){x.classList.remove('selected');});
+      c.classList.add('selected');
+      path=c.dataset.path;
+    });
+  });
+  // Token select
+  document.querySelectorAll('.token-card[data-token]').forEach(function(c){
+    c.addEventListener('click',function(){
+      document.querySelectorAll('.token-card').forEach(function(x){x.classList.remove('selected');});
+      c.classList.add('selected');
+    });
+  });
+
+  // Wallet provider click → connecting → verified (user must click CONTINUE)
+  function showPicker(){walletPicker.style.display='flex';walletConnecting.style.display='none';walletVerified.style.display='none';}
+  document.querySelectorAll('.wallet-prov[data-prov]').forEach(function(b){
+    b.addEventListener('click',function(){
+      var prov=b.dataset.prov;
+      var label=WALLET_LABEL[prov]||prov.toUpperCase();
+      wcName.textContent=label;
+      walletPicker.style.display='none';
+      walletVerified.style.display='none';
+      walletConnecting.style.display='flex';
+      // Simulate wallet approval delay
+      setTimeout(function(){
+        walletConnecting.style.display='none';
+        walletVerified.style.display='flex';
+        wvName.textContent=label;
+        wvAddr.textContent='F7k2k9aH4z…9xMp';
+        if(signWallet)signWallet.textContent=label.charAt(0)+label.slice(1).toLowerCase();
+        connected=true;
+        connAddr.textContent=label+' · F7k2…9xMp';
+      },1600);
+    });
+  });
+  wcCancel.addEventListener('click',showPicker);
+  // Verified → Continue advances to step 3
+  btnWvContinue.addEventListener('click',function(){
+    step=3;
+    render();
+    showPicker(); // reset step 2 internal state for future revisits
+  });
+
+  // Conn pill → disconnect (actually disconnect + confirm screen)
+  connPill.addEventListener('click',function(){
+    connected=false;
+    step='disc';
+    render();
+  });
+  document.getElementById('btnDiscBack').addEventListener('click',function(){
+    alert('→ navigate back to /@cryptomark profile');
+  });
+  document.getElementById('btnDiscReconnect').addEventListener('click',function(){
+    connected=false;
+    step=2;
+    showPicker();
+    render();
+  });
+
+  // Step 5 — eligibility toggle + ineligible exit buttons (wireframe only)
+  var eligibilityToggle=document.getElementById('eligibilityToggle');
+  var btnInelDisconnect=document.getElementById('btnInelDisconnect');
+  if(eligibilityToggle){
+    eligibilityToggle.addEventListener('click',function(){
+      eligible=!eligible;
+      render();
+    });
+  }
+  if(btnInelDisconnect){
+    btnInelDisconnect.addEventListener('click',function(){
+      eligible=true; // reset for next try
+      connected=false;
+      step=2;
+      showPicker();
+      render();
+    });
+  }
+  // Outcome toggle (wireframe only) + failure actions
+  outcomeToggle.addEventListener('click',function(){
+    currentOutcome=(currentOutcome==='ok')?'fail':'ok';
+    render();
+  });
+  btnFailRetry.addEventListener('click',function(){
+    currentOutcome='ok';
+    step=6;
+    render();
+  });
+  btnFailBack.addEventListener('click',function(){
+    alert('→ navigate back to /@cryptomark profile');
+  });
+  var btnOkBack=document.getElementById('btnOkBack');
+  if(btnOkBack)btnOkBack.addEventListener('click',function(){
+    alert('→ navigate back to /@cryptomark profile');
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
