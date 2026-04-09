@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import type { EligibilityState, ProofPath } from "./types";
-import type { ProofToken } from "@/lib/proof-tokens";
+import type { ProofTokenKey } from "@/lib/proof-tokens";
 
 /**
  * SSE client for POST /api/proof/eligibility.
@@ -36,7 +36,7 @@ export interface StartEligibilityArgs {
    * with the default (`LASTSHFT`) and re-fires at step 4→5 if the
    * user picked a different token.
    */
-  token: ProofToken;
+  token: ProofTokenKey;
   /** Only used by the mock today — real endpoint infers from session. */
   scenario?: "eligible" | "ineligible";
   pubkey?: string;

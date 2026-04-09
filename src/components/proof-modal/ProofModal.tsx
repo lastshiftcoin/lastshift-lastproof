@@ -17,7 +17,7 @@ import {
   LASTSHFT_DISCOUNT_LABEL,
   BUY_LASTSHFT_URL,
   getProofPriceUsd,
-  type ProofToken,
+  type ProofTokenKey,
 } from "@/lib/proof-tokens";
 
 /** Comment char cap — matches backend spec §3 step 3 (NOT Twitter's 280). */
@@ -56,14 +56,14 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
   const [step, setStep] = useState<ProofStep>(1);
   const [path, setPath] = useState<ProofPath | null>(null);
   const [comment, setComment] = useState<string>("");
-  const [token, setToken] = useState<ProofToken>("LASTSHFT");
+  const [token, setToken] = useState<ProofTokenKey>("LASTSHFT");
   /**
    * Tracks which token the currently-cached eligibility stream was
    * run for. When the user changes token on step 4 and advances to
    * step 5, we compare `token` vs `streamedToken` and re-fire if they
    * differ. Null when no stream has been kicked off yet.
    */
-  const [streamedToken, setStreamedToken] = useState<ProofToken | null>(null);
+  const [streamedToken, setStreamedToken] = useState<ProofTokenKey | null>(null);
   /** WIREFRAME-ONLY toggle — lets us flip mock scenario without a real wallet. */
   const [forceIneligible, setForceIneligible] = useState(false);
   /**
@@ -666,8 +666,8 @@ function Step4TokenPicker({
   onPick,
 }: {
   path: ProofPath;
-  token: ProofToken;
-  onPick: (t: ProofToken) => void;
+  token: ProofTokenKey;
+  onPick: (t: ProofTokenKey) => void;
 }) {
   const basePrice = PROOF_BASE_PRICE_USD[path];
   return (

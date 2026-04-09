@@ -24,12 +24,12 @@
 
 import { TOKEN_MINTS, TOKEN_DECIMALS, LASTSHFT_MINT } from "./constants";
 
-export type ProofToken = "LASTSHFT" | "SOL" | "USDT";
+export type ProofTokenKey = "LASTSHFT" | "SOL" | "USDT";
 export type ProofPath = "collab" | "dev";
 
 export interface ProofTokenInfo {
   /** Enum key — use this as the React list key and the picker value. */
-  key: ProofToken;
+  key: ProofTokenKey;
   /** Display label with leading $ for the ticker. */
   label: string;
   /** SPL mint address. `"native"` for SOL. */
@@ -47,7 +47,7 @@ export interface ProofTokenInfo {
  * on step 4 and signed on step 7. Backend must match on every quote —
  * a drift here is a contract violation.
  */
-export const PROOF_PRICES_USD: Record<ProofPath, Record<ProofToken, number>> = {
+export const PROOF_PRICES_USD: Record<ProofPath, Record<ProofTokenKey, number>> = {
   collab: {
     LASTSHFT: 0.6, // 40% off $1
     SOL: 1.0,
@@ -107,12 +107,12 @@ export const PROOF_TOKENS: readonly ProofTokenInfo[] = [
 export const BUY_LASTSHFT_URL = "https://lastshiftcoin.com/buy";
 
 /** Lookup helpers — prefer these over array.find() in the UI. */
-export function getProofToken(key: ProofToken): ProofTokenInfo {
+export function getProofToken(key: ProofTokenKey): ProofTokenInfo {
   const found = PROOF_TOKENS.find((t) => t.key === key);
   if (!found) throw new Error(`unknown proof token: ${key}`);
   return found;
 }
 
-export function getProofPriceUsd(path: ProofPath, token: ProofToken): number {
+export function getProofPriceUsd(path: ProofPath, token: ProofTokenKey): number {
   return PROOF_PRICES_USD[path][token];
 }
