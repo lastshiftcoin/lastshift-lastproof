@@ -54,21 +54,27 @@ mock object (NOT from real stores — that's step 2).
 You **cannot** create a folder named `@[handle]` or `[@handle]`. Next
 will interpret it as a parallel route slot, not a URL segment.
 
+**Also:** folders prefixed with `_` are **private folders** and are
+excluded from the route tree entirely (even as rewrite destinations).
+Do not use `_profile` — the rewrite will 404. This was tried and
+failed during step 1; corrected to plain `profile`.
+
 **Solution:** use a URL rewrite. Add this to `next.config.ts`:
 
 ```ts
 async rewrites() {
   return [
-    { source: "/@:handle", destination: "/_profile/:handle" },
+    { source: "/@:handle", destination: "/profile/:handle" },
   ];
 }
 ```
 
 Then create the real route at:
-`src/app/(marketing)/_profile/[handle]/page.tsx`
+`src/app/(marketing)/profile/[handle]/page.tsx`
 
 The user-facing URL stays `/@cryptomark`. Internal folder is
-`_profile/[handle]`. Do NOT try to make the folder literally `@handle`.
+`profile/[handle]`. Do NOT try to make the folder literally `@handle`,
+and do NOT prefix it with `_`.
 
 Also drop the same rewrite in reverse for canonicalization if
 relevant — but for step 1 a one-way rewrite is enough.
@@ -173,8 +179,8 @@ Better names — match the wireframe semantics:
 ### 3.2 Files you'll create
 | Path | What it is |
 |---|---|
-| `src/app/(marketing)/_profile/[handle]/page.tsx` | The route |
-| `src/app/(marketing)/_profile/[handle]/profile-public.css` | Namespaced CSS lifted from wireframe `<style>` |
+| `src/app/(marketing)/profile/[handle]/page.tsx` | The route |
+| `src/app/(marketing)/profile/[handle]/profile-public.css` | Namespaced CSS lifted from wireframe `<style>` |
 | `src/lib/mock/cryptomark-profile.ts` | Typed mock `PublicProfileView` |
 | `src/lib/public-profile-view.ts` | `PublicProfileView` TypeScript type (see §4 below) |
 | `src/components/profile/ProfileHero.tsx` | Avatar + identity + meta + hire |
@@ -427,7 +433,7 @@ Assume roughly 60–90 minutes of focused work.
 ### Step B — Lift the CSS (15 min)
 1. Read wireframe offsets ~8–367 in chunks to extract the `<style>`
    block.
-2. Create `src/app/(marketing)/_profile/[handle]/profile-public.css`
+2. Create `src/app/(marketing)/profile/[handle]/profile-public.css`
 3. Copy every class, **prefixing each selector with `pp-`** (e.g.
    `.hero` → `.pp-hero`, `.avatar` → `.pp-avatar`, `.tab` → `.pp-tab`,
    `.stat` → `.pp-stat`, `.pow-card` → `.pp-pow-card`, etc.).
@@ -464,7 +470,7 @@ cleanly at the end.
     tabs are decorative. Active = "overview". No JS switching.)
 
 ### Step D — Wire the route (10 min)
-1. Create `src/app/(marketing)/_profile/[handle]/page.tsx`
+1. Create `src/app/(marketing)/profile/[handle]/page.tsx`
 2. Import the mock + all components + the CSS file
 3. Hard-fail if `params.handle !== "cryptomark"` for step 1 — we
    only have the one mock. Return a 404 for anything else:
@@ -510,7 +516,7 @@ categories store+adapter build-out). The new namespaced pp-* CSS
 lives alongside the route to avoid collisions with the marketing
 homepage classes (hero, chip, btn, stat all collide).
 
-Adds a next.config.ts rewrite mapping /@:handle → /_profile/:handle
+Adds a next.config.ts rewrite mapping /@:handle → /profile/:handle
 because Next reserves @folder for parallel routes and cannot use
 the literal @ in a folder name.
 
@@ -604,14 +610,14 @@ See `CLAUDE.md` § Priorities for the full list.
 
 Paste this into the next session and check off as you go:
 
-- [ ] `next.config.ts` has the `/@:handle → /_profile/:handle` rewrite
+- [ ] `next.config.ts` has the `/@:handle → /profile/:handle` rewrite
 - [ ] `src/lib/public-profile-view.ts` created with full type
 - [ ] `src/lib/mock/cryptomark-profile.ts` created, satisfies the type,
       contains verbatim wireframe data (pitch body, about, descriptions)
-- [ ] `src/app/(marketing)/_profile/[handle]/profile-public.css` lifted
+- [ ] `src/app/(marketing)/profile/[handle]/profile-public.css` lifted
       from wireframe with `pp-` prefix on every class
 - [ ] 11 components created in `src/components/profile/`
-- [ ] `src/app/(marketing)/_profile/[handle]/page.tsx` renders the mock
+- [ ] `src/app/(marketing)/profile/[handle]/page.tsx` renders the mock
       and 404s on any handle ≠ cryptomark
 - [ ] `npx tsc --noEmit` clean
 - [ ] Visual diff against `wireframes/lastproof-profile-public.html`
