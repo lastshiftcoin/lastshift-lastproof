@@ -346,7 +346,18 @@ GET /api/proof/quote/{quote_id}/refresh
 
 **Backend questions:**
 15. Does refreshing a quote generate a new `quote_id` or extend the existing one? FE prefers the latter so the signing payload doesn't drift between the review screen and the sign screen.
-16. **Quote expired sub-state (RESOLVED).** FE polls at T-30s before `expires_at`. If the quote ages out while user is on step 6, the review card is replaced by an inline red dashed banner `QUOTE EXPIRED — REFRESH PRICE` with a single `> REFRESH PRICE` button that re-hits `/refresh`. No bounce back to step 1. Open sub-question: should `/refresh` also re-run eligibility if it's been >60s since the initial check, in case balance dropped below needed during the sit?
+16. **Quote expired sub-state (RESOLVED).** FE polls at T-30s before `expires_at`. If the quote ages out while user is on step 6, the review card is replaced by an inline red dashed banner `QUOTE EXPIRED — REFRESH PRICE` with a single `> REFRESH PRICE` button that re-hits `/refresh`. No bounce back to step 1.
+
+16b. **Refresh re-verifies eligibility at ≥45s stale (RESOLVED).** `/refresh` is a single round-trip: if eligibility age ≥ 45s, the backend re-runs eligibility inside the same PG advisory lock session (reusing warm RPC cache where possible) before repricing. 45s threshold gives a 75s safety margin under the 120s lock ceiling. FE stays dumb — one call, one of three outcomes:
+
+```
+POST /api/proof/quote/{id}/refresh
+→ 200 { ok: true,  quote: {...}, eligibility: { reVerified: boolean, ageMs: number } }
+→ 200 { ok: false, reason: "slot_taken"|"insufficient_balance"|"quote_expired_hard"|"rpc_degraded", ... }
+→ 409 { ok: false, reason: "lock_lost" }   // force-disconnect via step 5 failure path
+```
+
+On `{ ok: false }` the FE short-circuits to step 5 failure using the same force-disconnect path as the initial ineligible flow. `reVerified: true` may trigger a subtle terminal-log flicker; FE is free to ignore the flag.
 
 ---
 
@@ -536,7 +547,8 @@ Already specified in §5c above. Key point: **the disconnect is automatic and fo
 
 **Quote refresh**
 15. Same `quote_id` on refresh or new one?
-16. Quote expiration on review screen — re-run eligibility?
+16. Quote expiration on review screen — re-run eligibility? RESOLVED — inline refresh.
+16b. `/refresh` re-verifies eligibility at ≥45s stale. RESOLVED.
 
 **Signing + broadcast**
 17. Memo format?
