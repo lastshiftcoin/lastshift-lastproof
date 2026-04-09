@@ -82,6 +82,11 @@
 .pp-hero > * { position: relative; z-index: 1; }
 
 .pp-avatar-wrap { position: relative; width: 140px; height: 140px; flex-shrink: 0; }
+.pp-avatar.pp-avatar-default {
+  background: linear-gradient(135deg, #a78bfa 0%, #7c3aed 60%, #5b21b6 100%) !important;
+  box-shadow: 0 0 40px rgba(167, 139, 250, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+  color: #fff !important;
+}
 .pp-avatar {
   width: 140px; height: 140px; border-radius: 50%;
   background: linear-gradient(135deg, var(--accent), #ffb347 50%, var(--gold));
@@ -96,12 +101,16 @@
   border-radius: inherit; pointer-events: none;
 }
 
-.pp-badge-5k {
-  position: absolute; right: -6px; bottom: -2px;
+.pp-hero .pp-avatar-wrap .pp-badge-5k {
+  position: absolute !important;
+  right: 2px !important;
+  bottom: 2px !important;
+  left: auto !important;
+  top: auto !important;
   display: inline-flex; align-items: center; justify-content: center;
   font-family: var(--mono); font-size: 13px; font-weight: 800;
   color: var(--gold); letter-spacing: 0.3px;
-  width: 46px; height: 54px; background: transparent; z-index: 2;
+  width: 46px; height: 54px; background: transparent; z-index: 3;
 }
 .pp-badge-5k svg {
   position: absolute; inset: 0; width: 100%; height: 100%;
@@ -215,7 +224,9 @@
   position: absolute; top: 24px; left: 50%; transform: translateX(-50%);
   font-family: var(--mono); font-size: 10px; font-weight: 800;
   color: var(--text-secondary); letter-spacing: 0.5px; white-space: nowrap;
+  display: flex; flex-direction: column; align-items: center; line-height: 1.25;
 }
+.pp-tt-tick span em { font-style: normal; color: var(--text-dim); font-weight: 700; }
 @media (max-width: 720px) {
   .pp-trust-tier { grid-template-columns: 1fr; gap: 16px; padding: 16px; }
 }
@@ -312,9 +323,24 @@
   margin-bottom: 10px; transition: all 0.15s; position: relative;
 }
 .pp-pow-card.pp-minted {
-  border-color: rgba(255, 215, 0, 0.35);
+  border-color: rgba(255, 215, 0, 0.55);
   background: linear-gradient(135deg, rgba(255, 215, 0, 0.04) 0%, var(--bg-secondary) 60%);
+  animation: pp-mintedGlow 2.8s ease-in-out infinite;
 }
+@keyframes pp-mintedGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.25), 0 0 18px rgba(255, 215, 0, 0.18);
+    border-color: rgba(255, 215, 0, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.6), 0 0 32px rgba(255, 215, 0, 0.45);
+    border-color: rgba(255, 215, 0, 0.85);
+  }
+}
+
+/* Hide SHIFTBOT command strip on any profile page (public/5000/free) */
+.pp-page ~ .shiftbot,
+body:has(.pp-page) .shiftbot { display: none !important; }
 .pp-pow-card.pp-current {
   border-color: rgba(0, 230, 118, 0.35);
   background: linear-gradient(135deg, rgba(0, 230, 118, 0.04) 0%, var(--bg-secondary) 60%);
@@ -349,7 +375,7 @@
   padding-top: 10px; border-top: 1px dashed var(--border); flex-wrap: wrap;
 }
 .pp-pow-proofs { font-family: var(--mono); font-size: 10px; color: #fff; letter-spacing: 0.5px; }
-.pp-pow-proofs b { color: #fff; font-size: 13px; font-weight: 800; margin-right: 4px; }
+.pp-pow-proofs b { color: var(--orange); font-size: 13px; font-weight: 800; margin-right: 4px; }
 .pp-pow-verify {
   display: inline-flex; align-items: center; gap: 6px;
   font-family: var(--mono); font-size: 9px; font-weight: 700;
@@ -557,6 +583,23 @@
 .pp-cta-btn:hover { background: var(--orange); color: #0a0b0f; box-shadow: 0 0 24px var(--accent-glow); transform: translateY(-1px); }
 .pp-cta-btn.pp-cta-blue { background: var(--blue-dim); color: var(--blue); border-color: var(--blue); animation: pp-pulseBlue 2.4s infinite; }
 .pp-cta-btn.pp-cta-blue:hover { background: var(--blue); color: #fff; box-shadow: 0 0 24px var(--blue-glow); }
+.pp-cta-btn.pp-cta-green {
+  background: rgba(0, 230, 118, 0.12);
+  color: var(--green);
+  border-color: var(--green);
+  animation: none;
+}
+.pp-cta-btn.pp-cta-green:hover { background: var(--green); color: #0a0b0f; box-shadow: 0 0 24px rgba(0, 230, 118, 0.35); }
+
+/* Purple banner (mirrors 5000 page .fomo-strip color rules) */
+.pp-cta-strip {
+  border-color: #a78bfa !important;
+  box-shadow: 0 0 36px rgba(167, 139, 250, 0.16), inset 0 0 30px rgba(167, 139, 250, 0.05);
+  background: linear-gradient(180deg, rgba(167, 139, 250, 0.06), var(--bg-secondary) 65%) !important;
+}
+.pp-cta-strip::before {
+  background: radial-gradient(ellipse at center, rgba(167, 139, 250, 0.18) 0%, transparent 65%) !important;
+}
 .pp-cta-fine { font-family: var(--mono); font-size: 9px; color: var(--text-dim); letter-spacing: 1px; margin-top: 14px; text-transform: uppercase; }
 
 /* ═══ MOBILE ═══ */
@@ -565,7 +608,7 @@
   .pp-hero { grid-template-columns: 1fr; padding: 24px; gap: 22px; text-align: center; }
   .pp-hero .pp-avatar-wrap { width: 110px; height: 110px; margin: 0 auto; }
   .pp-hero .pp-avatar { width: 110px; height: 110px; font-size: 48px; }
-  .pp-hero .pp-badge-5k { width: 40px; height: 46px; font-size: 11px; right: -4px; bottom: -2px; }
+  .pp-hero .pp-badge-5k { width: 40px; height: 46px; font-size: 11px; right: 0; bottom: 0; }
   .pp-id-name-row { justify-content: center; }
   .pp-id-name { font-size: 26px; }
   .pp-id-pitch { font-size: 14px; text-align: left; }

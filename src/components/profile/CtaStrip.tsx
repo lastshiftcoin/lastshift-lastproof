@@ -10,14 +10,14 @@ export function CtaStrip() {
         Operators: get discovered by the people actually paying.
       </p>
       <div className="pp-cta-dual">
-        <button type="button" className="pp-cta-btn pp-cta-blue">
+        <button type="button" className="pp-cta-btn pp-cta-green">
           &gt; HIRE AN OPERATOR
         </button>
         <button type="button" className="pp-cta-btn">
           &gt; BUILD YOUR PROFILE
         </button>
       </div>
-      <div className="pp-cta-fine">FREE TO CREATE · POWERED BY $LASTSHFT ON SOLANA</div>
+      <div className="pp-cta-fine">START YOUR PROFILE IN 60 SECS OR LESS</div>
     </section>
   );
 }

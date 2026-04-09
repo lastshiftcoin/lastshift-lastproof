@@ -123,7 +123,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
         <section className="pp-section" data-pane="shots">
           <h2 className="pp-section-title">
             SCREENSHOTS
-            <span className="pp-count">{view.totalScreenshots} SHOTS</span>
+            <span className="pp-count">{view.totalScreenshots} UPLOADED</span>
           </h2>
           <ScreenshotGrid screenshots={view.screenshots} />
         </section>
@@ -133,7 +133,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
           <h2 className="pp-section-title">
             LINKS
             <span className="pp-count">
-              {view.pinnedLinksCount} PINNED · {view.totalLinks} TOTAL
+              {view.totalLinks} TOTAL · {view.pinnedLinksCount} PINNED
             </span>
           </h2>
           <ProfileLinksList

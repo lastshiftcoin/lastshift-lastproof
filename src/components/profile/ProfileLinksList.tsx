@@ -25,6 +25,13 @@ const PLATFORM_ICON: Record<ProfileLink["platform"], React.ReactElement> = {
   ),
 };
 
+const PLATFORM_LABEL: Record<ProfileLink["platform"], string> = {
+  tg: "TELEGRAM",
+  x: "X",
+  web: "WEBSITE",
+  dc: "DISCORD",
+};
+
 const PIN_ICON = (
   <svg viewBox="0 0 24 24" fill="currentColor">
     <path d="M12 2 15 9l7 .8-5.3 4.7L18.2 22 12 18l-6.2 4 1.5-7.5L2 9.8 9 9z" />
@@ -65,9 +72,16 @@ export function ProfileLinksList({
         <button type="button" className="pp-lk-tab pp-active">
           ALL <span className="pp-ct">{totalLinks}</span>
         </button>
-        <button type="button" className="pp-lk-tab">
-          PINNED <span className="pp-ct">{pinnedLinksCount}</span>
-        </button>
+        {(["tg", "x", "web", "dc"] as const).map((pf) => {
+          const count = links.filter((l) => l.platform === pf).length;
+          if (count === 0) return null;
+          return (
+            <button key={pf} type="button" className="pp-lk-tab">
+              {PLATFORM_ICON[pf]}
+              {PLATFORM_LABEL[pf]} <span className="pp-ct">{count}</span>
+            </button>
+          );
+        })}
       </div>
       <div className="pp-lk-list">
         {ordered.map((link) => (

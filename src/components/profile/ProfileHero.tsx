@@ -69,7 +69,7 @@ export function ProfileHero(props: Props) {
           // eslint-disable-next-line @next/next/no-img-element
           <img className="pp-avatar" src={props.avatarUrl} alt={props.displayName} />
         ) : (
-          <div className="pp-avatar">{props.avatarMonogram}</div>
+          <div className="pp-avatar pp-avatar-default">{props.avatarMonogram}</div>
         )}
         {props.isEarlyAdopter && (
           <span className="pp-badge-5k" data-tip="First 5000 operator — founding member">

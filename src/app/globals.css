@@ -323,7 +323,7 @@ body::after {
 .closing p { font-family: var(--mono); font-size: 11px; color: var(--text-secondary); letter-spacing: 1.5px; margin: 0 0 28px; text-transform: uppercase; }
 .closing .hero-ctas { justify-content: center; }
 
-footer.lp-footer { padding: 24px; display: flex; justify-content: space-between; align-items: center; font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 1.5px; border-top: 1px solid var(--border); }
+footer.lp-footer { padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 1.5px; border-top: 1px solid var(--border); }
 footer.lp-footer .right { display: flex; gap: 22px; }
 footer.lp-footer a:hover { color: var(--text-primary); }
 

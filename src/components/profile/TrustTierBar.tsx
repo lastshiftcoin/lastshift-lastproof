@@ -26,16 +26,16 @@ export function TrustTierBar({ tier, tierBarFillPct, tierSubtitle }: Props) {
           <div className="pp-tt-bar-base" />
           <div className="pp-tt-fill" style={{ width: `${fill}%` }} />
           <div className="pp-tt-tick" style={{ left: "0%" }}>
-            <span>0+ NEW</span>
+            <span><em>0+</em>NEW</span>
           </div>
           <div className="pp-tt-tick" style={{ left: "20%" }}>
-            <span>10+ VERIFIED</span>
+            <span><em>10+</em>VERIFIED</span>
           </div>
           <div className="pp-tt-tick" style={{ left: "50%" }}>
-            <span>25+ EXPERIENCED</span>
+            <span><em>25+</em>EXPERIENCED</span>
           </div>
           <div className="pp-tt-tick" style={{ left: "100%" }}>
-            <span>50+ LEGEND</span>
+            <span><em>50+</em>LEGEND</span>
           </div>
         </div>
       </div>
