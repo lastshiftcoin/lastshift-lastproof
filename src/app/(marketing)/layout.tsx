@@ -1,6 +1,7 @@
 import Topbar from "@/components/Topbar";
 import Footer from "@/components/Footer";
 import ShiftbotStrip from "@/components/ShiftbotStrip";
+import { WalletBoundary } from "@/lib/wallet/provider";
 
 /**
  * Marketing shell. Wraps every public-facing page that uses the standard
@@ -9,13 +10,13 @@ import ShiftbotStrip from "@/components/ShiftbotStrip";
  */
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <WalletBoundary>
       <div className="wrap">
         <Topbar />
         {children}
         <Footer />
       </div>
       <ShiftbotStrip />
-    </>
+    </WalletBoundary>
   );
 }
