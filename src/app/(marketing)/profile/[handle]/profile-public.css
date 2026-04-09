@@ -66,6 +66,19 @@
   z-index: 9999; pointer-events: none;
 }
 
+/* 5K badge tooltip opens upward (hero uses overflow:hidden, clipping bottom) */
+.pp-page .pp-badge-5k[data-tip]:hover::after {
+  top: auto; bottom: calc(100% + 8px);
+}
+.pp-page .pp-badge-5k[data-tip]:hover::before {
+  top: auto; bottom: 100%; margin-top: 0; margin-bottom: -2px;
+  border-bottom-color: transparent; border-top-color: var(--orange);
+}
+/* Lift the whole avatar-wrap stacking context above sibling id-block
+   so the 5K hover tooltip paints over @handle/name/meta rows */
+.pp-hero .pp-avatar-wrap { z-index: 5; }
+.pp-hero .pp-avatar-wrap:has(.pp-badge-5k:hover) { z-index: 9999; }
+
 /* ═══ IDENTITY HERO ═══ */
 .pp-hero {
   display: grid; grid-template-columns: auto 1fr; gap: 30px;
