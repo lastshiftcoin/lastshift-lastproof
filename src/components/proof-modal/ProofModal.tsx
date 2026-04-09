@@ -1072,6 +1072,20 @@ function Step7Signing({ sign }: { sign: ReturnType<typeof useSignFlow>["state"] 
     "failed",
   ];
   const idx = order.indexOf(sign.phase);
+  const failed = sign.phase === "failed";
+  // When failed, the rung that was active when the failure hit is the
+  // one we want to render in red. We infer it from the signing state:
+  // if we have a signature we made it to broadcasting/confirming; if
+  // we have a memo we made it at least to awaiting_signature; else
+  // building. Lets the red X land on the correct rung without the
+  // orchestrator tracking a separate "failedAt" field.
+  const failedPhase: SignPhase | null = !failed
+    ? null
+    : sign.signature
+      ? "confirming"
+      : sign.memo
+        ? "awaiting_signature"
+        : "building";
 
   return (
     <>
@@ -1087,10 +1101,19 @@ function Step7Signing({ sign }: { sign: ReturnType<typeof useSignFlow>["state"] 
       <div className="pm-ladder" role="status" aria-live="polite" aria-atomic="false">
         {rungs.map((r) => {
           const rungIdx = order.indexOf(r.key);
-          const active = r.key === sign.phase;
-          const done = rungIdx < idx && sign.phase !== "idle";
-          const mark = done ? "✓" : active ? "◆" : " ";
-          const cls = active ? "pm-rung pm-active" : done ? "pm-rung pm-done" : "pm-rung";
+          const active = !failed && r.key === sign.phase;
+          const done =
+            (rungIdx < idx && sign.phase !== "idle" && !failed) ||
+            (failed && failedPhase !== null && rungIdx < order.indexOf(failedPhase));
+          const errored = failed && r.key === failedPhase;
+          const mark = errored ? "✗" : done ? "✓" : active ? "◆" : " ";
+          const cls = errored
+            ? "pm-rung pm-err"
+            : active
+              ? "pm-rung pm-active"
+              : done
+                ? "pm-rung pm-done"
+                : "pm-rung";
           return (
             <div key={r.key} className={cls}>
               <span className="pm-rung-mark">{mark}</span>

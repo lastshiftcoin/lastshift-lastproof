@@ -483,6 +483,14 @@
   background: rgba(16, 185, 129, 0.1);
   color: var(--pm-green);
 }
+.pm-rung.pm-err {
+  color: var(--pm-red, #ef4444);
+}
+.pm-rung.pm-err .pm-rung-mark {
+  border-color: var(--pm-red, #ef4444);
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--pm-red, #ef4444);
+}
 @keyframes pm-pulse {
   0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255, 107, 44, 0.5); }
   50% { opacity: 0.5; box-shadow: 0 0 0 6px rgba(255, 107, 44, 0); }
