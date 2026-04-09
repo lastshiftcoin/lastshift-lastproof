@@ -242,14 +242,22 @@ body: {
   path:    "collab" | "dev",
   token:   "lastshft" | "sol" | "usdt"
 }
+→ SSE stream (default) — see §5 of `PROOF-MODAL-SPEC-REPLY.md` for event schedule:
+   event: start   { run_id, order: [...] }
+   event: check   { id, label, ok, detail }     // one per row, in locked order
+   event: done    { eligible, quote, failed_checks? }
+
+   Pass `Accept: application/json` to force single-shot JSON:
+
 → 200 {
     eligible: true,
     checks: [
-      { id: "uniqueness", label: "UNIQUENESS",  ok: true,  detail: "wallet has not proofed this project" },
-      { id: "slot",       label: "DEV SLOT",    ok: true,  detail: "no dev proof yet on this project" },
-      { id: "deployer",   label: "DEPLOYER",    ok: true,  detail: "F7k2…9xMp matches mint authority" },
-      { id: "first5",     label: "FIRST-5",     ok: true,  detail: "slot 3 of mint distribution" },
-      { id: "balance",    label: "BALANCE",     ok: true,  detail: "1,250.00 $LASTSHFT · need 8.33 $LASTSHFT" }
+      { id: "uniqueness",     label: "UNIQUENESS",      ok: true,  detail: "wallet has not proofed this project" },
+      { id: "slot",           label: "SLOT",            ok: true,  detail: "no dev proof yet on this project" },
+      { id: "balance",        label: "BALANCE",         ok: true,  detail: "1,250.00 $LASTSHFT · need 8.33 $LASTSHFT" },
+      { id: "mint_authority", label: "MINT-AUTHORITY",  ok: true,  detail: "F7k2…9xMp is current mint authority" },
+      { id: "deployer",       label: "DEPLOYER",        ok: true,  detail: "signed mint tx · slot 3 of first-5 holders" },
+      { id: "founder",        label: "FOUNDER",         ok: null,  detail: "multisig check coming in v1.1" }
     ],
     quote: {
       token: "lastshft",
@@ -277,35 +285,29 @@ body: {
 ```
 
 **Frontend expectations:**
-- The `checks[]` order drives the sequential terminal reveal order — the UI walks the array and adds each line as it arrives.
-- The `quote.quote_id` must be passed forward to step 6 review and step 7 sign. It's the server's promise that this price is honored for N seconds.
+- `checks[]` order is locked: `uniqueness → slot → balance → mint_authority → deployer → founder`. FE walks the array (or SSE stream) and renders each line as it arrives.
+- `check.ok` is **tri-state**: `true` → green `[✓]`, `false` → red `[✗]`, `null` → neutral grey `[–]` with `.pp-check-neutral` (no pulse). Founder-multisig is `null` in v1 — aspirational, not enforced.
+- Deployer and first-5 are **fused into one event** server-side (shared `getSignaturesForAddress` call). The `deployer` check's `detail` is ` · `-delimited; FE may optionally split it and stagger two visual lines by 150ms for pacing, or render it as one row. Backend sends one event either way.
+- The `quote.quote_id` must be passed forward to step 6 review and step 7 sign. Same `quote_id` survives `/refresh`.
 - The `quote` sub-object is only present when `eligible: true`.
 
-**Latency + reveal sequencing (revised — be honest with me here):**
+**Latency + reveal sequencing (RESOLVED — SSE is the single transport).**
 
-I originally proposed a ≤2.5s hard budget with a 500ms-per-line stagger. Pre-conceding that's optimistic: Helius `getSignaturesForAddress` + `getMintAuthority` + first-N-minters on a cold cache is routinely **3–6s**, and the founder-multisig check (if implemented) adds more. So:
+`/eligibility` and `/refresh` are `text/event-stream` by default. Pass `Accept: application/json` to force single-shot. FE walks events and renders each check row as it arrives. Backend runs fast checks (uniqueness/slot/balance — DB) in parallel with slow checks (mint_authority/deployer+first5 — on-chain, ~2.5s cold cache), emits in locked order. Spinner only hangs on the last pending row. See §5 of `PROOF-MODAL-SPEC-REPLY.md`.
 
-- **If you can deliver the full payload in ≤2.5s (warm cache),** we keep the terminal-stagger reveal as-is.
-- **If you can't,** I'll rework step 5 UX to: show a spinner immediately, then **stream each check as it resolves** via SSE or chunked response. The terminal-log feel is preserved — lines land at whatever cadence the backend delivers them — and the spinner hangs on the last pending row until the final check comes back.
+**Backend questions — eligibility logic (Q9–Q14 RESOLVED — see `PROOF-MODAL-SPEC-REPLY.md` §§3–4, 6–7):**
 
-What I need from you to decide:
-- **Which checks are fast** (single RPC call, cacheable, or backend-precomputed) **vs slow** (cold on-chain scans)? I'll order the reveal fast→slow so the user sees momentum immediately and the spinner only hangs at the end.
-- **Can checks be parallelized server-side** so wall-clock = max(check) rather than sum(checks)? E.g. uniqueness + slot + balance are all DB reads that can fan out; deployer + first-5 are on-chain and can fan out separately.
-- **Preferred streaming protocol** if we go that route — SSE (`text/event-stream`), chunked JSON, or WebSocket? I'd default to SSE for simplicity unless you have a reason to pick otherwise.
+9. ~~Deployer detection.~~ RESOLVED — current `mintAuthority` + signing-wallet-of-first-mint, Helius primary + Solscan fallback. `rpc_degraded` surfaces rate limits. Fused with first-5 in one event.
 
-**Backend questions — eligibility logic:**
+10. ~~First-5 holder check.~~ RESOLVED — N=5 holders at mint distribution snapshot. Fused with deployer event.
 
-9. **Deployer detection.** What's the source of truth — are we signing-wallet-of-first-mint, or current `mintAuthority`, or both? `CLAUDE.md` implies a live on-chain check via `lib/token-dev-verify.ts` — what RPC provider (Helius? Triton?) and what's our p95 latency budget? The wireframe reveals each check with a 500ms stagger, so the total endpoint budget is roughly **≤2.5s** or the animation stalls visibly.
+11. ~~Founder multisig check.~~ RESOLVED — **aspirational in v1**. Returns `ok: null`, rendered as neutral `[–]` with `.pp-check-neutral`. Squads v3 signer introspection deferred to v1.1.
 
-10. **First-5 holder check.** How far back do we scan — raw mint ix, or the first 5 holders at a snapshot? What about distributions that happened via a vesting contract or Streamflow — are those "genuine holders"? This is a trust-system decision.
+12. ~~Balance-to-token conversion.~~ RESOLVED — backend-computed inside `/eligibility`, returns raw + UI. FE never does fee math.
 
-11. **Founder multisig check.** Is this check actually implemented, or aspirational? If aspirational, I'll render it as a "coming soon" line that's always `–` (neutral) instead of `[✗]`. No point failing a check we don't actually enforce.
+13. ~~Quote TTL.~~ RESOLVED — **90s**. Refresh polled at T-30s (60s elapsed). Refresh re-verifies eligibility at ≥45s stale inside the same lock session. Same `quote_id` throughout.
 
-12. **Balance check conversion.** The `need X $LASTSHFT` line requires converting the USD price ($3) to $LASTSHFT using the same price we'll use at signing. Is that handled inside the eligibility endpoint (returns raw + UI amount), or does the FE compute it from a separate price endpoint? Strongly prefer backend-computed — FE should never do fee math.
-
-13. **Quote TTL.** How long should `quote.expires_at` be? 60 seconds? 120? The user might sit on step 6 reading the review card for a while. If the quote expires while they're on step 6, the live-price ticker in step 6 needs to re-fetch and update the displayed amount (already wired in the wireframe). Propose a refresh contract.
-
-14. **Atomicity.** The eligibility check needs to guarantee that between `eligibility OK` and `tx confirmed`, nobody else claimed the dev slot for the same project. How is this enforced? Pessimistic lock on `{project_id, role='dev'}`? Optimistic with a unique index + retry? This matters because the wireframe tells the user "ready to sign" and can't gracefully handle a 409 at signature time.
+14. ~~Atomicity.~~ RESOLVED — PG session-scoped advisory lock on `hashtext('lastproof:dev-slot:' || work_item_id)` via `pg_try_advisory_lock` (non-blocking → `409 dev_slot_contested` on race). 120s idle timeout. Auto-release on PG session death. Belt-and-braces: unique partial index on `proofs(work_item_id) WHERE path = 'dev'`.
 
 ---
 
@@ -437,16 +439,17 @@ body: { quote_id, signed_tx_base64 }
 - Two CTAs: `> RETRY PROOF` (jumps back to step 6 to re-confirm the quote) and `> BACK TO PROFILE`
 
 **Backend questions:**
-21. **Fail states to enumerate.** Wireframe shows a generic "INSUFFICIENT COMPUTE · BLOCKHASH EXPIRED" error. Real failure modes to handle distinctly:
-    - user rejected signature in wallet
-    - insufficient balance at signing time (race with eligibility)
-    - blockhash expired (need rebuild)
-    - tx reverted (on-chain error)
-    - RPC/network error (transient, retry-safe) → `rpc_degraded` → copy: **"network busy — retry in a few seconds"**
-    - quote expired after sign but before broadcast
-    Each needs a specific user-facing copy. I'd like you to confirm which of these you can distinguish and propose error codes.
-22. **Retry from failure.** Clicking `RETRY PROOF` should either re-use the existing quote if still valid, or silently re-issue eligibility + new quote. Which?
-23. **Proof count update.** When a proof confirms, the operator's `proof_count` and potentially their tier need to tick up. Is this a synchronous DB update in the same transaction that writes the proof row, or an async event? The success screen says "the operator's count just ticked up by 1" — that's a lie if the update is eventually-consistent by more than ~1s.
+21. **Failure enum RESOLVED — 10 codes, copy table in `PROOF-MODAL-SPEC-REPLY.md` §8:**
+    `user_rejected`, `insufficient_balance`, `blockhash_expired`, `tx_reverted`, `rpc_degraded`, `quote_expired_hard`, `lock_lost`, `dev_slot_taken`, `signature_invalid`, `unknown`.
+
+22. **Retry logic tree RESOLVED.** FE branches on `failure.reason`:
+    - `lock_lost` | `quote_expired_hard` → restart at step 2 with toast
+    - quote still valid + eligibility <45s → jump to step 6
+    - quote still valid + eligibility stale (≥45s) → `/refresh` first, then step 6
+    - quote expired → restart at step 2
+    Full tree in reply §8.
+
+23. **Proof count RESOLVED — synchronous.** Same DB transaction as the proof insert. Tier recalc inline. The "count just ticked up by 1" copy is true at render time.
 
 ---
 
@@ -523,43 +526,41 @@ Already specified in §5c above. Key point: **the disconnect is automatic and fo
 
 ## 6. Consolidated backend questions (master list)
 
-**Project + wire contract**
-1. `work_item.project_token_mint` available at read time?
-2. Canonical "currently at this project" field?
-3. Supported wallet set unchanged (Phantom, Solflare, Jupiter, Binance)?
-4. Are all four wallets now considered equal-tier for Solana Pay, or should we keep the unverified warning?
+**All 23 questions RESOLVED in `docs/PROOF-MODAL-SPEC-REPLY.md` (`797d1b9`).** Strike-through below is for history; implementation-level detail lives in the reply doc.
 
-**Comment sanitization**
-5. Server-side moderation/profanity layer?
+~~1. work_item.project_token_mint available at read time?~~
+~~2. Canonical "currently at this project" field?~~
+~~3. Supported wallet set?~~
+~~4. Wallets equal-tier for Solana Pay?~~
+~~5. Server-side comment moderation?~~
+~~6. wallet-context endpoint?~~ → folded into `/eligibility`
+~~7. Buy $LASTSHFT URL canonical?~~
+~~8. Insufficient-balance pre-sign or post-sign?~~
+~~9. Deployer detection source of truth?~~
+~~10. First-5 holder definition?~~ → fused with deployer event
+~~11. Founder multisig — real or aspirational?~~ → v1.1, `ok: null`
+~~12. Balance-to-token conversion backend-side?~~
+~~13. Quote TTL + refresh semantics?~~ → 90s
+~~14. Atomicity of dev-slot locking?~~ → PG advisory lock + unique partial index
+~~15. Same quote_id on refresh?~~ → yes
+~~16. Quote expiration on review screen?~~ → inline refresh
+~~16b. /refresh re-verifies eligibility at ≥45s?~~ → yes
+~~17. Memo format?~~
+~~18. Client-signed or co-signer?~~
+~~19. /abandon endpoint?~~ → yes, added
+~~20. Idempotency on broadcast?~~
+~~21. Failure enum?~~ → 10 codes
+~~22. Retry-from-failure logic?~~ → branching tree on `failure.reason`
+~~23. Proof count sync or async?~~ → synchronous, same txn
 
-**Wallet context + pricing**
-6. ~~Existing wallet-context endpoint, or new one?~~ RESOLVED — folded into `/eligibility`.
-7. Buy $LASTSHFT URL canonical (`lastshiftcoin.com/buy`)?
-8. Insufficient-balance handling — pre-sign or post-sign?
-
-**Eligibility (the critical path)**
-9. Deployer detection source of truth + RPC provider + latency budget?
-10. First-5 holder check definition?
-11. Founder multisig check — real or aspirational?
-12. Balance-to-token conversion done backend-side?
-13. Quote TTL and refresh semantics?
-14. Atomicity of dev-slot locking?
-
-**Quote refresh**
-15. Same `quote_id` on refresh or new one?
-16. Quote expiration on review screen — re-run eligibility? RESOLVED — inline refresh.
-16b. `/refresh` re-verifies eligibility at ≥45s stale. RESOLVED.
-
-**Signing + broadcast**
-17. Memo format?
-18. Pure client-signed or backend co-signer?
-19. Abandon endpoint for timeout/disconnect?
-20. Idempotency on broadcast?
-
-**Outcomes**
-21. Enumerable failure codes with distinguishable copy?
-22. Retry-from-failure quote reuse?
-23. Proof count update — sync or async?
+**Endpoint inventory (final):**
+```
+POST /api/proof/eligibility           SSE default | JSON override
+POST /api/proof/quote/:id/refresh     SSE default | JSON override
+POST /api/proof/build-tx              JSON
+POST /api/proof/broadcast             JSON
+POST /api/proof/abandon               JSON
+```
 
 ---
 
@@ -576,14 +577,13 @@ Already specified in §5c above. Key point: **the disconnect is automatic and fo
 
 ---
 
-## 8. What I need from you
+## 8. Status
 
-A written response (or inline replies in this doc) to the 23 backend questions in §6, plus:
-- **Capability gaps** — anything in this spec that's unbuildable or would require architectural changes on your side
-- **Endpoint counter-proposals** — if my proposed request/response shapes don't fit the existing API style, rewrite them
-- **Latency realities + check ordering** — especially for the eligibility check (§5). The ≤2.5s budget is almost certainly optimistic; I'd rather know which checks are fast vs slow so I can order the reveal sequence and decide whether to keep the single-shot response or switch to streaming (SSE/chunked). See the reworked latency sub-section in §5 for the specific questions.
-- **Anything I've missed** — error states, race conditions, edge cases
+**Contract finalized.** Backend reply landed at `797d1b9` as `docs/PROOF-MODAL-SPEC-REPLY.md`. All 23 questions answered, zero blocking capability gaps. Frontend is cleared to implement the modal TS/CSS against this contract.
 
-Once I have your response, I'll update this doc, then implement the frontend against the finalized contract.
+Known non-blocking watch items (from reply §capability gaps):
+1. Helius rate limits → Solscan fallback at 5/50 req/s, surfaces as `rpc_degraded`.
+2. Squads v3 signer introspection deferred to v1.1 (founder check → `ok: null`).
+3. Old wallet memo-stripping risk; fallback is base64-encoded self-transfer if any current wallet regresses.
 
 — Frontend
