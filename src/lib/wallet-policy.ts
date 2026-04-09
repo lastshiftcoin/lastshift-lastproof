@@ -1,25 +1,27 @@
 /**
  * Wallet allowlist + Solana Pay capability classification.
  *
- * LASTPROOF only accepts payments from wallets we have *verified* against
- * primary documentation. Anything else is either warned or blocked at
- * connect time. This file is the single source of truth.
+ * LASTPROOF accepts payments from four wallets, presented as equal-tier
+ * in the UI per the proof-modal wireframe. This file is the single
+ * source of truth for allowlist + Solana Pay URI capability.
  *
  * Locked allowlist (user decision):
  *   Phantom, Jupiter Mobile, Solflare, Binance App (Web3 wallet)
  *
- * Capability tiers (from docs/research/WALLET-COMPAT.md):
- *   - TIER_1_VERIFIED: Phantom, Solflare — documented Solana Pay support,
- *     reference keys preserved, SPL + memo handled per spec.
- *   - TIER_2_UNVERIFIED: Jupiter Mobile, Binance App — no public docs
- *     confirm Solana Pay URI handling. We still accept payments from
- *     these (they can sign raw txs we build), but we show a warning and
- *     fall back to a manual Transaction Request flow instead of the URI
- *     deep-link for the best UX.
- *   - BLOCKED: everything else.
+ * Historical note: an earlier version split these into TIER_1_VERIFIED
+ * (Phantom, Solflare) vs TIER_2_UNVERIFIED (Jupiter, Binance) and emitted
+ * `warnUser: true` for the latter. The wireframe direction is now
+ * "all four equal" — no warning badges in the picker. The `warnUser`
+ * flag is retained for telemetry/dev-console logging only and must NOT
+ * drive user-facing copy in the proof modal picker.
+ *
+ * `supportsTransferRequestUri` still differentiates capability:
+ * Phantom + Solflare use the Solana Pay URI deep-link; Jupiter + Binance
+ * fall back to a Transaction Request flow. This is a backend routing
+ * decision, invisible to the picker UI.
  */
 
-export type WalletTier = "verified" | "unverified" | "blocked";
+export type WalletTier = "allowed" | "blocked";
 
 export interface WalletClassification {
   canonical: KnownWallet | null;
@@ -45,8 +47,8 @@ const ADAPTER_NAME_MAP: Record<string, KnownWallet> = {
   binance: "binance",
 };
 
-const TIER_1_VERIFIED = new Set<KnownWallet>(["phantom", "solflare"]);
-const TIER_2_UNVERIFIED = new Set<KnownWallet>(["jupiter", "binance"]);
+/** Wallets that support Solana Pay Transfer Request URI deep-links. */
+const URI_CAPABLE = new Set<KnownWallet>(["phantom", "solflare"]);
 
 export function classifyWallet(adapterName: string | null | undefined): WalletClassification {
   if (!adapterName) {
@@ -54,7 +56,7 @@ export function classifyWallet(adapterName: string | null | undefined): WalletCl
       canonical: null,
       tier: "blocked",
       supportsTransferRequestUri: false,
-      warnUser: true,
+      warnUser: false,
       reason: "no_wallet_connected",
     };
   }
@@ -64,39 +66,22 @@ export function classifyWallet(adapterName: string | null | undefined): WalletCl
       canonical: null,
       tier: "blocked",
       supportsTransferRequestUri: false,
-      warnUser: true,
+      warnUser: false,
       reason: "wallet_not_on_allowlist",
     };
   }
-  if (TIER_1_VERIFIED.has(canonical)) {
-    return {
-      canonical,
-      tier: "verified",
-      supportsTransferRequestUri: true,
-      warnUser: false,
-    };
-  }
-  if (TIER_2_UNVERIFIED.has(canonical)) {
-    return {
-      canonical,
-      tier: "unverified",
-      supportsTransferRequestUri: false, // use Transaction Request fallback
-      warnUser: true,
-      reason: "solana_pay_uri_unverified",
-    };
-  }
   return {
-    canonical: null,
-    tier: "blocked",
-    supportsTransferRequestUri: false,
-    warnUser: true,
-    reason: "wallet_not_on_allowlist",
+    canonical,
+    tier: "allowed",
+    supportsTransferRequestUri: URI_CAPABLE.has(canonical),
+    // Telemetry-only flag. Must NOT drive picker UI copy — per the
+    // wireframe, all four wallets are presented as equal.
+    warnUser: !URI_CAPABLE.has(canonical),
   };
 }
 
 export function isAllowlisted(adapterName: string | null | undefined): boolean {
-  const c = classifyWallet(adapterName);
-  return c.tier === "verified" || c.tier === "unverified";
+  return classifyWallet(adapterName).tier === "allowed";
 }
 
 export const ALLOWLIST: ReadonlyArray<KnownWallet> = [
