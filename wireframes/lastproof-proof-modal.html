@@ -262,6 +262,7 @@
   .term-line.ok{color:var(--green)}
   .term-line.done{color:var(--accent);margin-top:6px}
   .term-line.no{color:var(--red)}
+  .term-line.neutral{color:#6b7280;opacity:.75}
   .term-line.err{color:var(--red);margin-top:6px;font-weight:700}
   .term-log.fail{border-color:var(--red);background:rgba(255,84,112,.04)}
 
@@ -609,7 +610,8 @@
           <div class="term-line ok" data-delay="1500">&nbsp;&nbsp;[✓] BALANCE         1,250.00 $LASTSHFT · need 8.33 $LASTSHFT</div>
           <div class="term-line ok" data-delay="2100">&nbsp;&nbsp;[✓] MINT-AUTHORITY  F7k2…9xMp is current mint authority</div>
           <div class="term-line ok" data-delay="2800">&nbsp;&nbsp;[✓] DEPLOYER        F7k2…9xMp signed mint tx · slot 3 of first-5 holders</div>
-          <div class="term-line done" data-delay="3400">&gt; dev wallet verified · ready to sign<span class="term-cursor">█</span></div>
+          <div class="term-line neutral" data-delay="3400">&nbsp;&nbsp;[–] FOUNDER         multisig check coming in v1.1</div>
+          <div class="term-line done" data-delay="4000">&gt; dev wallet verified · ready to sign<span class="term-cursor">█</span></div>
         </div>
 
         <!-- INELIGIBLE: wallet failed a check -->
@@ -620,7 +622,7 @@
           <div class="term-line ok" data-delay="1500">&nbsp;&nbsp;[✓] BALANCE         1,250.00 $LASTSHFT · need 8.33 $LASTSHFT</div>
           <div class="term-line no" data-delay="2100">&nbsp;&nbsp;[✗] MINT-AUTHORITY  not the current mint authority</div>
           <div class="term-line no" data-delay="2800">&nbsp;&nbsp;[✗] DEPLOYER        did not sign mint tx · not in first-5 holders</div>
-          <div class="term-line no" data-delay="3400">&nbsp;&nbsp;[✗] FOUNDER         not a multisig signer</div>
+          <div class="term-line neutral" data-delay="3400">&nbsp;&nbsp;[–] FOUNDER         multisig check coming in v1.1</div>
           <div class="term-line err" data-delay="4000">&gt; ERROR: wallet not eligible for dev proof on this project</div>
         </div>
 
@@ -640,7 +642,7 @@
               <li><b>DEPLOYER</b> — signed the token mint transaction</li>
               <li><b>MINT AUTHORITY</b> — current mint authority wallet</li>
               <li><b>FIRST-5 HOLDER</b> — one of the first 5 holders at mint distribution</li>
-              <li><b>FOUNDER MULTISIG</b> — verified signer on the project treasury multisig</li>
+              <li><b>FOUNDER MULTISIG</b> — verified signer on the project treasury multisig <i>(v1.1)</i></li>
             </ul>
             If you're a collaborator (not a dev), go back and pick the <b>COLLABORATOR</b> path instead.
           </div>
