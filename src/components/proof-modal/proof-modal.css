@@ -1,0 +1,209 @@
+/*
+ * Proof modal styles. Ported from wireframes/lastproof-proof-modal.html.
+ * All classes are `pm-` prefixed to keep the profile-surface (`pp-`)
+ * namespace clean. Visual canon is the wireframe — when anything here
+ * drifts, the wireframe wins and this file gets updated.
+ *
+ * This is the MINIMAL shell — step 1 (path), step 5 (eligibility),
+ * step 6+ stubs. Full step fidelity lands in follow-up commits.
+ */
+
+:root {
+  --pm-bg:       #0a0a0a;
+  --pm-fg:       #e5e7eb;
+  --pm-dim:      #6b7280;
+  --pm-line:     #1f2937;
+  --pm-accent:   #ff6b2c;
+  --pm-green:    #10b981;
+  --pm-red:      #ef4444;
+  --pm-gold:     #ffd700;
+}
+
+.pm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.pm-shell {
+  width: min(560px, 100%);
+  max-height: calc(100vh - 40px);
+  background: var(--pm-bg);
+  border: 1px solid var(--pm-line);
+  border-radius: 8px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color: var(--pm-fg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+}
+
+/* Titlebar */
+.pm-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--pm-line);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--pm-dim);
+}
+.pm-bar-title { color: var(--pm-fg); font-weight: 700; }
+.pm-bar-close {
+  background: none;
+  border: 1px solid var(--pm-line);
+  color: var(--pm-dim);
+  padding: 4px 10px;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.pm-bar-close:hover { color: var(--pm-fg); border-color: var(--pm-fg); }
+
+/* Body */
+.pm-body {
+  padding: 24px;
+  overflow-y: auto;
+}
+.pm-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--pm-accent);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.pm-head {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--pm-fg);
+}
+.pm-head .pm-accent { color: var(--pm-accent); }
+.pm-sub {
+  color: var(--pm-dim);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0 0 18px 0;
+}
+
+/* Path picker (step 1) */
+.pm-paths {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.pm-path-card {
+  background: transparent;
+  border: 1px solid var(--pm-line);
+  border-radius: 6px;
+  padding: 18px 14px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--pm-fg);
+  text-align: left;
+  transition: border-color 120ms, background 120ms;
+}
+.pm-path-card:hover { border-color: var(--pm-accent); }
+.pm-path-card.pm-selected {
+  border-color: var(--pm-accent);
+  background: rgba(255, 107, 44, 0.08);
+}
+.pm-path-title {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+.pm-path-desc {
+  color: var(--pm-dim);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.pm-path-price {
+  color: var(--pm-green);
+  font-size: 11px;
+  margin-top: 8px;
+  font-weight: 700;
+}
+
+/* Terminal log (step 5) */
+.pm-term {
+  background: #050505;
+  border: 1px solid var(--pm-line);
+  border-radius: 6px;
+  padding: 14px;
+  font-size: 12px;
+  line-height: 1.7;
+  min-height: 180px;
+}
+.pm-term-line { white-space: pre; color: var(--pm-fg); }
+.pm-term-line.pm-ok { color: var(--pm-green); }
+.pm-term-line.pm-no { color: var(--pm-red); }
+.pm-term-line.pm-neutral { color: var(--pm-dim); opacity: 0.75; }
+.pm-term-line.pm-done { color: var(--pm-accent); margin-top: 6px; }
+.pm-term-line.pm-err { color: var(--pm-red); font-weight: 700; margin-top: 6px; }
+.pm-term-cursor {
+  display: inline-block;
+  width: 8px;
+  background: var(--pm-accent);
+  color: var(--pm-accent);
+  animation: pm-blink 900ms steps(2) infinite;
+  margin-left: 2px;
+}
+@keyframes pm-blink {
+  50% { opacity: 0; }
+}
+
+/* CTA bar */
+.pm-cta-bar {
+  display: flex;
+  gap: 10px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--pm-line);
+  background: #050505;
+}
+.pm-cta {
+  flex: 1;
+  background: var(--pm-accent);
+  color: #000;
+  border: 0;
+  padding: 12px 18px;
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.pm-cta:hover { filter: brightness(1.1); }
+.pm-cta:disabled {
+  background: var(--pm-line);
+  color: var(--pm-dim);
+  cursor: not-allowed;
+}
+.pm-cta-ghost {
+  flex: 0 0 auto;
+  background: transparent;
+  color: var(--pm-dim);
+  border: 1px solid var(--pm-line);
+}
+.pm-cta-ghost:hover { color: var(--pm-fg); border-color: var(--pm-fg); }
+
+/* Ineligible banner (step 5 fail) */
+.pm-inel {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px dashed var(--pm-red);
+  border-radius: 6px;
+  color: var(--pm-red);
+  font-size: 12px;
+  text-align: center;
+}
+.pm-inel b { color: var(--pm-fg); }

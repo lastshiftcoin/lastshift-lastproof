@@ -102,7 +102,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
             <>
               <div className="pp-pow-section-label">MINTED PROJECTS</div>
               {mintedItems.map((w: WorkItem) => (
-                <WorkItemCard key={w.id} item={w} />
+                <WorkItemCard key={w.id} item={w} handle={view.handle} />
               ))}
             </>
           )}
@@ -111,7 +111,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
             <>
               <div className="pp-pow-section-label pp-recent">RECENT</div>
               {recentItems.map((w: WorkItem) => (
-                <WorkItemCard key={w.id} item={w} />
+                <WorkItemCard key={w.id} item={w} handle={view.handle} />
               ))}
             </>
           )}
