@@ -144,7 +144,7 @@
   line-height: 1.7;
   min-height: 180px;
 }
-.pm-term-line { white-space: pre; color: var(--pm-fg); }
+.pm-term-line { white-space: pre-wrap; word-break: break-word; color: var(--pm-fg); }
 .pm-term-line.pm-ok { color: var(--pm-green); }
 .pm-term-line.pm-no { color: var(--pm-red); }
 .pm-term-line.pm-neutral { color: var(--pm-dim); opacity: 0.75; }
