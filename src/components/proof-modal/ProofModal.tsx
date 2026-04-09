@@ -585,7 +585,15 @@ function Step2WalletPicker({
       </h2>
       <p className="pm-sub">
         One wallet, one proof per project. We&apos;ll verify it hasn&apos;t proofed this project
-        before you sign — no gas until you approve.
+        before you sign — no gas until you approve.{" "}
+        <a
+          href="/safety"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="pm-safety-link"
+        >
+          Is this safe? ↗
+        </a>
       </p>
 
       <div className="pm-wallets">

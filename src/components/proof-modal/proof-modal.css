@@ -93,6 +93,16 @@
   line-height: 1.5;
   margin: 0 0 18px 0;
 }
+.pm-safety-link {
+  color: var(--pm-accent, #ff6b2c);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.pm-safety-link:hover {
+  opacity: 0.8;
+}
 
 /* Path picker (step 1) */
 .pm-paths {
