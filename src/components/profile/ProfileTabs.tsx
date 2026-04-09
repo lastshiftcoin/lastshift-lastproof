@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 const TABS = [
   { key: "overview", label: "Overview" },
   { key: "pitch", label: "The Pitch" },
@@ -8,18 +12,36 @@ const TABS = [
   { key: "verify", label: "Verifications" },
 ] as const;
 
+type TabKey = (typeof TABS)[number]["key"];
+
 /**
- * Decorative tab bar for step 1. Active = "overview"; no JS switching.
- * All panes render stacked below. Interactive tab switching is a
- * follow-up task (see docs/NEXT-PUBLIC-PROFILE.md §6).
+ * Client tab bar. "overview" shows every pane stacked (default); any
+ * other key hides all panes except the one whose [data-pane] matches.
+ * Panes are owned by the server page — this component only toggles the
+ * native `hidden` attribute on matching elements.
  */
-export function ProfileTabs({ active = "overview" }: { active?: (typeof TABS)[number]["key"] }) {
+export function ProfileTabs({ active: initial = "overview" }: { active?: TabKey }) {
+  const [active, setActive] = useState<TabKey>(initial);
+
+  useEffect(() => {
+    const panes = document.querySelectorAll<HTMLElement>("[data-pane]");
+    panes.forEach((el) => {
+      const key = el.dataset.pane;
+      el.hidden = active !== "overview" && key !== active;
+    });
+  }, [active]);
+
   return (
     <nav className="pp-tabs">
       {TABS.map((t) => (
-        <div key={t.key} className={`pp-tab${t.key === active ? " pp-active" : ""}`}>
+        <button
+          key={t.key}
+          type="button"
+          onClick={() => setActive(t.key)}
+          className={`pp-tab${t.key === active ? " pp-active" : ""}`}
+        >
           {t.label}
-        </div>
+        </button>
       ))}
     </nav>
   );

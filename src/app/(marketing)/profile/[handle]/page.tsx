@@ -68,17 +68,19 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
         <ProfileTabs active="overview" />
 
-        <StatStrip
-          proofsConfirmed={view.proofsConfirmed}
-          devProofsConfirmed={view.devProofsConfirmed}
-          projectsCount={view.projectsCount}
-          feeRange={view.feeRange}
-        />
+        <div data-pane="overview">
+          <StatStrip
+            proofsConfirmed={view.proofsConfirmed}
+            devProofsConfirmed={view.devProofsConfirmed}
+            projectsCount={view.projectsCount}
+            feeRange={view.feeRange}
+          />
 
-        <CategoryChips categories={view.categories} />
+          <CategoryChips categories={view.categories} />
+        </div>
 
         {/* ═══ THE PITCH ═══ */}
-        <section className="pp-section">
+        <section className="pp-section" data-pane="pitch">
           <h2 className="pp-section-title">THE PITCH</h2>
           <div className="pp-pitch-body">
             {view.pitchBody.split("\n\n").map((p: string, i: number) => (
@@ -88,7 +90,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
         </section>
 
         {/* ═══ PROOF OF WORK ═══ */}
-        <section className="pp-section">
+        <section className="pp-section" data-pane="pow">
           <h2 className="pp-section-title">
             PROOF OF WORK
             <span className="pp-count">
@@ -118,7 +120,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
         </section>
 
         {/* ═══ SCREENSHOTS ═══ */}
-        <section className="pp-section">
+        <section className="pp-section" data-pane="shots">
           <h2 className="pp-section-title">
             SCREENSHOTS
             <span className="pp-count">{view.totalScreenshots} SHOTS</span>
@@ -127,7 +129,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
         </section>
 
         {/* ═══ LINKS ═══ */}
-        <section className="pp-section">
+        <section className="pp-section" data-pane="links">
           <h2 className="pp-section-title">
             LINKS
             <span className="pp-count">
@@ -142,7 +144,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
         </section>
 
         {/* ═══ ABOUT ME ═══ */}
-        <section className="pp-section">
+        <section className="pp-section" data-pane="about">
           <h2 className="pp-section-title">ABOUT ME</h2>
           <p className="pp-about-body">{view.about}</p>
           <div className="pp-aliases">
@@ -153,7 +155,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
         </section>
 
         {/* ═══ VERIFICATIONS ═══ */}
-        <section className="pp-section">
+        <section className="pp-section" data-pane="verify">
           <h2 className="pp-section-title">
             VERIFICATIONS
             <span className="pp-count">{view.recentProofs.length} OF {view.totalProofs}</span>

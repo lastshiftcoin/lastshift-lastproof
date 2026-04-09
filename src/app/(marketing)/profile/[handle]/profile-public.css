@@ -232,9 +232,11 @@
   letter-spacing: 1.2px; color: var(--text-dim);
   text-transform: uppercase;
   padding: 14px 20px 14px 0; margin-right: 8px;
-  cursor: pointer; border-bottom: 2px solid transparent;
+  cursor: pointer; border: none; border-bottom: 2px solid transparent;
+  background: transparent;
   transition: all 0.15s; white-space: nowrap;
 }
+.pp-tab:focus-visible { outline: 1px dashed var(--orange); outline-offset: 2px; }
 .pp-tab:hover { color: var(--text-secondary); }
 .pp-tab.pp-active { color: var(--orange); border-bottom-color: var(--orange); }
 
