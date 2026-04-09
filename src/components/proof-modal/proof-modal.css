@@ -353,6 +353,82 @@
 }
 .pm-wallet-verified .pm-wv-addr b { color: var(--pm-accent); }
 
+/* Review card (step 6) */
+.pm-review {
+  background: #050505;
+  border: 1px solid var(--pm-line);
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin-top: 6px;
+}
+.pm-review-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--pm-line);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+.pm-review-row:last-child { border-bottom: 0; }
+.pm-review-key { color: var(--pm-dim); text-transform: uppercase; font-size: 10px; letter-spacing: 0.12em; }
+.pm-review-val { color: var(--pm-fg); font-weight: 700; text-align: right; }
+.pm-review-val.pm-mono { font-family: var(--pm-mono, ui-monospace, monospace); font-size: 11px; }
+
+.pm-ticker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: rgba(255, 107, 44, 0.05);
+  border: 1px solid rgba(255, 107, 44, 0.35);
+  border-radius: 6px;
+  margin-top: 10px;
+}
+.pm-ticker-amount {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--pm-accent);
+  transition: color 260ms, text-shadow 260ms;
+}
+.pm-ticker-amount.pm-flash {
+  color: var(--pm-green);
+  text-shadow: 0 0 14px rgba(16, 185, 129, 0.55);
+}
+.pm-ticker-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.pm-ticker-usd { color: var(--pm-fg); font-weight: 700; font-size: 13px; }
+.pm-ticker-countdown {
+  color: var(--pm-dim);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+.pm-ticker-countdown.pm-warn { color: #f59e0b; }
+.pm-ticker-countdown.pm-danger { color: var(--pm-red); }
+
+.pm-expired {
+  margin-top: 12px;
+  padding: 16px 18px;
+  background: rgba(255, 77, 77, 0.06);
+  border: 1px dashed var(--pm-red);
+  border-radius: 6px;
+  color: var(--pm-red);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: center;
+  font-size: 11px;
+}
+.pm-expired .pm-cta {
+  display: inline-block;
+  margin-top: 10px;
+}
+
 /* Ineligible banner (step 5 fail) */
 .pm-inel {
   margin-top: 14px;

@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWallet, type Wallet } from "@solana/wallet-adapter-react";
 import "./proof-modal.css";
 import type { ProofPath, ProofStep } from "./types";
 import { useEligibilityStream } from "./useEligibilityStream";
+import { useQuoteRefresh } from "./useQuoteRefresh";
+import type { ProofQuote } from "./types";
 import { useConnected, type ConnectedWallet } from "@/lib/wallet/use-connected";
 import { WALLET_META, WALLET_ORDER, shouldUseDeepLinks } from "@/lib/wallet/deep-link";
 import { classifyWallet, type KnownWallet } from "@/lib/wallet-policy";
@@ -255,8 +257,17 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
               onToggleIneligible={handleToggleIneligible}
             />
           )}
-          {step === 6 && (
-            <Step6ReviewStub quote={elig.quote} onBack={handleTryNewWallet} />
+          {step === 6 && elig.quote && path && (
+            <Step6Review
+              initialQuote={elig.quote}
+              path={path}
+              ticker={ticker}
+              handle={handle}
+              comment={comment}
+              pubkey={connected?.pubkey ?? ""}
+              onStartOver={handleTryNewWallet}
+              onSign={() => setStep(7)}
+            />
           )}
         </div>
 
@@ -680,15 +691,80 @@ function Step5Eligibility({
   );
 }
 
-// ─── Step 6 (stub) ──────────────────────────────────────────────────────
+// ─── Step 6 ─────────────────────────────────────────────────────────────
 
-function Step6ReviewStub({
-  quote,
-  onBack,
+/**
+ * Review-before-sign card with a live price ticker.
+ *
+ * Polls `/api/proof/quote/:id/refresh` every 5s while mounted. Renders
+ * the current locked amount, a countdown to `expires_at`, and a
+ * price-flash animation every time the refresh returns a different
+ * `amount_ui`. Hard-expired state replaces the card with a red
+ * dashed banner + manual REFRESH PRICE button. Lock-lost and
+ * slot-taken flows bounce the user back to step 1 (next commit
+ * will route them into the step 8 failure tree instead).
+ */
+function Step6Review({
+  initialQuote,
+  path,
+  ticker,
+  handle,
+  comment,
+  pubkey,
+  onStartOver,
+  onSign,
 }: {
-  quote: ReturnType<typeof useEligibilityStream>["state"]["quote"];
-  onBack: () => void;
+  initialQuote: ProofQuote;
+  path: ProofPath;
+  ticker: string;
+  handle: string;
+  comment: string;
+  pubkey: string;
+  onStartOver: () => void;
+  onSign: () => void;
 }) {
+  const { state: refresh, manualRefresh } = useQuoteRefresh({
+    initialQuote,
+    enabled: true,
+  });
+  const quote = refresh.quote;
+
+  // Flash animation trigger — whenever `amount_ui` changes, pulse
+  // the ticker green for 400ms.
+  const [flash, setFlash] = useState(false);
+  const lastAmountRef = useRef(quote.amount_ui);
+  useEffect(() => {
+    if (lastAmountRef.current !== quote.amount_ui) {
+      lastAmountRef.current = quote.amount_ui;
+      setFlash(true);
+      const id = window.setTimeout(() => setFlash(false), 400);
+      return () => window.clearTimeout(id);
+    }
+  }, [quote.amount_ui]);
+
+  // Countdown timer, 1hz.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  const expiresMs = new Date(quote.expires_at).getTime();
+  const secsLeft = Math.max(0, Math.floor((expiresMs - now) / 1000));
+  const countdownCls =
+    secsLeft <= 10 ? "pm-danger" : secsLeft <= 30 ? "pm-warn" : "";
+
+  const tokenLabel = quote.token.toUpperCase();
+  const shortPubkey = pubkey ? `${pubkey.slice(0, 4)}…${pubkey.slice(-4)}` : "—";
+  const shortQuoteId = `${quote.quote_id.slice(0, 6)}…${quote.quote_id.slice(-4)}`;
+
+  // Lock-lost / slot-taken: bounce back. Follow-up commit routes
+  // these into step 8 failure outcomes instead.
+  useEffect(() => {
+    if (refresh.lockLost || refresh.slotTaken) {
+      onStartOver();
+    }
+  }, [refresh.lockLost, refresh.slotTaken, onStartOver]);
+
   return (
     <>
       <div className="pm-eyebrow">REVIEW BEFORE YOU SIGN</div>
@@ -696,27 +772,97 @@ function Step6ReviewStub({
         One last <span className="pm-accent">look.</span>
       </h2>
       <p className="pm-sub">
-        <i>Step 6 is a stub in this commit.</i> Full review card + live price ticker + quote-expired
-        sub-state + sign flow land in follow-up commits.
+        Price updates live. Your wallet will ask you to approve this exact amount.
       </p>
-      <div className="pm-term">
-        <div className="pm-term-line pm-ok">
-          &gt; quote locked: {quote?.amount_ui} {quote?.token} (${quote?.usd})
+
+      <div className="pm-review">
+        <div className="pm-review-row">
+          <span className="pm-review-key">OPERATOR</span>
+          <span className="pm-review-val">@{handle}</span>
         </div>
-        <div className="pm-term-line">
-          &gt; quote_id: {quote?.quote_id}
+        <div className="pm-review-row">
+          <span className="pm-review-key">PROJECT</span>
+          <span className="pm-review-val">{ticker}</span>
         </div>
-        <div className="pm-term-line">
-          &gt; expires_at: {quote?.expires_at}
+        <div className="pm-review-row">
+          <span className="pm-review-key">PATH</span>
+          <span className="pm-review-val">{path.toUpperCase()}</span>
         </div>
+        <div className="pm-review-row">
+          <span className="pm-review-key">WALLET</span>
+          <span className="pm-review-val pm-mono">{shortPubkey}</span>
+        </div>
+        <div className="pm-review-row">
+          <span className="pm-review-key">QUOTE ID</span>
+          <span className="pm-review-val pm-mono">{shortQuoteId}</span>
+        </div>
+        {comment && (
+          <div className="pm-review-row">
+            <span className="pm-review-key">NOTE</span>
+            <span className="pm-review-val" style={{ maxWidth: "60%" }}>
+              &ldquo;{comment}&rdquo;
+            </span>
+          </div>
+        )}
       </div>
+
+      {refresh.expired ? (
+        <div className="pm-expired">
+          QUOTE EXPIRED — REFRESH PRICE
+          <br />
+          <button
+            type="button"
+            className="pm-cta"
+            style={{ marginTop: 10 }}
+            onClick={manualRefresh}
+          >
+            &gt; REFRESH PRICE
+          </button>
+        </div>
+      ) : (
+        <div className="pm-ticker">
+          <div>
+            <div className={`pm-ticker-amount${flash ? " pm-flash" : ""}`}>
+              {quote.amount_ui} {tokenLabel}
+            </div>
+            <div className="pm-ticker-countdown" style={{ marginTop: 4 }}>
+              {refresh.reVerified ? "RE-VERIFIED · " : ""}
+              quote locked
+            </div>
+          </div>
+          <div className="pm-ticker-meta">
+            <div className="pm-ticker-usd">${quote.usd.toFixed(2)}</div>
+            <div className={`pm-ticker-countdown ${countdownCls}`}>
+              EXPIRES IN {secsLeft}s
+            </div>
+          </div>
+        </div>
+      )}
+
+      {refresh.error && !refresh.expired && (
+        <div className="pm-comment-hint" style={{ color: "var(--pm-red)", marginTop: 8 }}>
+          refresh error: {refresh.error}
+        </div>
+      )}
+
+      <div className="pm-cta-bar" style={{ marginTop: 18, padding: 0, border: 0 }}>
+        <button
+          type="button"
+          className="pm-cta"
+          disabled={refresh.expired}
+          onClick={onSign}
+        >
+          &gt; SIGN PROOF
+        </button>
+      </div>
+
       <button
         type="button"
         className="pm-cta-ghost"
-        style={{ marginTop: 18, padding: "10px 14px" }}
-        onClick={onBack}
+        style={{ marginTop: 10, padding: "8px 12px", fontSize: 11 }}
+        onClick={onStartOver}
       >
-        &gt; START OVER
+        ← START OVER
       </button>
     </>
   );
