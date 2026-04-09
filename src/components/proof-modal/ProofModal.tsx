@@ -137,6 +137,42 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
     }
   }, [step, sign.phase]);
 
+  // Keyboard: ESC closes the modal (unless we're mid-signing — users
+  // shouldn't be able to bail after the wallet prompt is up). Also
+  // restores focus to whatever element opened the modal on close.
+  const openerRef = useRef<Element | null>(null);
+  const shellRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    openerRef.current = document.activeElement;
+    // Focus the modal shell on open so screen readers announce the
+    // dialog label and keyboard users tab into the modal, not the
+    // page behind it.
+    shellRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      // Block ESC during awaiting_signature / broadcasting / confirming
+      // to prevent a mid-flight abandon. User can still click close
+      // explicitly if they really want to bail.
+      if (
+        sign.phase === "awaiting_signature" ||
+        sign.phase === "broadcasting" ||
+        sign.phase === "confirming"
+      ) {
+        return;
+      }
+      onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      // Restore focus to the element that opened the modal.
+      if (openerRef.current instanceof HTMLElement) {
+        openerRef.current.focus();
+      }
+    };
+  }, [open, sign.phase, onClose]);
+
   /**
    * Step 2 → 3 auto-advance + eligibility prefetch (Option A per spec §5).
    * As soon as a wallet is connected we fire `/eligibility` with the
@@ -311,10 +347,23 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
     (step === 5 && elig.status === "done" && !elig.eligible);
 
   return (
-    <div className="pm-backdrop" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="pm-shell" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="pm-backdrop"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pm-bar-title"
+    >
+      <div
+        className="pm-shell"
+        ref={shellRef}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="pm-bar">
-          <span className="pm-bar-title">LASTPROOF · VERIFY THIS WORK</span>
+          <span className="pm-bar-title" id="pm-bar-title">
+            LASTPROOF · VERIFY THIS WORK
+          </span>
           <button type="button" className="pm-bar-close" onClick={onClose}>
             CLOSE
           </button>
@@ -750,7 +799,12 @@ function Step5Eligibility({
         project before you sign.
       </p>
 
-      <div className={`pm-term${isIneligible ? " pm-fail" : ""}`}>
+      <div
+        className={`pm-term${isIneligible ? " pm-fail" : ""}`}
+        role="status"
+        aria-live="polite"
+        aria-atomic="false"
+      >
         <div className="pm-term-line">
           &gt; lastproof verify --wallet F7k2…9xMp --project {path === "dev" ? "$LASTSHFT" : "$LASTSHFT"} --role {role}
         </div>
@@ -1030,7 +1084,7 @@ function Step7Signing({ sign }: { sign: ReturnType<typeof useSignFlow>["state"] 
         broadcast and wait for confirmation.
       </p>
 
-      <div className="pm-ladder">
+      <div className="pm-ladder" role="status" aria-live="polite" aria-atomic="false">
         {rungs.map((r) => {
           const rungIdx = order.indexOf(r.key);
           const active = r.key === sign.phase;
