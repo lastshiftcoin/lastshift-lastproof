@@ -380,7 +380,7 @@ export function OnboardingModal({ session, operatorId, onComplete, onDisconnect 
                   <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
                 <div className="text">
-                  Pick well — changing later costs a <b>hefty $LASTSHFT fee</b>.
+                  Pick well — changing later costs <b>$100 USD</b>.
                 </div>
               </div>
             </div>
@@ -561,7 +561,7 @@ export function OnboardingModal({ session, operatorId, onComplete, onDisconnect 
                   <div className="ob-confirm-title">ARE YOU SURE?</div>
                   <div className="ob-confirm-text">
                     <span className="accent">@{handle.toLowerCase()}</span> is permanent.
-                    Changing your handle later costs <b>$100 in $LASTSHFT</b>.
+                    Changing your handle later costs <b>$100 USD</b>.
                   </div>
                   <div className="ob-confirm-btns">
                     <button
