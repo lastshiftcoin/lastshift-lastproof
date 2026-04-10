@@ -43,6 +43,8 @@ export async function dispatchPaymentConfirmed(row: PaymentRow): Promise<Dispatc
       return await handleDevVerification(row);
     case "handle_change":
       return await handleHandleChange(row);
+    case "mint":
+      return await handleMint(row);
     default: {
       const _exhaustive: never = row.kind;
       return { handled: false, kind: row.kind, note: `unknown kind: ${_exhaustive}` };
@@ -268,5 +270,20 @@ async function handleDevVerification(row: PaymentRow): Promise<DispatchResult> {
     handled: true,
     kind: "dev_verification",
     note: `dev badge granted; tier ${tierResult.previousTier}→${tierResult.newTier}`,
+  };
+}
+
+async function handleMint(row: PaymentRow): Promise<DispatchResult> {
+  // Mint payment confirmed — the work item is set to minted=true by the
+  // dashboard mint endpoint after the user provides the txSignature.
+  // This handler just logs the event. The actual minting flag was already
+  // set optimistically by POST /api/dashboard/work-items/mint.
+  console.log(
+    `[payment-events] MINT confirmed — profile=${row.profileId} tx=${row.txSignature}`,
+  );
+  return {
+    handled: true,
+    kind: "mint",
+    note: "mint payment confirmed",
   };
 }

@@ -14,6 +14,7 @@ const VALID_KINDS: PaymentKindPriced[] = [
   "dev_verification",
   "subscription",
   "handle_change",
+  "mint",
 ];
 const VALID_TOKENS: PaymentToken[] = ["LASTSHFT", "SOL", "USDT"];
 

@@ -15,7 +15,8 @@ export type PaymentKind =
   | "subscription"
   | "proof"
   | "dev_verification"
-  | "handle_change";
+  | "handle_change"
+  | "mint";
 export type PaymentStatus = "pending" | "confirmed" | "failed";
 export type PaymentToken = "LASTSHFT" | "SOL" | "USDT";
 

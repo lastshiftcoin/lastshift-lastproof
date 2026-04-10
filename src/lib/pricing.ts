@@ -8,7 +8,8 @@ export type PaymentKindPriced =
   | "proof"
   | "dev_verification"
   | "subscription"
-  | "handle_change";
+  | "handle_change"
+  | "mint";
 
 export type PaymentToken = "LASTSHFT" | "SOL" | "USDT";
 
@@ -17,6 +18,7 @@ export const BASE_PRICES_USD: Record<PaymentKindPriced, number> = {
   dev_verification: 5.0,
   subscription: 10.0,
   handle_change: 100.0,
+  mint: 1.0,
 };
 
 export const LASTSHFT_DISCOUNT = 0.4; // 40% off

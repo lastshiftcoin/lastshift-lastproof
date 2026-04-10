@@ -1,16 +1,21 @@
 import { NextResponse } from "next/server";
 import { readSession } from "@/lib/session";
 import { getProfileByOperatorId } from "@/lib/profiles-store";
+import { BASE_PRICES_USD, LASTSHFT_DISCOUNT } from "@/lib/pricing";
 
 /**
  * POST /api/dashboard/work-items/mint
  * Body: { id: string, txSignature: string }
  *
- * Marks a work item as minted after verifying the operator owns it
- * and the item has at least 1 proof (you shouldn't mint empty items).
+ * Minting costs $1 (40% off with $LASTSHFT → $0.60).
+ * Marks a work item as minted after verifying:
+ *   - operator owns the item
+ *   - item has at least 1 proof
+ *   - max 4 minted items per profile
+ *   - payment tx signature provided
  *
- * NOTE: txSignature verification against the chain is a future step.
- * For now, presence of a signature is required as a gate.
+ * NOTE: On-chain verification of txSignature is a future step.
+ * The webhook pipeline confirms the payment separately.
  */
 export async function POST(request: Request) {
   const session = await readSession();
@@ -66,9 +71,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "no_proofs" }, { status: 400 });
   }
 
-  // v1: minting is free — just requires a signed message proving wallet ownership.
-  // On-chain NFT minting (Metaplex, compressed NFT, etc.) is a v2 feature.
-  // txSignature is optional for now; if provided, stored for future verification.
+  // Require payment — $1 base, $0.60 with $LASTSHFT
+  if (!txSignature || typeof txSignature !== "string") {
+    return NextResponse.json({
+      error: "payment_required",
+      pricing: {
+        baseUsd: BASE_PRICES_USD.mint,
+        lastshftUsd: +(BASE_PRICES_USD.mint * (1 - LASTSHFT_DISCOUNT)).toFixed(2),
+      },
+    }, { status: 402 });
+  }
+
   const { error } = await sb
     .from("work_items")
     .update({ minted: true })

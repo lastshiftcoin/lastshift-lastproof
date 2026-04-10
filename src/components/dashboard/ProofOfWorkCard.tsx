@@ -186,7 +186,13 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
     }
   }
 
-  // ─── Mint handler ───────────────────────────────────────────────────────
+  // ─── Mint state + handler ────────────────────────────────────────────────
+  const [mintingId, setMintingId] = useState<string | null>(null);
+  const [mintQuote, setMintQuote] = useState<{
+    token: string; amountToken: string; amountUsd: number;
+    treasury: string; reference: string; expiresAt: string;
+  } | null>(null);
+
   async function handleMint(id: string) {
     const item = items.find((i) => i.id === id);
     if (!item || item.minted) return;
@@ -202,13 +208,44 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
       return;
     }
 
-    if (!confirm("Mint this project? This locks it as permanent, tamper-proof history on your profile.")) return;
+    // Show inline payment panel for this item
+    setMintingId(id);
+    setMintQuote(null);
+  }
 
+  async function requestMintQuote(token: "LASTSHFT" | "SOL" | "USDT") {
+    try {
+      const res = await fetch("/api/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "mint", token, metadata: { workItemId: mintingId } }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.reason || data.error || "Quote failed");
+        return;
+      }
+      const data = await res.json();
+      setMintQuote({
+        token: data.token,
+        amountToken: data.amountToken,
+        amountUsd: data.amountUsd,
+        treasury: data.treasury,
+        reference: data.reference,
+        expiresAt: data.expiresAt,
+      });
+    } catch {
+      alert("Failed to get quote.");
+    }
+  }
+
+  async function confirmMint(txSignature: string) {
+    if (!mintingId) return;
     try {
       const res = await fetch("/api/dashboard/work-items/mint", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({ id: mintingId, txSignature }),
       });
 
       if (!res.ok) {
@@ -226,8 +263,10 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
       }
 
       setItems((prev) => prev.map((i) =>
-        i.id === id ? { ...i, minted: true } : i
+        i.id === mintingId ? { ...i, minted: true } : i
       ));
+      setMintingId(null);
+      setMintQuote(null);
     } catch {
       alert("Mint failed — please try again.");
     }
@@ -394,6 +433,114 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
       ) : (
         <div className="field-help" style={{ textAlign: "center", padding: "18px 0" }}>
           No work items yet. Add your first proof of work below.
+        </div>
+      )}
+
+      {/* Mint payment panel */}
+      {mintingId && (
+        <div style={{
+          margin: "12px 0",
+          padding: 18,
+          background: "var(--bg-input)",
+          border: "1px solid rgba(255,215,0,.3)",
+          borderRadius: 8,
+        }}>
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 12,
+          }}>
+            <div style={{
+              fontFamily: "var(--mono)",
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: 1,
+              color: "var(--text)",
+            }}>
+              MINT PROJECT
+            </div>
+            <button
+              type="button"
+              onClick={() => { setMintingId(null); setMintQuote(null); }}
+              style={{
+                fontFamily: "var(--mono)", fontSize: 10, color: "var(--text-dim)",
+                background: "transparent", border: "1px solid var(--border)",
+                borderRadius: 4, padding: "4px 10px", cursor: "pointer",
+              }}
+            >
+              CANCEL
+            </button>
+          </div>
+
+          <div className="field-help" style={{ marginBottom: 14 }}>
+            Minting costs <strong>$1.00</strong> (or <strong>$0.60</strong> with $LASTSHFT — 40% off).
+            Once minted, this project is locked as permanent, tamper-proof history.
+          </div>
+
+          {!mintQuote ? (
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button type="button" className="btn-add"
+                style={{ background: "rgba(255,145,0,.1)", color: "var(--accent)", border: "1px solid var(--accent)" }}
+                onClick={() => requestMintQuote("LASTSHFT")}
+              >
+                PAY WITH $LASTSHFT · $0.60
+              </button>
+              <button type="button" className="btn-add" onClick={() => requestMintQuote("SOL")}>
+                PAY WITH SOL · $1.00
+              </button>
+              <button type="button" className="btn-add" onClick={() => requestMintQuote("USDT")}>
+                PAY WITH USDT · $1.00
+              </button>
+            </div>
+          ) : (
+            <div style={{
+              padding: 14, background: "rgba(0,0,0,.2)",
+              border: "1px solid var(--border)", borderRadius: 6,
+              fontFamily: "var(--mono)", fontSize: 10, color: "var(--text-2)",
+              letterSpacing: 0.5,
+            }}>
+              <div style={{ marginBottom: 8 }}>
+                <strong style={{ color: "#fff" }}>Send exactly:</strong>{" "}
+                <span style={{ color: "var(--accent)", fontWeight: 700 }}>
+                  {mintQuote.amountToken} {mintQuote.token}
+                </span>{" "}
+                <span style={{ color: "var(--text-dim)" }}>(${mintQuote.amountUsd})</span>
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <strong style={{ color: "#fff" }}>To treasury:</strong>{" "}
+                <span style={{ wordBreak: "break-all" }}>{mintQuote.treasury}</span>
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <strong style={{ color: "#fff" }}>Reference:</strong>{" "}
+                <span style={{ wordBreak: "break-all" }}>{mintQuote.reference}</span>
+              </div>
+              <div style={{ color: "var(--text-dim)", marginBottom: 10 }}>
+                Quote expires: {new Date(mintQuote.expiresAt).toLocaleTimeString()}
+              </div>
+              <div className="field-help">
+                Send the exact amount with the reference memo. After confirmation, enter your tx signature below.
+              </div>
+              <div style={{ display: "flex", gap: 10, marginTop: 12, alignItems: "center" }}>
+                <input
+                  id="mintTxInput"
+                  className="field-input"
+                  style={{ flex: 1, fontSize: 10 }}
+                  placeholder="Paste transaction signature..."
+                />
+                <button
+                  type="button"
+                  className="btn-add"
+                  onClick={() => {
+                    const input = document.getElementById("mintTxInput") as HTMLInputElement;
+                    if (input?.value.trim()) confirmMint(input.value.trim());
+                  }}
+                >
+                  CONFIRM MINT
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
