@@ -9,6 +9,7 @@
 import type { PublicProfileView } from "../public-profile-view";
 
 export const cryptomarkProfile: PublicProfileView = {
+  variant: "public",
   // ─── Identity ────────────────────────────────────────────────
   handle: "cryptomark",
   displayName: "CryptoMark",
@@ -19,8 +20,9 @@ export const cryptomarkProfile: PublicProfileView = {
   state: "active",
   statusLabel: "ACTIVE",
   tier: 3,
-  isEarlyAdopter: true,
-  earlyAdopterNumber: 247,
+  // Public (non-legend) variant: no 5K founder badge.
+  isEarlyAdopter: false,
+  earlyAdopterNumber: null,
 
   // ─── Headline + meta ─────────────────────────────────────────
   headline: "Web3 growth strategist. 3 years in crypto marketing.",

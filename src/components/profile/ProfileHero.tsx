@@ -1,4 +1,5 @@
-import type { PublicProfileView } from "@/lib/public-profile-view";
+import Link from "next/link";
+import type { ProfileVariant, PublicProfileView } from "@/lib/public-profile-view";
 
 const CHECK_ICON = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
@@ -59,9 +60,10 @@ type Props = Pick<
   | "tgHandle"
   | "website"
   | "hireTelegramHandle"
->;
+> & { variant: ProfileVariant };
 
 export function ProfileHero(props: Props) {
+  const isFree = props.variant === "free";
   return (
     <section className="pp-hero">
       <div className="pp-avatar-wrap">
@@ -71,7 +73,7 @@ export function ProfileHero(props: Props) {
         ) : (
           <div className="pp-avatar pp-avatar-default">{props.avatarMonogram}</div>
         )}
-        {props.isEarlyAdopter && (
+        {props.isEarlyAdopter && !isFree && (
           <span className="pp-badge-5k" data-tip="First 5000 operator — founding member">
             {BADGE_5K_SVG}
             <span className="pp-num">5K</span>
@@ -82,7 +84,7 @@ export function ProfileHero(props: Props) {
       <div className="pp-id-block">
         <div className="pp-id-name-row">
           <h1 className="pp-id-name">{props.displayName}</h1>
-          {props.isVerified && (
+          {props.isVerified && !isFree && (
             <span className="pp-verified-check" data-tip="X + Telegram linked to the same wallet">
               {CHECK_ICON}
             </span>
@@ -91,10 +93,16 @@ export function ProfileHero(props: Props) {
 
         <div className="pp-id-handle-row">
           <div className="pp-id-handle">@{props.handle}</div>
-          <span className="pp-status-pill" data-tip="Profile status — active & in good standing">
-            <span className="pp-dot" />
-            {props.statusLabel}
-          </span>
+          {isFree ? (
+            <Link className="pp-btn-upgrade" href="/manage">
+              &gt; UPGRADE PROFILE
+            </Link>
+          ) : (
+            <span className="pp-status-pill" data-tip="Profile status — active & in good standing">
+              <span className="pp-dot" />
+              {props.statusLabel}
+            </span>
+          )}
         </div>
 
         <p className="pp-id-pitch">{props.headline}</p>
@@ -114,6 +122,7 @@ export function ProfileHero(props: Props) {
           </div>
         </div>
 
+        {!isFree && (
         <div className="pp-id-links">
           {props.xHandle && (
             <a className="pp-id-link-chip" href={`https://x.com/${props.xHandle}`} target="_blank" rel="noreferrer">
@@ -131,8 +140,9 @@ export function ProfileHero(props: Props) {
             </a>
           )}
         </div>
+        )}
 
-        {props.hireTelegramHandle && (
+        {!isFree && props.hireTelegramHandle && (
           <div className="pp-id-actions">
             <a
               className="pp-btn-hire"

@@ -77,3 +77,37 @@ export function formatTierLabel(tier: Tier): string | null {
   if (tier === 5) return null;
   return `TIER ${tier} · ${TIER_LABEL[tier]}`;
 }
+
+/**
+ * Canonical profile variant resolver — the single source of truth for which
+ * layout a profile renders (free / public / legend).
+ *
+ * Rules (locked):
+ *   1. tier === 5 (unpaid OR unpublished)   → "free"
+ *      → Data is preserved across lapses. When the user re-subscribes and
+ *        proofsConfirmed is unchanged, computeTier() lifts them straight
+ *        back to their previous tier (1–4) and the variant flips back to
+ *        "public" or "legend" automatically.
+ *   2. isEarlyAdopter (first 5,000 operators) → "legend"
+ *      → Keeps the 5K founder badge on the avatar and swaps the footer
+ *        CTA for the purple/orange FOMO strip.
+ *   3. otherwise                            → "public"
+ *
+ * Call this everywhere the rendered variant is chosen — the projector,
+ * the /@handle route, any future API response, any test. Never reimplement
+ * this ladder inline. If the rule changes, it changes here and propagates.
+ */
+export type ProfileVariantKind = "public" | "legend" | "free";
+
+export interface DeriveVariantInput {
+  tier: Tier;
+  isEarlyAdopter: boolean;
+}
+
+export function deriveProfileVariant(
+  input: DeriveVariantInput,
+): ProfileVariantKind {
+  if (input.tier === 5) return "free";
+  if (input.isEarlyAdopter) return "legend";
+  return "public";
+}

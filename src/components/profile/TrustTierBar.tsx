@@ -12,10 +12,16 @@ interface Props {
  * formatTierLabel so we can't drift from the "TIER N · NAME" pairing rule.
  */
 export function TrustTierBar({ tier, tierBarFillPct, tierSubtitle }: Props) {
-  const label = formatTierLabel(tier) ?? "UNLISTED";
+  // Defensive guard: tier 5 is the "unlisted" sentinel for unpaid/unpublished
+  // profiles. Free-variant renders short-circuit upstream in page.tsx before
+  // ever reaching this component, but if anyone wires a caller that forgets
+  // the check, we refuse to render instead of falling through to the default
+  // gold styling. Keeps the "no free profile ever shows a tier" rule airtight.
+  const label = formatTierLabel(tier);
+  if (label === null) return null;
   const fill = Math.max(0, Math.min(100, tierBarFillPct));
   return (
-    <section className="pp-trust-tier">
+    <section className="pp-trust-tier" data-tier={tier}>
       <div className="pp-tt-left">
         <div className="pp-tt-label">TRUST TIER</div>
         <div className="pp-tt-name">{label}</div>

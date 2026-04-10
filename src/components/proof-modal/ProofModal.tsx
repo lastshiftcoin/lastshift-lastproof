@@ -174,16 +174,18 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
   }, [open, sign.phase, onClose]);
 
   /**
-   * Step 2 → 3 auto-advance + eligibility prefetch (Option A per spec §5).
-   * As soon as a wallet is connected we fire `/eligibility` with the
-   * default token (LASTSHFT) so the stream can run in the background
-   * while the user writes their comment on step 3. Saves ~3.5s of
-   * terminal-stream wall clock that the user would otherwise watch
-   * on step 5.
+   * Eligibility prefetch (Option A per spec §5). As soon as a wallet is
+   * connected on step 2 we fire `/eligibility` with the default token
+   * (LASTSHFT) so the stream can run in the background while the user
+   * reads the verified-state card and writes their comment on step 3.
+   * Saves ~3.5s of terminal-stream wall clock on step 5.
+   *
+   * Per user decision A (transparency): we do NOT auto-advance out of
+   * step 2. The verified-state card stays visible until the user
+   * explicitly clicks CONTINUE. Going fast here creates doubt.
    */
   useEffect(() => {
     if (step === 2 && connected && path) {
-      setStep(3);
       start({
         path,
         token,
@@ -361,12 +363,64 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
         onClick={(e) => e.stopPropagation()}
       >
         <div className="pm-bar">
-          <span className="pm-bar-title" id="pm-bar-title">
-            LASTPROOF · VERIFY THIS WORK
+          <div className="pm-bar-left">
+            <div className="pm-dots" aria-hidden="true">
+              <span className="pm-dot-r" />
+              <span className="pm-dot-y" />
+              <span className="pm-dot-g" />
+            </div>
+            <span className="pm-bar-title" id="pm-bar-title">
+              lastproof — verify this work
+            </span>
+          </div>
+          <div className="pm-bar-right">
+            <span className="pm-pulse" aria-hidden="true" />
+            PROOF
+            <button
+              type="button"
+              className="pm-bar-close"
+              onClick={onClose}
+              aria-label="Close proof modal"
+            >
+              CLOSE
+            </button>
+          </div>
+        </div>
+
+        {/* Step counter + connected-wallet pill (hidden on step 1/2 until a
+            wallet is live; wireframe canon §ref-row). */}
+        <div className="pm-ref-row">
+          {connected && step !== 1 && step !== 2 ? (
+            <button
+              type="button"
+              className="pm-conn-pill"
+              onClick={() => {
+                setMockConnected(null);
+                setStep(2);
+              }}
+              title="Click to disconnect"
+            >
+              <span className="pm-conn-dot" />
+              <span className="pm-conn-label">CONNECTED</span>
+              <span className="pm-conn-addr">
+                {connected.pubkey.slice(0, 4)}…{connected.pubkey.slice(-4)}
+              </span>
+            </button>
+          ) : (
+            <span />
+          )}
+          <span className="pm-step-counter">
+            STEP <span className="pm-step-now">{step}</span> / 8
           </span>
-          <button type="button" className="pm-bar-close" onClick={onClose}>
-            CLOSE
-          </button>
+        </div>
+
+        <div className="pm-progress-wrap">
+          <div className="pm-bar-track">
+            <div
+              className="pm-bar-fill"
+              style={{ width: `${(step / 8) * 100}%` }}
+            />
+          </div>
         </div>
 
         <div className="pm-body">
@@ -381,6 +435,8 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
           {step === 2 && (
             <Step2WalletPicker
               onBack={() => setStep(1)}
+              connected={connected}
+              onContinue={() => setStep(3)}
               onDevMockConnect={
                 process.env.NODE_ENV !== "production"
                   ? () =>
@@ -399,6 +455,7 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
               comment={comment}
               onChange={setComment}
               tooLong={commentTooLong}
+              ticker={ticker}
             />
           )}
           {step === 4 && (
@@ -433,6 +490,12 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
           {step === 8 && (
             <Step8Outcome
               sign={sign}
+              ticker={ticker}
+              handle={handle}
+              path={path}
+              pubkey={connected?.pubkey ?? null}
+              tokenLabel={token}
+              amountUi={elig.quote?.amount_ui != null ? String(elig.quote.amount_ui) : null}
               onRetrySign={kickOffSigning}
               onRefreshQuote={handleRefreshQuote}
               onChangeToken={handleChangeToken}
@@ -461,6 +524,37 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
 
 // ─── Step 1 ─────────────────────────────────────────────────────────────
 
+/**
+ * Project context card. Rendered anchored at the top of the body on
+ * steps 1 and 3 per wireframe canon (.proj-card). Ticker on the left,
+ * role + dates in the middle, a CURRENT tag on the right.
+ *
+ * `role` and `dates` are placeholders until the public profile hands
+ * them down through props — today the ticker is the only real value.
+ */
+function ProjCard({
+  ticker,
+  role,
+  dates,
+}: {
+  ticker: string;
+  role?: string;
+  dates?: string;
+}) {
+  return (
+    <div className="pm-proj-card">
+      <div className="pm-proj-ticker">{ticker}</div>
+      <div className="pm-proj-meta">
+        <div className="pm-proj-role">{role ?? "COLLABORATOR"}</div>
+        <div className="pm-proj-dates">{dates ?? "PROJECT PROOF"}</div>
+      </div>
+      <div className="pm-proj-tags">
+        <span className="pm-proj-tag pm-proj-tag-current">CURRENT</span>
+      </div>
+    </div>
+  );
+}
+
 function Step1PathSelect({
   path,
   onPick,
@@ -474,38 +568,44 @@ function Step1PathSelect({
 }) {
   return (
     <>
-      <div className="pm-eyebrow">PROOF THIS WORK</div>
+      <div className="pm-eyebrow">&gt; VERIFY THIS WORK ON-CHAIN</div>
       <h2 className="pm-head">
-        Which side were you <span className="pm-accent">on?</span>
+        You&apos;re proofing <span className="pm-accent">@{handle}</span>.
       </h2>
       <p className="pm-sub">
-        You&apos;re about to leave a permanent on-chain proof that <b>@{handle}</b> worked on{" "}
-        <b>{ticker}</b>. Pick the path that matches your relationship to the project.
+        Pick the path that matches your relationship to <b>{ticker}</b>. Proofs are permanent —
+        you can&apos;t edit, delete, or refund after signature.
       </p>
+      <ProjCard ticker={ticker} />
       <div className="pm-paths">
         <button
           type="button"
           className={`pm-path-card${path === "collab" ? " pm-selected" : ""}`}
           onClick={() => onPick("collab")}
         >
+          <span className="pm-path-lim">1 PER WALLET</span>
           <div className="pm-path-title">COLLABORATOR</div>
+          <div className="pm-path-price">$1</div>
           <div className="pm-path-desc">
             You worked alongside them on {ticker}. No token-level claim.
           </div>
-          <div className="pm-path-price">$1 · $0.60 with $LASTSHFT</div>
         </button>
         <button
           type="button"
-          className={`pm-path-card${path === "dev" ? " pm-selected" : ""}`}
+          className={`pm-path-card pm-path-dev${path === "dev" ? " pm-selected" : ""}`}
           onClick={() => onPick("dev")}
         >
+          <span className="pm-path-lim">1 DEV PROOF / PROJECT</span>
           <div className="pm-path-title">DEV</div>
+          <div className="pm-path-price">$5</div>
           <div className="pm-path-desc">
-            You deployed or co-founded {ticker}. Wallet verified against mint authority + first-5
-            holders.
+            You deployed or co-founded {ticker}. Wallet verified against mint
+            authority + first-5 holders.
           </div>
-          <div className="pm-path-price">$5 · $3 with $LASTSHFT</div>
         </button>
+      </div>
+      <div className="pm-field-help">
+        1 WALLET PER PROJECT · 1 DEV PROOF PER PROJECT · PERMANENT ON-CHAIN
       </div>
     </>
   );
@@ -532,9 +632,13 @@ function Step1PathSelect({
  */
 function Step2WalletPicker({
   onBack,
+  connected,
+  onContinue,
   onDevMockConnect,
 }: {
   onBack: () => void;
+  connected: ConnectedWallet | null;
+  onContinue: () => void;
   onDevMockConnect?: () => void;
 }) {
   const { wallets, select, connect, connecting, wallet: selectedWallet } = useWallet();
@@ -577,9 +681,54 @@ function Step2WalletPicker({
     [liveByCanonical, select, connect],
   );
 
+  // Verified state — wallet just connected. Per user decision A, we do
+  // NOT auto-advance. Show a transparent confirmation card and let the
+  // user click CONTINUE to proceed. Going fast creates doubt.
+  if (connected) {
+    const short =
+      connected.pubkey.slice(0, 6) + "…" + connected.pubkey.slice(-4);
+    const walletLabel = connected.adapterName?.toUpperCase() ?? "WALLET";
+    return (
+      <>
+        <div className="pm-eyebrow">&gt; WALLET CONNECTED</div>
+        <h2 className="pm-head">
+          Locked in with <span className="pm-green">{walletLabel}</span>.
+        </h2>
+        <p className="pm-sub">
+          We&apos;ve got the wallet address. Next we&apos;ll check eligibility
+          in the background while you write your receipt.
+        </p>
+
+        <div className="pm-wallet-verified">
+          <div className="pm-wv-check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <div className="pm-wv-title">{walletLabel} · CONNECTED</div>
+          <div className="pm-wv-addr">
+            <b>{short}</b>
+          </div>
+          <div className="pm-wv-sub">
+            LASTPROOF never holds your keys. Every action routes through your
+            wallet for signature.
+          </div>
+          <button
+            type="button"
+            className="pm-cta pm-cta-green"
+            onClick={onContinue}
+            data-testid="pm-wv-continue"
+          >
+            &gt; CONTINUE
+          </button>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
-      <div className="pm-eyebrow">CONNECT YOUR WALLET</div>
+      <div className="pm-eyebrow">&gt; CONNECT YOUR WALLET</div>
       <h2 className="pm-head">
         Pick a <span className="pm-accent">wallet.</span>
       </h2>
@@ -679,37 +828,45 @@ function Step3Comment({
   comment,
   onChange,
   tooLong,
+  ticker,
 }: {
   comment: string;
   onChange: (s: string) => void;
   tooLong: boolean;
+  ticker: string;
 }) {
   const remaining = COMMENT_MAX - comment.length;
   return (
     <>
-      <div className="pm-eyebrow">LEAVE A NOTE</div>
+      <div className="pm-eyebrow">&gt; LEAVE A RECEIPT</div>
       <h2 className="pm-head">
-        Add a <span className="pm-accent">receipt.</span>
+        Say what you <span className="pm-accent">shipped.</span>
       </h2>
       <p className="pm-sub">
-        One line about what you shipped with them. Optional. Lives on the public profile next to the
-        proof. No URLs, no emoji spam.
+        One line lives on the public profile next to this proof. Optional — but
+        operators with receipts convert better.
       </p>
 
-      <div className="pm-comment-wrap">
+      <ProjCard ticker={ticker} />
+
+      <div className="pm-field">
+        <label className="pm-field-key" htmlFor="pm-comment-input">
+          RECEIPT
+          <span className={`pm-char-count${tooLong ? " pm-over" : ""}`}>
+            {remaining} / {COMMENT_MAX}
+          </span>
+        </label>
         <textarea
+          id="pm-comment-input"
           className="pm-comment"
           placeholder="e.g. Shipped the meme engine with them — 40k impressions in week 1."
           value={comment}
           onChange={(e) => onChange(e.target.value)}
           maxLength={COMMENT_MAX + 20 /* soft cap, hard cap enforced by disabled CTA */}
         />
-        <div className={`pm-comment-count${tooLong ? " pm-over" : ""}`}>
-          {remaining} / {COMMENT_MAX}
-        </div>
       </div>
-      <div className="pm-comment-hint">
-        Optional — skip to continue. Eligibility is running in the background while you type.
+      <div className="pm-field-help">
+        OPTIONAL · NO URLS · NO EMOJI SPAM · ELIGIBILITY IS RUNNING IN THE BACKGROUND
       </div>
     </>
   );
@@ -727,15 +884,22 @@ function Step4TokenPicker({
   onPick: (t: ProofTokenKey) => void;
 }) {
   const basePrice = PROOF_BASE_PRICE_USD[path];
+  // Token icon glyphs — wireframe uses CDN SVGs; we use glyph fallbacks
+  // so the modal renders offline without 3p image dependency.
+  const TOKEN_GLYPH: Record<ProofTokenKey, string> = {
+    LASTSHFT: "LS",
+    SOL: "◎",
+    USDT: "₮",
+  };
   return (
     <>
-      <div className="pm-eyebrow">PICK YOUR TOKEN</div>
+      <div className="pm-eyebrow">&gt; PICK YOUR TOKEN</div>
       <h2 className="pm-head">
         Pay with <span className="pm-accent">$LASTSHFT</span> — 40% off.
       </h2>
       <p className="pm-sub">
-        Three options, all permissionless. Paying in $LASTSHFT unlocks the operator discount and
-        routes straight to the buy-back wallet.
+        Three options, all permissionless. Paying in $LASTSHFT unlocks the
+        operator discount and routes straight to the buy-back wallet.
       </p>
 
       <div className="pm-tokens">
@@ -746,34 +910,57 @@ function Step4TokenPicker({
             <button
               key={t.key}
               type="button"
-              className={`pm-token${selected ? " pm-selected" : ""}`}
+              className={`pm-token pm-token-${t.key.toLowerCase()}${selected ? " pm-selected" : ""}`}
               onClick={() => onPick(t.key)}
             >
-              <span className="pm-token-label">
-                {t.label}
-                {t.hasDiscountBadge && (
-                  <span className="pm-token-badge">{LASTSHFT_DISCOUNT_LABEL}</span>
+              <div className="pm-tc-left">
+                <div className={`pm-token-icon pm-token-icon-${t.key.toLowerCase()}`}>
+                  {TOKEN_GLYPH[t.key]}
+                </div>
+                <div className="pm-token-meta">
+                  <div className="pm-token-name">{t.label}</div>
+                  <div className="pm-token-sub">BAL: — · ≈ $—</div>
+                </div>
+              </div>
+              <div className="pm-tc-right">
+                {t.hasDiscountBadge ? (
+                  <div className="pm-token-price pm-discount">
+                    <span className="pm-token-strike">
+                      ${basePrice.toFixed(2)}
+                    </span>
+                    <span>${price.toFixed(2)}</span>
+                  </div>
+                ) : (
+                  <div className="pm-token-price">${price.toFixed(2)}</div>
                 )}
-              </span>
-              <span className="pm-token-price">
-                {t.hasDiscountBadge && (
-                  <span className="pm-token-strike">${basePrice.toFixed(2)}</span>
+                {t.hasDiscountBadge ? (
+                  <a
+                    className="pm-buy-btn"
+                    href={BUY_LASTSHFT_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    BUY $LASTSHFT ↗
+                  </a>
+                ) : (
+                  <div className="pm-token-live">
+                    ≈ {price.toFixed(2)} {t.key}
+                  </div>
                 )}
-                ${price.toFixed(2)}
-              </span>
+              </div>
+              {t.hasDiscountBadge && (
+                <span className="pm-token-badge">
+                  {LASTSHFT_DISCOUNT_LABEL}
+                </span>
+              )}
             </button>
           );
         })}
       </div>
-
-      <a
-        className="pm-buy-lastshft"
-        href={BUY_LASTSHFT_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        BUY $LASTSHFT ↗
-      </a>
+      <div className="pm-field-help">
+        PAYMENT GOES TO $LASTSHFT AR WALLET · MEMO INCLUDES PROOF ID
+      </div>
     </>
   );
 }
@@ -798,7 +985,7 @@ function Step5Eligibility({
 
   return (
     <>
-      <div className="pm-eyebrow">VERIFYING YOUR WALLET</div>
+      <div className="pm-eyebrow">&gt; VERIFYING YOUR WALLET</div>
       <h2 className="pm-head">
         Quick <span className="pm-accent">eligibility check.</span>
       </h2>
@@ -844,16 +1031,53 @@ function Step5Eligibility({
 
       {isIneligible && (
         <div className="pm-inel">
-          <div>● YOU&apos;VE BEEN AUTOMATICALLY DISCONNECTED</div>
-          <div style={{ marginTop: 10, color: "var(--pm-dim)" }}>
-            To file a <b>DEV proof</b>, the connected wallet must match at least one on-chain signal
-            for this project: <b>MINT-AUTHORITY</b>, <b>DEPLOYER</b>, or <b>FIRST-5 HOLDER</b>.{" "}
-            <i>FOUNDER MULTISIG check lands in v1.1.</i>
+          <div className="pm-inel-head">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            THIS WALLET ISN&apos;T ELIGIBLE
+          </div>
+          <div className="pm-inel-disc">
+            <span className="pm-inel-disc-dot" />
+            YOU&apos;VE BEEN AUTOMATICALLY DISCONNECTED
+          </div>
+          <div className="pm-inel-body">
+            To file a <b>{role === "dev" ? "DEV" : "COLLABORATOR"} proof</b>,
+            the connected wallet must match at least one of the on-chain
+            signals for this project:
+            <ul>
+              <li>
+                <b>DEPLOYER</b> — signed the token mint transaction
+              </li>
+              <li>
+                <b>MINT AUTHORITY</b> — current mint authority wallet
+              </li>
+              <li>
+                <b>FIRST-5 HOLDER</b> — one of the first 5 holders at mint
+                distribution
+              </li>
+              <li>
+                <b>FOUNDER MULTISIG</b> — verified signer on the project
+                treasury multisig <i>(v1.1)</i>
+              </li>
+            </ul>
+            {role === "dev" ? (
+              <>
+                If you&apos;re a collaborator (not a dev), go back and pick the{" "}
+                <b>COLLABORATOR</b> path instead.
+              </>
+            ) : (
+              <>
+                This wallet has already filed a proof on this project, or
+                doesn&apos;t meet the collaborator slot rules.
+              </>
+            )}
           </div>
           <button
             type="button"
-            className="pm-cta"
-            style={{ marginTop: 14 }}
+            className="pm-cta pm-cta-inel"
             onClick={onTryNewWallet}
           >
             &gt; TRY A NEW WALLET
@@ -951,43 +1175,76 @@ function Step6Review({
 
   return (
     <>
-      <div className="pm-eyebrow">REVIEW BEFORE YOU SIGN</div>
+      <div className="pm-eyebrow">&gt; REVIEW BEFORE YOU SIGN</div>
       <h2 className="pm-head">
         One last <span className="pm-accent">look.</span>
       </h2>
       <p className="pm-sub">
-        Price updates live. Your wallet will ask you to approve this exact amount.
+        Confirm everything below. After you sign, the proof is permanent — no
+        edit, no delete, no refund.
       </p>
 
       <div className="pm-review">
+        <div className="pm-review-row">
+          <span className="pm-review-key">PROJECT</span>
+          <span className="pm-review-val pm-green">{ticker}</span>
+        </div>
         <div className="pm-review-row">
           <span className="pm-review-key">OPERATOR</span>
           <span className="pm-review-val">@{handle}</span>
         </div>
         <div className="pm-review-row">
-          <span className="pm-review-key">PROJECT</span>
-          <span className="pm-review-val">{ticker}</span>
+          <span className="pm-review-key">PROOF TYPE</span>
+          <span className="pm-review-val">
+            {path === "dev" ? "DEV" : "COLLABORATOR"}
+          </span>
         </div>
         <div className="pm-review-row">
-          <span className="pm-review-key">PATH</span>
-          <span className="pm-review-val">{path.toUpperCase()}</span>
+          <span className="pm-review-key">COMMENT</span>
+          <span className="pm-review-val pm-review-comment">
+            {comment ? `"${comment}"` : <span className="pm-dim">—</span>}
+          </span>
         </div>
         <div className="pm-review-row">
-          <span className="pm-review-key">WALLET</span>
+          <span className="pm-review-key">FROM WALLET</span>
           <span className="pm-review-val pm-mono">{shortPubkey}</span>
         </div>
         <div className="pm-review-row">
-          <span className="pm-review-key">QUOTE ID</span>
-          <span className="pm-review-val pm-mono">{shortQuoteId}</span>
+          <span className="pm-review-key">TO</span>
+          <span className="pm-review-val">$LASTSHFT AR WALLET</span>
         </div>
-        {comment && (
-          <div className="pm-review-row">
-            <span className="pm-review-key">NOTE</span>
-            <span className="pm-review-val" style={{ maxWidth: "60%" }}>
-              &ldquo;{comment}&rdquo;
+        <div className="pm-review-row">
+          <span className="pm-review-key">PAY WITH</span>
+          <span className="pm-review-val">
+            {tokenLabel === "LASTSHFT" ? "$LASTSHFT (−40%)" : tokenLabel}
+          </span>
+        </div>
+        <div className="pm-review-row">
+          <span className="pm-review-key">AMOUNT</span>
+          <span className="pm-review-val pm-accent">
+            <span className={flash ? "pm-flash" : undefined}>
+              ${quote.usd.toFixed(2)} = {quote.amount_ui} {tokenLabel}
             </span>
-          </div>
-        )}
+            {!refresh.expired && (
+              <span className="pm-live-pill">
+                <span className="pm-live-dot" />
+                LIVE
+              </span>
+            )}
+          </span>
+        </div>
+        <div className="pm-review-row">
+          <span className="pm-review-key">QUOTE ID</span>
+          <span className="pm-review-val pm-mono">
+            {shortQuoteId}
+            {!refresh.expired && (
+              <> · EXPIRES IN <span className={countdownCls}>{secsLeft}s</span></>
+            )}
+          </span>
+        </div>
+      </div>
+      <div className="pm-field-help">
+        PRICE REFRESHES EVERY 5S · LOCKED AT SIGNATURE
       </div>
 
       {refresh.expired ? (
@@ -1066,7 +1323,7 @@ function Step6Review({
 function Step7Signing({ sign }: { sign: ReturnType<typeof useSignFlow>["state"] }) {
   const rungs: { key: SignPhase; label: string }[] = [
     { key: "building", label: "BUILDING TRANSACTION" },
-    { key: "awaiting_signature", label: "AWAITING WALLET SIGNATURE" },
+    { key: "awaiting_signature", label: "AWAITING SIGNATURE IN WALLET" },
     { key: "broadcasting", label: "BROADCASTING" },
     { key: "confirming", label: "CONFIRMING ON-CHAIN" },
   ];
@@ -1097,14 +1354,25 @@ function Step7Signing({ sign }: { sign: ReturnType<typeof useSignFlow>["state"] 
 
   return (
     <>
-      <div className="pm-eyebrow">SIGNING ON-CHAIN</div>
+      <div className="pm-eyebrow">&gt; WAITING FOR WALLET APPROVAL</div>
       <h2 className="pm-head">
-        Hold <span className="pm-accent">steady.</span>
+        Approve in your <span className="pm-accent">wallet.</span>
       </h2>
       <p className="pm-sub">
-        Don&apos;t close this window. Your wallet will prompt you to approve. After you sign, we
-        broadcast and wait for confirmation.
+        Open your wallet and approve the transaction. Your wallet will verify
+        keys and sign the proof — LASTPROOF never sees your private key.
       </p>
+
+      <div className="pm-sign-wrap">
+        <div className="pm-sign-phone" aria-hidden="true">
+          <div className="pm-sign-spin" />
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="6" y="2" width="12" height="20" rx="2" />
+            <path d="M11 18h2" />
+            <path d="M9 6h6" />
+          </svg>
+        </div>
+      </div>
 
       <div className="pm-ladder" role="status" aria-live="polite" aria-atomic="false">
         {rungs.map((r) => {
@@ -1133,6 +1401,9 @@ function Step7Signing({ sign }: { sign: ReturnType<typeof useSignFlow>["state"] 
           );
         })}
       </div>
+      <div className="pm-field-help">
+        DO NOT CLOSE THIS WINDOW · TIMES OUT AFTER 60 SECONDS
+      </div>
     </>
   );
 }
@@ -1153,6 +1424,12 @@ function Step8Outcome({
   onChangeToken,
   onStartOver,
   onClose,
+  ticker,
+  handle,
+  path,
+  pubkey,
+  tokenLabel,
+  amountUi,
 }: {
   sign: ReturnType<typeof useSignFlow>["state"];
   onRetrySign: () => void;
@@ -1160,35 +1437,77 @@ function Step8Outcome({
   onChangeToken: () => void;
   onStartOver: () => void;
   onClose: () => void;
+  ticker: string;
+  handle: string;
+  path: ProofPath | null;
+  pubkey: string | null;
+  tokenLabel: string;
+  amountUi: string | null;
 }) {
   if (sign.phase === "confirmed") {
+    const sigShort = sign.signature
+      ? `${sign.signature.slice(0, 6)}…${sign.signature.slice(-6)}`
+      : "—";
     return (
       <>
-        <div className="pm-eyebrow">PROOF MINTED</div>
-        <h2 className="pm-head">
-          It&apos;s <span className="pm-accent">on-chain.</span>
-        </h2>
-        <div className="pm-outcome pm-success">
-          <div className="pm-outcome-mark">✓</div>
-          <div className="pm-outcome-title">CONFIRMED</div>
-          <div className="pm-outcome-sub">
-            Your proof is permanent. It&apos;s on the profile now and the operator gets a
-            notification.
+        <div className="pm-done-wrap">
+          <div className="pm-done-check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
           </div>
-          {sign.signature && (
-            <div className="pm-outcome-sig">
-              {sign.signature.slice(0, 14)}…{sign.signature.slice(-14)}
+          <div className="pm-eyebrow">&gt; PROOFED ON-CHAIN</div>
+          <h2 className="pm-head">
+            <span className="pm-accent">@{handle}</span> thanks you.{" "}
+            <span className="pm-green">It&apos;s done.</span>
+          </h2>
+          <p className="pm-sub">
+            Your proof is live. The operator&apos;s count just ticked up by 1.
+          </p>
+          <div className="pm-proof-summary">
+            <div className="pm-ps-row">
+              <span className="pm-ps-key">PROJECT</span>
+              <span className="pm-ps-val pm-green">{ticker}</span>
             </div>
-          )}
-          {sign.solscanUrl && (
-            <a href={sign.solscanUrl} target="_blank" rel="noopener noreferrer">
-              VIEW ON SOLSCAN ↗
-            </a>
-          )}
+            <div className="pm-ps-row">
+              <span className="pm-ps-key">PROOF TYPE</span>
+              <span className="pm-ps-val">
+                {path === "dev" ? "DEV" : "COLLABORATOR"}
+              </span>
+            </div>
+            <div className="pm-ps-row">
+              <span className="pm-ps-key">FROM</span>
+              <span className="pm-ps-val pm-mono">
+                {pubkey ? `${pubkey.slice(0, 4)}…${pubkey.slice(-4)}` : "—"}
+              </span>
+            </div>
+            <div className="pm-ps-row">
+              <span className="pm-ps-key">PAID</span>
+              <span className="pm-ps-val">
+                {amountUi ?? "—"} {tokenLabel}
+              </span>
+            </div>
+            <div className="pm-ps-row">
+              <span className="pm-ps-key">SIGNATURE</span>
+              <span className="pm-ps-val pm-mono">{sigShort}</span>
+            </div>
+            <div className="pm-ps-row">
+              <span className="pm-ps-key">SOLSCAN</span>
+              <span className="pm-ps-val">
+                {sign.solscanUrl ? (
+                  <a href={sign.solscanUrl} target="_blank" rel="noopener noreferrer">
+                    VIEW ↗
+                  </a>
+                ) : (
+                  "—"
+                )}
+              </span>
+            </div>
+          </div>
         </div>
         <div className="pm-cta-bar" style={{ marginTop: 18, padding: 0, border: 0 }}>
-          <button type="button" className="pm-cta" onClick={onClose}>
-            &gt; DONE
+          <button type="button" className="pm-cta pm-cta-green" onClick={onClose}>
+            &gt; BACK TO PROFILE
           </button>
         </div>
       </>
@@ -1222,15 +1541,47 @@ function Step8Outcome({
 
   return (
     <>
-      <div className="pm-eyebrow">PROOF NOT MINTED</div>
-      <h2 className="pm-head">
-        Something <span className="pm-accent">didn&apos;t land.</span>
-      </h2>
-      <div className="pm-outcome pm-fail">
-        <div className="pm-outcome-mark">!</div>
-        <div className="pm-outcome-title">{copy.title}</div>
-        <div className="pm-outcome-sub">{copy.sub}</div>
-        <div className="pm-outcome-sig">reason: {reason}</div>
+      <div className="pm-done-wrap">
+        <div className="pm-done-check pm-fail" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </div>
+        <div className="pm-eyebrow pm-eyebrow-fail">&gt; TRANSACTION FAILED</div>
+        <h2 className="pm-head">
+          {copy.title.toLowerCase()} —{" "}
+          <span className="pm-red">nothing was charged.</span>
+        </h2>
+        <p className="pm-sub">{copy.sub}</p>
+        <div className="pm-proof-summary">
+          <div className="pm-ps-row">
+            <span className="pm-ps-key">PROJECT</span>
+            <span className="pm-ps-val pm-green">{ticker}</span>
+          </div>
+          <div className="pm-ps-row">
+            <span className="pm-ps-key">FROM</span>
+            <span className="pm-ps-val pm-mono">
+              {pubkey ? `${pubkey.slice(0, 4)}…${pubkey.slice(-4)}` : "—"}
+            </span>
+          </div>
+          <div className="pm-ps-row">
+            <span className="pm-ps-key">ATTEMPTED</span>
+            <span className="pm-ps-val">
+              {amountUi ?? "—"} {tokenLabel}
+            </span>
+          </div>
+          <div className="pm-ps-row">
+            <span className="pm-ps-key">ERROR</span>
+            <span className="pm-ps-val pm-red">
+              {reason.toUpperCase().replace(/_/g, " ")}
+            </span>
+          </div>
+          <div className="pm-ps-row">
+            <span className="pm-ps-key">CHARGED</span>
+            <span className="pm-ps-val pm-green">$0.00 · NOTHING SENT</span>
+          </div>
+        </div>
       </div>
       <div className="pm-cta-bar" style={{ marginTop: 18, padding: 0, border: 0 }}>
         <button

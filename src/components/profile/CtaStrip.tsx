@@ -1,6 +1,11 @@
-export function CtaStrip() {
+interface CtaStripProps {
+  /** "free" adds the green-dashed border variant from the free wireframe. */
+  variant?: "default" | "free";
+}
+
+export function CtaStrip({ variant = "default" }: CtaStripProps = {}) {
   return (
-    <section className="pp-cta-strip">
+    <section className={`pp-cta-strip${variant === "free" ? " pp-cta-strip-free" : ""}`}>
       <div className="pp-cta-eyebrow">LASTPROOF · THE OPERATOR GRID</div>
       <h2 className="pp-cta-headline">
         Hire <span className="pp-accent">proven operators.</span> Or become one.

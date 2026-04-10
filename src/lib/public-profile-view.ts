@@ -11,7 +11,22 @@
 import type { Tier } from "./tier";
 import type { SubscriptionState } from "./subscription";
 
+/**
+ * Variant selector — drives which layout + CTA strip the route renders.
+ *  - "public" → standard paid profile (cryptomark)
+ *  - "legend" → 95% identical to public but swaps the footer CTA for the
+ *    purple/orange FOMO "first 5,000 operators" strip. Legend profiles keep
+ *    the 5K founder avatar badge.
+ *  - "free"   → stripped-down: hero + single CTA strip only. No tier bar,
+ *    tabs, stats, PoW, screenshots, links, about, verifications, or hire
+ *    button. Hero shows a `> UPGRADE PROFILE` button that links to /manage.
+ */
+export type ProfileVariant = "public" | "legend" | "free";
+
 export interface PublicProfileView {
+  // ─── Variant dispatch ────────────────────────────────────────
+  variant: ProfileVariant;
+
   // ─── Identity (hero) ─────────────────────────────────────────
   handle: string;
   displayName: string;

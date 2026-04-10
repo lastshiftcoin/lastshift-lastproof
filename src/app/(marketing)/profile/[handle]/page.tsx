@@ -2,9 +2,13 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import { cryptomarkProfile } from "@/lib/mock/cryptomark-profile";
+import { shipfastProfile } from "@/lib/mock/shipfast-profile";
+import { newbuilderProfile } from "@/lib/mock/newbuilder-profile";
 import type { PublicProfileView, WorkItem } from "@/lib/public-profile-view";
 
 import { ProfileHero } from "@/components/profile/ProfileHero";
+import { ProfileTopBar } from "@/components/profile/ProfileTopBar";
+import { FomoCtaStrip } from "@/components/profile/FomoCtaStrip";
 import { TrustTierBar } from "@/components/profile/TrustTierBar";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { StatStrip } from "@/components/profile/StatStrip";
@@ -26,12 +30,47 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: `@${handle} — LASTPROOF` };
 }
 
+const FIXTURES: Record<string, PublicProfileView> = {
+  cryptomark: cryptomarkProfile,
+  shipfast: shipfastProfile,
+  newbuilder: newbuilderProfile,
+};
+
 export default async function PublicProfilePage({ params }: PageProps) {
   const { handle } = await params;
 
-  // Step 1: single mock. Real projector fan-out lands in Step 3.
-  if (handle !== "cryptomark") notFound();
-  const view: PublicProfileView = cryptomarkProfile;
+  const view = FIXTURES[handle];
+  if (!view) notFound();
+
+  // ─── FREE variant: stripped layout (hero + CTA only) ──────────
+  if (view.variant === "free") {
+    return (
+      <div className="pp-page pp-page-bg">
+        <div className="pp-container">
+          <ProfileTopBar handle={view.handle} />
+          <ProfileHero
+            variant="free"
+            handle={view.handle}
+            displayName={view.displayName}
+            avatarUrl={view.avatarUrl}
+            avatarMonogram={view.avatarMonogram}
+            statusLabel={view.statusLabel}
+            isEarlyAdopter={view.isEarlyAdopter}
+            isVerified={view.isVerified}
+            headline={view.headline}
+            timezone={view.timezone}
+            language={view.language}
+            feeRange={view.feeRange}
+            xHandle={view.xHandle}
+            tgHandle={view.tgHandle}
+            website={view.website}
+            hireTelegramHandle={view.hireTelegramHandle}
+          />
+          <CtaStrip variant="free" />
+        </div>
+      </div>
+    );
+  }
 
   const mintedItems = view.workItems.filter((w) => w.section === "minted");
   const recentItems = view.workItems.filter((w) => w.section === "recent");
@@ -42,7 +81,9 @@ export default async function PublicProfilePage({ params }: PageProps) {
   return (
     <div className="pp-page pp-page-bg">
       <div className="pp-container">
+        <ProfileTopBar handle={view.handle} />
         <ProfileHero
+          variant={view.variant}
           handle={view.handle}
           displayName={view.displayName}
           avatarUrl={view.avatarUrl}
@@ -163,7 +204,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
           <ProofsTable proofs={view.recentProofs} totalProofs={view.totalProofs} />
         </section>
 
-        <CtaStrip />
+        {view.variant === "legend" ? <FomoCtaStrip /> : <CtaStrip />}
       </div>
     </div>
   );

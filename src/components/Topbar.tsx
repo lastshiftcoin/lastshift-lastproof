@@ -1,10 +1,18 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 /**
  * Universal topbar — SHIFTBOT logo (top-left), wordmark, ticker, nav, manage CTA.
  * Present on every public page per §4.3 + §12.6 of the handoff.
+ *
+ * Profile routes (/profile/[handle], /@handle) render their own profile-scoped
+ * header (ProfileTopBar) with SHARE / REPORT actions instead of this global one.
  */
 export default function Topbar() {
+  const pathname = usePathname() || "";
+  if (pathname.startsWith("/profile/") || pathname.startsWith("/@")) return null;
   return (
     <div className="topbar">
       <div className="topbar-left">
