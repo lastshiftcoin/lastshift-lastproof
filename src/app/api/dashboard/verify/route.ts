@@ -57,8 +57,9 @@ export async function POST(request: Request) {
     // If disconnecting, also clear verified flag
     if (!cleanHandle) updates.x_verified = false;
   } else {
-    updates.tg_handle = cleanHandle;
-    if (!cleanHandle) updates.tg_verified = false;
+    // DB column is telegram_handle, not tg_handle
+    updates.telegram_handle = cleanHandle;
+    if (!cleanHandle) updates.telegram_verified = false;
   }
 
   const { error } = await sb

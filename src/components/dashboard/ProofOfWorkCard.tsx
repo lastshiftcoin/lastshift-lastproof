@@ -202,17 +202,13 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
       return;
     }
 
-    const txSig = prompt(
-      "Minting locks this project on-chain as permanent, tamper-proof history.\n\n" +
-      "Enter your mint transaction signature:"
-    );
-    if (!txSig) return;
+    if (!confirm("Mint this project? This locks it as permanent, tamper-proof history on your profile.")) return;
 
     try {
       const res = await fetch("/api/dashboard/work-items/mint", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, txSignature: txSig }),
+        body: JSON.stringify({ id }),
       });
 
       if (!res.ok) {

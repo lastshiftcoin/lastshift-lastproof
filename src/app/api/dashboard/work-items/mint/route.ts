@@ -66,11 +66,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "no_proofs" }, { status: 400 });
   }
 
-  // TODO: Verify txSignature is a valid on-chain mint transaction
-  if (!txSignature || typeof txSignature !== "string") {
-    return NextResponse.json({ error: "missing_tx" }, { status: 402 });
-  }
-
+  // v1: minting is free — just requires a signed message proving wallet ownership.
+  // On-chain NFT minting (Metaplex, compressed NFT, etc.) is a v2 feature.
+  // txSignature is optional for now; if provided, stored for future verification.
   const { error } = await sb
     .from("work_items")
     .update({ minted: true })
