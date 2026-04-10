@@ -685,3 +685,94 @@ textarea.field-input{font-family:var(--sans);font-size:13px;resize:vertical;min-
   /* footer */
   .footer{flex-direction:column;gap:8px;padding:14px;text-align:center}
 }
+
+/* ─── Screenshot Lightbox ────────────────────────────────────────────────── */
+.shot-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(5, 6, 10, 0.92);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  animation: lb-fadeIn 0.2s ease;
+}
+@keyframes lb-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.shot-lb-inner {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+}
+.shot-lb-img {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 1px solid var(--border, #1e2030);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+}
+.shot-lb-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: none;
+  border: none;
+  color: var(--text-dim, #5a5e73);
+  font-size: 28px;
+  cursor: pointer;
+  padding: 4px 10px;
+  transition: color 0.15s;
+  z-index: 2;
+}
+.shot-lb-close:hover {
+  color: #fff;
+}
+.shot-lb-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border, #1e2030);
+  border-radius: 50%;
+  color: var(--text-dim, #5a5e73);
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  z-index: 2;
+}
+.shot-lb-nav:hover {
+  color: #fff;
+  border-color: var(--accent, #ff9100);
+  background: rgba(255, 145, 0, 0.12);
+}
+.shot-lb-nav.prev { left: -50px; }
+.shot-lb-nav.next { right: -50px; }
+.shot-lb-counter {
+  position: absolute;
+  bottom: -32px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  color: var(--text-dim, #5a5e73);
+  letter-spacing: 1.5px;
+}
+@media (max-width: 600px) {
+  .shot-lb-nav.prev { left: 8px; }
+  .shot-lb-nav.next { right: 8px; }
+  .shot-lb-close { top: -36px; right: -4px; }
+}

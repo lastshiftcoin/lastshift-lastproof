@@ -31,6 +31,7 @@ const MAX_SHOTS = 8;
 export function ScreenshotsCard({ initialShots }: ScreenshotsCardProps) {
   const [shots, setShots] = useState<Screenshot[]>(initialShots.sort((a, b) => a.position - b.position));
   const [uploading, setUploading] = useState(false);
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // ─── Upload handler ─────────────────────────────────────────────────────
@@ -113,7 +114,12 @@ export function ScreenshotsCard({ initialShots }: ScreenshotsCardProps) {
           <div key={shot.id} className="shot">
             <div className="shot-num">{String(i + 1).padStart(2, "0")}</div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={shot.imageUrl} alt={`Screenshot ${i + 1}`} />
+            <img
+              src={shot.imageUrl}
+              alt={`Screenshot ${i + 1}`}
+              onClick={() => setLightboxIdx(i)}
+              style={{ cursor: "pointer" }}
+            />
             {shot.linkedUrl && (
               <div className="shot-link-flag">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
@@ -197,6 +203,51 @@ export function ScreenshotsCard({ initialShots }: ScreenshotsCardProps) {
         style={{ display: "none" }}
         onChange={handleUpload}
       />
+
+      {/* Lightbox */}
+      {lightboxIdx !== null && shots[lightboxIdx] && (
+        <div
+          className="shot-lightbox"
+          onClick={() => setLightboxIdx(null)}
+        >
+          <div className="shot-lb-inner" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="shot-lb-close"
+              onClick={() => setLightboxIdx(null)}
+            >
+              &times;
+            </button>
+            {shots.length > 1 && (
+              <button
+                type="button"
+                className="shot-lb-nav prev"
+                onClick={() => setLightboxIdx((lightboxIdx - 1 + shots.length) % shots.length)}
+              >
+                &lsaquo;
+              </button>
+            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={shots[lightboxIdx].imageUrl}
+              alt={`Screenshot ${lightboxIdx + 1}`}
+              className="shot-lb-img"
+            />
+            {shots.length > 1 && (
+              <button
+                type="button"
+                className="shot-lb-nav next"
+                onClick={() => setLightboxIdx((lightboxIdx + 1) % shots.length)}
+              >
+                &rsaquo;
+              </button>
+            )}
+            <div className="shot-lb-counter">
+              {lightboxIdx + 1} / {shots.length}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
