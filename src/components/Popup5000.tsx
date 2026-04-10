@@ -18,7 +18,7 @@ export default function Popup5000() {
   useEffect(() => {
     // Show once per session after 1s delay
     if (sessionStorage.getItem("popup5000_seen")) return;
-    const show = setTimeout(() => setVisible(true), 1000);
+    const show = setTimeout(() => setVisible(true), 3000);
     return () => clearTimeout(show);
   }, []);
 
