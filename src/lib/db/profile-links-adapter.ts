@@ -23,6 +23,8 @@ export interface DbProfileLink {
   profile_id: string;
   label: string;
   url: string;
+  platform: string;
+  pinned: boolean;
   position: number;
 }
 
@@ -33,6 +35,8 @@ export interface ProfileLinkRow {
   profileId: string;
   label: string;
   url: string;
+  platform: string;
+  pinned: boolean;
   position: number;
 }
 
@@ -44,6 +48,8 @@ function rowFromDb(r: DbProfileLink): ProfileLinkRow {
     profileId: r.profile_id,
     label: r.label,
     url: r.url,
+    platform: r.platform ?? "web",
+    pinned: r.pinned ?? false,
     position: r.position,
   };
 }
@@ -54,6 +60,8 @@ function rowToDb(row: ProfileLinkRow): Record<string, unknown> {
     profile_id: row.profileId,
     label: row.label,
     url: row.url,
+    platform: row.platform,
+    pinned: row.pinned,
     position: row.position,
   };
 }

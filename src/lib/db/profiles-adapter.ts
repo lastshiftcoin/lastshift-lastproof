@@ -25,7 +25,8 @@ interface DbProfileWithOperator {
   about: string | null;
   bio_statement: string | null;
   timezone: string | null;
-  // NOTE: DB has no `language` column — derived from location or hardcoded for now.
+  language: string | null;
+  website: string | null;
   avatar_url: string | null;
   fee_range: string | null;
   x_handle: string | null;
@@ -58,14 +59,14 @@ function rowFromDb(r: DbProfileWithOperator): ProfileRow {
     about: r.about,
     bioStatement: r.bio_statement,
     timezone: r.timezone,
-    language: null, // DB has no language column yet; derive or add via migration
+    language: r.language,
     feeRange: r.fee_range,
     avatarUrl: r.avatar_url,
     xHandle: r.x_handle,
     xVerified: r.x_verified ?? false,
     tgHandle: r.telegram_handle,
     tgVerified: r.telegram_verified ?? false,
-    website: null, // TODO: add website column or derive from profile_links
+    website: r.website,
     hireTelegramHandle: r.hire_telegram_handle,
     isPaid: r.is_paid ?? false,
     subscriptionStartedAt: r.subscription_started_at,
@@ -92,6 +93,8 @@ function rowToDb(row: ProfileRow): Record<string, unknown> {
     bio_statement: row.bioStatement,
     timezone: row.timezone,
     avatar_url: row.avatarUrl,
+    language: row.language,
+    website: row.website,
     fee_range: row.feeRange,
     x_handle: row.xHandle,
     x_verified: row.xVerified,
@@ -139,6 +142,8 @@ export async function updateProfileFields(
   if (patch.timezone !== undefined) dbPatch.timezone = patch.timezone;
   if (patch.feeRange !== undefined) dbPatch.fee_range = patch.feeRange;
   if (patch.avatarUrl !== undefined) dbPatch.avatar_url = patch.avatarUrl;
+  if (patch.language !== undefined) dbPatch.language = patch.language;
+  if (patch.website !== undefined) dbPatch.website = patch.website;
   if (patch.xHandle !== undefined) dbPatch.x_handle = patch.xHandle;
   if (patch.xVerified !== undefined) dbPatch.x_verified = patch.xVerified;
   if (patch.tgHandle !== undefined) dbPatch.telegram_handle = patch.tgHandle;

@@ -1,0 +1,654 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   MANAGE PROFILE — Terminal chrome
+   Wireframes: manage-profile.html, manage-profile-dashboard-entry.html,
+               manage-profile-no-terminal.html, manage-profile-safety.html
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Page shell ──────────────────────────────────────────────────────────── */
+
+.mg-page {
+  min-height: 100dvh;
+  background: var(--bg-primary, #0a0b0f);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+}
+
+/* CRT overlay effects */
+.mg-crt-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 998;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.03) 0px,
+    rgba(0, 0, 0, 0.03) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+}
+
+.mg-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 997;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 60%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
+}
+
+/* ─── System status bar ───────────────────────────────────────────────────── */
+
+.mg-sys-bar {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--text-dim, #5a5e73);
+  z-index: 10;
+}
+
+.mg-sys-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mg-sys-logo {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  opacity: 0.6;
+}
+
+.mg-sys-tag {
+  text-transform: uppercase;
+}
+
+.mg-sys-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green, #00e676);
+  box-shadow: 0 0 6px rgba(0, 230, 118, 0.5);
+  display: inline-block;
+  margin-left: 4px;
+}
+
+.mg-sys-time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Terminal frame ──────────────────────────────────────────────────────── */
+
+.mg-terminal {
+  width: 100%;
+  max-width: 720px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border, #1e2030);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-secondary, #12131a);
+  margin: 0 16px 16px;
+  position: relative;
+}
+
+.mg-titlebar {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--bg-card, #161822);
+  border-bottom: 1px solid var(--border, #1e2030);
+  gap: 8px;
+}
+
+.mg-titlebar-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.mg-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.mg-dot-red { background: #ff5f57; }
+.mg-dot-yellow { background: #febc2e; }
+.mg-dot-green { background: #28c840; }
+
+.mg-titlebar-title {
+  flex: 1;
+  text-align: center;
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 11px;
+  color: var(--text-dim, #5a5e73);
+  letter-spacing: 1px;
+}
+
+.mg-titlebar-right {
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  color: var(--text-dim, #5a5e73);
+  letter-spacing: 1px;
+}
+
+.mg-body {
+  flex: 1;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* scrollable variant for safety page */
+.mg-body-scroll {
+  overflow-y: auto;
+}
+
+/* ─── Boot sequence ───────────────────────────────────────────────────────── */
+
+.mg-boot-logo {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 24px;
+  filter: drop-shadow(0 0 12px rgba(255, 145, 0, 0.3));
+}
+
+.mg-boot-line {
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--text-secondary, #8b8fa3);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.mg-boot-line.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.mg-boot-line.green { color: var(--green, #00e676); }
+.mg-boot-line.accent { color: var(--accent, #ff9100); }
+.mg-boot-line.red { color: var(--red, #ff5252); }
+
+.mg-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  background: var(--accent, #ff9100);
+  margin-left: 4px;
+  vertical-align: text-bottom;
+  animation: mg-blink 1s step-end infinite;
+}
+
+@keyframes mg-blink {
+  50% { opacity: 0; }
+}
+
+/* ─── Divider ─────────────────────────────────────────────────────────────── */
+
+.mg-divider {
+  height: 1px;
+  margin: 20px 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--border, #1e2030) 20%,
+    var(--border, #1e2030) 80%,
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.mg-divider.visible {
+  opacity: 1;
+}
+
+/* ─── Connect section ─────────────────────────────────────────────────────── */
+
+.mg-connect {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding-top: 8px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.mg-connect.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.mg-connect-prompt {
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--text-primary, #e2e4ed);
+  text-transform: uppercase;
+}
+
+.mg-connect-btn {
+  padding: 14px 40px;
+  background: transparent;
+  border: 1px solid var(--accent, #ff9100);
+  border-radius: 4px;
+  color: var(--accent, #ff9100);
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 12px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+}
+
+.mg-connect-btn:hover {
+  background: rgba(255, 145, 0, 0.08);
+  box-shadow: 0 0 20px rgba(255, 145, 0, 0.15);
+}
+
+.mg-connect-btn.connecting {
+  border-color: var(--text-dim, #5a5e73);
+  color: var(--text-dim, #5a5e73);
+  cursor: wait;
+}
+
+.mg-connect-btn.connected {
+  border-color: var(--green, #00e676);
+  color: var(--green, #00e676);
+  cursor: default;
+}
+
+.mg-connect-btn.error {
+  border-color: var(--red, #ff5252);
+  color: var(--red, #ff5252);
+}
+
+.mg-connect-sub {
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  color: var(--text-dim, #5a5e73);
+  letter-spacing: 1px;
+}
+
+.mg-safe-link {
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  color: var(--text-dim, #5a5e73);
+  letter-spacing: 0.5px;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s ease;
+  margin-top: 4px;
+}
+
+.mg-safe-link:hover {
+  color: var(--text-secondary, #8b8fa3);
+  border-bottom-color: var(--text-dim, #5a5e73);
+}
+
+/* ─── Post-connect lines (validating Terminal ID) ─────────────────────────── */
+
+.mg-post-line {
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 12px;
+  line-height: 1.8;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.mg-post-line.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Reveal block (granted / no-terminal) ────────────────────────────────── */
+
+.mg-reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding-top: 12px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.mg-reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.mg-reveal-label {
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-dim, #5a5e73);
+}
+
+.mg-reveal-text {
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 16px;
+  letter-spacing: 2px;
+  color: var(--text-primary, #e2e4ed);
+  text-align: center;
+  line-height: 1.6;
+}
+
+.mg-reveal-text .accent {
+  color: var(--accent, #ff9100);
+}
+
+.mg-cta-btn {
+  padding: 14px 40px;
+  background: transparent;
+  border: 1px solid var(--green, #00e676);
+  border-radius: 4px;
+  color: var(--green, #00e676);
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 12px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+.mg-cta-btn:hover {
+  background: rgba(0, 230, 118, 0.08);
+  box-shadow: 0 0 20px rgba(0, 230, 118, 0.15);
+}
+
+.mg-cta-btn.external {
+  border-color: var(--accent, #ff9100);
+  color: var(--accent, #ff9100);
+}
+
+.mg-cta-btn.external:hover {
+  background: rgba(255, 145, 0, 0.08);
+  box-shadow: 0 0 20px rgba(255, 145, 0, 0.15);
+}
+
+/* ─── Bottom bar ──────────────────────────────────────────────────────────── */
+
+.mg-bottom-bar {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--text-dim, #5a5e73);
+}
+
+.mg-bottom-bar a {
+  color: var(--text-dim, #5a5e73);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.mg-bottom-bar a:hover {
+  color: var(--text-secondary, #8b8fa3);
+}
+
+/* ─── Safety page ─────────────────────────────────────────────────────────── */
+
+.mg-safety-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.mg-safety-logo {
+  width: 48px;
+  height: 48px;
+  filter: drop-shadow(0 0 10px rgba(255, 145, 0, 0.3));
+}
+
+.mg-safety-title {
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 18px;
+  letter-spacing: 3px;
+  color: var(--text-primary, #e2e4ed);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.mg-safety-subtitle {
+  font-family: var(--sans, 'Inter', sans-serif);
+  font-size: 13px;
+  color: var(--text-secondary, #8b8fa3);
+  text-align: center;
+  line-height: 1.6;
+  max-width: 480px;
+}
+
+/* Access grid (do / don't) */
+.mg-access-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.mg-access-card {
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #1e2030);
+  background: var(--bg-card, #161822);
+}
+
+.mg-access-card-title {
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.mg-access-card.do .mg-access-card-title {
+  color: var(--green, #00e676);
+}
+
+.mg-access-card.dont .mg-access-card-title {
+  color: var(--red, #ff5252);
+}
+
+.mg-access-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-family: var(--sans, 'Inter', sans-serif);
+  font-size: 13px;
+  color: var(--text-secondary, #8b8fa3);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.mg-access-item:last-child {
+  margin-bottom: 0;
+}
+
+.mg-access-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.mg-access-card.do .mg-access-icon { color: var(--green, #00e676); }
+.mg-access-card.dont .mg-access-icon { color: var(--red, #ff5252); }
+
+/* Trust blocks */
+.mg-trust-block {
+  margin: 24px 0;
+}
+
+.mg-trust-block-title {
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--accent, #ff9100);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.mg-trust-block-title.green {
+  color: var(--green, #00e676);
+}
+
+.mg-trust-block p {
+  font-family: var(--sans, 'Inter', sans-serif);
+  font-size: 13px;
+  color: var(--text-secondary, #8b8fa3);
+  line-height: 1.7;
+  margin: 0 0 12px;
+}
+
+/* Steps */
+.mg-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mg-step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.mg-step-num {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--accent, #ff9100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 11px;
+  color: var(--accent, #ff9100);
+}
+
+.mg-step-content {
+  font-family: var(--sans, 'Inter', sans-serif);
+  font-size: 13px;
+  color: var(--text-secondary, #8b8fa3);
+  line-height: 1.6;
+  padding-top: 2px;
+}
+
+/* Safety back button */
+.mg-back-btn {
+  display: inline-block;
+  padding: 12px 32px;
+  background: transparent;
+  border: 1px solid var(--accent, #ff9100);
+  border-radius: 4px;
+  color: var(--accent, #ff9100);
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+}
+
+.mg-back-btn:hover {
+  background: rgba(255, 145, 0, 0.08);
+  box-shadow: 0 0 20px rgba(255, 145, 0, 0.15);
+}
+
+.mg-safety-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding-top: 8px;
+}
+
+.mg-safety-note {
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  color: var(--text-dim, #5a5e73);
+  letter-spacing: 1px;
+}
+
+/* External links in safety */
+.mg-ext-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.mg-ext-link {
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  color: var(--accent, #ff9100);
+  text-decoration: none;
+  padding: 4px 10px;
+  border: 1px solid var(--border, #1e2030);
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+
+.mg-ext-link:hover {
+  border-color: var(--accent, #ff9100);
+  background: rgba(255, 145, 0, 0.06);
+}
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .mg-body {
+    padding: 24px 18px;
+  }
+
+  .mg-access-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mg-reveal-text {
+    font-size: 14px;
+  }
+
+  .mg-connect-btn,
+  .mg-cta-btn {
+    padding: 12px 28px;
+    font-size: 11px;
+  }
+}

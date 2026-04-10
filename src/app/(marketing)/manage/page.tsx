@@ -1,15 +1,23 @@
-import ManageGate from "./ManageGate";
+import ManageTerminal from "./ManageTerminal";
 import { readSession } from "@/lib/session";
+import type { Metadata } from "next";
+
+import "./manage.css";
+
+export const metadata: Metadata = {
+  title: "Manage Profile -- LASTPROOF",
+};
 
 /**
- * /manage — skeleton entry point for the Terminal ID gate.
+ * /manage — Terminal boot sequence + wallet connect + Terminal ID gate.
  *
- * Real design lives in the wireframes (Phase D). This page exists now so the
- * Terminal validate round-trip has somewhere to land while the identity bridge
- * is skeletoned. When the wireframed manage flow arrives, we replace the
- * markup below with the real shell; `ManageGate` + the API routes stay.
+ * Wireframes: manage-profile.html, manage-profile-dashboard-entry.html,
+ *             manage-profile-no-terminal.html
+ *
+ * If the user already has a valid session cookie, ManageTerminal skips
+ * the boot animation and shows the "ACCESS GRANTED" state directly.
  */
 export default async function ManagePage() {
   const session = await readSession();
-  return <ManageGate initialSession={session} />;
+  return <ManageTerminal initialSession={session} />;
 }
