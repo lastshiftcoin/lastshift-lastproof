@@ -106,7 +106,7 @@ export default async function HomePage({
         </div>
       </section>
 
-      <section className="how">
+      <section id="how-it-works" className="how">
         <div className="section-label">HOW IT WORKS</div>
         <div className="how-grid">
           <div className="how-cell">

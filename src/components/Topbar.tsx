@@ -34,7 +34,7 @@ export default function Topbar() {
       </div>
       <div className="topbar-right">
         <div className="topbar-nav">
-          <Link href="/how-it-works">HOW IT WORKS</Link>
+          <Link href="/#how-it-works">HOW IT WORKS</Link>
         </div>
         <Link className="btn btn-ghost btn-sm" href="/manage">
           MANAGE PROFILE
