@@ -2,22 +2,28 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 /**
  * First-5,000 popup. Mirrors wireframes/popup-5000.html.
- * Titlebar chrome is shared — all modals in LASTPROOF inherit this treatment.
+ * Shows once per session on first homepage load after a 1-second delay.
  *
  * Decrementing counter is a theatrical device from the wireframe; kept as-is
  * for v1 (spec §12 "Wallet actions always user-initiated" is unrelated —
  * this only animates UI, no side effects).
  */
 export default function Popup5000() {
-  const router = useRouter();
   const [spots, setSpots] = useState(4277);
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    // Show once per session after 1s delay
+    if (sessionStorage.getItem("popup5000_seen")) return;
+    const show = setTimeout(() => setVisible(true), 1000);
+    return () => clearTimeout(show);
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return;
     let cancelled = false;
     const tick = () => {
       if (cancelled) return;
@@ -30,7 +36,7 @@ export default function Popup5000() {
       cancelled = true;
       window.clearTimeout(initial);
     };
-  }, []);
+  }, [visible]);
 
   if (!visible) return null;
 
@@ -38,7 +44,7 @@ export default function Popup5000() {
 
   const dismiss = () => {
     setVisible(false);
-    router.replace("/");
+    sessionStorage.setItem("popup5000_seen", "1");
   };
 
   return (

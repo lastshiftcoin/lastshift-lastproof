@@ -5,15 +5,9 @@ import Popup5000 from "@/components/Popup5000";
 
 /**
  * LASTPROOF homepage — mirrors wireframes/homepage.html section-for-section.
- * When ?promo=5000 is present, the first-5000 modal overlays (wireframes/homepage-with-popup.html).
+ * First-5000 popup shows on first visit after 1s delay (once per session).
  */
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ promo?: string }>;
-}) {
-  const params = await searchParams;
-  const showPromo = params.promo === "5000";
+export default async function HomePage() {
 
   return (
     <>
@@ -174,7 +168,7 @@ export default async function HomePage({
         </div>
       </section>
 
-      {showPromo && <Popup5000 />}
+      <Popup5000 />
     </>
   );
 }
