@@ -97,7 +97,7 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
    */
   const fireAbandon = useCallback((quoteId: string) => {
     try {
-      fetch("/api/mock/proof/abandon", {
+      fetch("/api/proof/abandon", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ quote_id: quoteId }),

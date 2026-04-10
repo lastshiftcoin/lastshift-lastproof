@@ -16,7 +16,7 @@ import type { ProofTokenKey } from "@/lib/proof-tokens";
  * the event schema is identical.
  */
 
-const MOCK_URL = "/api/mock/proof/eligibility";
+const ELIGIBILITY_URL = "/api/proof/eligibility";
 
 const INITIAL: EligibilityState = {
   status: "idle",
@@ -61,7 +61,7 @@ export function useEligibilityStream() {
     setState({ ...INITIAL, status: "streaming" });
 
     try {
-      const res = await fetch(MOCK_URL, {
+      const res = await fetch(ELIGIBILITY_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

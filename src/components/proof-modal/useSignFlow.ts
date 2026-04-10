@@ -28,8 +28,9 @@
  * The hook does not own UI state transitions. Caller (ProofModal)
  * watches `state.phase` + `state.failure` and drives step 7 → 8.
  *
- * During local dev this talks to /api/mock/proof/{build-tx,broadcast,
- * tx-status}. Real endpoints drop in with identical shapes.
+ * Talks to /api/proof/{build-tx,broadcast,tx-status} — real Solana
+ * transaction endpoints. Mock versions at /api/mock/proof/* still exist
+ * for local dev smoke testing.
  */
 
 import { useCallback, useRef, useState } from "react";

@@ -88,7 +88,7 @@ export function useQuoteRefresh({ initialQuote, enabled }: UseQuoteRefreshArgs) 
 
   const refresh = useRef(async (quoteId: string, signal: AbortSignal) => {
     try {
-      const res = await fetch(`/api/mock/proof/quote/${quoteId}/refresh`, {
+      const res = await fetch(`/api/proof/quote/${quoteId}/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({ scenario: "ok" }),
