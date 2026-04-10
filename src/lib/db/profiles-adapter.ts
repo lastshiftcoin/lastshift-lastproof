@@ -20,6 +20,19 @@ interface DbProfileWithOperator {
   operator_id: string;
   handle: string;
   display_name: string | null;
+  headline: string | null;
+  pitch: string | null;
+  about: string | null;
+  bio_statement: string | null;
+  timezone: string | null;
+  // NOTE: DB has no `language` column — derived from location or hardcoded for now.
+  avatar_url: string | null;
+  fee_range: string | null;
+  x_handle: string | null;
+  x_verified: boolean | null;
+  telegram_handle: string | null;
+  telegram_verified: boolean | null;
+  hire_telegram_handle: string | null;
   is_paid: boolean | null;
   subscription_started_at: string | null;
   subscription_expires_at: string | null;
@@ -40,6 +53,20 @@ function rowFromDb(r: DbProfileWithOperator): ProfileRow {
     terminalWallet: r.operators?.terminal_wallet ?? "",
     handle: r.handle,
     displayName: r.display_name,
+    headline: r.headline,
+    pitch: r.pitch,
+    about: r.about,
+    bioStatement: r.bio_statement,
+    timezone: r.timezone,
+    language: null, // DB has no language column yet; derive or add via migration
+    feeRange: r.fee_range,
+    avatarUrl: r.avatar_url,
+    xHandle: r.x_handle,
+    xVerified: r.x_verified ?? false,
+    tgHandle: r.telegram_handle,
+    tgVerified: r.telegram_verified ?? false,
+    website: null, // TODO: add website column or derive from profile_links
+    hireTelegramHandle: r.hire_telegram_handle,
     isPaid: r.is_paid ?? false,
     subscriptionStartedAt: r.subscription_started_at,
     subscriptionExpiresAt: r.subscription_expires_at,
@@ -59,6 +86,18 @@ function rowToDb(row: ProfileRow): Record<string, unknown> {
     operator_id: row.operatorId,
     handle: row.handle,
     display_name: row.displayName,
+    headline: row.headline,
+    pitch: row.pitch,
+    about: row.about,
+    bio_statement: row.bioStatement,
+    timezone: row.timezone,
+    avatar_url: row.avatarUrl,
+    fee_range: row.feeRange,
+    x_handle: row.xHandle,
+    x_verified: row.xVerified,
+    telegram_handle: row.tgHandle,
+    telegram_verified: row.tgVerified,
+    hire_telegram_handle: row.hireTelegramHandle,
     is_paid: row.isPaid,
     subscription_started_at: row.subscriptionStartedAt,
     subscription_expires_at: row.subscriptionExpiresAt,
@@ -93,6 +132,18 @@ export async function updateProfileFields(
   const dbPatch: Record<string, unknown> = {};
   if (patch.handle !== undefined) dbPatch.handle = patch.handle;
   if (patch.displayName !== undefined) dbPatch.display_name = patch.displayName;
+  if (patch.headline !== undefined) dbPatch.headline = patch.headline;
+  if (patch.pitch !== undefined) dbPatch.pitch = patch.pitch;
+  if (patch.about !== undefined) dbPatch.about = patch.about;
+  if (patch.bioStatement !== undefined) dbPatch.bio_statement = patch.bioStatement;
+  if (patch.timezone !== undefined) dbPatch.timezone = patch.timezone;
+  if (patch.feeRange !== undefined) dbPatch.fee_range = patch.feeRange;
+  if (patch.avatarUrl !== undefined) dbPatch.avatar_url = patch.avatarUrl;
+  if (patch.xHandle !== undefined) dbPatch.x_handle = patch.xHandle;
+  if (patch.xVerified !== undefined) dbPatch.x_verified = patch.xVerified;
+  if (patch.tgHandle !== undefined) dbPatch.telegram_handle = patch.tgHandle;
+  if (patch.tgVerified !== undefined) dbPatch.telegram_verified = patch.tgVerified;
+  if (patch.hireTelegramHandle !== undefined) dbPatch.hire_telegram_handle = patch.hireTelegramHandle;
   if (patch.isPaid !== undefined) dbPatch.is_paid = patch.isPaid;
   if (patch.subscriptionStartedAt !== undefined)
     dbPatch.subscription_started_at = patch.subscriptionStartedAt;
@@ -130,6 +181,18 @@ export async function getProfileByOperatorId(
     .eq("operator_id", operatorId)
     .maybeSingle<DbProfileWithOperator>();
   if (error) throw new Error(`[profiles-adapter] getByOperator: ${error.message}`);
+  return data ? rowFromDb(data) : null;
+}
+
+export async function getProfileByHandle(
+  handle: string,
+): Promise<ProfileRow | null> {
+  const { data, error } = await supabaseService()
+    .from(TABLE)
+    .select(SELECT_WITH_OP)
+    .eq("handle", handle)
+    .maybeSingle<DbProfileWithOperator>();
+  if (error) throw new Error(`[profiles-adapter] getByHandle: ${error.message}`);
   return data ? rowFromDb(data) : null;
 }
 

@@ -26,7 +26,11 @@ export type StoreName =
   | "profiles"
   | "proofs"
   | "notifications"
-  | "handle_history";
+  | "handle_history"
+  | "work_items"
+  | "screenshots"
+  | "profile_links"
+  | "profile_categories";
 
 const ENV_KEYS: Record<StoreName, string> = {
   quotes: "LASTPROOF_DB_QUOTES",
@@ -35,6 +39,10 @@ const ENV_KEYS: Record<StoreName, string> = {
   proofs: "LASTPROOF_DB_PROOFS",
   notifications: "LASTPROOF_DB_NOTIFICATIONS",
   handle_history: "LASTPROOF_DB_HANDLE_HISTORY",
+  work_items: "LASTPROOF_DB_WORK_ITEMS",
+  screenshots: "LASTPROOF_DB_SCREENSHOTS",
+  profile_links: "LASTPROOF_DB_PROFILE_LINKS",
+  profile_categories: "LASTPROOF_DB_PROFILE_CATEGORIES",
 };
 
 function parseMode(raw: string | undefined): StoreMode {
@@ -55,5 +63,9 @@ export function getAllStoreModes(): Record<StoreName, StoreMode> {
     proofs: getStoreMode("proofs"),
     notifications: getStoreMode("notifications"),
     handle_history: getStoreMode("handle_history"),
+    work_items: getStoreMode("work_items"),
+    screenshots: getStoreMode("screenshots"),
+    profile_links: getStoreMode("profile_links"),
+    profile_categories: getStoreMode("profile_categories"),
   };
 }

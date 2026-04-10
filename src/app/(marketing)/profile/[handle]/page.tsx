@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
+import { getPublicProfileView } from "@/lib/projector/public-profile";
 import { cryptomarkProfile } from "@/lib/mock/cryptomark-profile";
 import { shipfastProfile } from "@/lib/mock/shipfast-profile";
 import { newbuilderProfile } from "@/lib/mock/newbuilder-profile";
@@ -30,6 +31,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return { title: `@${handle} — LASTPROOF` };
 }
 
+/**
+ * Mock fixtures — used when a handle doesn't exist in Supabase yet.
+ * Once the dashboard can create real profiles, remove the fallback.
+ */
 const FIXTURES: Record<string, PublicProfileView> = {
   cryptomark: cryptomarkProfile,
   shipfast: shipfastProfile,
@@ -39,7 +44,8 @@ const FIXTURES: Record<string, PublicProfileView> = {
 export default async function PublicProfilePage({ params }: PageProps) {
   const { handle } = await params;
 
-  const view = FIXTURES[handle];
+  // Try the real projector first (reads Supabase), fall back to mock fixtures.
+  const view = (await getPublicProfileView(handle)) ?? FIXTURES[handle] ?? null;
   if (!view) notFound();
 
   // ─── FREE variant: stripped layout (hero + CTA only) ──────────

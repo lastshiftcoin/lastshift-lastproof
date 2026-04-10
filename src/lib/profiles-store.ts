@@ -23,6 +23,24 @@ export interface ProfileRow {
   handle: string;
   displayName: string | null;
 
+  // ─── Content fields (written by dashboard, read by projector) ───
+  headline: string | null;
+  pitch: string | null;
+  about: string | null;
+  bioStatement: string | null;
+  timezone: string | null;
+  language: string | null;
+  feeRange: string | null;
+  avatarUrl: string | null;
+
+  // ─── Social handles ─────────────────────────────────────────────
+  xHandle: string | null;
+  xVerified: boolean;
+  tgHandle: string | null;
+  tgVerified: boolean;
+  website: string | null;
+  hireTelegramHandle: string | null;
+
   // Subscription state — owned by LASTPROOF, NOT Terminal.
   isPaid: boolean;
   subscriptionStartedAt: string | null;
@@ -88,6 +106,20 @@ export async function upsertProfileByOperator(
           terminalWallet: input.terminalWallet,
           handle: input.handle,
           displayName: input.displayName,
+          headline: null,
+          pitch: null,
+          about: null,
+          bioStatement: null,
+          timezone: null,
+          language: null,
+          feeRange: null,
+          avatarUrl: null,
+          xHandle: null,
+          xVerified: false,
+          tgHandle: null,
+          tgVerified: false,
+          website: null,
+          hireTelegramHandle: null,
           isPaid: false,
           subscriptionStartedAt: null,
           subscriptionExpiresAt: null,
@@ -123,6 +155,20 @@ export async function upsertProfileByOperator(
     terminalWallet: input.terminalWallet,
     handle: input.handle,
     displayName: input.displayName,
+    headline: null,
+    pitch: null,
+    about: null,
+    bioStatement: null,
+    timezone: null,
+    language: null,
+    feeRange: null,
+    avatarUrl: null,
+    xHandle: null,
+    xVerified: false,
+    tgHandle: null,
+    tgVerified: false,
+    website: null,
+    hireTelegramHandle: null,
     isPaid: false,
     subscriptionStartedAt: null,
     subscriptionExpiresAt: null,
