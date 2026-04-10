@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { usePathname } from "next/navigation";
 
 const AUTO_RESPONSE =
-  "My Grid circuit and full AI upgrade are mid-download. Estimated install complete: May 2026. Operators \u2014 build your profiles now. When the Grid goes live, you\u2019ll already be in it. Updates at lastshift.ai.";
+  "My Grid circuit and full AI upgrade are mid-download. Estimated install complete: May 2026. Operators \u2014 build your profiles now. I\u2019m already on the other side helping you set up. When the Grid goes live, you\u2019ll already be in it. Updates at lastshift.ai.";
 
 /**
  * Fixed-bottom SHIFTBOT command strip. Appears on every page per the wireframes.
