@@ -97,6 +97,7 @@ export function OnboardingModal({ session, operatorId, onComplete }: OnboardingM
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   // Step 1 — handle
   const [handle, setHandle] = useState("");
@@ -195,6 +196,8 @@ export function OnboardingModal({ session, operatorId, onComplete }: OnboardingM
       }
 
       const { profile } = await res.json();
+      setSaving(false);
+      setSubmitted(true);
       onComplete(profile);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -204,14 +207,13 @@ export function OnboardingModal({ session, operatorId, onComplete }: OnboardingM
 
   function handleNext() {
     setError(null);
-    if (step < 3) {
+    if (step < 4) {
       setStep(step + 1);
-    } else if (step === 3) {
-      // Move to step 4 (summary) and submit
-      setStep(4);
+    } else if (step === 4 && !saving && !submitted) {
+      // "BUILD MY PROFILE" — submit the profile
       handleSubmit();
-    } else if (step === 4) {
-      // "BUILD MY PROFILE" — reload page to show dashboard
+    } else if (step === 4 && submitted) {
+      // "ENTER DASHBOARD" — reload page to show dashboard
       window.location.reload();
     }
   }
@@ -229,7 +231,10 @@ export function OnboardingModal({ session, operatorId, onComplete }: OnboardingM
       case 1: return "> LOCK IN HANDLE";
       case 2: return "> NEXT";
       case 3: return "> NEXT";
-      case 4: return saving ? "> SAVING..." : "> BUILD MY PROFILE";
+      case 4:
+        if (saving) return "> SAVING...";
+        if (submitted) return "> ENTER DASHBOARD";
+        return "> BUILD MY PROFILE";
       default: return "> NEXT";
     }
   }
@@ -456,17 +461,25 @@ export function OnboardingModal({ session, operatorId, onComplete }: OnboardingM
           {/* ═══ STEP 4 — Done / Summary ═══ */}
           {step === 4 && (
             <div className="ob-done-wrap">
-              <div className="ob-done-check">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              </div>
-              <div className="ob-pain">YOUR PROFILE IS READY</div>
+              {submitted && (
+                <div className="ob-done-check">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+              )}
+              <div className="ob-pain">{submitted ? "YOUR PROFILE IS READY" : "REVIEW YOUR DETAILS"}</div>
               <h2 className="ob-head">
-                You&apos;re <span className="accent">on the Grid.</span>
+                {submitted ? (
+                  <>You&apos;re <span className="accent">on the Grid.</span></>
+                ) : (
+                  <>Look <span className="accent">good?</span></>
+                )}
               </h2>
               <p className="ob-sub">
-                Next: enhance it. Add proofs, links, and screenshots to climb tiers.
+                {submitted
+                  ? "Next: enhance it. Add proofs, links, and screenshots to climb tiers."
+                  : "Double-check everything. Hit back to make changes."}
               </p>
               <div className="ob-done-summary">
                 <div className="ob-ds-row">
@@ -513,8 +526,8 @@ export function OnboardingModal({ session, operatorId, onComplete }: OnboardingM
 
         {/* CTA row */}
         <div className="ob-cta-row">
-          {step > 1 && step < 4 && (
-            <button type="button" className="ob-btn-back" onClick={handleBack}>
+          {step > 1 && !submitted && (
+            <button type="button" className="ob-btn-back" onClick={handleBack} disabled={saving}>
               &larr;
             </button>
           )}
