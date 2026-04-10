@@ -312,15 +312,21 @@
   font-family: var(--mono, 'JetBrains Mono', monospace);
   font-size: 12px;
   line-height: 1.8;
+  color: var(--text-secondary, #8b8fa3);
   opacity: 0;
   transform: translateY(4px);
   transition: opacity 0.3s ease, transform 0.3s ease;
+  text-align: center;
 }
 
 .mg-post-line.visible {
   opacity: 1;
   transform: translateY(0);
 }
+
+.mg-post-line.green { color: var(--green, #00e676); }
+.mg-post-line.accent { color: var(--accent, #ff9100); }
+.mg-post-line.red { color: var(--red, #ff5252); }
 
 /* ─── Reveal block (granted / no-terminal) ────────────────────────────────── */
 
@@ -669,7 +675,8 @@
 
 .mg-tid-input-wrap {
   margin: 16px auto;
-  max-width: 320px;
+  max-width: 400px;
+  width: 100%;
   text-align: left;
 }
 

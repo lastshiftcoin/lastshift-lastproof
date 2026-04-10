@@ -152,7 +152,7 @@ export default function ManageTerminal({ initialSession }: ManageTerminalProps) 
     const lines: { text: string; cls: string }[] = [];
 
     const addLine = (text: string, cls: string) => {
-      lines.push({ text, cls });
+      lines.push({ text: `> ${text}`, cls });
       setPostLines([...lines]);
     };
 
@@ -263,7 +263,7 @@ export default function ManageTerminal({ initialSession }: ManageTerminalProps) 
 
     const lines: { text: string; cls: string }[] = [...postLines];
     const addLine = (text: string, cls: string) => {
-      lines.push({ text, cls });
+      lines.push({ text: `> ${text}`, cls });
       setPostLines([...lines]);
     };
 
@@ -424,7 +424,7 @@ export default function ManageTerminal({ initialSession }: ManageTerminalProps) 
 
               {/* Post-connect validation lines */}
               {postLines.length > 0 && (
-                <div style={{ marginTop: 16 }}>
+                <div style={{ marginTop: 16, textAlign: "center" }}>
                   {postLines.map((line, i) => (
                     <div key={i} className={`mg-post-line visible ${line.cls}`}>
                       {line.text}
@@ -442,7 +442,7 @@ export default function ManageTerminal({ initialSession }: ManageTerminalProps) 
           {phase === "granted" && (
             <>
               {postLines.length > 0 && (
-                <div style={{ marginBottom: 16 }}>
+                <div style={{ marginBottom: 16, textAlign: "center" }}>
                   {postLines.map((line, i) => (
                     <div key={i} className={`mg-post-line visible ${line.cls}`}>
                       {line.text}
@@ -482,7 +482,7 @@ export default function ManageTerminal({ initialSession }: ManageTerminalProps) 
           {(phase === "enter-tid" || phase === "tid-reset" || phase === "registering") && (
             <>
               {postLines.length > 0 && (
-                <div style={{ marginBottom: 16 }}>
+                <div style={{ marginBottom: 16, textAlign: "center" }}>
                   {postLines.map((line, i) => (
                     <div key={i} className={`mg-post-line visible ${line.cls}`}>
                       {line.text}
@@ -559,7 +559,7 @@ export default function ManageTerminal({ initialSession }: ManageTerminalProps) 
           {phase === "no-terminal" && (
             <>
               {postLines.length > 0 && (
-                <div style={{ marginBottom: 16 }}>
+                <div style={{ marginBottom: 16, textAlign: "center" }}>
                   {postLines.map((line, i) => (
                     <div key={i} className={`mg-post-line visible ${line.cls}`}>
                       {line.text}
@@ -591,7 +591,7 @@ export default function ManageTerminal({ initialSession }: ManageTerminalProps) 
           {phase === "error" && (
             <>
               {postLines.length > 0 && (
-                <div style={{ marginBottom: 16 }}>
+                <div style={{ marginBottom: 16, textAlign: "center" }}>
                   {postLines.map((line, i) => (
                     <div key={i} className={`mg-post-line visible ${line.cls}`}>
                       {line.text}
