@@ -35,9 +35,9 @@
 import { useCallback, useRef, useState } from "react";
 import type { FailureReason } from "./types";
 
-const BUILD_TX_URL = "/api/mock/proof/build-tx";
-const BROADCAST_URL = "/api/mock/proof/broadcast";
-const TX_STATUS_URL = "/api/mock/proof/tx-status";
+const BUILD_TX_URL = "/api/proof/build-tx";
+const BROADCAST_URL = "/api/proof/broadcast";
+const TX_STATUS_URL = "/api/proof/tx-status";
 const POLL_MS = 1000;
 
 export type SignPhase =

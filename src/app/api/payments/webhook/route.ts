@@ -150,7 +150,10 @@ export async function POST(req: NextRequest) {
       }
       accepted.push(ev);
     }
-    const treasury = process.env.TREASURY_WALLET || "LASTPROOF_TREASURY_STUB";
+    const treasury =
+      process.env.LASTPROOF_AR_WALLET ||
+      process.env.TREASURY_WALLET ||
+      "LASTPROOF_TREASURY_STUB";
     const parsed = await parseHeliusEvents(accepted, {
       treasuryWallet: treasury,
       resolveQuote: getQuoteByReference,
