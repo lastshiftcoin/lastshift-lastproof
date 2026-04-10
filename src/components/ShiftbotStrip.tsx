@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { usePathname } from "next/navigation";
 
 const AUTO_RESPONSE =
-  "The Grid is not available until May 2026. Until then, there isn\u2019t anything I can help you with. However, I look forward to our next conversation to help you find the right operator.";
+  "My Grid circuit and full AI upgrade are mid-download. Estimated install complete: May 2026. Operators \u2014 build your profiles now. When the Grid goes live, you\u2019ll already be in it. Updates at lastshift.ai.";
 
 /**
  * Fixed-bottom SHIFTBOT command strip. Appears on every page per the wireframes.
