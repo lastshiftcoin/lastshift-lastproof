@@ -41,7 +41,7 @@ export default function ShiftbotStrip() {
 
   if (!expanded) {
     return (
-      <div className="shiftbot">
+      <div className="shiftbot" onClick={handleExpand} style={{ cursor: "pointer" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/shiftbot-logo.png" alt="SHIFTBOT" className="sb-mini-logo" />
         <div className="label">SHIFTBOT</div>
@@ -49,7 +49,7 @@ export default function ShiftbotStrip() {
         <div className="ph">
           ask anything — &ldquo;help me find a raider&rdquo;, &ldquo;who&rsquo;s the best X Spaces host?&rdquo;
         </div>
-        <button type="button" className="expand" onClick={handleExpand}>
+        <button type="button" className="expand">
           [ EXPAND ↑ ]
         </button>
       </div>
