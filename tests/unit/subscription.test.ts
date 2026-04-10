@@ -126,9 +126,10 @@ test("subscription: double-pay stacks to 60 days from first expiry", () => {
 
 // ─── eaPublishExpiry() ─────────────────────────────────────────────────────
 
-test("subscription: EA publish expiry passes through Terminal's freeSubUntil", () => {
-  const freeUntil = "2026-07-08T00:00:00Z";
-  assert.equal(eaPublishExpiry(freeUntil), new Date(freeUntil).toISOString());
+test("subscription: EA publish expiry is Grid launch + 30 days", () => {
+  // Grid launch: 2026-05-08, +30d = 2026-06-07
+  const expected = new Date("2026-06-07T00:00:00Z").toISOString();
+  assert.equal(eaPublishExpiry(), expected);
 });
 
 // ─── daysRemaining() ───────────────────────────────────────────────────────

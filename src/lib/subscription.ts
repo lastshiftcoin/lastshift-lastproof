@@ -74,16 +74,20 @@ export function rolloverOnPayment(input: DeriveInput): string {
 }
 
 /**
- * EA publish: subscription window is gifted to end at `freeSubUntil` from
- * Terminal validate. Returns the ISO string to persist. Caller is
- * responsible for only invoking this when `firstFiveThousand === true`
- * and `freeSubUntil !== null`.
+ * EA publish: subscription window ends 30 days after Grid launch.
+ *
+ * LASTPROOF owns this date — Terminal only tells us whether the user
+ * qualifies (firstFiveThousand boolean). The campaign window is a
+ * LASTPROOF business rule, not a Terminal concern.
  */
-export function eaPublishExpiry(freeSubUntil: string): string {
-  // Pass-through, but centralized here so the "EA window" concept has one
-  // definition. If Terminal ever changes the timezone/format semantics,
-  // this is the single point of adaptation.
-  return new Date(freeSubUntil).toISOString();
+export function eaPublishExpiry(): string {
+  // Grid launch: 2026-05-08. EA window: +30 days = 2026-06-07.
+  // Hardcoded here to keep this module zero-import. If GRID_LAUNCH_DATE
+  // or EA_FREE_WINDOW_DAYS change, update src/lib/constants.ts AND here.
+  const GRID_LAUNCH = new Date("2026-05-08T00:00:00Z");
+  const EA_WINDOW_DAYS = 30;
+  const expiryMs = GRID_LAUNCH.getTime() + EA_WINDOW_DAYS * MS_PER_DAY;
+  return new Date(expiryMs).toISOString();
 }
 
 /**

@@ -69,10 +69,11 @@ export async function POST(req: NextRequest) {
     publishedAt: now.toISOString(),
   };
 
-  // EA window gift — only on first publish, only if EA, only if Terminal
-  // actually gave us a freeSubUntil in the session.
-  if (firstPublish && session.firstFiveThousand && session.freeSubUntil) {
-    patch.subscriptionExpiresAt = eaPublishExpiry(session.freeSubUntil);
+  // EA window gift — only on first publish, only if EA.
+  // LASTPROOF owns the expiry date (Grid launch + 30 days).
+  // Terminal only provides the firstFiveThousand boolean.
+  if (firstPublish && session.firstFiveThousand) {
+    patch.subscriptionExpiresAt = eaPublishExpiry();
     patch.subscriptionStartedAt = now.toISOString();
     patch.lastPaymentAt = null; // charge-free EA window
   }
@@ -110,6 +111,6 @@ export async function POST(req: NextRequest) {
       publishedAt: final.publishedAt,
       tier: final.tier,
     },
-    grantedEaWindow: firstPublish && session.firstFiveThousand && !!session.freeSubUntil,
+    grantedEaWindow: firstPublish && session.firstFiveThousand,
   });
 }

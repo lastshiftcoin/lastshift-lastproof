@@ -9,7 +9,7 @@ import type { PublicProfileView, WorkItem } from "@/lib/public-profile-view";
 
 import { ProfileHero } from "@/components/profile/ProfileHero";
 import { ProfileTopBar } from "@/components/profile/ProfileTopBar";
-import { FomoCtaStrip } from "@/components/profile/FomoCtaStrip";
+import { LegendCtaSwitch } from "@/components/profile/LegendCtaSwitch";
 import { TrustTierBar } from "@/components/profile/TrustTierBar";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { StatStrip } from "@/components/profile/StatStrip";
@@ -210,7 +210,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
           <ProofsTable proofs={view.recentProofs} totalProofs={view.totalProofs} />
         </section>
 
-        {view.variant === "legend" ? <FomoCtaStrip /> : <CtaStrip />}
+        {view.variant === "legend" ? <LegendCtaSwitch /> : <CtaStrip />}
       </div>
     </div>
   );

@@ -17,6 +17,8 @@ import type { ProfileRow } from "@/lib/profiles-store";
 
 interface StatusBarProps {
   profile: ProfileRow;
+  /** When true, the upgrade button shows "SOLD OUT" and is disabled */
+  campaignSoldOut?: boolean;
 }
 
 type ProfileStatus = "active" | "pending" | "expired";
@@ -45,7 +47,7 @@ const STATUS_CONFIG: Record<ProfileStatus, { label: string; cls: string }> = {
   expired: { label: "EXPIRED", cls: "defunct" },
 };
 
-export function StatusBar({ profile }: StatusBarProps) {
+export function StatusBar({ profile, campaignSoldOut = false }: StatusBarProps) {
   const [countdown, setCountdown] = useState<string>("--");
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [quoteLoading, setQuoteLoading] = useState(false);
@@ -137,10 +139,11 @@ export function StatusBar({ profile }: StatusBarProps) {
         </div>
         <button
           type="button"
-          className="btn-upgrade"
-          onClick={handleUpgradeClick}
+          className={`btn-upgrade${campaignSoldOut ? " btn-soldout" : ""}`}
+          onClick={campaignSoldOut ? undefined : handleUpgradeClick}
+          disabled={campaignSoldOut}
         >
-          {status === "active" ? "Renew Profile" : "Upgrade Profile"}
+          {campaignSoldOut ? "SOLD OUT" : status === "active" ? "Renew Profile" : "Upgrade Profile"}
         </button>
       </div>
 

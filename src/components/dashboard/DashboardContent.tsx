@@ -11,11 +11,13 @@
  * Cards are progressively built in Steps 2–12.
  */
 
+import { useState } from "react";
 import type { Session } from "@/lib/session";
 import type { ProfileRow } from "@/lib/profiles-store";
 import { StatQuad } from "./StatQuad";
 import { TrustTierRow } from "./TrustTierRow";
 import { StatusBar } from "./StatusBar";
+import { CampaignFomoStrip } from "./CampaignFomoStrip";
 import { IdentityCard } from "./IdentityCard";
 import { CategoriesCard } from "./CategoriesCard";
 import { VerifiedCard } from "./VerifiedCard";
@@ -79,6 +81,7 @@ interface DashboardContentProps {
 
 export function DashboardContent({ session, profile, primaryCategory, additionalCategories, workItems, screenshots, links, proofs, onProfileUpdate }: DashboardContentProps) {
   const lastLogin = new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC";
+  const [campaignSoldOut, setCampaignSoldOut] = useState(false);
 
   return (
     <div className="content">
@@ -112,7 +115,12 @@ export function DashboardContent({ session, profile, primaryCategory, additional
       <TrustTierRow profile={profile} totalProofs={proofs.length} />
 
       {/* ═══ STATUS BAR — Step 3 ═══ */}
-      <StatusBar profile={profile} />
+      <StatusBar profile={profile} campaignSoldOut={campaignSoldOut} />
+
+      {/* ═══ CAMPAIGN FOMO STRIP — below status bar during 5000 campaign ═══ */}
+      {session.firstFiveThousand && !profile.isPaid && (
+        <CampaignFomoStrip onSoldOut={() => setCampaignSoldOut(true)} />
+      )}
 
       {/* ═══ IDENTITY — Step 4 ═══ */}
       <IdentityCard

@@ -1,21 +1,32 @@
+"use client";
+
 /**
  * FomoCtaStrip — footer CTA for the LEGEND / founding-5000 variant.
+ *
+ * Uses the shared 3-phase campaign counter. When sold out, this strip
+ * disappears entirely — the early access experience is over.
  *
  * Structural source: `wireframes/lastproof-profile-5000.html` lines ~786–814.
  * Purple border + green price card + orange urgency counter + pulsing CTA.
  *
  * TODO(terminal-attribution): the "> BUILD YOUR PROFILE" button needs to
  * hand off to the real Terminal at lastshift.app with attribution so the
- * founding-5K slot is credited correctly. Waiting on the terminal builder
- * to confirm the exact entry point + query param shape. For now the href
- * is a stub that the router can intercept once we know.
+ * founding-5K slot is credited correctly.
  */
+
+import { useCampaignCounter, TOTAL_SPOTS } from "@/hooks/useCampaignCounter";
+
 export function FomoCtaStrip() {
+  const { spots, soldOut, filledPct } = useCampaignCounter(true);
+
+  // Strip disappears completely when sold out
+  if (soldOut) return null;
+
   return (
     <section className="pp-cta-strip pp-fomo-strip">
       <div className="pp-fomo-alert">
         <span className="pp-fomo-dot" />
-        EARLY ACCESS · FIRST 5,000 OPERATORS
+        {spots <= 80 ? "EARLY ACCESS · CLOSING SOON" : "EARLY ACCESS · FIRST 5,000 OPERATORS"}
       </div>
 
       <h2 className="pp-cta-headline">
@@ -38,14 +49,17 @@ export function FomoCtaStrip() {
         <div className="pp-fomo-counter-row">
           <span>OPERATORS CLAIMED</span>
           <span className="pp-fomo-counter-num">
-            <span>4,277</span> / 5,000
+            <span>{(TOTAL_SPOTS - spots).toLocaleString()}</span> / {TOTAL_SPOTS.toLocaleString()}
           </span>
         </div>
         <div className="pp-fomo-bar">
-          <div className="pp-fomo-bar-fill" style={{ width: "85.5%" }} />
+          <div
+            className="pp-fomo-bar-fill"
+            style={{ width: `${Math.min(filledPct, 100).toFixed(2)}%` }}
+          />
         </div>
         <div className="pp-fomo-counter-foot">
-          <b>723</b> SPOTS LEFT BEFORE EARLY ACCESS CLOSES
+          <b>{spots.toLocaleString()}</b> SPOTS LEFT BEFORE EARLY ACCESS CLOSES
         </div>
       </div>
 

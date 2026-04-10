@@ -1,72 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useCampaignCounter, TOTAL_SPOTS } from "@/hooks/useCampaignCounter";
 
 /**
- * First-5,000 popup — 3-phase counter logic:
- *
- * Phase 1 (theatrical): Time-based decay from 5,000 over ~30 days.
- *   Each day reduces by a seeded-random amount in the 150-170 range.
- *   All visitors see the same number on the same day.
- *
- * Phase 2 (low stock theatre): Once decay drops below 200,
- *   display cycles between 30-80 with small client-side ticks.
- *
- * Phase 3 (real check): At the 200 threshold, fetch /api/campaign/count.
- *   If real claims >= 4,900 (≤100 spots left), show 0 and disable CTA.
- *
+ * First-5,000 popup — uses the shared 3-phase campaign counter.
  * Shows once per session on first homepage load after a 3s delay.
  */
 
-// Campaign start date — anchor for deterministic daily decay
-const CAMPAIGN_START = new Date("2026-04-10T00:00:00Z");
-const TOTAL_SPOTS = 5000;
-const DAILY_DECAY_MIN = 150;
-const DAILY_DECAY_MAX = 170;
-const LOW_STOCK_THRESHOLD = 200;
-const REAL_CUTOFF = 100; // when real claims leave ≤100 spots, show 0
-
-/** Seeded PRNG — deterministic per day so all visitors see the same number */
-function seededRandom(day: number): number {
-  let x = Math.sin(day * 9301 + 49297) * 49297;
-  x = x - Math.floor(x);
-  return x;
-}
-
-/** Calculate theatrical spots remaining based on days since campaign start */
-function getTheatricalSpots(): number {
-  const now = new Date();
-  const msElapsed = now.getTime() - CAMPAIGN_START.getTime();
-  const daysElapsed = Math.max(0, Math.floor(msElapsed / (1000 * 60 * 60 * 24)));
-
-  let remaining = TOTAL_SPOTS;
-  for (let d = 0; d < daysElapsed; d++) {
-    const dailyDrop = DAILY_DECAY_MIN + Math.floor(seededRandom(d) * (DAILY_DECAY_MAX - DAILY_DECAY_MIN + 1));
-    remaining -= dailyDrop;
-    if (remaining <= LOW_STOCK_THRESHOLD) return LOW_STOCK_THRESHOLD;
-  }
-
-  // Partial day progress — interpolate within current day's drop
-  const partialDay = (msElapsed / (1000 * 60 * 60 * 24)) - daysElapsed;
-  const todayDrop = DAILY_DECAY_MIN + Math.floor(seededRandom(daysElapsed) * (DAILY_DECAY_MAX - DAILY_DECAY_MIN + 1));
-  remaining -= Math.floor(todayDrop * partialDay);
-
-  return Math.max(LOW_STOCK_THRESHOLD, remaining);
-}
-
-/** Low-stock phase: random number between 30-80 */
-function getLowStockDisplay(): number {
-  return 30 + Math.floor(Math.random() * 51);
-}
-
 export default function Popup5000() {
-  const theatricalBase = getTheatricalSpots();
-  const isLowStock = theatricalBase <= LOW_STOCK_THRESHOLD;
-
-  const [spots, setSpots] = useState(isLowStock ? getLowStockDisplay() : theatricalBase);
   const [visible, setVisible] = useState(false);
-  const [soldOut, setSoldOut] = useState(false);
 
   // Show once per session after 3s delay
   useEffect(() => {
@@ -75,57 +19,9 @@ export default function Popup5000() {
     return () => clearTimeout(show);
   }, []);
 
-  // Check real Supabase count when in low-stock phase (edge-cached, 1 req/min)
-  const checkReal = useCallback(async () => {
-    try {
-      const res = await fetch("/api/campaign/count");
-      if (!res.ok) return;
-      const data = await res.json();
-      const realRemaining = TOTAL_SPOTS - (data.claimed ?? 0);
-      if (realRemaining <= REAL_CUTOFF) {
-        setSoldOut(true);
-        setSpots(0);
-      }
-    } catch {
-      // Silently fail — keep showing theatrical numbers
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!visible || !isLowStock) return;
-    checkReal();
-  }, [visible, isLowStock, checkReal]);
-
-  // Client-side tick animation
-  useEffect(() => {
-    if (!visible || soldOut) return;
-    let cancelled = false;
-
-    const tick = () => {
-      if (cancelled) return;
-      if (isLowStock) {
-        // Low stock: shuffle between 30-80
-        setSpots(getLowStockDisplay());
-      } else {
-        // Normal: tick down by 1
-        setSpots((s) => Math.max(LOW_STOCK_THRESHOLD, s - 1));
-      }
-      const delay = isLowStock
-        ? 3000 + Math.random() * 4000
-        : 4000 + Math.random() * 5000;
-      window.setTimeout(tick, delay);
-    };
-
-    const initial = window.setTimeout(tick, 3000);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(initial);
-    };
-  }, [visible, soldOut, isLowStock]);
+  const { spots, soldOut, filledPct } = useCampaignCounter(visible);
 
   if (!visible) return null;
-
-  const filledPct = ((TOTAL_SPOTS - spots) / TOTAL_SPOTS) * 100;
 
   const dismiss = () => {
     setVisible(false);
