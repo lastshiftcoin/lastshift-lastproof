@@ -16,8 +16,13 @@ export async function GET() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+  // Cache for 60s at the edge — all visitors share the same result
+  const headers = {
+    "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30",
+  };
+
   if (!url || !key) {
-    return NextResponse.json({ claimed: 0 });
+    return NextResponse.json({ claimed: 0 }, { headers });
   }
 
   try {
@@ -29,11 +34,11 @@ export async function GET() {
 
     if (error) {
       // Column doesn't exist yet — return 0
-      return NextResponse.json({ claimed: 0 });
+      return NextResponse.json({ claimed: 0 }, { headers });
     }
 
-    return NextResponse.json({ claimed: count ?? 0 });
+    return NextResponse.json({ claimed: count ?? 0 }, { headers });
   } catch {
-    return NextResponse.json({ claimed: 0 });
+    return NextResponse.json({ claimed: 0 }, { headers });
   }
 }
