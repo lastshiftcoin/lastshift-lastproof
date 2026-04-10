@@ -10,7 +10,8 @@
  * so the server component re-fetches fresh data.
  */
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import type { Session } from "@/lib/session";
 import type { ProfileRow } from "@/lib/profiles-store";
 import { OnboardingModal } from "./OnboardingModal";
@@ -42,6 +43,14 @@ interface DashboardShellProps {
 
 export function DashboardShell({ session, initialProfile, operatorId, primaryCategory, additionalCategories, workItems, screenshots, links, proofs }: DashboardShellProps) {
   const [profile, setProfile] = useState(initialProfile);
+  const { disconnect } = useWallet();
+
+  const handleDisconnect = useCallback(async () => {
+    // Clear session cookie, disconnect wallet, redirect to /manage
+    await fetch("/api/auth/session", { method: "DELETE" }).catch(() => {});
+    await disconnect().catch(() => {});
+    window.location.href = "/manage";
+  }, [disconnect]);
 
   // New user — no profile yet → show onboarding
   if (!profile) {
@@ -66,6 +75,7 @@ export function DashboardShell({ session, initialProfile, operatorId, primaryCat
         session={session}
         operatorId={operatorId}
         onComplete={setProfile}
+        onDisconnect={handleDisconnect}
       />
     );
   }

@@ -87,17 +87,20 @@ interface OnboardingModalProps {
   session: Session;
   operatorId: string;
   onComplete: (profile: ProfileRow) => void;
+  onDisconnect?: () => void;
 }
 
 type HandleStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function OnboardingModal({ session, operatorId, onComplete }: OnboardingModalProps) {
+export function OnboardingModal({ session, operatorId, onComplete, onDisconnect }: OnboardingModalProps) {
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [showDisconnectHover, setShowDisconnectHover] = useState(false);
 
   // Step 1 — handle
   const [handle, setHandle] = useState("");
@@ -209,13 +212,18 @@ export function OnboardingModal({ session, operatorId, onComplete }: OnboardingM
     setError(null);
     if (step < 4) {
       setStep(step + 1);
-    } else if (step === 4 && !saving && !submitted) {
-      // "BUILD MY PROFILE" — submit the profile
-      handleSubmit();
+    } else if (step === 4 && !saving && !submitted && !showConfirm) {
+      // Show "are you sure?" confirmation
+      setShowConfirm(true);
     } else if (step === 4 && submitted) {
       // "ENTER DASHBOARD" — reload page to show dashboard
       window.location.reload();
     }
+  }
+
+  function handleConfirmBuild() {
+    setShowConfirm(false);
+    handleSubmit();
   }
 
   function handleBack() {
@@ -234,6 +242,7 @@ export function OnboardingModal({ session, operatorId, onComplete }: OnboardingM
       case 4:
         if (saving) return "> SAVING...";
         if (submitted) return "> ENTER DASHBOARD";
+        if (showConfirm) return "> CONFIRM ABOVE";
         return "> BUILD MY PROFILE";
       default: return "> NEXT";
     }
@@ -292,10 +301,31 @@ export function OnboardingModal({ session, operatorId, onComplete }: OnboardingM
           <span className="ob-step-counter">
             STEP <span className="now">{step}</span> / 4
           </span>
-          <div className="ob-wallet-pill">
-            <span className="wp-dot" />
-            {walletShort}
-          </div>
+          <button
+            type="button"
+            className="ob-wallet-pill"
+            onClick={() => setShowDisconnectHover(!showDisconnectHover)}
+            onMouseEnter={() => setShowDisconnectHover(true)}
+            onMouseLeave={() => setShowDisconnectHover(false)}
+            title="Click to disconnect wallet"
+          >
+            {showDisconnectHover ? (
+              <>
+                <span className="wp-dot disconnect" />
+                <span
+                  className="ob-disconnect-text"
+                  onClick={(e) => { e.stopPropagation(); onDisconnect?.(); }}
+                >
+                  DISCONNECT
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="wp-dot" />
+                {walletShort}
+              </>
+            )}
+          </button>
         </div>
 
         {/* Progress bar */}
@@ -517,6 +547,40 @@ export function OnboardingModal({ session, operatorId, onComplete }: OnboardingM
                   <span className="ob-ds-val">{walletShort.toUpperCase()}</span>
                 </div>
               </div>
+
+              {/* ─── "Are you sure?" confirmation ─── */}
+              {showConfirm && !submitted && (
+                <div className="ob-confirm-block">
+                  <div className="ob-confirm-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                      <line x1="12" y1="9" x2="12" y2="13" />
+                      <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                  </div>
+                  <div className="ob-confirm-title">ARE YOU SURE?</div>
+                  <div className="ob-confirm-text">
+                    <span className="accent">@{handle.toLowerCase()}</span> is permanent.
+                    Changing your handle later costs <b>$100 in $LASTSHFT</b>.
+                  </div>
+                  <div className="ob-confirm-btns">
+                    <button
+                      type="button"
+                      className="ob-confirm-cancel"
+                      onClick={() => setShowConfirm(false)}
+                    >
+                      GO BACK
+                    </button>
+                    <button
+                      type="button"
+                      className="ob-confirm-yes"
+                      onClick={handleConfirmBuild}
+                    >
+                      LOCK IT IN
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -534,7 +598,7 @@ export function OnboardingModal({ session, operatorId, onComplete }: OnboardingM
           <button
             type="button"
             className="ob-cta"
-            disabled={!canAdvance() || saving}
+            disabled={!canAdvance() || saving || showConfirm}
             onClick={handleNext}
           >
             {getButtonLabel()}
