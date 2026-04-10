@@ -251,8 +251,10 @@ export default function ManageTerminal({ initialSession }: ManageTerminalProps) 
   // ─── Register TID (new wallet or TID reset) ────────────────────────────────
   const handleRegisterTid = useCallback(async () => {
     const tid = tidInput.trim().toUpperCase();
-    if (!/^SHIFT-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(tid)) {
-      setTidError("Format: SHIFT-XXXX-XXXX-XXXX-XXXX");
+    // Accept both XXXX-XXXX-XXXX-XXXX-XXXX and XXXX-XXXX-XXXX-XXXX-XXXX
+    if (!/^[A-Z0-9]{4}(-[A-Z0-9]{4}){4}$/.test(tid) &&
+        !/^SHIFT-[A-Z0-9]{4}(-[A-Z0-9]{4}){3}$/.test(tid)) {
+      setTidError("Format: XXXX-XXXX-XXXX-XXXX-XXXX");
       return;
     }
     setTidError("");
@@ -516,7 +518,7 @@ export default function ManageTerminal({ initialSession }: ManageTerminalProps) 
                     id="tid-input"
                     type="text"
                     className={`mg-tid-input${tidError ? " error" : ""}`}
-                    placeholder="SHIFT-XXXX-XXXX-XXXX-XXXX"
+                    placeholder="XXXX-XXXX-XXXX-XXXX-XXXX"
                     value={tidInput}
                     onChange={(e) => { setTidInput(e.target.value.toUpperCase()); setTidError(""); }}
                     onKeyDown={(e) => { if (e.key === "Enter") handleRegisterTid(); }}

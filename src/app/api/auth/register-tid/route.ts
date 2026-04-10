@@ -32,10 +32,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, reason: "wallet_required" }, { status: 400 });
   }
 
-  // Basic format check: SHIFT-XXXX-XXXX-XXXX-XXXX
-  if (!/^SHIFT-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(terminalId)) {
+  // Basic format check: accepts both legacy SHIFT-XXXX-XXXX-XXXX-XXXX
+  // and real Terminal format XXXX-XXXX-XXXX-XXXX-XXXX (5 groups of 4 alphanum)
+  if (!/^[A-Z0-9]{4}(-[A-Z0-9]{4}){4}$/.test(terminalId) &&
+      !/^SHIFT-[A-Z0-9]{4}(-[A-Z0-9]{4}){3}$/.test(terminalId)) {
     return NextResponse.json(
-      { ok: false, reason: "invalid_format", message: "Terminal ID must be SHIFT-XXXX-XXXX-XXXX-XXXX" },
+      { ok: false, reason: "invalid_format", message: "Terminal ID format: XXXX-XXXX-XXXX-XXXX-XXXX" },
       { status: 400 },
     );
   }
