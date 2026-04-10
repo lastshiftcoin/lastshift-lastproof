@@ -1,17 +1,18 @@
 "use client";
 
 /**
- * PitchCard — full pitch textarea + SHIFTBOT strip.
+ * PitchCard — full pitch textarea + SHIFTBOT compose strip.
  *
  * Wireframe: lastproof-dashboard.html, THE PITCH section.
  *
  * - Textarea for the operator's full pitch
- * - field-help: "your full pitch — what you do, who you do it for, what makes you different"
- * - SHIFTBOT inline strip (placeholder for AI rewrite — stub for now)
+ * - SHIFTBOT strip: sends textarea content to /api/shiftbot/compose,
+ *   typewriter-types the rewrite directly into the textarea
+ * - UNDO reverts to original text
  * - SAVE button with feedback
  */
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import type { ProfileRow } from "@/lib/profiles-store";
 
 interface PitchCardProps {
@@ -24,6 +25,13 @@ export function PitchCard({ profile, onProfileUpdate }: PitchCardProps) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // SHIFTBOT state
+  const [botLoading, setBotLoading] = useState(false);
+  const [botTyping, setBotTyping] = useState(false);
+  const [botError, setBotError] = useState<string | null>(null);
+  const [originalText, setOriginalText] = useState<string | null>(null);
+  const typeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   async function handleSave() {
     setSaving(true);
@@ -49,6 +57,7 @@ export function PitchCard({ profile, onProfileUpdate }: PitchCardProps) {
       if (updated) onProfileUpdate(updated);
 
       setSaved(true);
+      setOriginalText(null); // clear undo after save
       savedTimer.current = setTimeout(() => setSaved(false), 3000);
     } catch {
       alert("Save failed — please try again.");
@@ -57,26 +66,99 @@ export function PitchCard({ profile, onProfileUpdate }: PitchCardProps) {
     }
   }
 
+  const typewriterFill = useCallback((text: string) => {
+    setBotTyping(true);
+    setPitch("");
+    let i = 0;
+    function tick() {
+      i++;
+      setPitch(text.slice(0, i));
+      if (i < text.length) {
+        typeTimer.current = setTimeout(tick, 18);
+      } else {
+        setBotTyping(false);
+      }
+    }
+    typeTimer.current = setTimeout(tick, 200);
+  }, []);
+
+  async function handleBotRewrite() {
+    const text = pitch.trim();
+    if (!text) {
+      setBotError("Start by typing at least one sentence, then let SHIFTBOT improve it.");
+      return;
+    }
+    if (text.length < 10) {
+      setBotError("Write a bit more first — at least one full sentence.");
+      return;
+    }
+
+    setBotLoading(true);
+    setBotError(null);
+    setOriginalText(pitch); // save for undo
+
+    try {
+      const res = await fetch("/api/shiftbot/compose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, field: "pitch" }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setBotError(data.error || "SHIFTBOT couldn't rewrite right now.");
+        setOriginalText(null);
+        return;
+      }
+
+      typewriterFill(data.rewrite);
+    } catch {
+      setBotError("SHIFTBOT is temporarily unavailable.");
+      setOriginalText(null);
+    } finally {
+      setBotLoading(false);
+    }
+  }
+
+  function handleUndo() {
+    if (typeTimer.current) clearTimeout(typeTimer.current);
+    setBotTyping(false);
+    if (originalText !== null) {
+      setPitch(originalText);
+      setOriginalText(null);
+    }
+  }
+
   return (
     <div className="edit-card">
       <div className="edit-head">
         <div className="edit-title">THE PITCH</div>
-        <button
-          type="button"
-          className={`edit-action${saved ? " saved" : ""}`}
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saving ? "SAVING..." : saved ? "SAVED ✓" : "SAVE →"}
-        </button>
+        <div className="edit-head-actions">
+          {originalText !== null && (
+            <button type="button" className="bot-undo" onClick={handleUndo}>
+              UNDO ↩
+            </button>
+          )}
+          <button
+            type="button"
+            className={`edit-action${saved ? " saved" : ""}`}
+            onClick={handleSave}
+            disabled={saving || botTyping}
+          >
+            {saving ? "SAVING..." : saved ? "SAVED ✓" : "SAVE →"}
+          </button>
+        </div>
       </div>
 
       <textarea
-        className="field-input"
+        className={`field-input${botTyping ? " bot-typing" : ""}`}
         spellCheck
         lang="en"
         value={pitch}
-        onChange={(e) => setPitch(e.target.value)}
+        onChange={(e) => {
+          if (!botTyping) setPitch(e.target.value);
+        }}
+        readOnly={botTyping}
         rows={6}
         placeholder="I run launch operations for memecoin projects on Solana..."
       />
@@ -84,18 +166,25 @@ export function PitchCard({ profile, onProfileUpdate }: PitchCardProps) {
         your full pitch — what you do, who you do it for, what makes you different
       </div>
 
-      {/* SHIFTBOT inline strip — AI rewrite stub */}
+      {botError && (
+        <div className="bot-error">{botError}</div>
+      )}
+
+      {/* SHIFTBOT inline strip */}
       <div className="bot-strip">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/shiftbot-logo.png" alt="SHIFTBOT" className="bot-icon-sm" />
         <span className="bot-strip-label">SHIFTBOT</span>
-        <input
-          className="bot-strip-input"
-          placeholder="Ask SHIFTBOT to rewrite your pitch..."
-          disabled
-        />
-        <button type="button" className="bot-strip-send" disabled>
-          SEND
+        <span className="bot-strip-hint">
+          {botTyping ? "typing..." : botLoading ? "thinking..." : "improve your pitch with AI"}
+        </span>
+        <button
+          type="button"
+          className="bot-strip-send"
+          disabled={botLoading || botTyping}
+          onClick={handleBotRewrite}
+        >
+          {botLoading || botTyping ? "..." : "REWRITE →"}
         </button>
       </div>
     </div>
