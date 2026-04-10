@@ -911,7 +911,7 @@ export default function HowItWorksPage() {
             <div className="ba-img">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src=""
+                src="/before-lastproof.jpg"
                 alt="Without LASTPROOF — desperate DMs and screenshot dumps"
               />
             </div>
@@ -931,7 +931,7 @@ export default function HowItWorksPage() {
             <div className="ba-img">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src=""
+                src="/after-lastproof.jpg"
                 alt="With LASTPROOF — one link, full proof, direct hire"
               />
             </div>
