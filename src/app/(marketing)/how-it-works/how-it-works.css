@@ -446,10 +446,10 @@
 .pt.pt-mint .pt-ico { background: rgba(255, 215, 0, 0.1); border-color: rgba(255, 215, 0, 0.3); color: var(--gold); }
 .pt.pt-mint .pt-label { color: var(--gold); }
 .pt.pt-mint .pt-price { color: var(--gold); }
-.pt.pt-tier { border-color: rgba(0, 230, 118, 0.25); background: var(--bg-card); }
-.pt.pt-tier .pt-ico { background: rgba(0, 230, 118, 0.08); border-color: rgba(0, 230, 118, 0.25); color: var(--green); }
-.pt.pt-tier .pt-label { color: var(--green); }
-.pt.pt-tier .pt-price { color: var(--green); }
+.pt.pt-tier { border-color: rgba(167, 139, 250, 0.3); background: linear-gradient(135deg, rgba(167, 139, 250, 0.04), var(--bg-card)); }
+.pt.pt-tier .pt-ico { background: rgba(167, 139, 250, 0.1); border-color: rgba(167, 139, 250, 0.3); color: #a78bfa; }
+.pt.pt-tier .pt-label { color: #a78bfa; }
+.pt.pt-tier .pt-price { color: #a78bfa; }
 
 /* BEFORE/AFTER DIFF */
 .badiff { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0 8px; }
