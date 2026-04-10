@@ -190,7 +190,7 @@ export function StatusBar({ profile, campaignSoldOut = false }: StatusBarProps) 
           </div>
 
           <div className="field-help" style={{ marginBottom: 14 }}>
-            Profile subscription is <strong>$10/year</strong> (or <strong>$6</strong> with $LASTSHFT — 40% off).
+            Profile subscription is <strong>$10 / 30 days</strong> (or <strong>$6</strong> with $LASTSHFT — 40% off).
             Pay with any supported token. Subscription activates instantly on confirmed payment.
           </div>
 
