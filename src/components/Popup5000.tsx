@@ -75,7 +75,7 @@ export default function Popup5000() {
     return () => clearTimeout(show);
   }, []);
 
-  // Real Supabase check when we hit the low-stock threshold
+  // Always check real Supabase count — overrides theatrical if truly sold out
   const checkReal = useCallback(async () => {
     try {
       const res = await fetch("/api/campaign/count");
@@ -93,8 +93,8 @@ export default function Popup5000() {
 
   useEffect(() => {
     if (!visible) return;
-    if (isLowStock) checkReal();
-  }, [visible, isLowStock, checkReal]);
+    checkReal();
+  }, [visible, checkReal]);
 
   // Client-side tick animation
   useEffect(() => {
