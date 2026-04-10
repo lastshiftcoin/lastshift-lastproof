@@ -344,6 +344,46 @@ footer.lp-footer a:hover { color: var(--text-primary); }
 .shiftbot .expand { color: var(--text-dim); font-size: 10px; letter-spacing: 1.5px; padding: 6px 12px; border: 1px solid var(--border-2); background: var(--bg-card); border-radius: var(--r-btn); }
 .shiftbot .expand:hover { color: var(--orange); border-color: var(--orange); cursor: pointer; }
 
+/* Expanded SHIFTBOT strip */
+.shiftbot-expanded {
+  flex-direction: column; align-items: stretch; gap: 0;
+  padding: 0; max-height: 280px;
+}
+.shiftbot-expanded .sb-expanded-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 24px; border-bottom: 1px solid var(--border-2);
+}
+.shiftbot-expanded .sb-status {
+  color: var(--text-dim); font-size: 9px; letter-spacing: 2px;
+  border: 1px solid var(--border-2); padding: 2px 8px; border-radius: var(--r-btn);
+  margin-left: auto;
+}
+.shiftbot-expanded .expand { margin-left: 8px; }
+.shiftbot-expanded .sb-reply {
+  padding: 14px 24px; color: var(--text-dim); font-size: 12px; line-height: 1.6;
+  border-bottom: 1px solid var(--border-2);
+}
+.shiftbot-expanded .sb-reply-label {
+  color: var(--orange); font-size: 10px; letter-spacing: 2px; font-weight: 700;
+  margin-bottom: 6px; display: flex; align-items: center; gap: 8px;
+}
+.shiftbot-expanded .sb-reply-label .cursor { color: var(--green); }
+.shiftbot-expanded .sb-reply p { margin: 0; color: var(--text-main); }
+.shiftbot-expanded .sb-input-row {
+  display: flex; align-items: center; gap: 10px; padding: 10px 24px;
+}
+.shiftbot-expanded .sb-text-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--text-main); font-family: var(--mono); font-size: 12px;
+}
+.shiftbot-expanded .sb-text-input::placeholder { color: var(--text-dim); }
+.shiftbot-expanded .sb-send {
+  color: var(--orange); font-size: 10px; letter-spacing: 1.5px; font-weight: 700;
+  padding: 6px 12px; border: 1px solid var(--orange); background: transparent;
+  border-radius: var(--r-btn); cursor: pointer; font-family: var(--mono);
+}
+.shiftbot-expanded .sb-send:hover { background: var(--orange); color: var(--bg-primary); }
+
 /* ================================================================
    MEDIA QUERIES
    ================================================================ */

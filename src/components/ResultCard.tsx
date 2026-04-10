@@ -7,7 +7,7 @@ import type { GridPreviewCard } from "@/lib/homepage-data";
  */
 export default function ResultCard({ card }: { card: GridPreviewCard }) {
   return (
-    <Link className="result-card" href={`/${card.handle}`}>
+    <Link className="result-card" href="/manage">
       <div className="result-avatar">{card.initials}</div>
       <div className="result-info">
         <div className="result-name-row">

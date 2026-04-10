@@ -49,9 +49,9 @@ export default async function HomePage({
         <div className="section-label">BROWSE BY OPERATOR TYPE</div>
         <div className="cats">
           {OPERATOR_CATEGORIES.map((c) => (
-            <div key={c} className="chip">
+            <Link key={c} className="chip" href="/manage">
               {c}
-            </div>
+            </Link>
           ))}
         </div>
       </section>
