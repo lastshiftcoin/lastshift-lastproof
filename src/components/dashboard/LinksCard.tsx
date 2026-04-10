@@ -60,6 +60,11 @@ export function LinksCard({ initialLinks }: LinksCardProps) {
   const [addUrl, setAddUrl] = useState("");
   const [adding, setAdding] = useState(false);
 
+  // Bulk paste
+  const [showBulk, setShowBulk] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [bulkAdding, setBulkAdding] = useState(false);
+
   const pinnedCount = links.filter((l) => l.pinned).length;
 
   // Filter
@@ -122,6 +127,65 @@ export function LinksCard({ initialLinks }: LinksCardProps) {
     } catch {
       alert("Delete failed.");
     }
+  }
+
+  // ─── Bulk paste handler ──────────────────────────────────────────────────
+  async function handleBulkAdd() {
+    const lines = bulkText
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    if (lines.length === 0) return;
+    setBulkAdding(true);
+
+    const added: ProfileLink[] = [];
+    for (const line of lines) {
+      // Parse: "Label — URL" or "Label - URL" or just "URL"
+      let label = "";
+      let url = line;
+      const sepMatch = line.match(/^(.+?)\s*[—–\-|]\s*(https?:\/\/.+)$/i);
+      if (sepMatch) {
+        label = sepMatch[1].trim();
+        url = sepMatch[2].trim();
+      } else if (/^https?:\/\//.test(line)) {
+        // Just a URL — derive label from domain
+        try {
+          const u = new URL(line);
+          label = u.hostname.replace("www.", "");
+        } catch {
+          label = "Link";
+        }
+      } else {
+        // Not a URL — skip
+        continue;
+      }
+
+      try {
+        const res = await fetch("/api/dashboard/links", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            label,
+            url,
+            platform: detectPlatform(url),
+          }),
+        });
+        if (res.ok) {
+          const { link } = await res.json();
+          added.push(link);
+        }
+      } catch {
+        // skip failed
+      }
+    }
+
+    if (added.length > 0) {
+      setLinks((prev) => [...prev, ...added]);
+    }
+    setBulkText("");
+    setShowBulk(false);
+    setBulkAdding(false);
   }
 
   // ─── Pin toggle ─────────────────────────────────────────────────────────
@@ -304,16 +368,25 @@ export function LinksCard({ initialLinks }: LinksCardProps) {
         )}
       </div>
 
-      {/* Add link */}
+      {/* Add link buttons */}
       {!showAdd ? (
-        <button
-          type="button"
-          className="btn-add-sec"
-          style={{ marginTop: 12 }}
-          onClick={() => setShowAdd(true)}
-        >
-          + ADD LINK
-        </button>
+        <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+          <button
+            type="button"
+            className="btn-add-sec"
+            onClick={() => setShowAdd(true)}
+          >
+            + ADD LINK
+          </button>
+          <button
+            type="button"
+            className="btn-add-sec"
+            onClick={() => setShowBulk(true)}
+            style={{ opacity: 0.7 }}
+          >
+            BULK PASTE
+          </button>
+        </div>
       ) : (
         <div style={{
           display: "grid",
@@ -353,6 +426,43 @@ export function LinksCard({ initialLinks }: LinksCardProps) {
             >
               {adding ? "ADDING..." : "ADD LINK"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk paste modal */}
+      {showBulk && (
+        <div className={`lk-bulk open`} onClick={() => !bulkAdding && setShowBulk(false)}>
+          <div className="lk-bulk-card" onClick={(e) => e.stopPropagation()}>
+            <div className="lk-bulk-head">BULK PASTE LINKS</div>
+            <div className="lk-bulk-sub">
+              One link per line. Format: <strong>Label — URL</strong> or just paste URLs.
+            </div>
+            <textarea
+              value={bulkText}
+              onChange={(e) => setBulkText(e.target.value)}
+              placeholder={"My X Account — https://x.com/handle\nhttps://t.me/mychannel\nYouTube — https://youtube.com/@channel"}
+              disabled={bulkAdding}
+              autoFocus
+            />
+            <div className="lk-bulk-actions">
+              <button
+                type="button"
+                className="btn-cancel"
+                onClick={() => { setBulkText(""); setShowBulk(false); }}
+                disabled={bulkAdding}
+              >
+                CANCEL
+              </button>
+              <button
+                type="button"
+                className="btn-add"
+                onClick={handleBulkAdd}
+                disabled={bulkAdding || !bulkText.trim()}
+              >
+                {bulkAdding ? "ADDING..." : "ADD ALL"}
+              </button>
+            </div>
           </div>
         </div>
       )}

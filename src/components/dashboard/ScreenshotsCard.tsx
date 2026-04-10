@@ -90,8 +90,7 @@ export function ScreenshotsCard({ initialShots }: ScreenshotsCardProps) {
     }
   }
 
-  // Fill remaining slots
-  const emptySlots = Math.max(0, MAX_SHOTS - shots.length);
+  // No ghost placeholder slots — grid expands naturally as shots are added
 
   return (
     <div className="edit-card">
@@ -190,10 +189,7 @@ export function ScreenshotsCard({ initialShots }: ScreenshotsCardProps) {
           </div>
         )}
 
-        {/* Remaining empty placeholder slots */}
-        {Array.from({ length: Math.max(0, emptySlots - 1) }).map((_, i) => (
-          <div key={`slot-${i}`} className="shot slot" />
-        ))}
+        {/* Grid expands as screenshots are added — no ghost placeholders */}
       </div>
 
       <input

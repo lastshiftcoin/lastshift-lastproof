@@ -108,19 +108,19 @@ export function DashboardContent({ session, profile, primaryCategory, additional
         </span>
       </h1>
 
-      {/* ═══ STAT QUAD — Step 2 ═══ */}
-      <StatQuad profile={profile} totalProofs={proofs.length} devProofs={proofs.filter(p => p.kind === "dev_verification").length} />
-
-      {/* ═══ TRUST TIER ROW — Step 2 ═══ */}
-      <TrustTierRow profile={profile} totalProofs={proofs.length} />
-
-      {/* ═══ STATUS BAR — Step 3 ═══ */}
+      {/* ═══ STATUS BAR — first section ═══ */}
       <StatusBar profile={profile} campaignSoldOut={campaignSoldOut} />
 
       {/* ═══ CAMPAIGN FOMO STRIP — below status bar during 5000 campaign ═══ */}
       {session.firstFiveThousand && !profile.isPaid && (
         <CampaignFomoStrip onSoldOut={() => setCampaignSoldOut(true)} />
       )}
+
+      {/* ═══ STAT QUAD — Step 2 ═══ */}
+      <StatQuad profile={profile} totalProofs={proofs.length} devProofs={proofs.filter(p => p.kind === "dev_verification").length} />
+
+      {/* ═══ TRUST TIER ROW — Step 2 ═══ */}
+      <TrustTierRow profile={profile} totalProofs={proofs.length} />
 
       {/* ═══ IDENTITY — Step 4 ═══ */}
       <IdentityCard
