@@ -4,6 +4,7 @@ import { getProfileByOperatorId } from "@/lib/profiles-store";
 
 /**
  * POST /api/dashboard/screenshots — upload a screenshot (multipart)
+ * PATCH /api/dashboard/screenshots — update linked URL on a screenshot
  * DELETE /api/dashboard/screenshots?id=xxx — delete a screenshot
  */
 
@@ -96,6 +97,38 @@ export async function POST(request: Request) {
       position: data.position,
     },
   });
+}
+
+export async function PATCH(request: Request) {
+  const session = await readSession();
+  if (!session) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const { profile, sb } = await getProfile(session);
+  if (!profile) return NextResponse.json({ error: "no_profile" }, { status: 404 });
+
+  const body = await request.json();
+  const { id, linkedUrl } = body;
+
+  if (!id) return NextResponse.json({ error: "missing_id" }, { status: 400 });
+
+  // Verify ownership
+  const { data: shot } = await sb
+    .from("screenshots")
+    .select("id")
+    .eq("id", id)
+    .eq("profile_id", profile.id)
+    .maybeSingle();
+
+  if (!shot) return NextResponse.json({ error: "not_found" }, { status: 404 });
+
+  const { error } = await sb
+    .from("screenshots")
+    .update({ linked_url: linkedUrl || null })
+    .eq("id", id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ ok: true });
 }
 
 export async function DELETE(request: Request) {

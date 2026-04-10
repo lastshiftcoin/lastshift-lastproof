@@ -127,12 +127,28 @@ export function ScreenshotsCard({ initialShots }: ScreenshotsCardProps) {
                 type="button"
                 className={`shot-act${shot.linkedUrl ? " has-url" : ""}`}
                 title={shot.linkedUrl ? "URL attached — click to edit" : "Attach URL"}
-                onClick={() => {
+                onClick={async () => {
                   const url = prompt("Enter URL to attach to this screenshot:", shot.linkedUrl ?? "");
-                  if (url !== null) {
-                    // TODO: save URL via API
-                    setShots((prev) => prev.map((s) =>
-                      s.id === shot.id ? { ...s, linkedUrl: url || null } : s
+                  if (url === null) return;
+                  // Optimistic update
+                  const prev = shot.linkedUrl;
+                  setShots((s) => s.map((x) =>
+                    x.id === shot.id ? { ...x, linkedUrl: url || null } : x
+                  ));
+                  try {
+                    const res = await fetch("/api/dashboard/screenshots", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ id: shot.id, linkedUrl: url || null }),
+                    });
+                    if (!res.ok) {
+                      setShots((s) => s.map((x) =>
+                        x.id === shot.id ? { ...x, linkedUrl: prev } : x
+                      ));
+                    }
+                  } catch {
+                    setShots((s) => s.map((x) =>
+                      x.id === shot.id ? { ...x, linkedUrl: prev } : x
                     ));
                   }
                 }}

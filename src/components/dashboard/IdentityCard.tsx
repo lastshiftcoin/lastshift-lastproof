@@ -19,7 +19,7 @@
  * On save, PATCHes /api/dashboard/profile with changed fields.
  */
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { ProfileRow } from "@/lib/profiles-store";
 
 // ─── Option lists ────────────────────────────────────────────────────────────
@@ -105,6 +105,20 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate }: Iden
   const [saved, setSaved] = useState(false);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ─── Handle change modal state ──────────────────────────────────────────
+  const [showHandleModal, setShowHandleModal] = useState(false);
+  const [handleInput, setHandleInput] = useState("");
+  const [handleAvailable, setHandleAvailable] = useState<boolean | null>(null);
+  const [handleChecking, setHandleChecking] = useState(false);
+  const [handleCooldown, setHandleCooldown] = useState<{
+    eligible: boolean; daysRemaining: number;
+  } | null>(null);
+  const [handlePricing, setHandlePricing] = useState<{
+    baseUsd: number; lastshftUsd: number;
+  } | null>(null);
+  const [handleChanging, setHandleChanging] = useState(false);
+  const handleCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Avatar initials
   const initials = (displayName || profile.handle || "??")
     .split(/\s+/)
@@ -150,6 +164,92 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate }: Iden
       alert("Upload failed — please try again.");
     }
   }, [onProfileUpdate]);
+
+  // ─── Handle change helpers ────────────────────────────────────────────────
+  async function openHandleModal() {
+    setShowHandleModal(true);
+    setHandleInput("");
+    setHandleAvailable(null);
+    setHandleCooldown(null);
+    setHandlePricing(null);
+
+    try {
+      const res = await fetch("/api/dashboard/handle-change");
+      if (res.ok) {
+        const data = await res.json();
+        setHandleCooldown(data.cooldown);
+        setHandlePricing(data.pricing);
+      }
+    } catch { /* non-fatal */ }
+  }
+
+  function onHandleInputChange(val: string) {
+    const clean = val.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20);
+    setHandleInput(clean);
+    setHandleAvailable(null);
+
+    if (handleCheckTimer.current) clearTimeout(handleCheckTimer.current);
+    if (clean.length < 3) return;
+
+    setHandleChecking(true);
+    handleCheckTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/onboarding/check-handle?handle=${clean}`);
+        const data = await res.json();
+        setHandleAvailable(data.available);
+      } catch {
+        setHandleAvailable(null);
+      } finally {
+        setHandleChecking(false);
+      }
+    }, 400);
+  }
+
+  async function executeHandleChange() {
+    if (!handleInput || !handleAvailable) return;
+    setHandleChanging(true);
+
+    // For now, this requires a txSignature.
+    // Until the payment modal is wired, we prompt for it.
+    const txSig = prompt(
+      `Handle change costs $${handlePricing?.baseUsd ?? 100} (or $${handlePricing?.lastshftUsd ?? 60} with $LASTSHFT).\n\n` +
+      `Enter your payment transaction signature:`
+    );
+    if (!txSig) {
+      setHandleChanging(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/dashboard/handle-change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newHandle: handleInput, txSignature: txSig }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.error === "cooldown_active") {
+          alert(`Handle change on cooldown — ${data.daysRemaining} days remaining.`);
+        } else if (data.error === "handle_taken") {
+          alert("That handle is already taken.");
+          setHandleAvailable(false);
+        } else if (data.error === "missing_payment") {
+          alert("Payment transaction signature required.");
+        } else {
+          alert(data.error || "Handle change failed");
+        }
+        return;
+      }
+
+      // Success — reload page to get fresh data
+      window.location.reload();
+    } catch {
+      alert("Handle change failed — please try again.");
+    } finally {
+      setHandleChanging(false);
+    }
+  }
 
   // ─── Save handler ─────────────────────────────────────────────────────────
   async function handleSave() {
@@ -224,7 +324,7 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate }: Iden
           <button
             type="button"
             className="change-link"
-            onClick={() => alert("Handle change requires $LASTSHFT fee — coming soon")}
+            onClick={openHandleModal}
           >
             CHANGE
           </button>
@@ -238,6 +338,116 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate }: Iden
           </a>
         </div>
       </div>
+
+      {/* Handle change modal (inline) */}
+      {showHandleModal && (
+        <div style={{
+          margin: "12px 0",
+          padding: 18,
+          background: "var(--bg-input)",
+          border: "1px solid var(--border-2)",
+          borderRadius: 8,
+        }}>
+          <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 14,
+          }}>
+            <div style={{
+              fontFamily: "var(--mono)",
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: 1,
+              color: "var(--text)",
+            }}>
+              CHANGE HANDLE
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowHandleModal(false)}
+              style={{
+                fontFamily: "var(--mono)",
+                fontSize: 10,
+                color: "var(--text-dim)",
+                background: "transparent",
+                border: "1px solid var(--border)",
+                borderRadius: 4,
+                padding: "4px 10px",
+                cursor: "pointer",
+              }}
+            >
+              CLOSE
+            </button>
+          </div>
+
+          {handleCooldown && !handleCooldown.eligible ? (
+            <div className="field-help" style={{ color: "var(--red, #ef4444)" }}>
+              Handle change on cooldown — {handleCooldown.daysRemaining} days remaining.
+              Changes are limited to once every 90 days.
+            </div>
+          ) : (
+            <>
+              <div className="field-help" style={{ marginBottom: 12 }}>
+                Handle change costs <strong>${handlePricing?.baseUsd ?? 100}</strong>{" "}
+                (or <strong>${handlePricing?.lastshftUsd ?? 60}</strong> with $LASTSHFT).
+                90-day cooldown after each change.
+              </div>
+
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <span style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: 12,
+                  color: "var(--text-dim)",
+                }}>@</span>
+                <input
+                  className="field-input"
+                  style={{ flex: 1 }}
+                  placeholder="new-handle"
+                  value={handleInput}
+                  onChange={(e) => onHandleInputChange(e.target.value)}
+                  maxLength={20}
+                />
+                {handleInput.length >= 3 && (
+                  <span style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: 1,
+                    color: handleChecking
+                      ? "var(--text-dim)"
+                      : handleAvailable
+                        ? "var(--green)"
+                        : handleAvailable === false
+                          ? "var(--red, #ef4444)"
+                          : "var(--text-dim)",
+                  }}>
+                    {handleChecking ? "..." : handleAvailable ? "AVAILABLE" : handleAvailable === false ? "TAKEN" : ""}
+                  </span>
+                )}
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 14 }}>
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  onClick={() => setShowHandleModal(false)}
+                >
+                  CANCEL
+                </button>
+                <button
+                  type="button"
+                  className="btn-add"
+                  disabled={!handleAvailable || handleChanging || handleInput.length < 3}
+                  onClick={executeHandleChange}
+                >
+                  {handleChanging ? "CHANGING..." : "CHANGE HANDLE"}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Avatar + fields grid */}
       <div className="id-card">

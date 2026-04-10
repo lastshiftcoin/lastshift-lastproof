@@ -16,7 +16,7 @@
  * Talks to /api/dashboard/work-items for CRUD.
  */
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -58,6 +58,11 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
   const [formEndMonth, setFormEndMonth] = useState("");
   const [formEndYear, setFormEndYear] = useState("");
   const [formPresent, setFormPresent] = useState(false);
+
+  // ─── Drag-and-drop state ────────────────────────────────────────────────
+  const dragItem = useRef<string | null>(null);
+  const dragOverItem = useRef<string | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
 
   const mintedItems = items.filter((i) => i.minted).sort((a, b) => a.position - b.position);
   const regularItems = items.filter((i) => !i.minted).sort((a, b) => a.position - b.position);
@@ -181,6 +186,90 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
     }
   }
 
+  // ─── Mint handler ───────────────────────────────────────────────────────
+  async function handleMint(id: string) {
+    const item = items.find((i) => i.id === id);
+    if (!item || item.minted) return;
+
+    if (item.proofCount === 0) {
+      alert("This work item needs at least 1 proof before it can be minted.");
+      return;
+    }
+
+    const mintedCount = items.filter((i) => i.minted).length;
+    if (mintedCount >= 4) {
+      alert("Maximum 4 minted projects. Unmint one first.");
+      return;
+    }
+
+    const txSig = prompt(
+      "Minting locks this project on-chain as permanent, tamper-proof history.\n\n" +
+      "Enter your mint transaction signature:"
+    );
+    if (!txSig) return;
+
+    try {
+      const res = await fetch("/api/dashboard/work-items/mint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, txSignature: txSig }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.error === "no_proofs") {
+          alert("This work item needs at least 1 proof before minting.");
+        } else if (data.error === "max_minted") {
+          alert("Maximum 4 minted projects reached.");
+        } else if (data.error === "already_minted") {
+          alert("Already minted.");
+        } else {
+          alert(data.error || "Mint failed");
+        }
+        return;
+      }
+
+      setItems((prev) => prev.map((i) =>
+        i.id === id ? { ...i, minted: true } : i
+      ));
+    } catch {
+      alert("Mint failed — please try again.");
+    }
+  }
+
+  // ─── Drag handlers ──────────────────────────────────────────────────────
+  const handleDragStart = useCallback((id: string) => {
+    dragItem.current = id;
+    setDragId(id);
+  }, []);
+
+  const handleDragEnter = useCallback((id: string) => {
+    dragOverItem.current = id;
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    if (!dragItem.current || !dragOverItem.current || dragItem.current === dragOverItem.current) {
+      setDragId(null);
+      return;
+    }
+
+    setItems((prev) => {
+      const arr = [...prev];
+      const fromIdx = arr.findIndex((i) => i.id === dragItem.current);
+      const toIdx = arr.findIndex((i) => i.id === dragOverItem.current);
+      if (fromIdx === -1 || toIdx === -1) return prev;
+
+      const [moved] = arr.splice(fromIdx, 1);
+      arr.splice(toIdx, 0, moved);
+      // Reassign positions
+      return arr.map((item, i) => ({ ...item, position: i }));
+    });
+
+    dragItem.current = null;
+    dragOverItem.current = null;
+    setDragId(null);
+  }, []);
+
   // ─── Save order ─────────────────────────────────────────────────────────
   async function handleSaveOrder() {
     setSaving(true);
@@ -188,16 +277,19 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
     if (savedTimer.current) clearTimeout(savedTimer.current);
 
     try {
-      const order = [...mintedItems, ...regularItems].map((item, i) => ({
-        id: item.id,
-        position: i,
-      }));
+      const ids = [...mintedItems, ...regularItems].map((item) => item.id);
 
-      await fetch("/api/dashboard/work-items/reorder", {
+      const res = await fetch("/api/dashboard/work-items/reorder", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ order }),
+        body: JSON.stringify({ ids }),
       });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Reorder failed");
+        return;
+      }
 
       setSaved(true);
       savedTimer.current = setTimeout(() => setSaved(false), 3000);
@@ -268,7 +360,8 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
       {mintedItems.length > 0 ? (
         <div className="pow-list">
           {mintedItems.map((item) => (
-            <PowRow key={item.id} item={item} locked onEdit={handleEdit} onDelete={handleDelete} formatDate={formatDateRange} />
+            <PowRow key={item.id} item={item} locked onEdit={handleEdit} onDelete={handleDelete} onMint={handleMint} formatDate={formatDateRange}
+              isDragging={dragId === item.id} onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} />
           ))}
         </div>
       ) : (
@@ -293,7 +386,12 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
               locked={isLocked(item)}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onMint={handleMint}
               formatDate={formatDateRange}
+              isDragging={dragId === item.id}
+              onDragStart={handleDragStart}
+              onDragEnter={handleDragEnter}
+              onDragEnd={handleDragEnd}
             />
           ))}
         </div>
@@ -418,7 +516,12 @@ function PowRow({
   locked,
   onEdit,
   onDelete,
+  onMint,
   formatDate,
+  isDragging,
+  onDragStart,
+  onDragEnter,
+  onDragEnd,
 }: {
   item: WorkItem;
   locked: boolean;
@@ -427,7 +530,12 @@ function PowRow({
     startedAt: string | null; endedAt: string | null;
   }) => Promise<boolean>;
   onDelete: (id: string) => void;
+  onMint: (id: string) => void;
   formatDate: (item: WorkItem) => string;
+  isDragging: boolean;
+  onDragStart: (id: string) => void;
+  onDragEnter: (id: string) => void;
+  onDragEnd: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
@@ -565,9 +673,17 @@ function PowRow({
 
   // ─── View mode ──────────────────────────────────────────────────────────
   return (
-    <div className={`pow-row${item.minted ? " minted" : ""}`}>
+    <div
+      className={`pow-row${item.minted ? " minted" : ""}`}
+      draggable
+      onDragStart={() => onDragStart(item.id)}
+      onDragEnter={() => onDragEnter(item.id)}
+      onDragEnd={onDragEnd}
+      onDragOver={(e) => e.preventDefault()}
+      style={{ opacity: isDragging ? 0.4 : 1, cursor: "grab" }}
+    >
       <div className="pow-top">
-        <span className="pow-grip">{"\u22EE\u22EE"}</span>
+        <span className="pow-grip" style={{ cursor: "grab" }}>{"\u22EE\u22EE"}</span>
         <span className="pow-tick">{item.ticker || "—"}</span>
         <div className="pow-meta">
           <div className="pow-title">
@@ -604,7 +720,7 @@ function PowRow({
         <button
           type="button"
           className={`pow-mintbtn${item.minted ? " minted" : ""}`}
-          onClick={() => { if (!item.minted) alert("Minting coming soon"); }}
+          onClick={() => { if (!item.minted) onMint(item.id); }}
         >
           {item.minted ? "✓ MINTED" : "MINT THIS PROJECT"}
         </button>
