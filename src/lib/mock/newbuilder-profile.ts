@@ -14,6 +14,7 @@ import type { PublicProfileView } from "../public-profile-view";
 
 export const newbuilderProfile: PublicProfileView = {
   variant: "free",
+  ownerWallet: "NEWbuilder11111111111111111111111111111111111",
 
   // ─── Identity ────────────────────────────────────────────────
   handle: "newbuilder",

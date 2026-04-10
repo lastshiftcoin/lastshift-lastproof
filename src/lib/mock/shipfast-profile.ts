@@ -14,6 +14,7 @@ import type { PublicProfileView } from "../public-profile-view";
 
 export const shipfastProfile: PublicProfileView = {
   variant: "legend",
+  ownerWallet: "SHIPfast1111111111111111111111111111111111111",
 
   // ─── Identity ────────────────────────────────────────────────
   handle: "shipfast",

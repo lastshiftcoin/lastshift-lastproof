@@ -246,6 +246,38 @@ function parseInputs(req: NextRequest, body: Record<string, unknown>): {
 
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+
+  // ─── Self-proof guard (source of truth) ────────────────────────────────
+  // If the prover's wallet matches the profile owner's wallet, reject
+  // immediately. Operators cannot verify their own work.
+  const proverWallet = body.wallet as string | undefined;
+  const ownerWallet = body.owner_wallet as string | undefined;
+  if (proverWallet && ownerWallet && proverWallet === ownerWallet) {
+    const encoder = new TextEncoder();
+    const selfProofStream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(
+          encoder.encode(
+            `event: done\ndata: ${JSON.stringify({
+              eligible: false,
+              reason: "self_proof",
+              failed_checks: ["self_proof"],
+              message: "You cannot verify your own work.",
+            })}\n\n`,
+          ),
+        );
+        controller.close();
+      },
+    });
+    return new Response(selfProofStream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+      },
+    });
+  }
+
   const { path, scenario, token } = parseInputs(req, body);
   const stream = await buildStream(path, scenario, token);
 

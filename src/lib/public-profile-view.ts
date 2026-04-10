@@ -28,6 +28,8 @@ export interface PublicProfileView {
   variant: ProfileVariant;
 
   // ─── Identity (hero) ─────────────────────────────────────────
+  /** Owner's terminal wallet — used by self-proof guard. Never displayed. */
+  ownerWallet: string;
   handle: string;
   displayName: string;
   avatarUrl: string | null;

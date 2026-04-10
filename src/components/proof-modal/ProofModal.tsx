@@ -50,9 +50,11 @@ export interface ProofModalProps {
   workItemId: string;
   ticker: string;
   handle: string;
+  /** Profile owner's terminal wallet — used to block self-proofing. */
+  ownerWallet: string;
 }
 
-export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofModalProps) {
+export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWallet }: ProofModalProps) {
   const [step, setStep] = useState<ProofStep>(1);
   const [path, setPath] = useState<ProofPath | null>(null);
   const [comment, setComment] = useState<string>("");
@@ -78,6 +80,15 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
   const realConnected = useConnected();
   const { wallet: walletAdapter } = useWallet();
   const connected = realConnected ?? mockConnected;
+
+  /**
+   * Self-proof guard — operators cannot proof their own work.
+   * True when the connected wallet matches the profile owner's terminal wallet.
+   * Client-side fast guard; the backend eligibility endpoint is the source of truth.
+   */
+  const isSelfProof = Boolean(
+    connected && ownerWallet && connected.pubkey === ownerWallet,
+  );
 
   /**
    * Abandon-on-close plumbing. Per backend reply §6:
@@ -436,6 +447,7 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle }: ProofM
             <Step2WalletPicker
               onBack={() => setStep(1)}
               connected={connected}
+              isSelfProof={isSelfProof}
               onContinue={() => setStep(3)}
               onDevMockConnect={
                 process.env.NODE_ENV !== "production"
@@ -633,11 +645,13 @@ function Step1PathSelect({
 function Step2WalletPicker({
   onBack,
   connected,
+  isSelfProof,
   onContinue,
   onDevMockConnect,
 }: {
   onBack: () => void;
   connected: ConnectedWallet | null;
+  isSelfProof: boolean;
   onContinue: () => void;
   onDevMockConnect?: () => void;
 }) {
@@ -713,14 +727,37 @@ function Step2WalletPicker({
             LASTPROOF never holds your keys. Every action routes through your
             wallet for signature.
           </div>
-          <button
-            type="button"
-            className="pm-cta pm-cta-green"
-            onClick={onContinue}
-            data-testid="pm-wv-continue"
-          >
-            &gt; CONTINUE
-          </button>
+          {isSelfProof ? (
+            <div className="pm-self-proof-block">
+              <div className="pm-self-proof-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="15" y1="9" x2="9" y2="15" />
+                  <line x1="9" y1="9" x2="15" y2="15" />
+                </svg>
+              </div>
+              <div className="pm-self-proof-msg">
+                You cannot verify your own work. Proofs must come from someone
+                else&apos;s wallet to maintain trust.
+              </div>
+              <button
+                type="button"
+                className="pm-cta pm-cta-dim"
+                onClick={onBack}
+              >
+                &gt; GO BACK
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="pm-cta pm-cta-green"
+              onClick={onContinue}
+              data-testid="pm-wv-continue"
+            >
+              &gt; CONTINUE
+            </button>
+          )}
         </div>
       </>
     );

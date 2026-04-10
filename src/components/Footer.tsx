@@ -1,7 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 /** Universal LASTSHIFT footer — §4.4 + §12.6 */
 export default function Footer() {
+  const pathname = usePathname() || "";
+  if (pathname.startsWith("/manage")) return null;
+
   return (
     <footer className="lp-footer">
       <div>

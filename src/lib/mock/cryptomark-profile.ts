@@ -10,6 +10,7 @@ import type { PublicProfileView } from "../public-profile-view";
 
 export const cryptomarkProfile: PublicProfileView = {
   variant: "public",
+  ownerWallet: "CRYPTOmark111111111111111111111111111111111",
   // ─── Identity ────────────────────────────────────────────────
   handle: "cryptomark",
   displayName: "CryptoMark",

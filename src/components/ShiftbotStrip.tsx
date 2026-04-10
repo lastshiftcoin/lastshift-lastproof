@@ -1,8 +1,16 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+
 /**
  * Fixed-bottom SHIFTBOT command strip. Appears on every page per the wireframes.
  * Interactive expand is deferred — this is the collapsed presentation state.
+ * Hidden on /manage routes which render their own terminal chrome bottom bar.
  */
 export default function ShiftbotStrip() {
+  const pathname = usePathname() || "";
+  if (pathname.startsWith("/manage")) return null;
+
   return (
     <div className="shiftbot">
       {/* eslint-disable-next-line @next/next/no-img-element */}

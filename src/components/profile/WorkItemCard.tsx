@@ -11,7 +11,7 @@ import { ProofModal } from "@/components/proof-modal/ProofModal";
  * stream wired to the mock SSE endpoint at /api/mock/proof/eligibility.
  * See src/components/proof-modal/ProofModal.tsx for scope notes.
  */
-export function WorkItemCard({ item, handle }: { item: WorkItem; handle: string }) {
+export function WorkItemCard({ item, handle, ownerWallet }: { item: WorkItem; handle: string; ownerWallet: string }) {
   const [modalOpen, setModalOpen] = useState(false);
 
   const cardClass = [
@@ -69,6 +69,7 @@ export function WorkItemCard({ item, handle }: { item: WorkItem; handle: string 
         workItemId={item.id}
         ticker={item.ticker}
         handle={handle}
+        ownerWallet={ownerWallet}
       />
     </>
   );

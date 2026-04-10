@@ -13,6 +13,7 @@ import { usePathname } from "next/navigation";
 export default function Topbar() {
   const pathname = usePathname() || "";
   if (pathname.startsWith("/profile/") || pathname.startsWith("/@")) return null;
+  if (pathname.startsWith("/manage")) return null;
   return (
     <div className="topbar">
       <div className="topbar-left">

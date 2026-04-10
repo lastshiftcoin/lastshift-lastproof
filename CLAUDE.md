@@ -57,7 +57,7 @@ column.
 
 ## Store architecture (Phase 3 — complete)
 
-All six stores run on Supabase (as of 2026-04-08):
+All ten stores run on Supabase (as of 2026-04-10):
 
 | Store             | Mode     | Adapter                              |
 |-------------------|----------|--------------------------------------|
@@ -67,22 +67,16 @@ All six stores run on Supabase (as of 2026-04-08):
 | proofs            | supabase | `src/lib/db/proofs-adapter.ts`       |
 | notifications     | supabase | `src/lib/db/notifications-adapter.ts`|
 | handle_history    | supabase | `src/lib/db/handle-history-adapter.ts`|
+| work_items        | supabase | `src/lib/db/work-items-adapter.ts`   |
+| screenshots       | supabase | `src/lib/db/screenshots-adapter.ts`  |
+| profile_links     | supabase | `src/lib/db/profile-links-adapter.ts`|
+| profile_categories| supabase | `src/lib/db/profile-categories-adapter.ts`|
 
-Each store has three modes (`memory` | `dual` | `supabase`) selected by
-`LASTPROOF_DB_<STORE>` env. The dispatch lives in `src/lib/db/mode.ts`.
-Memory is now just a passive local cache on sync insert paths; reads
-all go through the adapter.
-
-Stores that do **not** yet exist (needed for the public profile page):
-
-- `work_items` — schema exists, no store/adapter
-- `screenshots` — schema exists, no store/adapter
-- `profile_links` — schema exists, no store/adapter
-- `profile_categories` (+ `categories` lookup) — schema exists, no
-  store/adapter
-
-These need to be built using the same memory|dual|supabase pattern
-before the public profile route can read real data.
+The original six stores have three modes (`memory` | `dual` | `supabase`)
+selected by `LASTPROOF_DB_<STORE>` env. The dispatch lives in
+`src/lib/db/mode.ts`. The four newer adapters (work_items, screenshots,
+profile_links, profile_categories) are supabase-direct — no memory/dual
+layer, just the adapter.
 
 ---
 

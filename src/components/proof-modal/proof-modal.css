@@ -1055,3 +1055,36 @@
   color: var(--pm-accent);
 }
 .pm-cta-inel:hover { background: var(--pm-accent); color: #0a0b0f; }
+
+/* ─── Self-proof guard ──────────────────────────────────────────────────── */
+.pm-self-proof-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--pm-red, #ff5252);
+  border-radius: 8px;
+  background: rgba(255, 82, 82, 0.06);
+}
+.pm-self-proof-icon {
+  width: 32px;
+  height: 32px;
+  color: var(--pm-red, #ff5252);
+}
+.pm-self-proof-icon svg { width: 100%; height: 100%; }
+.pm-self-proof-msg {
+  font-family: var(--pm-sans);
+  font-size: 13px;
+  color: var(--pm-text2);
+  text-align: center;
+  line-height: 1.6;
+}
+.pm-cta-dim {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--pm-border);
+  color: var(--pm-text3);
+}
+.pm-cta-dim:hover { background: rgba(255, 255, 255, 0.08); color: var(--pm-text2); }

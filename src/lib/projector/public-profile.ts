@@ -199,6 +199,7 @@ export async function getPublicProfileView(
   // ─── 10. Assemble the view ─────────────────────────────────────────
   return {
     variant,
+    ownerWallet: profile.terminalWallet,
     handle: profile.handle,
     displayName: profile.displayName ?? profile.handle,
     avatarUrl: profile.avatarUrl,
