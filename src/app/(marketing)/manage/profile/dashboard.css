@@ -178,6 +178,10 @@
 .btn-upgrade:hover{transform:translateY(-1px);box-shadow:0 0 0 1px rgba(255,215,0,.6),0 0 32px rgba(255,215,0,.45),0 6px 20px rgba(0,0,0,.5)}
 .btn-upgrade.btn-soldout{background:linear-gradient(135deg,#ff5470,#ff8a80);box-shadow:0 0 0 1px rgba(255,84,112,.4),0 0 24px rgba(255,84,112,.15),0 4px 14px rgba(0,0,0,.4);cursor:not-allowed;opacity:.7}
 .btn-upgrade.btn-soldout:hover{transform:none;box-shadow:0 0 0 1px rgba(255,84,112,.4),0 0 24px rgba(255,84,112,.15),0 4px 14px rgba(0,0,0,.4)}
+.btn-upgrade.btn-free{background:linear-gradient(135deg,var(--green),#00c853);color:#0a0b0f;box-shadow:0 0 0 1px rgba(0,230,118,.4),0 0 24px rgba(0,230,118,.25),0 4px 14px rgba(0,0,0,.4)}
+.btn-upgrade.btn-free:hover{box-shadow:0 0 0 1px rgba(0,230,118,.6),0 0 32px rgba(0,230,118,.45),0 6px 20px rgba(0,0,0,.5)}
+.btn-upgrade.btn-claimed{background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.4);box-shadow:none;cursor:default;opacity:.8}
+.btn-upgrade.btn-claimed:hover{transform:none}
 
 /* Campaign FOMO strip */
 @keyframes cfsBlink{0%,49%{opacity:1}50%,100%{opacity:.25}}

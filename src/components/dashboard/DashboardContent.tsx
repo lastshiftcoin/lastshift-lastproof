@@ -79,7 +79,7 @@ interface DashboardContentProps {
   onProfileUpdate: (profile: ProfileRow) => void;
 }
 
-export function DashboardContent({ session, profile, primaryCategory, additionalCategories, workItems, screenshots, links, proofs, onProfileUpdate }: DashboardContentProps) {
+export function DashboardContent({ profile, primaryCategory, additionalCategories, workItems, screenshots, links, proofs, onProfileUpdate }: DashboardContentProps) {
   const lastLogin = new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC";
   const [campaignSoldOut, setCampaignSoldOut] = useState(false);
 
@@ -109,10 +109,15 @@ export function DashboardContent({ session, profile, primaryCategory, additional
       </h1>
 
       {/* ═══ STATUS BAR — first section ═══ */}
-      <StatusBar profile={profile} campaignSoldOut={campaignSoldOut} />
+      <StatusBar
+        profile={profile}
+        campaignSoldOut={campaignSoldOut}
+        campaignActive={!profile.isPaid}
+        onProfileUpdate={onProfileUpdate}
+      />
 
       {/* ═══ CAMPAIGN FOMO STRIP — below status bar during 5000 campaign ═══ */}
-      {session.firstFiveThousand && !profile.isPaid && (
+      {!profile.isPaid && (
         <CampaignFomoStrip onSoldOut={() => setCampaignSoldOut(true)} />
       )}
 

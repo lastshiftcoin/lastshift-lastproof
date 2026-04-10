@@ -19,6 +19,10 @@ interface StatusBarProps {
   profile: ProfileRow;
   /** When true, the upgrade button shows "SOLD OUT" and is disabled */
   campaignSoldOut?: boolean;
+  /** Whether the campaign FOMO strip is showing (free upgrade available) */
+  campaignActive?: boolean;
+  /** Called after successful free claim to refresh profile data */
+  onProfileUpdate?: (profile: ProfileRow) => void;
 }
 
 type ProfileStatus = "active" | "pending" | "expired";
@@ -47,9 +51,11 @@ const STATUS_CONFIG: Record<ProfileStatus, { label: string; cls: string }> = {
   expired: { label: "EXPIRED", cls: "defunct" },
 };
 
-export function StatusBar({ profile, campaignSoldOut = false }: StatusBarProps) {
+export function StatusBar({ profile, campaignSoldOut = false, campaignActive = false, onProfileUpdate }: StatusBarProps) {
   const [countdown, setCountdown] = useState<string>("--");
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [claimed, setClaimed] = useState(false);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quote, setQuote] = useState<{
     id: string;
@@ -76,7 +82,38 @@ export function StatusBar({ profile, campaignSoldOut = false }: StatusBarProps) 
     }
   }, [profile]);
 
+  async function handleFreeClaim() {
+    setClaiming(true);
+    try {
+      const res = await fetch("/api/campaign/claim", { method: "POST" });
+      const data = await res.json();
+      if (data.ok) {
+        setClaimed(true);
+        // Update profile in parent to reflect paid status
+        onProfileUpdate?.({
+          ...profile,
+          isPaid: true,
+          subscriptionExpiresAt: data.subscriptionExpiresAt ?? null,
+        });
+      } else if (data.reason === "sold_out") {
+        // Campaign sold out while user was looking — fall through to paid upgrade
+        setShowUpgrade(true);
+      } else {
+        alert(data.message || "Claim failed — please try again.");
+      }
+    } catch {
+      alert("Claim failed — please try again.");
+    } finally {
+      setClaiming(false);
+    }
+  }
+
   async function handleUpgradeClick() {
+    // Free claim path: campaign active + user not paid + not sold out
+    if (campaignActive && !profile.isPaid && !campaignSoldOut) {
+      handleFreeClaim();
+      return;
+    }
     if (status === "active") {
       // Already active — show renewal info
       setShowUpgrade(true);
@@ -139,11 +176,21 @@ export function StatusBar({ profile, campaignSoldOut = false }: StatusBarProps) 
         </div>
         <button
           type="button"
-          className={`btn-upgrade${campaignSoldOut ? " btn-soldout" : ""}`}
-          onClick={campaignSoldOut ? undefined : handleUpgradeClick}
-          disabled={campaignSoldOut}
+          className={`btn-upgrade${campaignSoldOut ? " btn-soldout" : ""}${claimed ? " btn-claimed" : ""}${campaignActive && !profile.isPaid && !campaignSoldOut ? " btn-free" : ""}`}
+          onClick={(campaignSoldOut || claimed || claiming) ? undefined : handleUpgradeClick}
+          disabled={campaignSoldOut || claimed || claiming}
         >
-          {campaignSoldOut ? "SOLD OUT" : status === "active" ? "Renew Profile" : "Upgrade Profile"}
+          {campaignSoldOut
+            ? "SOLD OUT"
+            : claimed
+              ? "CLAIMED — ACTIVE"
+              : claiming
+                ? "CLAIMING..."
+                : campaignActive && !profile.isPaid
+                  ? "Upgrade Profile — $0"
+                  : status === "active"
+                    ? "Renew Profile"
+                    : "Upgrade Profile"}
         </button>
       </div>
 
