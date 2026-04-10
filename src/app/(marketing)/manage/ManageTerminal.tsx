@@ -5,14 +5,13 @@
  *
  * State machine:
  *   boot → connect → connecting → validating →
- *     granted (dashboard-entry wireframe) | no-terminal | error
+ *     granted | enter-tid (new wallet) | tid-reset (TID regenerated) | no-terminal | error
  *
- * Uses the real Solana wallet adapter (already provided by WalletBoundary in
- * the marketing layout). On successful Terminal ID validation, writes session
- * cookie via /api/auth/validate-tid and shows the MANAGE PROFILE CTA.
- *
- * If the user already has a valid session cookie (passed via initialSession),
- * skips the boot sequence entirely and shows the granted state.
+ * Three wallet-connect outcomes:
+ *   1. Wallet recognized + TID valid → granted (dashboard)
+ *   2. Wallet recognized + TID stale (regenerated) → tid-reset (TID input to re-auth)
+ *   3. Wallet not recognized → enter-tid (TID input for new user)
+ *   4. No TID entered / failed → no-terminal (link to Terminal)
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -29,6 +28,9 @@ type Phase =
   | "connected"
   | "validating"
   | "granted"
+  | "enter-tid"
+  | "tid-reset"
+  | "registering"
   | "no-terminal"
   | "error";
 
@@ -63,6 +65,9 @@ export default function ManageTerminal({ initialSession }: ManageTerminalProps) 
   const [errorMsg, setErrorMsg] = useState("");
   const [clock, setClock] = useState("");
   const [postLines, setPostLines] = useState<{ text: string; cls: string }[]>([]);
+  const [tidInput, setTidInput] = useState("");
+  const [tidError, setTidError] = useState("");
+  const [walletAddr, setWalletAddr] = useState("");
 
   const validatingRef = useRef(false);
 
@@ -192,13 +197,26 @@ export default function ManageTerminal({ initialSession }: ManageTerminalProps) 
         addLine("Entering LASTPROOF...", "accent");
         setSession(body.session);
         setPhase("granted");
-      } else if (body.reason === "no_terminal" || body.reason === "wallet_not_registered" || body.reason === "tid_not_found") {
-        addLine("No terminal ID bound to wallet", "red");
+      } else if (body.reason === "tid_reset") {
+        // Returning user whose TID was regenerated on Terminal
+        addLine("Terminal ID expired [TID REGENERATED]", "red");
         await delay(400);
-        addLine("Authentication failed [ERR 404]", "red");
+        addLine("Your Terminal ID has been reset", "");
         await delay(300);
-        addLine("Operator credentials required", "accent");
-        setPhase("no-terminal");
+        addLine("Re-authentication required", "accent");
+        setWalletAddr(walletAddress);
+        setPhase("tid-reset");
+      } else if (body.reason === "no_terminal" || body.reason === "wallet_not_registered") {
+        // New wallet — not in operators table
+        addLine("New wallet detected [NO REGISTRY MATCH]", "accent");
+        await delay(400);
+        addLine("Operator not found in local registry", "");
+        await delay(300);
+        addLine("Authentication process booting...", "accent");
+        await delay(300);
+        addLine("Terminal ID required for access", "");
+        setWalletAddr(walletAddress);
+        setPhase("enter-tid");
       } else {
         addLine(`Validation failed: ${body.reason || "unknown"}`, "red");
         setErrorMsg(body.message || "Terminal validation failed");
@@ -230,6 +248,61 @@ export default function ManageTerminal({ initialSession }: ManageTerminalProps) 
     }
   }, [phase, wallets, select]);
 
+  // ─── Register TID (new wallet or TID reset) ────────────────────────────────
+  const handleRegisterTid = useCallback(async () => {
+    const tid = tidInput.trim().toUpperCase();
+    if (!/^SHIFT-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(tid)) {
+      setTidError("Format: SHIFT-XXXX-XXXX-XXXX-XXXX");
+      return;
+    }
+    setTidError("");
+    const prevPhase = phase as Phase;
+    setPhase("registering");
+
+    const lines: { text: string; cls: string }[] = [...postLines];
+    const addLine = (text: string, cls: string) => {
+      lines.push({ text, cls });
+      setPostLines([...lines]);
+    };
+
+    addLine("Authenticating terminal ID...", "accent");
+
+    try {
+      const res = await fetch("/api/auth/register-tid", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletAddress: walletAddr, terminalId: tid }),
+      });
+      const body = await res.json();
+
+      if (res.ok && body.ok) {
+        addLine(`Terminal ID verified [${tid.slice(-4)}]`, "green");
+        await delay(300);
+        if (body.isNew) {
+          addLine("Operator registered [NEW ENTRY]", "green");
+        } else {
+          addLine("Operator record updated [TID REPLACED]", "green");
+        }
+        await delay(300);
+        addLine("Session granted", "green");
+        await delay(300);
+        addLine(body.isNew ? "Launching onboarding..." : "Entering LASTPROOF...", "accent");
+        setSession(body.session);
+        setPhase("granted");
+      } else {
+        addLine(`Authentication failed [${(body.reason || "UNKNOWN").toUpperCase()}]`, "red");
+        await delay(300);
+        addLine(body.message || "Terminal ID does not match this wallet", "red");
+        setTidError(body.message || "Authentication failed");
+        setPhase(prevPhase === "tid-reset" ? "tid-reset" : "enter-tid");
+      }
+    } catch (err) {
+      addLine("Network error -- could not reach server", "red");
+      setTidError("Network error. Try again.");
+      setPhase(prevPhase === "tid-reset" ? "tid-reset" : "enter-tid");
+    }
+  }, [tidInput, walletAddr, phase, postLines]);
+
   // ─── Sign out ──────────────────────────────────────────────────────────────
   const handleSignOut = useCallback(async () => {
     await fetch("/api/auth/session", { method: "DELETE" });
@@ -241,24 +314,35 @@ export default function ManageTerminal({ initialSession }: ManageTerminalProps) 
     setConnectVisible(false);
     setPostLines([]);
     setErrorMsg("");
+    setTidInput("");
+    setTidError("");
+    setWalletAddr("");
     validatingRef.current = false;
   }, [disconnect]);
 
   // ─── Derive titlebar / sys-bar labels ───────────────────────────────────────
   const sysTag = phase === "no-terminal"
     ? "LASTPROOF // NO TERMINAL ID"
-    : phase === "granted"
-      ? "LASTPROOF // DASHBOARD ENTRY"
-      : "LASTPROOF // MANAGE PROFILE";
+    : phase === "enter-tid" || phase === "registering"
+      ? "LASTPROOF // AUTHENTICATE"
+      : phase === "tid-reset"
+        ? "LASTPROOF // TID CHANGED"
+        : phase === "granted"
+          ? "LASTPROOF // DASHBOARD ENTRY"
+          : "LASTPROOF // MANAGE PROFILE";
 
   const titlebarTitle = "boot -- lastproof -- 80x24";
   const titlebarRight = phase === "granted" ? "PID 1" : "PID 1";
 
   const bottomLabel = phase === "no-terminal"
     ? "MANAGE PROFILE // NO TERMINAL ID"
-    : phase === "granted"
-      ? "MANAGE PROFILE // DASHBOARD ENTRY"
-      : "MANAGE PROFILE // SCREEN 1";
+    : phase === "enter-tid" || phase === "registering"
+      ? "MANAGE PROFILE // AUTHENTICATE"
+      : phase === "tid-reset"
+        ? "MANAGE PROFILE // TID CHANGED"
+        : phase === "granted"
+          ? "MANAGE PROFILE // DASHBOARD ENTRY"
+          : "MANAGE PROFILE // SCREEN 1";
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
@@ -388,6 +472,83 @@ export default function ManageTerminal({ initialSession }: ManageTerminalProps) 
                 >
                   Sign out
                 </button>
+              </div>
+            </>
+          )}
+
+          {/* ─── Enter TID state (new wallet) ─────────────────── */}
+          {(phase === "enter-tid" || phase === "tid-reset" || phase === "registering") && (
+            <>
+              {postLines.length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  {postLines.map((line, i) => (
+                    <div key={i} className={`mg-post-line visible ${line.cls}`}>
+                      {line.text}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="mg-divider visible" />
+
+              <div className="mg-reveal visible">
+                <div className="mg-reveal-label">
+                  {">>"} {phase === "tid-reset" ? "TERMINAL ID CHANGED" : "TERMINAL ID AUTHENTICATION"}
+                </div>
+                <div className="mg-reveal-text">
+                  {phase === "tid-reset" ? (
+                    <>YOUR TERMINAL ID WAS <span className="accent">RESET</span></>
+                  ) : (
+                    <>ENTER YOUR <span className="accent">TERMINAL ID</span></>
+                  )}
+                </div>
+                {phase === "tid-reset" && (
+                  <div className="mg-tid-hint">
+                    Your previous Terminal ID is no longer valid.<br />
+                    Enter your new Terminal ID to continue.
+                  </div>
+                )}
+                <div className="mg-tid-input-wrap">
+                  <label className="mg-tid-label" htmlFor="tid-input">
+                    {phase === "tid-reset" ? "New Terminal ID" : "Terminal ID"}
+                  </label>
+                  <input
+                    id="tid-input"
+                    type="text"
+                    className={`mg-tid-input${tidError ? " error" : ""}`}
+                    placeholder="SHIFT-XXXX-XXXX-XXXX-XXXX"
+                    value={tidInput}
+                    onChange={(e) => { setTidInput(e.target.value.toUpperCase()); setTidError(""); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleRegisterTid(); }}
+                    disabled={phase === "registering"}
+                    autoFocus
+                  />
+                  {tidError && <div className="mg-tid-error">{tidError}</div>}
+                </div>
+                <button
+                  type="button"
+                  className="mg-cta-btn"
+                  onClick={handleRegisterTid}
+                  disabled={phase === "registering"}
+                >
+                  {phase === "registering"
+                    ? "AUTHENTICATING..."
+                    : phase === "tid-reset"
+                      ? "RE-AUTHENTICATE"
+                      : "AUTHENTICATE"}
+                </button>
+                <div className="mg-connect-sub" style={{ marginTop: 14, opacity: 0.35 }}>
+                  Don&apos;t have a Terminal ID?
+                </div>
+                <a
+                  href="https://lastshift.app/connect"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mg-safe-link"
+                  style={{ marginTop: 6 }}
+                >
+                  LAUNCH TERMINAL
+                </a>
               </div>
             </>
           )}

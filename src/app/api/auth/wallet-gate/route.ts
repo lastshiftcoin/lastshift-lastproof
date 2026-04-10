@@ -66,8 +66,16 @@ export async function POST(req: NextRequest) {
   });
 
   if (!result.valid) {
-    // Map specific failures
-    if (result.reason === "wallet_not_registered" || result.reason === "tid_not_found") {
+    // TID was regenerated — wallet exists but stored TID is stale.
+    // Return a distinct reason so the frontend can show the re-auth TID input.
+    if (result.reason === "tid_regenerated" || result.reason === "tid_not_found") {
+      return NextResponse.json(
+        { ok: false, reason: "tid_reset", message: "Your Terminal ID has changed. Enter your new one." },
+        { status: 403 },
+      );
+    }
+    // Wallet not in Terminal at all
+    if (result.reason === "wallet_not_registered") {
       return NextResponse.json(
         { ok: false, reason: "no_terminal", message: result.message },
         { status: 404 },
