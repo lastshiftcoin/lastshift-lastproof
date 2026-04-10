@@ -26,19 +26,15 @@ const COMMENT_MAX = 140;
 /**
  * ProofModal — the "VERIFY THIS WORK" modal.
  *
- * MINIMAL SHELL. This commit only covers:
- *   - step 1 (path select)
- *   - step 5 (eligibility stream, wired to the mock SSE endpoint)
- *   - step 6 placeholder (review — coming next commit)
- *   - ineligible auto-disconnect banner
- *
- * Skipped for follow-up commits (stubbed):
- *   - step 2 wallet picker (needs real adapter integration)
- *   - step 3 comment
- *   - step 4 token select + pricing
- *   - step 6 review card + live price ticker
- *   - step 7 wallet signature
- *   - step 8 outcomes (success + 10-code failure branch tree)
+ * All 8 steps implemented:
+ *   1. Path select (collab / dev)
+ *   2. Wallet picker (Phantom, Solflare, Jupiter, Binance + deep links)
+ *   3. Comment (140 char receipt)
+ *   4. Token select + pricing ($1 collab, $5 dev, 40% off with $LASTSHFT)
+ *   5. Eligibility stream (SSE against mock or real endpoint)
+ *   6. Review card + live price ticker via useQuoteRefresh
+ *   7. Signing pipeline (build-tx → sign → broadcast → poll) via useSignFlow
+ *   8. Outcomes (confirmed + 10-code failure branch tree with recovery CTAs)
  *
  * Visual canon: wireframes/lastproof-proof-modal.html
  * Contract canon: docs/PROOF-MODAL-SPEC-REPLY.md (797d1b9)

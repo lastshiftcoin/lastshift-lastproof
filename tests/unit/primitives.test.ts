@@ -133,28 +133,26 @@ test("buildTransferRequestUri: url-encodes label/message/memo", () => {
 
 // ─── wallet-policy ──────────────────────────────────────────────────────────
 
-test("classifyWallet: Phantom is tier-1 verified", () => {
+test("classifyWallet: Phantom is allowed", () => {
   const c = classifyWallet("Phantom");
-  assert.equal(c.tier, "verified");
+  assert.equal(c.tier, "allowed");
   assert.equal(c.canonical, "phantom");
   assert.equal(c.supportsTransferRequestUri, true);
-  assert.equal(c.warnUser, false);
 });
 
-test("classifyWallet: Solflare is tier-1 verified", () => {
-  assert.equal(classifyWallet("Solflare").tier, "verified");
+test("classifyWallet: Solflare is allowed", () => {
+  assert.equal(classifyWallet("Solflare").tier, "allowed");
 });
 
-test("classifyWallet: Jupiter Mobile is tier-2 unverified with warning", () => {
+test("classifyWallet: Jupiter Mobile is allowed (no Transfer Request URI)", () => {
   const c = classifyWallet("Jupiter Mobile");
-  assert.equal(c.tier, "unverified");
+  assert.equal(c.tier, "allowed");
   assert.equal(c.supportsTransferRequestUri, false);
-  assert.equal(c.warnUser, true);
 });
 
-test("classifyWallet: Binance App is tier-2 unverified", () => {
+test("classifyWallet: Binance App is allowed", () => {
   const c = classifyWallet("Binance Wallet");
-  assert.equal(c.tier, "unverified");
+  assert.equal(c.tier, "allowed");
   assert.equal(c.canonical, "binance");
 });
 

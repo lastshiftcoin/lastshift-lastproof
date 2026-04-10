@@ -1,0 +1,763 @@
+/*
+ * Upgrade modal styles. Ported from wireframes/lastproof-upgrade-modal.html.
+ * All classes are `um-` prefixed to avoid collision with proof-modal (`pm-`)
+ * and profile-surface (`pp-`) namespaces.
+ * Visual canon is the wireframe — when anything here drifts, the wireframe
+ * wins and this file gets updated.
+ *
+ * Purple theme: accent #a78bfa throughout (not orange).
+ */
+
+:root {
+  --um-bg:        #0a0b0f;
+  --um-bg2:       #12131a;
+  --um-card:      #161822;
+  --um-card-hover:#1a1d2a;
+  --um-input:     #0e0f16;
+  --um-border:    #1e2030;
+  --um-border2:   #2a2d42;
+  --um-fg:        #e2e4ed;
+  --um-dim:       #5a5e73;
+  --um-secondary: #8b8fa3;
+  --um-green:     #00e676;
+  --um-green-dim: rgba(0,230,118,.12);
+  --um-green-glow:rgba(0,230,118,.25);
+  --um-red:       #ff5470;
+  --um-red-dim:   rgba(255,84,112,.1);
+  --um-purple:    #a78bfa;
+  --um-purple-dim:rgba(167,139,250,.1);
+  --um-purple-glow:rgba(167,139,250,.2);
+  --um-accent:    #ff9100;
+  --um-mono:      "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --um-sans:      Inter, -apple-system, system-ui, sans-serif;
+  --um-r-card:    10px;
+  --um-r-btn:     6px;
+  --um-r-pill:    4px;
+}
+
+/* ── Animations ─────────────────────────────────────────────────────── */
+@keyframes um-popIn {
+  from { opacity: 0; transform: translateY(12px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes um-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.25; }
+}
+@keyframes um-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes um-pulsePurple {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(167,139,250,.35); }
+  50%      { box-shadow: 0 0 0 10px rgba(167,139,250,0); }
+}
+@keyframes um-pulseGreen {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0,230,118,.35); }
+  50%      { box-shadow: 0 0 0 10px rgba(0,230,118,0); }
+}
+@keyframes um-countPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.04); }
+}
+
+/* ── Backdrop ───────────────────────────────────────────────────────── */
+.um-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 6, 10, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+/* ── Shell ───────────────────────────────────────────────────────────── */
+.um-shell {
+  position: relative;
+  width: min(600px, 100%);
+  max-height: calc(100vh - 40px);
+  background: var(--um-bg2);
+  border: 1px solid var(--um-border);
+  border-radius: var(--um-r-card);
+  font-family: var(--um-mono);
+  color: var(--um-fg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.02);
+  animation: um-popIn 0.35s ease;
+}
+
+/* Scanline overlay (matches ProofModal) */
+.um-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.06) 2px, rgba(0,0,0,.06) 4px);
+  pointer-events: none;
+  z-index: 1;
+  border-radius: inherit;
+}
+.um-shell > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Titlebar ───────────────────────────────────────────────────────── */
+.um-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(0,0,0,.3);
+  border-bottom: 1px solid var(--um-border);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--um-dim);
+}
+.um-bar-left  { display: flex; align-items: center; gap: 8px; }
+.um-bar-right { display: flex; align-items: center; gap: 8px; font-size: 9px; letter-spacing: 0.15em; }
+.um-dots      { display: flex; gap: 5px; }
+.um-dots span { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.um-dot-r     { background: #ff5f56; }
+.um-dot-y     { background: #ffbd2e; }
+.um-dot-g     { background: #27c93f; }
+.um-bar-title {
+  color: var(--um-dim);
+  font-weight: 400;
+  margin-left: 6px;
+  text-transform: lowercase;
+}
+.um-pulse {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--um-purple);
+  box-shadow: 0 0 6px rgba(167,139,250,.6);
+  animation: um-blink 1.2s infinite;
+  display: inline-block;
+}
+.um-bar-close {
+  background: none;
+  border: 1px solid var(--um-border);
+  color: var(--um-dim);
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  border-radius: 4px;
+  margin-left: 4px;
+}
+.um-bar-close:hover { color: var(--um-fg); border-color: var(--um-fg); }
+
+/* ── Ref row: connected pill + step counter ─────────────────────────── */
+.um-ref-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 22px 0;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.um-conn-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(0,230,118,.1);
+  border: 1px solid rgba(0,230,118,.45);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--um-green);
+}
+.um-conn-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--um-green);
+  box-shadow: 0 0 8px var(--um-green);
+}
+.um-conn-label { font-weight: 800; }
+.um-conn-addr  { color: rgba(0,230,118,.8); }
+
+.um-step-counter {
+  font-size: 9px;
+  color: var(--um-dim);
+  letter-spacing: 0.15em;
+  margin-left: auto;
+}
+.um-step-now { color: var(--um-purple); font-weight: 700; }
+
+/* ── Progress bar ───────────────────────────────────────────────────── */
+.um-progress-wrap { padding: 10px 22px 0; }
+.um-bar-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,.04);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.um-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--um-purple) 0%, #c4b5fd 100%);
+  border-radius: 3px;
+  box-shadow: 0 0 10px rgba(167,139,250,.5);
+  transition: width 0.35s ease;
+}
+
+/* ── Body ───────────────────────────────────────────────────────────── */
+.um-body {
+  padding: 28px 36px 22px;
+  overflow-y: auto;
+}
+
+/* Eyebrow + headline */
+.um-eyebrow {
+  font-family: var(--um-mono);
+  font-size: 10px;
+  color: var(--um-dim);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  text-align: center;
+}
+.um-eyebrow::before {
+  content: ">";
+  color: var(--um-purple);
+  margin-right: 6px;
+  opacity: .6;
+}
+.um-head {
+  font-family: var(--um-sans);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.18;
+  margin: 0 0 12px;
+  letter-spacing: -0.3px;
+  color: var(--um-fg);
+  text-align: center;
+}
+.um-head .um-purple { color: var(--um-purple); }
+.um-head .um-red    { color: var(--um-red); }
+.um-sub {
+  font-family: var(--um-sans);
+  font-size: 13px;
+  color: var(--um-secondary);
+  line-height: 1.65;
+  margin: 0 auto 24px;
+  max-width: 460px;
+  text-align: center;
+}
+
+/* ── Premium features card ──────────────────────────────────────────── */
+.um-prem-features {
+  padding: 20px;
+  background: var(--um-purple-dim);
+  border: 1px solid rgba(167,139,250,.35);
+  border-radius: var(--um-r-btn);
+  margin-bottom: 22px;
+}
+.um-prem-features-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--um-mono);
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--um-purple);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.um-prem-features-head svg { width: 16px; height: 16px; flex-shrink: 0; }
+.um-prem-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.um-prem-feat {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-family: var(--um-mono);
+  font-size: 10px;
+  color: var(--um-secondary);
+  line-height: 1.5;
+}
+.um-prem-feat svg { width: 14px; height: 14px; color: var(--um-purple); flex-shrink: 0; margin-top: 1px; }
+.um-prem-feat b   { color: var(--um-purple); font-weight: 700; }
+
+/* ── Free vs Premium comparison table ───────────────────────────────── */
+.um-compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 22px;
+  font-family: var(--um-mono);
+  font-size: 10px;
+}
+.um-compare-table th {
+  padding: 8px 12px;
+  text-align: left;
+  color: var(--um-dim);
+  letter-spacing: 1.2px;
+  font-size: 8px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--um-border);
+}
+.um-compare-table th:nth-child(2) { text-align: center; color: var(--um-dim); }
+.um-compare-table th:nth-child(3) { text-align: center; color: var(--um-purple); }
+.um-compare-table td {
+  padding: 7px 12px;
+  border-bottom: 1px dashed var(--um-border);
+  color: var(--um-secondary);
+}
+.um-compare-table td:nth-child(2),
+.um-compare-table td:nth-child(3) { text-align: center; font-weight: 700; }
+.um-compare-table .um-yes { color: var(--um-green); }
+.um-compare-table .um-no  { color: var(--um-dim); }
+.um-compare-table .um-hl  { color: var(--um-purple); }
+.um-compare-table tr:last-child td { border-bottom: none; }
+
+/* ── Pricing row ────────────────────────────────────────────────────── */
+.um-price-row {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 22px;
+  padding: 14px 0;
+}
+.um-price-item { text-align: center; }
+.um-price-amount {
+  font-family: var(--um-sans);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+.um-price-amount.um-base { color: var(--um-fg); }
+.um-price-amount.um-disc { color: var(--um-purple); }
+.um-price-label {
+  font-family: var(--um-mono);
+  font-size: 9px;
+  color: var(--um-dim);
+  letter-spacing: 1.2px;
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+.um-price-label .um-hl { color: var(--um-purple); font-weight: 700; }
+.um-price-period {
+  font-family: var(--um-mono);
+  font-size: 8px;
+  color: var(--um-dim);
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+.um-price-divider {
+  width: 1px;
+  background: var(--um-border);
+  align-self: stretch;
+}
+
+/* ── Token selector ─────────────────────────────────────────────────── */
+.um-token-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.um-token-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  background: var(--um-card);
+  border: 1px solid var(--um-border2);
+  border-radius: var(--um-r-btn);
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.um-token-card:hover {
+  background: var(--um-card-hover);
+  border-color: var(--um-border2);
+}
+.um-token-card.um-selected {
+  border-color: var(--um-purple);
+  background: var(--um-purple-dim);
+  box-shadow: 0 0 18px var(--um-purple-glow);
+}
+.um-tc-left  { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
+.um-tc-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+.um-token-icon {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--um-mono); font-size: 11px; font-weight: 800;
+  overflow: hidden; flex-shrink: 0; background: #0a0b0f;
+}
+.um-token-icon img {
+  width: 100%; height: 100%; object-fit: contain; padding: 4px;
+  display: block; background: #0a0b0f;
+}
+.um-token-icon.um-usdt { background: #fff; color: #26a17b; }
+.um-token-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.um-token-name {
+  font-family: var(--um-mono); font-size: 11px; font-weight: 800;
+  color: #fff; letter-spacing: 0.5px;
+}
+.um-token-sub {
+  font-family: var(--um-mono); font-size: 9px;
+  color: var(--um-dim); letter-spacing: 0.5px;
+}
+.um-token-price {
+  font-family: var(--um-sans); font-size: 18px; font-weight: 800;
+  color: #fff; letter-spacing: -0.3px; text-align: right; line-height: 1.1;
+}
+.um-token-price .um-strike {
+  font-family: var(--um-mono); font-size: 10px; color: var(--um-dim);
+  text-decoration: line-through; display: block; font-weight: 500;
+}
+.um-token-price.um-discount { color: var(--um-purple); }
+.um-token-live {
+  font-family: var(--um-mono); font-size: 9px;
+  color: var(--um-dim); letter-spacing: 0.5px;
+  display: block; margin-top: 3px; font-weight: 500;
+}
+.um-discount-pill {
+  position: absolute; top: -8px; right: 16px;
+  font-family: var(--um-mono); font-size: 8px; font-weight: 800;
+  color: #0a0b0f; background: var(--um-purple);
+  padding: 2px 7px; border-radius: var(--um-r-pill);
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.um-buy-btn {
+  display: inline-block; padding: 6px 12px;
+  background: rgba(167,139,250,.12); border: 1px solid var(--um-purple);
+  border-radius: 6px; color: var(--um-purple);
+  font-family: var(--um-mono); font-size: 9px; font-weight: 800;
+  letter-spacing: 1.2px; text-decoration: none; white-space: nowrap;
+  transition: all 0.15s ease; flex-shrink: 0;
+}
+.um-buy-btn:hover {
+  background: var(--um-purple); color: #0a0b0f;
+  box-shadow: 0 0 14px var(--um-purple-glow);
+}
+
+/* ── Review card ────────────────────────────────────────────────────── */
+.um-review-card {
+  background: var(--um-card);
+  border: 1px solid var(--um-border);
+  border-radius: var(--um-r-btn);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.um-review-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 16px;
+  border-bottom: 1px dashed var(--um-border);
+  font-family: var(--um-mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+.um-review-row:last-child {
+  border-bottom: none;
+  background: rgba(167,139,250,.04);
+}
+.um-review-key {
+  color: var(--um-dim);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  font-size: 9px;
+}
+.um-review-val       { color: #fff; font-weight: 700; }
+.um-review-val.um-green  { color: var(--um-green); }
+.um-review-val.um-purple { color: var(--um-purple); font-size: 13px; }
+
+/* Live price pill */
+.um-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--um-mono);
+  font-size: 8px;
+  font-weight: 800;
+  color: var(--um-green);
+  background: rgba(0,230,118,.1);
+  border: 1px solid rgba(0,230,118,.4);
+  padding: 2px 7px;
+  border-radius: 999px;
+  letter-spacing: 1.2px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.um-live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--um-green);
+  box-shadow: 0 0 6px var(--um-green);
+}
+
+/* ── Pending ────────────────────────────────────────────────────────── */
+.um-pending-wrap { text-align: center; padding: 18px 0 6px; }
+.um-spinner {
+  width: 56px; height: 56px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  border: 3px solid rgba(167,139,250,.18);
+  border-top-color: var(--um-purple);
+  animation: um-spin 1s linear infinite;
+}
+.um-pending-status {
+  font-family: var(--um-mono); font-size: 11px; font-weight: 700;
+  color: var(--um-purple); letter-spacing: 1.5px;
+  text-transform: uppercase; margin-bottom: 14px;
+}
+.um-pending-log {
+  padding: 12px 14px;
+  background: var(--um-input);
+  border: 1px solid var(--um-border);
+  border-radius: var(--um-r-btn);
+  font-family: var(--um-mono); font-size: 10px;
+  color: var(--um-secondary);
+  text-align: left; line-height: 1.7;
+}
+.um-pending-log .um-ok { color: var(--um-green); }
+.um-pending-log .um-ok::before { content: "\2713 "; color: var(--um-green); font-weight: 700; }
+.um-pending-log .um-pending { color: var(--um-purple); }
+.um-pending-log .um-pending::before { content: "\2026 "; color: var(--um-purple); }
+
+/* ── Done / Outcome ─────────────────────────────────────────────────── */
+.um-done-wrap { text-align: center; padding: 6px 0 0; }
+.um-done-check {
+  width: 64px; height: 64px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: var(--um-purple-dim);
+  border: 2px solid var(--um-purple);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 32px var(--um-purple-glow);
+  animation: um-pulsePurple 2.4s infinite;
+}
+.um-done-check svg { width: 32px; height: 32px; color: var(--um-purple); }
+.um-done-check.um-fail {
+  background: rgba(255,84,112,.12);
+  border-color: var(--um-red);
+  box-shadow: 0 0 32px rgba(255,84,112,.3);
+  animation: none;
+}
+.um-done-check.um-fail svg { color: var(--um-red); }
+
+/* ── Countdown timer ────────────────────────────────────────────────── */
+.um-countdown-wrap {
+  margin: 20px auto 0;
+  max-width: 360px;
+  padding: 18px 22px;
+  background: var(--um-card);
+  border: 1px solid var(--um-purple);
+  border-radius: var(--um-r-btn);
+  text-align: center;
+  box-shadow: 0 0 20px var(--um-purple-glow);
+}
+.um-countdown-label {
+  font-family: var(--um-mono); font-size: 9px;
+  color: var(--um-purple); letter-spacing: 1.5px;
+  text-transform: uppercase; margin-bottom: 10px; font-weight: 700;
+}
+.um-countdown-digits {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.um-cd-block { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.um-cd-num {
+  font-family: var(--um-mono); font-size: 32px; font-weight: 800;
+  color: var(--um-purple); line-height: 1; letter-spacing: -0.5px;
+  min-width: 52px; padding: 6px 8px;
+  background: rgba(167,139,250,.08);
+  border: 1px solid rgba(167,139,250,.25);
+  border-radius: var(--um-r-btn);
+  animation: um-countPulse 3s ease-in-out infinite;
+}
+.um-cd-unit {
+  font-family: var(--um-mono); font-size: 7px;
+  color: var(--um-dim); letter-spacing: 1.5px; text-transform: uppercase;
+}
+.um-cd-sep {
+  font-family: var(--um-mono); font-size: 28px; font-weight: 300;
+  color: rgba(167,139,250,.4); line-height: 1; padding-top: 4px;
+}
+.um-countdown-expires {
+  font-family: var(--um-mono); font-size: 9px;
+  color: var(--um-dim); letter-spacing: 0.8px; margin-top: 4px;
+}
+
+/* ── Summary card (success/fail) ────────────────────────────────────── */
+.um-summary {
+  margin-top: 14px;
+  padding: 6px 16px;
+  background: var(--um-card);
+  border: 1px solid var(--um-border);
+  border-radius: var(--um-r-btn);
+  text-align: left;
+}
+.um-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--um-mono);
+  font-size: 10px;
+  padding: 9px 0;
+  border-bottom: 1px dashed var(--um-border);
+}
+.um-summary-row:last-child { border-bottom: none; }
+.um-summary-key {
+  color: var(--um-dim);
+  letter-spacing: 1.2px;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+.um-summary-val       { color: #fff; font-weight: 700; letter-spacing: 0.5px; }
+.um-summary-val.um-green  { color: var(--um-green); }
+.um-summary-val.um-purple { color: var(--um-purple); }
+.um-summary-val a { color: var(--um-accent); text-decoration: none; }
+.um-summary-val a:hover { text-decoration: underline; }
+
+/* ── CTA row ────────────────────────────────────────────────────────── */
+.um-cta-row {
+  padding: 8px 36px 26px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+.um-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 28px;
+  color: var(--um-purple);
+  background: var(--um-purple-dim);
+  border: 1px solid var(--um-purple);
+  border-radius: var(--um-r-btn);
+  font-family: var(--um-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+  animation: um-pulsePurple 2.2s infinite;
+  text-align: center;
+  margin-left: auto;
+}
+.um-cta:hover {
+  background: var(--um-purple);
+  color: #0a0b0f;
+  box-shadow: 0 0 24px var(--um-purple-glow);
+  transform: translateY(-1px);
+}
+.um-cta:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  animation: none;
+}
+.um-cta.um-green {
+  color: var(--um-green);
+  background: var(--um-green-dim);
+  border-color: var(--um-green);
+  animation: um-pulseGreen 2.2s infinite;
+}
+.um-cta.um-green:hover {
+  background: var(--um-green);
+  color: #0a0b0f;
+  box-shadow: 0 0 24px var(--um-green-glow);
+}
+.um-btn-back {
+  padding: 14px 18px;
+  color: var(--um-dim);
+  background: transparent;
+  border: 1px solid var(--um-border2);
+  border-radius: var(--um-r-btn);
+  font-family: var(--um-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.um-btn-back:hover { color: var(--um-purple); border-color: var(--um-purple); }
+
+/* OK / fail action rows */
+.um-ok-actions { display: flex; justify-content: center; margin-top: 18px; }
+.um-ok-back {
+  background: rgba(0,230,118,.12);
+  border: 1px solid var(--um-green);
+  color: var(--um-green);
+  min-width: 260px;
+  animation: um-pulseGreen 2.2s infinite;
+}
+.um-ok-back:hover {
+  background: var(--um-green);
+  color: #0a0b0f;
+  box-shadow: 0 0 24px var(--um-green-glow);
+}
+.um-fail-actions {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  margin-top: 16px; justify-content: center;
+}
+.um-fail-actions .um-cta { flex: 1; min-width: 180px; }
+.um-fail-retry {
+  background: rgba(167,139,250,.1);
+  border-color: var(--um-purple);
+  color: var(--um-purple);
+  animation: um-pulsePurple 2.2s infinite;
+}
+.um-fail-retry:hover { background: var(--um-purple); color: #0a0b0f; }
+.um-fail-back-btn {
+  background: transparent;
+  border: 1px solid var(--um-border);
+  color: var(--um-fg);
+  animation: none;
+}
+.um-fail-back-btn:hover { border-color: var(--um-fg); }
+
+/* ── Fine print ─────────────────────────────────────────────────────── */
+.um-fine {
+  padding: 0 26px 18px;
+  text-align: center;
+  font-family: var(--um-mono);
+  font-size: 9px;
+  color: var(--um-dim);
+  letter-spacing: 1px;
+}
+.um-field-help {
+  font-family: var(--um-mono);
+  font-size: 9px;
+  color: var(--um-dim);
+  letter-spacing: 0.5px;
+  margin-top: 6px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .um-backdrop { padding: 0; }
+  .um-shell {
+    max-width: 100%;
+    border-radius: 14px 14px 0 0;
+    margin-top: auto;
+  }
+  .um-body { padding: 24px 20px 18px; }
+  .um-head { font-size: 21px; }
+  .um-cta-row { padding: 6px 22px 22px; }
+  .um-prem-grid { grid-template-columns: 1fr; }
+  .um-token-card { flex-direction: column; align-items: stretch; gap: 10px; }
+  .um-tc-right { align-items: flex-start; flex-direction: row; gap: 14px; }
+  .um-countdown-digits { gap: 4px; }
+  .um-cd-num { font-size: 24px; min-width: 40px; }
+}
