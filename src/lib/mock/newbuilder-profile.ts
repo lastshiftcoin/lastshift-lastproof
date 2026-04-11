@@ -61,6 +61,7 @@ export const newbuilderProfile: PublicProfileView = {
   profileLinks: [],
   recentProofs: [],
 
+  viewCount: 0,
   totalWorkItems: 0,
   totalProofs: 0,
   totalScreenshots: 0,

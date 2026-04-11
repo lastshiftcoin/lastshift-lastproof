@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import { getPublicProfileView } from "@/lib/projector/public-profile";
+import { readSession } from "@/lib/session";
+import { getProfileByHandle, incrementViewCount } from "@/lib/db/profiles-adapter";
 import { cryptomarkProfile } from "@/lib/mock/cryptomark-profile";
 import { shipfastProfile } from "@/lib/mock/shipfast-profile";
 import { newbuilderProfile } from "@/lib/mock/newbuilder-profile";
@@ -19,11 +21,13 @@ import { ScreenshotGrid } from "@/components/profile/ScreenshotGrid";
 import { ProfileLinksList } from "@/components/profile/ProfileLinksList";
 import { ProofsTable } from "@/components/profile/ProofsTable";
 import { CtaStrip } from "@/components/profile/CtaStrip";
+import { PreviewBanner } from "@/components/profile/PreviewBanner";
 
 import "./profile-public.css";
 
 interface PageProps {
   params: Promise<{ handle: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -41,18 +45,42 @@ const FIXTURES: Record<string, PublicProfileView> = {
   newbuilder: newbuilderProfile,
 };
 
-export default async function PublicProfilePage({ params }: PageProps) {
+export default async function PublicProfilePage({ params, searchParams }: PageProps) {
   const { handle } = await params;
+  const sp = await searchParams;
+  const wantsPreview = sp.preview === "true";
+
+  // Auth-gate preview: only the profile owner can see preview mode
+  let isPreview = false;
+  if (wantsPreview) {
+    const session = await readSession();
+    if (session) {
+      const profile = await getProfileByHandle(handle);
+      if (profile && profile.operatorId === session.walletAddress) {
+        isPreview = true;
+      }
+    }
+  }
 
   // Try the real projector first (reads Supabase), fall back to mock fixtures.
-  const view = (await getPublicProfileView(handle)) ?? FIXTURES[handle] ?? null;
+  const view = (await getPublicProfileView(handle, { previewMode: isPreview })) ?? FIXTURES[handle] ?? null;
   if (!view) notFound();
+
+  // Increment view count for non-owner visitors (fire-and-forget)
+  if (!isPreview) {
+    const session = await readSession();
+    const isOwner = session && view.ownerWallet === session.walletAddress;
+    if (!isOwner) {
+      incrementViewCount(handle).catch(() => {});
+    }
+  }
 
   // ─── FREE variant: stripped layout (hero + CTA only) ──────────
   if (view.variant === "free") {
     return (
       <div className="pp-page pp-page-bg">
         <div className="pp-container">
+          {isPreview && <PreviewBanner handle={view.handle} />}
           <ProfileTopBar handle={view.handle} />
           <ProfileHero
             variant="free"
@@ -87,6 +115,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
   return (
     <div className="pp-page pp-page-bg">
       <div className="pp-container">
+        {isPreview && <PreviewBanner handle={view.handle} />}
         <ProfileTopBar handle={view.handle} />
         <ProfileHero
           variant={view.variant}

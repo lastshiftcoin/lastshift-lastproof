@@ -54,6 +54,7 @@ export interface ProfileRow {
   tier: 1 | 2 | 3 | 4 | 5;
   isDev: boolean;
 
+  viewCount: number;
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -127,6 +128,7 @@ export async function upsertProfileByOperator(
           isEarlyAdopter: input.isEarlyAdopter,
           tier: 5,
           isDev: false,
+          viewCount: 0,
           publishedAt: null,
           createdAt: now,
           updatedAt: now,
@@ -176,6 +178,7 @@ export async function upsertProfileByOperator(
     isEarlyAdopter: input.isEarlyAdopter,
     tier: 5,
     isDev: false,
+    viewCount: 0,
     publishedAt: null,
     createdAt: now,
     updatedAt: now,

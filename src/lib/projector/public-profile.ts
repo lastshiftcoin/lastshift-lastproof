@@ -86,6 +86,7 @@ const PINNED_LINKS_THRESHOLD = 6;
  */
 export async function getPublicProfileView(
   handle: string,
+  options?: { previewMode?: boolean },
 ): Promise<PublicProfileView | null> {
   // ─── 1. Fetch the profile row ──────────────────────────────────────
   const profile = await getProfileByHandle(handle);
@@ -94,7 +95,12 @@ export async function getPublicProfileView(
   const tier = profile.tier as Tier;
   const paid = isPaidNow({ expiresAt: profile.subscriptionExpiresAt });
   const isPublished = profile.publishedAt !== null;
-  const variant = deriveProfileVariant({ tier, isEarlyAdopter: profile.isEarlyAdopter });
+
+  // Preview mode: force full profile variant regardless of tier/paid status.
+  // Auth check happens in the page — the projector trusts the caller.
+  const variant = options?.previewMode
+    ? (profile.isEarlyAdopter ? "legend" : "public")
+    : deriveProfileVariant({ tier, isEarlyAdopter: profile.isEarlyAdopter });
 
   // ─── 2. Fan out reads in parallel ──────────────────────────────────
   const [workItemRows, screenshotRows, linkRows, categoryRows, proofRows] =
@@ -244,6 +250,7 @@ export async function getPublicProfileView(
     profileLinks,
     recentProofs,
 
+    viewCount: profile.viewCount,
     totalWorkItems: workItems.length,
     totalProofs: proofsConfirmed,
     totalScreenshots: screenshots.length,

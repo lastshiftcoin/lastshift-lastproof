@@ -81,6 +81,7 @@ export interface PublicProfileView {
   recentProofs: ProofRow[];
 
   // ─── Counts surfaced in section titles ──────────────────────
+  viewCount: number;
   totalWorkItems: number;
   totalProofs: number;
   totalScreenshots: number;

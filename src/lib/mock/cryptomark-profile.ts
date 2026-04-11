@@ -326,6 +326,7 @@ export const cryptomarkProfile: PublicProfileView = {
   // ─── Counts ──────────────────────────────────────────────────
   // NOTE: wireframe literally renders "8 SHOWN · 47 TOTAL" in the PoW
   // section title — not 50. Mirroring verbatim per handoff rule.
+  viewCount: 1_342,
   totalWorkItems: 47,
   totalProofs: 47,
   totalScreenshots: 6,

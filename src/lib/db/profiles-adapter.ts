@@ -41,6 +41,7 @@ interface DbProfileWithOperator {
   is_early_adopter: boolean | null;
   tier: number | null;
   is_dev: boolean | null;
+  view_count: number;
   published_at: string | null;
   created_at: string;
   updated_at: string;
@@ -75,6 +76,7 @@ function rowFromDb(r: DbProfileWithOperator): ProfileRow {
     isEarlyAdopter: r.is_early_adopter ?? false,
     tier: (r.tier ?? 5) as ProfileRow["tier"],
     isDev: r.is_dev ?? false,
+    viewCount: r.view_count ?? 0,
     publishedAt: r.published_at,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
@@ -108,6 +110,7 @@ function rowToDb(row: ProfileRow): Record<string, unknown> {
     is_early_adopter: row.isEarlyAdopter,
     tier: row.tier,
     is_dev: row.isDev,
+    view_count: row.viewCount,
     published_at: row.publishedAt,
     created_at: row.createdAt,
     updated_at: row.updatedAt,
@@ -209,6 +212,21 @@ export async function listAllProfiles(): Promise<ProfileRow[]> {
     .returns<DbProfileWithOperator[]>();
   if (error) throw new Error(`[profiles-adapter] listAll: ${error.message}`);
   return (data ?? []).map(rowFromDb);
+}
+
+/**
+ * Atomically increment view_count for a profile by handle.
+ * Uses the Supabase RPC function `increment_profile_view`.
+ * Returns the new count, or null if handle doesn't exist.
+ */
+export async function incrementViewCount(handle: string): Promise<number | null> {
+  const { data, error } = await supabaseService()
+    .rpc("increment_profile_view", { p_handle: handle });
+  if (error) {
+    console.error("[profiles-adapter] incrementViewCount:", error.message);
+    return null;
+  }
+  return typeof data === "number" ? data : null;
 }
 
 /** Test-only. */

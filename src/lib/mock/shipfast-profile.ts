@@ -221,6 +221,7 @@ export const shipfastProfile: PublicProfileView = {
     },
   ],
 
+  viewCount: 4_891,
   totalWorkItems: 60,
   totalProofs: 127,
   totalScreenshots: 6,
