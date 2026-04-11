@@ -26,6 +26,7 @@ interface DbProfileWithOperator {
   bio_statement: string | null;
   timezone: string | null;
   language: string | null;
+  secondary_language: string | null;
   website: string | null;
   avatar_url: string | null;
   fee_range: string | null;
@@ -62,6 +63,7 @@ function rowFromDb(r: DbProfileWithOperator): ProfileRow {
     bioStatement: r.bio_statement,
     timezone: r.timezone,
     language: r.language,
+    secondaryLanguage: r.secondary_language ?? null,
     feeRange: r.fee_range,
     avatarUrl: r.avatar_url,
     xHandle: r.x_handle,
@@ -98,6 +100,7 @@ function rowToDb(row: ProfileRow): Record<string, unknown> {
     timezone: row.timezone,
     avatar_url: row.avatarUrl,
     language: row.language,
+    secondary_language: row.secondaryLanguage,
     website: row.website,
     fee_range: row.feeRange,
     x_handle: row.xHandle,
@@ -149,6 +152,7 @@ export async function updateProfileFields(
   if (patch.feeRange !== undefined) dbPatch.fee_range = patch.feeRange;
   if (patch.avatarUrl !== undefined) dbPatch.avatar_url = patch.avatarUrl;
   if (patch.language !== undefined) dbPatch.language = patch.language;
+  if (patch.secondaryLanguage !== undefined) dbPatch.secondary_language = patch.secondaryLanguage;
   if (patch.website !== undefined) dbPatch.website = patch.website;
   if (patch.xHandle !== undefined) dbPatch.x_handle = patch.xHandle;
   if (patch.xVerified !== undefined) dbPatch.x_verified = patch.xVerified;

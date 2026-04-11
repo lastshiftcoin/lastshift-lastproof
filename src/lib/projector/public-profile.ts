@@ -223,7 +223,9 @@ export async function getPublicProfileView(
 
     headline: profile.headline ?? "",
     timezone: profile.timezone ?? "",
-    language: profile.language ?? "ENGLISH",
+    language: profile.secondaryLanguage
+      ? `${(profile.language ?? "ENGLISH").toUpperCase()} / ${profile.secondaryLanguage.toUpperCase()}`
+      : (profile.language ?? "ENGLISH"),
     feeRange: (profile.feeRange ?? "$") as PublicProfileView["feeRange"],
 
     xHandle: profile.xHandle,

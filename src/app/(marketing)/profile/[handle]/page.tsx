@@ -95,6 +95,7 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
             earlyAdopterNumber={view.earlyAdopterNumber}
             isVerified={view.isVerified}
             headline={view.headline}
+            bioStatement={view.bioStatement}
             timezone={view.timezone}
             language={view.language}
             feeRange={view.feeRange}
@@ -131,6 +132,7 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
           earlyAdopterNumber={view.earlyAdopterNumber}
           isVerified={view.isVerified}
           headline={view.headline}
+          bioStatement={view.bioStatement}
           timezone={view.timezone}
           language={view.language}
           feeRange={view.feeRange}

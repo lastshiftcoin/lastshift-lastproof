@@ -54,6 +54,7 @@ type Props = Pick<
   | "earlyAdopterNumber"
   | "isVerified"
   | "headline"
+  | "bioStatement"
   | "timezone"
   | "language"
   | "feeRange"
@@ -108,7 +109,7 @@ export function ProfileHero(props: Props) {
           )}
         </div>
 
-        <p className="pp-id-pitch">{props.headline}</p>
+        <p className="pp-id-pitch">{props.bioStatement || props.headline}</p>
 
         <div className="pp-id-meta">
           <div className="pp-id-meta-item">

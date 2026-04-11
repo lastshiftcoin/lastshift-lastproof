@@ -30,6 +30,7 @@ export interface ProfileRow {
   bioStatement: string | null;
   timezone: string | null;
   language: string | null;
+  secondaryLanguage: string | null;
   feeRange: string | null;
   avatarUrl: string | null;
 
@@ -115,6 +116,7 @@ export async function upsertProfileByOperator(
           bioStatement: null,
           timezone: null,
           language: null,
+          secondaryLanguage: null,
           feeRange: null,
           avatarUrl: null,
           xHandle: null,
@@ -166,6 +168,7 @@ export async function upsertProfileByOperator(
     bioStatement: null,
     timezone: null,
     language: null,
+    secondaryLanguage: null,
     feeRange: null,
     avatarUrl: null,
     xHandle: null,

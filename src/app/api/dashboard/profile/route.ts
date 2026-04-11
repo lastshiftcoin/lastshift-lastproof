@@ -21,6 +21,7 @@ const ALLOWED_FIELDS = new Set([
   "bioStatement",
   "timezone",
   "language",
+  "secondaryLanguage",
   "feeRange",
   "avatarUrl",
   "website",

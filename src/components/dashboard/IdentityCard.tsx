@@ -97,7 +97,7 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate }: Iden
   const [timezone, setTimezone] = useState(profile.timezone ?? "UTC−5 · New York (EST)");
   const [feeRange, setFeeRange] = useState(profile.feeRange ?? "$$$");
   const [language, setLanguage] = useState(profile.language ?? "English");
-  const [secondaryLang, setSecondaryLang] = useState(""); // Not stored in DB yet
+  const [secondaryLang, setSecondaryLang] = useState(profile.secondaryLanguage ?? "");
   const [website, setWebsite] = useState(profile.website ?? "");
   const [bio, setBio] = useState(profile.bioStatement ?? "");
 
@@ -267,6 +267,7 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate }: Iden
             timezone,
             feeRange,
             language,
+            secondaryLanguage: secondaryLang.trim() || null,
             website: website.trim() || null,
             bioStatement: bio.trim() || null,
           },
