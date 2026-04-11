@@ -44,6 +44,7 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
   const [tgConnecting, setTgConnecting] = useState(false);
   const popupRef = useRef<Window | null>(null);
 
+  const isPaid = profile.isPaid;
   const xLinked = !!xHandle;
   const tgLinked = !!tgHandle;
   const bothVerified = xVerified && tgVerified;
@@ -246,9 +247,19 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
   }
 
   return (
-    <div className="edit-card">
+    <div className="edit-card" style={!isPaid ? { opacity: 0.4, pointerEvents: "none" } : undefined}>
       <div className="edit-head">
         <div className="edit-title">GET VERIFIED</div>
+        {!isPaid && (
+          <div style={{
+            fontFamily: "var(--mono)",
+            fontSize: 9,
+            letterSpacing: 0.5,
+            color: "var(--text-dim, #666)",
+          }}>
+            UPGRADE TO UNLOCK
+          </div>
+        )}
       </div>
 
       {/* Success/error toast */}
