@@ -24,7 +24,6 @@
 .db-page button{font-family:inherit;cursor:pointer}
 
 /* ═══ TOP CHROME — uses global pp-topbar styles, dashboard overrides ═══ */
-.db-topbar-wrap{position:sticky;top:0;z-index:50;background:var(--bg)}
 .db-topbar-wrap .pp-topbar{max-width:900px;margin:0 auto;padding:16px 32px 20px}
 /* old brand/ticker classes removed — now uses global pp-topbar-* classes */
 .bot-online{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--green);padding:0;border:none;background:transparent;margin-left:auto}
