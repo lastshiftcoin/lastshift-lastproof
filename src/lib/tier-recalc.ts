@@ -61,7 +61,8 @@ export async function recalcProfileTier(
   }
   void cached; // keep reference to avoid accidental cache growth on miss
 
-  const paid = isPaidNow({ expiresAt: profile.subscriptionExpiresAt, now });
+  // Use profile.isPaid — isPaidNow only checks expiry, EA profiles have null expiry
+  const paid = profile.isPaid;
   const published = profile.publishedAt !== null;
 
   const createdAt = new Date(profile.createdAt);

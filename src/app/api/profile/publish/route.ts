@@ -79,10 +79,12 @@ export async function POST(req: NextRequest) {
   }
 
   const updated = (await updateProfile(profile.id, patch))!;
-  // Derived isPaid after patch, in case the window was granted or is already set.
-  await updateProfile(profile.id, {
-    isPaid: isPaidNow({ expiresAt: updated.subscriptionExpiresAt, now }),
-  });
+  // Derived isPaid after patch. Keep isPaid=true if already set (EA claim),
+  // otherwise derive from subscription expiry.
+  const derivedPaid = updated.isPaid || isPaidNow({ expiresAt: updated.subscriptionExpiresAt, now });
+  if (derivedPaid !== updated.isPaid) {
+    await updateProfile(profile.id, { isPaid: derivedPaid });
+  }
 
   await recalcProfileTier(profile.id, now);
 

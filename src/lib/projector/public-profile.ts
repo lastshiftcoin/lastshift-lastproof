@@ -93,7 +93,9 @@ export async function getPublicProfileView(
   const profile = await getProfileByHandle(handle);
   if (!profile) return null;
 
-  const paid = isPaidNow({ expiresAt: profile.subscriptionExpiresAt });
+  // Use profile.isPaid directly — isPaidNow only checks subscription expiry,
+  // but EA profiles have null expiry pre-grid-launch and are still paid.
+  const paid = profile.isPaid;
   const isPublished = profile.publishedAt !== null;
 
   // ─── 2. Fan out reads in parallel ──────────────────────────────────
@@ -217,7 +219,7 @@ export async function getPublicProfileView(
     avatarUrl: profile.avatarUrl,
     avatarMonogram: (profile.displayName ?? profile.handle).charAt(0).toUpperCase(),
 
-    state: isPaidNow({ expiresAt: profile.subscriptionExpiresAt })
+    state: paid
       ? "active"
       : profile.subscriptionExpiresAt
         ? "expired"
