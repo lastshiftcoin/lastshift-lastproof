@@ -74,7 +74,8 @@ const TIMEZONES = [
 const LANGUAGES = [
   "English", "Spanish", "Mandarin", "Japanese", "Korean",
   "French", "German", "Portuguese", "Russian", "Arabic",
-  "Turkish", "Vietnamese",
+  "Turkish", "Vietnamese", "Tagalog", "Hindi", "Indonesian",
+  "Thai",
 ] as const;
 
 const FEE_RANGES = ["$", "$$", "$$$", "$$$$"] as const;
