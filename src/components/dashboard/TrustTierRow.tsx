@@ -28,12 +28,12 @@ interface TrustTierRowProps {
   totalProofs: number;
 }
 
-// Tier colors for the tier-step border highlight
-const TIER_COLORS: Record<number, string> = {
-  1: "rgba(156,163,175,0.6)",  // silver
-  2: "rgba(205,127,50,0.6)",   // bronze
-  3: "rgba(255,215,0,0.6)",    // gold
-  4: "rgba(167,139,250,0.6)",  // purple
+// Tier color system — used for card background, glow, text, progress bar
+const TIER_THEME: Record<number, { color: string; rgb: string }> = {
+  1: { color: "#9ca3af", rgb: "156,163,175" },  // silver
+  2: { color: "#cd7f32", rgb: "205,127,50" },    // bronze
+  3: { color: "#ffd700", rgb: "255,215,0" },     // gold
+  4: { color: "#a78bfa", rgb: "167,139,250" },   // purple
 };
 
 const TIER_STEPS = [
@@ -123,37 +123,67 @@ export function TrustTierRow({ profile, totalProofs }: TrustTierRowProps) {
     );
   }
 
+  const theme = TIER_THEME[tier] ?? TIER_THEME[1];
+
   return (
-    <div className="tier-row-card">
-      <div className="tier-row-grid">
+    <div
+      className="tier-row-card"
+      style={{
+        borderColor: `rgba(${theme.rgb},0.4)`,
+        background: `linear-gradient(135deg, rgba(${theme.rgb},0.08), rgba(${theme.rgb},0.04) 50%, rgba(10,11,15,0.4))`,
+      }}
+    >
+      {/* Override the ::before radial glow via a positioned div */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: `radial-gradient(circle at 0% 50%, rgba(${theme.rgb},0.18), transparent 40%)`,
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      <div className="tier-row-grid" style={{ position: "relative", zIndex: 1 }}>
         <div className="tier-left">
           <div className="tier-key">Trust Tier</div>
-          <div className="tier-badge-xl">{tierLabel}</div>
+          <div
+            className="tier-badge-xl"
+            style={{ color: theme.color, textShadow: `0 0 18px rgba(${theme.rgb},0.5)` }}
+          >
+            {tierLabel}
+          </div>
           <div className="tier-cta-line">
             {nextLabel ? (
               <>
-                <span className="accent">+{proofsNeeded} MORE PROOFS</span>{" "}
+                <span style={{ color: theme.color }}>+{proofsNeeded} MORE PROOFS</span>{" "}
                 <span className="dim">to reach {nextLabel}</span>
               </>
             ) : (
-              <span className="accent">MAX TIER REACHED</span>
+              <span style={{ color: theme.color }}>MAX TIER REACHED</span>
             )}
           </div>
         </div>
         <div className="tier-mid">
           <div className="tier-mid-top">
             <span className="pct">
-              <span className="accent">{totalProofs}</span> / {nextThreshold} PROOFS
+              <span style={{ color: theme.color }}>{totalProofs}</span> / {nextThreshold} PROOFS
             </span>
             {nextLabel && <span className="next">NEXT: {nextLabel}</span>}
           </div>
-          <div className="tier-prog">
-            <div className="tier-prog-fill" style={{ width: `${progressPct}%` }} />
+          <div className="tier-prog" style={{ borderColor: `rgba(${theme.rgb},0.25)` }}>
+            <div
+              className="tier-prog-fill"
+              style={{
+                width: `${progressPct}%`,
+                background: `linear-gradient(90deg, rgba(${theme.rgb},0.7), ${theme.color})`,
+                boxShadow: `0 0 12px rgba(${theme.rgb},0.6)`,
+              }}
+            />
           </div>
         </div>
       </div>
 
-      <div className="tier-ladder">
+      <div className="tier-ladder" style={{ position: "relative", zIndex: 1 }}>
         {TIER_STEPS.map((s) => (
           <div
             key={s.tier}
