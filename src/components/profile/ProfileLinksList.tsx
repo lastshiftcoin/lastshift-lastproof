@@ -73,8 +73,10 @@ export function ProfileLinksList({
   const filtered = activeTab === "all" ? links : links.filter((l) => l.platform === activeTab);
   const pinned = [...filtered].filter((l) => l.isPinned).sort((a, b) => a.position - b.position);
   const rest = [...filtered].filter((l) => !l.isPinned).sort((a, b) => a.position - b.position);
-  const hasHidden = rest.length > 0;
-  const visible = expanded ? [...pinned, ...rest] : pinned;
+  // When filtering by platform, show all matching links (no pinned/unpinned split)
+  const showAll = activeTab !== "all";
+  const hasHidden = !showAll && rest.length > 0;
+  const visible = showAll || expanded ? [...pinned, ...rest] : pinned;
   const visibleCount = activeTab === "all" ? totalLinks : filtered.length;
 
   return (
