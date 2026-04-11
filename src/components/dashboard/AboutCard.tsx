@@ -195,7 +195,25 @@ export function AboutCard({ profile, onProfileUpdate, previousHandles = [] }: Ab
         <div className="bot-error">{botError}</div>
       )}
 
-      {/* Previously Known As */}
+      {/* SHIFTBOT inline strip — directly below textarea */}
+      <div className="bot-strip">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/shiftbot-logo.png" alt="SHIFTBOT" className="bot-icon-sm" />
+        <span className="bot-strip-label">SHIFTBOT</span>
+        <span className="bot-strip-hint">
+          {botTyping ? "typing..." : botLoading ? "thinking..." : "improve your bio with AI"}
+        </span>
+        <button
+          type="button"
+          className="bot-strip-send"
+          disabled={botLoading || botTyping}
+          onClick={handleBotRewrite}
+        >
+          {botLoading || botTyping ? "..." : "REWRITE →"}
+        </button>
+      </div>
+
+      {/* Previously Known As — below SHIFTBOT strip */}
       <div style={{ marginTop: 18 }}>
         <div className="field-key" style={{ marginBottom: 8 }}>Previously Known As</div>
         <div className="field-help" style={{ marginBottom: 10 }}>
@@ -262,24 +280,6 @@ export function AboutCard({ profile, onProfileUpdate, previousHandles = [] }: Ab
             ADD
           </button>
         </div>
-      </div>
-
-      {/* SHIFTBOT inline strip */}
-      <div className="bot-strip">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/shiftbot-logo.png" alt="SHIFTBOT" className="bot-icon-sm" />
-        <span className="bot-strip-label">SHIFTBOT</span>
-        <span className="bot-strip-hint">
-          {botTyping ? "typing..." : botLoading ? "thinking..." : "improve your bio with AI"}
-        </span>
-        <button
-          type="button"
-          className="bot-strip-send"
-          disabled={botLoading || botTyping}
-          onClick={handleBotRewrite}
-        >
-          {botLoading || botTyping ? "..." : "REWRITE →"}
-        </button>
       </div>
     </div>
   );
