@@ -9,9 +9,11 @@
  */
 
 import type { Session } from "@/lib/session";
+import { useTickerPrice } from "@/hooks/useTickerPrice";
 
 export function DashboardTopbar({ session }: { session: Session }) {
   const short = session.walletAddress.slice(0, 4) + "..." + session.walletAddress.slice(-4);
+  const tickerPrice = useTickerPrice();
 
   async function handleDisconnect() {
     await fetch("/api/auth/session", { method: "DELETE" });
@@ -34,8 +36,10 @@ export function DashboardTopbar({ session }: { session: Session }) {
 
       <div className="ticker">
         <span className="ticker-symbol">$LASTSHFT</span>
-        <span className="ticker-price">$0.0428</span>
-        <span className="ticker-change">+12.4%</span>
+        <span className="ticker-price">{tickerPrice.price}</span>
+        {tickerPrice.change && (
+          <span className={`ticker-change${tickerPrice.direction === "down" ? " ticker-down" : ""}`}>{tickerPrice.change}</span>
+        )}
       </div>
 
       <div className="topbar-right">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTickerPrice } from "@/hooks/useTickerPrice";
 
 const SHARE_ICON = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -36,6 +37,7 @@ interface Props {
  */
 export function ProfileTopBar({ handle }: Props) {
   const [copied, setCopied] = useState(false);
+  const tickerPrice = useTickerPrice();
 
   const onShare = async () => {
     const url =
@@ -76,8 +78,10 @@ export function ProfileTopBar({ handle }: Props) {
 
       <div className="pp-topbar-ticker">
         <span className="pp-topbar-sym">$LASTSHFT</span>
-        <span className="pp-topbar-price">$0.00012</span>
-        <span className="pp-topbar-chg">-2.7%</span>
+        <span className="pp-topbar-price">{tickerPrice.price}</span>
+        {tickerPrice.change && (
+          <span className={`pp-topbar-chg${tickerPrice.direction === "down" ? " pp-topbar-chg-down" : ""}`}>{tickerPrice.change}</span>
+        )}
       </div>
 
       <div className="pp-topbar-right">

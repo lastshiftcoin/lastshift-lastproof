@@ -82,13 +82,17 @@ export async function POST() {
   }
   // Pre grid launch: null expiry (handled by grid launch cron later)
 
-  // Activate: set is_paid, ea_claimed, subscription_expires_at
+  // Assign sequential EA number: count of existing claimants + 1
+  const eaNumber = (count ?? 0) + 1;
+
+  // Activate: set is_paid, ea_claimed, ea_number, subscription_expires_at
   const { error: updateErr } = await sb
     .from("profiles")
     .update({
       is_paid: true,
       ea_claimed: true,
       ea_claimed_at: now.toISOString(),
+      ea_number: eaNumber,
       subscription_expires_at: subscriptionExpiresAt,
       is_early_adopter: true,
     })
@@ -112,6 +116,7 @@ export async function POST() {
   return NextResponse.json({
     ok: true,
     alreadyClaimed: false,
+    eaNumber,
     subscriptionExpiresAt,
   });
 }

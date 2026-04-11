@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTickerPrice } from "@/hooks/useTickerPrice";
 
 /**
  * Universal topbar — SHIFTBOT logo (top-left), wordmark, ticker, nav, manage CTA.
@@ -12,6 +13,7 @@ import { usePathname } from "next/navigation";
  */
 export default function Topbar() {
   const pathname = usePathname() || "";
+  const tickerPrice = useTickerPrice();
   if (pathname.startsWith("/profile/") || pathname.startsWith("/@")) return null;
   if (pathname.startsWith("/manage")) return null;
   return (
@@ -29,8 +31,10 @@ export default function Topbar() {
       </div>
       <div className="ticker">
         <span className="sym">$LASTSHFT</span>
-        <span className="price">$0.00012</span>
-        <span className="chg down">-2.7%</span>
+        <span className="price">{tickerPrice.price}</span>
+        {tickerPrice.change && (
+          <span className={`chg ${tickerPrice.direction === "down" ? "down" : ""}`}>{tickerPrice.change}</span>
+        )}
       </div>
       <div className="topbar-right">
         <div className="topbar-nav">

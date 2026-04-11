@@ -49,6 +49,8 @@ export interface ProfileRow {
 
   // Mirrored from Terminal validate on each session refresh.
   isEarlyAdopter: boolean;
+  /** Sequential early adopter number, assigned at campaign claim time. */
+  eaNumber: number | null;
 
   // Tier / DEV — written by skeletons #5 / #6.
   tier: 1 | 2 | 3 | 4 | 5;
@@ -126,6 +128,7 @@ export async function upsertProfileByOperator(
           subscriptionExpiresAt: null,
           lastPaymentAt: null,
           isEarlyAdopter: input.isEarlyAdopter,
+          eaNumber: null,
           tier: 5,
           isDev: false,
           viewCount: 0,
@@ -176,6 +179,7 @@ export async function upsertProfileByOperator(
     subscriptionExpiresAt: null,
     lastPaymentAt: null,
     isEarlyAdopter: input.isEarlyAdopter,
+    eaNumber: null,
     tier: 5,
     isDev: false,
     viewCount: 0,

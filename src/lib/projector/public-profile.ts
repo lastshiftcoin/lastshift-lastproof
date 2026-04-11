@@ -219,7 +219,7 @@ export async function getPublicProfileView(
     statusLabel: paid && isPublished ? "ACTIVE" : isPublished ? "WARNING" : "NON-ACTIVE",
     tier,
     isEarlyAdopter: profile.isEarlyAdopter,
-    earlyAdopterNumber: null, // stored on operators table, not profiles — join later
+    earlyAdopterNumber: profile.eaNumber ?? null,
 
     headline: profile.headline ?? "",
     timezone: profile.timezone ?? "",

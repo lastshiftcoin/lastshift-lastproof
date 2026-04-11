@@ -51,6 +51,7 @@ type Props = Pick<
   | "avatarMonogram"
   | "statusLabel"
   | "isEarlyAdopter"
+  | "earlyAdopterNumber"
   | "isVerified"
   | "headline"
   | "timezone"
@@ -76,7 +77,9 @@ export function ProfileHero(props: Props) {
         {props.isEarlyAdopter && !isFree && (
           <span className="pp-badge-5k" data-tip="First 5000 operator — founding member">
             {BADGE_5K_SVG}
-            <span className="pp-num">5K</span>
+            <span className="pp-num">
+              {props.earlyAdopterNumber != null ? `#${props.earlyAdopterNumber}` : "5K"}
+            </span>
           </span>
         )}
       </div>

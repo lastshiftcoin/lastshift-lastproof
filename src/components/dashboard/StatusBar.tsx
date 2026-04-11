@@ -23,6 +23,8 @@ interface StatusBarProps {
   campaignActive?: boolean;
   /** Called after successful free claim to refresh profile data */
   onProfileUpdate?: (profile: ProfileRow) => void;
+  /** Profile handle for preview/public links */
+  handle?: string;
 }
 
 type ProfileStatus = "active" | "pending" | "expired";
@@ -51,7 +53,7 @@ const STATUS_CONFIG: Record<ProfileStatus, { label: string; cls: string }> = {
   expired: { label: "EXPIRED", cls: "defunct" },
 };
 
-export function StatusBar({ profile, campaignSoldOut = false, campaignActive = false, onProfileUpdate }: StatusBarProps) {
+export function StatusBar({ profile, campaignSoldOut = false, campaignActive = false, onProfileUpdate, handle }: StatusBarProps) {
   const [countdown, setCountdown] = useState<string>("--");
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [claiming, setClaiming] = useState(false);
@@ -192,6 +194,28 @@ export function StatusBar({ profile, campaignSoldOut = false, campaignActive = f
                     ? "Renew Profile"
                     : "Upgrade Profile"}
         </button>
+        {handle && (
+          <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
+            <a
+              href={`/profile/${handle}?preview=true`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-preview"
+            >
+              PREVIEW ↗
+            </a>
+            {profile.publishedAt && (
+              <a
+                href={`/profile/${handle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-viewpub"
+              >
+                VIEW PUBLIC ↗
+              </a>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Upgrade / payment panel */}

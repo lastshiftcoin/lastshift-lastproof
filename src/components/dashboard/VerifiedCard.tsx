@@ -6,18 +6,18 @@
  * Wireframe: lastproof-dashboard.html, GET VERIFIED section.
  *
  * - Blue checkmark badge (locked when incomplete, active when both verified)
- * - X / Twitter row: enter handle → CONNECT, or shows @handle + DISCONNECT
- * - Telegram row: enter handle → CONNECT, or shows @handle + DISCONNECT
- * - Progress bar: 0%, 50%, or 100% based on linked handles
+ * - X / Twitter row: CONNECT → OAuth redirect, or shows @handle + DISCONNECT
+ * - Telegram row: CONNECT → OAuth redirect, or shows @handle + DISCONNECT
+ * - Progress bar: 0%, 50%, or 100% based on verified platforms
  *
- * MVP flow: operator self-reports their handle. Verification (x_verified,
- * tg_verified) is set by admin/automated check later. The badge lights up
- * only when both _verified flags are true.
+ * OAuth flow: CONNECT redirects to /api/auth/{platform}/authorize, which
+ * redirects to the platform's OAuth page. On success, the callback writes
+ * the verified handle to the DB and redirects back with ?verified={platform}.
  *
- * Handle link/unlink calls POST /api/dashboard/verify.
+ * Handle disconnect calls POST /api/dashboard/verify with handle: null.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ProfileRow } from "@/lib/profiles-store";
 
 interface VerifiedCardProps {
@@ -28,60 +28,79 @@ interface VerifiedCardProps {
 export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
   const [xHandle, setXHandle] = useState(profile.xHandle ?? "");
   const [tgHandle, setTgHandle] = useState(profile.tgHandle ?? "");
-  const [xLinked, setXLinked] = useState(!!profile.xHandle);
-  const [tgLinked, setTgLinked] = useState(!!profile.tgHandle);
   const [xVerified, setXVerified] = useState(profile.xVerified);
   const [tgVerified, setTgVerified] = useState(profile.tgVerified);
   const [xSaving, setXSaving] = useState(false);
   const [tgSaving, setTgSaving] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Input mode: show input field when connecting
-  const [xInputMode, setXInputMode] = useState(false);
-  const [tgInputMode, setTgInputMode] = useState(false);
-  const [xInput, setXInput] = useState("");
-  const [tgInput, setTgInput] = useState("");
-
+  const xLinked = !!xHandle;
+  const tgLinked = !!tgHandle;
   const bothVerified = xVerified && tgVerified;
-  const progressPct = (xLinked ? 50 : 0) + (tgLinked ? 50 : 0);
+  const progressPct = (xVerified ? 50 : 0) + (tgVerified ? 50 : 0);
 
-  async function linkPlatform(platform: "x" | "tg", handle: string) {
-    const setSaving = platform === "x" ? setXSaving : setTgSaving;
-    setSaving(true);
+  // Detect ?verified=x|tg or ?verify_error=x|tg on mount (OAuth callback return)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const verified = params.get("verified");
+    const verifyError = params.get("verify_error");
+    const reason = params.get("reason");
 
-    try {
-      const res = await fetch("/api/dashboard/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ platform, handle }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        alert(data.error || "Failed to connect");
-        return;
+    if (verified === "x" || verified === "tg") {
+      setSuccessMsg(`${verified === "x" ? "X / Twitter" : "Telegram"} verified!`);
+      // Clean URL without reload
+      const url = new URL(window.location.href);
+      url.searchParams.delete("verified");
+      window.history.replaceState({}, "", url.pathname);
+      // Trigger parent refresh to get updated profile data
+      if (onProfileUpdate) {
+        fetch("/api/dashboard/profile")
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.profile) onProfileUpdate(data.profile);
+          })
+          .catch(() => {});
       }
-
-      const data = await res.json();
-
-      if (platform === "x") {
-        setXHandle(data.handle);
-        setXLinked(true);
-        setXVerified(false); // Pending verification
-        setXInputMode(false);
-        setXInput("");
-      } else {
-        setTgHandle(data.handle);
-        setTgLinked(true);
-        setTgVerified(false);
-        setTgInputMode(false);
-        setTgInput("");
-      }
-    } catch {
-      alert("Connection failed — please try again.");
-    } finally {
-      setSaving(false);
+    } else if (verifyError) {
+      const platform = verifyError === "x" ? "X / Twitter" : "Telegram";
+      const messages: Record<string, string> = {
+        denied: `${platform} authorization was denied.`,
+        expired: "Session expired. Please try again.",
+        state_mismatch: "Security check failed. Please try again.",
+        token_exchange: `Failed to complete ${platform} authorization.`,
+        user_fetch: `Could not retrieve your ${platform} username.`,
+        hash_mismatch: "Telegram verification failed — invalid signature.",
+        expired_auth: "Telegram auth expired. Please try again.",
+        no_username: "Your Telegram account has no username set. Please set one in Telegram Settings first.",
+        handle_taken: `This ${platform} account is already linked to another LASTPROOF profile.`,
+        no_session: "You're not logged in. Please connect your wallet first.",
+        db_error: "Database error. Please try again.",
+      };
+      setErrorMsg(messages[reason ?? ""] ?? `${platform} verification failed.`);
+      // Clean URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete("verify_error");
+      url.searchParams.delete("reason");
+      window.history.replaceState({}, "", url.pathname);
     }
-  }
+  }, [onProfileUpdate]);
+
+  // Sync state when profile prop updates (e.g., after parent refresh)
+  useEffect(() => {
+    setXHandle(profile.xHandle ?? "");
+    setTgHandle(profile.tgHandle ?? "");
+    setXVerified(profile.xVerified);
+    setTgVerified(profile.tgVerified);
+  }, [profile.xHandle, profile.tgHandle, profile.xVerified, profile.tgVerified]);
+
+  // Auto-dismiss messages
+  useEffect(() => {
+    if (successMsg || errorMsg) {
+      const t = setTimeout(() => { setSuccessMsg(null); setErrorMsg(null); }, 5000);
+      return () => clearTimeout(t);
+    }
+  }, [successMsg, errorMsg]);
 
   async function unlinkPlatform(platform: "x" | "tg") {
     if (!confirm(`Disconnect ${platform === "x" ? "X / Twitter" : "Telegram"}?`)) return;
@@ -103,11 +122,9 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
 
       if (platform === "x") {
         setXHandle("");
-        setXLinked(false);
         setXVerified(false);
       } else {
         setTgHandle("");
-        setTgLinked(false);
         setTgVerified(false);
       }
     } catch {
@@ -122,6 +139,28 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
       <div className="edit-head">
         <div className="edit-title">GET VERIFIED</div>
       </div>
+
+      {/* Success/error toast */}
+      {successMsg && (
+        <div style={{
+          padding: "8px 12px", margin: "0 0 12px", borderRadius: 4,
+          background: "rgba(0,230,118,0.1)", border: "1px solid var(--green)",
+          fontFamily: "var(--mono)", fontSize: 10, color: "var(--green)",
+          letterSpacing: 0.5,
+        }}>
+          {successMsg}
+        </div>
+      )}
+      {errorMsg && (
+        <div style={{
+          padding: "8px 12px", margin: "0 0 12px", borderRadius: 4,
+          background: "rgba(255,107,107,0.1)", border: "1px solid #ff6b6b",
+          fontFamily: "var(--mono)", fontSize: 10, color: "#ff6b6b",
+          letterSpacing: 0.5,
+        }}>
+          {errorMsg}
+        </div>
+      )}
 
       {/* Badge + copy */}
       <div className="verify-wrap">
@@ -157,32 +196,16 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
         <div className={`verify-row${xLinked ? " linked" : ""}`}>
           <div className="vr-icon x">{"\ud835\udd4f"}</div>
           <div className="vr-meta">
-            <div className="vr-name">
-              X / Twitter
-              {xLinked && !xVerified && (
-                <span style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: 8,
-                  letterSpacing: 1,
-                  color: "var(--accent)",
-                  marginLeft: 8,
-                }}>PENDING VERIFICATION</span>
-              )}
-            </div>
+            <div className="vr-name">X / Twitter</div>
             {xLinked ? (
-              <div className="vr-handle connected">@{xHandle}</div>
-            ) : xInputMode ? (
-              <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}>
-                <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--text-dim)" }}>@</span>
-                <input
-                  className="field-input"
-                  style={{ flex: 1, padding: "6px 10px", fontSize: 11 }}
-                  placeholder="your_x_handle"
-                  value={xInput}
-                  onChange={(e) => setXInput(e.target.value.replace(/^@/, ""))}
-                  maxLength={40}
-                  autoFocus
-                />
+              <div className="vr-handle connected">
+                @{xHandle}
+                {xVerified && (
+                  <span style={{
+                    fontFamily: "var(--mono)", fontSize: 8, letterSpacing: 1,
+                    color: "var(--green)", marginLeft: 8,
+                  }}>VERIFIED</span>
+                )}
               </div>
             ) : (
               <div className="vr-handle">not connected</div>
@@ -197,33 +220,11 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
             >
               {xSaving ? "..." : "DISCONNECT"}
             </button>
-          ) : xInputMode ? (
-            <div style={{ display: "flex", gap: 6 }}>
-              <button
-                type="button"
-                className="vr-action connect"
-                onClick={() => { if (xInput.trim()) linkPlatform("x", xInput.trim()); }}
-                disabled={xSaving || !xInput.trim()}
-              >
-                {xSaving ? "..." : "SAVE"}
-              </button>
-              <button
-                type="button"
-                style={{
-                  fontFamily: "var(--mono)", fontSize: 9, color: "var(--text-dim)",
-                  background: "transparent", border: "1px solid var(--border)",
-                  borderRadius: 4, padding: "5px 8px", cursor: "pointer",
-                }}
-                onClick={() => { setXInputMode(false); setXInput(""); }}
-              >
-                ×
-              </button>
-            </div>
           ) : (
             <button
               type="button"
               className="vr-action connect"
-              onClick={() => setXInputMode(true)}
+              onClick={() => { window.location.href = "/api/auth/x/authorize"; }}
             >
               CONNECT
             </button>
@@ -234,32 +235,16 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
         <div className={`verify-row${tgLinked ? " linked" : ""}`}>
           <div className="vr-icon tg">T</div>
           <div className="vr-meta">
-            <div className="vr-name">
-              Telegram
-              {tgLinked && !tgVerified && (
-                <span style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: 8,
-                  letterSpacing: 1,
-                  color: "var(--accent)",
-                  marginLeft: 8,
-                }}>PENDING VERIFICATION</span>
-              )}
-            </div>
+            <div className="vr-name">Telegram</div>
             {tgLinked ? (
-              <div className="vr-handle connected">@{tgHandle}</div>
-            ) : tgInputMode ? (
-              <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}>
-                <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--text-dim)" }}>@</span>
-                <input
-                  className="field-input"
-                  style={{ flex: 1, padding: "6px 10px", fontSize: 11 }}
-                  placeholder="your_tg_handle"
-                  value={tgInput}
-                  onChange={(e) => setTgInput(e.target.value.replace(/^@/, ""))}
-                  maxLength={40}
-                  autoFocus
-                />
+              <div className="vr-handle connected">
+                @{tgHandle}
+                {tgVerified && (
+                  <span style={{
+                    fontFamily: "var(--mono)", fontSize: 8, letterSpacing: 1,
+                    color: "var(--green)", marginLeft: 8,
+                  }}>VERIFIED</span>
+                )}
               </div>
             ) : (
               <div className="vr-handle">required for HIRE button</div>
@@ -274,33 +259,11 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
             >
               {tgSaving ? "..." : "DISCONNECT"}
             </button>
-          ) : tgInputMode ? (
-            <div style={{ display: "flex", gap: 6 }}>
-              <button
-                type="button"
-                className="vr-action connect"
-                onClick={() => { if (tgInput.trim()) linkPlatform("tg", tgInput.trim()); }}
-                disabled={tgSaving || !tgInput.trim()}
-              >
-                {tgSaving ? "..." : "SAVE"}
-              </button>
-              <button
-                type="button"
-                style={{
-                  fontFamily: "var(--mono)", fontSize: 9, color: "var(--text-dim)",
-                  background: "transparent", border: "1px solid var(--border)",
-                  borderRadius: 4, padding: "5px 8px", cursor: "pointer",
-                }}
-                onClick={() => { setTgInputMode(false); setTgInput(""); }}
-              >
-                ×
-              </button>
-            </div>
           ) : (
             <button
               type="button"
               className="vr-action connect"
-              onClick={() => setTgInputMode(true)}
+              onClick={() => { window.location.href = "/api/auth/telegram/authorize"; }}
             >
               CONNECT
             </button>

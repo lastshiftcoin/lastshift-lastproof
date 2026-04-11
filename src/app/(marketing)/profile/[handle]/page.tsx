@@ -90,6 +90,7 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
             avatarMonogram={view.avatarMonogram}
             statusLabel={view.statusLabel}
             isEarlyAdopter={view.isEarlyAdopter}
+            earlyAdopterNumber={view.earlyAdopterNumber}
             isVerified={view.isVerified}
             headline={view.headline}
             timezone={view.timezone}
@@ -125,6 +126,7 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
           avatarMonogram={view.avatarMonogram}
           statusLabel={view.statusLabel}
           isEarlyAdopter={view.isEarlyAdopter}
+          earlyAdopterNumber={view.earlyAdopterNumber}
           isVerified={view.isVerified}
           headline={view.headline}
           timezone={view.timezone}

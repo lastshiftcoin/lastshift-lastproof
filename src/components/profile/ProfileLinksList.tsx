@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import type { ProfileLink } from "@/lib/public-profile-view";
 
 const PLATFORM_ICON: Record<ProfileLink["platform"], React.ReactElement> = {
@@ -47,8 +50,13 @@ const OPEN_ICON = (
 );
 
 /**
- * Pinned-first links list. Step 1 renders all links stacked — the
- * "SHOW ALL" expand toggle and platform filter tabs are decorative only.
+ * Pinned-first links list with SHOW ALL expand/collapse toggle.
+ *
+ * Wireframe: lastproof-profile-public.html, LINKS section.
+ *
+ * Initially only pinned links are visible. Non-pinned links are hidden
+ * behind a "SHOW ALL" toggle. When expanded, all links show and the
+ * toggle reads "SHOW LESS".
  */
 export function ProfileLinksList({
   links,
@@ -59,9 +67,12 @@ export function ProfileLinksList({
   totalLinks: number;
   pinnedLinksCount: number;
 }) {
+  const [expanded, setExpanded] = useState(false);
+
   const pinned = [...links].filter((l) => l.isPinned).sort((a, b) => a.position - b.position);
   const rest = [...links].filter((l) => !l.isPinned).sort((a, b) => a.position - b.position);
-  const ordered = [...pinned, ...rest];
+  const hasHidden = rest.length > 0;
+  const visible = expanded ? [...pinned, ...rest] : pinned;
 
   return (
     <>
@@ -84,7 +95,7 @@ export function ProfileLinksList({
         })}
       </div>
       <div className="pp-lk-list">
-        {ordered.map((link) => (
+        {visible.map((link) => (
           <div
             key={link.id}
             className={`pp-lk-row${link.isPinned ? " pp-pinned" : ""}`}
@@ -104,7 +115,17 @@ export function ProfileLinksList({
             <span className="pp-lk-open">{OPEN_ICON}</span>
           </div>
         ))}
-        <div className="pp-lk-showall">SHOW ALL {totalLinks} LINKS</div>
+        {hasHidden && (
+          <div
+            className="pp-lk-showall"
+            onClick={() => setExpanded((prev) => !prev)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setExpanded((prev) => !prev); }}
+          >
+            {expanded ? `\u2013 SHOW LESS` : `+ SHOW ALL ${totalLinks} LINKS`}
+          </div>
+        )}
       </div>
     </>
   );

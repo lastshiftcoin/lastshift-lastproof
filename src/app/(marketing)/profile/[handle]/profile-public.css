@@ -1068,3 +1068,53 @@ body:has(.pp-page) .shiftbot { display: none !important; }
   .shot-lb-nav.prev { left: 8px; }
   .shot-lb-nav.next { right: 8px; }
 }
+
+/* ═══ PREVIEW BANNER ═══ */
+.pp-preview-banner {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: linear-gradient(90deg, #ff9100 0%, #ff6a00 100%);
+  padding: 10px 0;
+}
+.pp-preview-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.pp-preview-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #000;
+  background: rgba(0,0,0,.15);
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+.pp-preview-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #000;
+  letter-spacing: 0.5px;
+  flex: 1;
+}
+.pp-preview-link {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #000;
+  text-decoration: none;
+  padding: 5px 14px;
+  border: 1.5px solid rgba(0,0,0,.4);
+  border-radius: 4px;
+  transition: background .15s;
+}
+.pp-preview-link:hover {
+  background: rgba(0,0,0,.1);
+}

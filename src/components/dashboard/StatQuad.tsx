@@ -10,11 +10,11 @@
  *   2. Total Proofs  — confirmed proof count
  *   3. Dev Proofs    — proofs from verified devs, with DEV badge
  *   4. $LASTSHFT Wallet — token balance + USD value + BUY button
- *
- * All values are read-only. For new profiles, everything starts at 0.
  */
 
+import { useState, useEffect } from "react";
 import type { ProfileRow } from "@/lib/profiles-store";
+import { useTickerPrice } from "@/hooks/useTickerPrice";
 
 interface StatQuadProps {
   profile: ProfileRow;
@@ -25,9 +25,26 @@ interface StatQuadProps {
 }
 
 export function StatQuad({ profile, totalProofs, devProofs }: StatQuadProps) {
-  // For now, views and wallet are static/placeholder.
-  // These will be wired to real data in Step 13.
-  const views = 0;
+  const [balance, setBalance] = useState<number | null>(null);
+  const ticker = useTickerPrice();
+
+  useEffect(() => {
+    let mounted = true;
+    async function fetchBalance() {
+      try {
+        const res = await fetch("/api/token/balance");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (mounted) setBalance(data.balance ?? 0);
+      } catch {
+        // keep null → shows "—"
+      }
+    }
+    fetchBalance();
+    return () => { mounted = false; };
+  }, []);
+
+  const views = profile.viewCount ?? 0;
   const viewsSub = totalProofs > 0 ? "LAST 30D" : "PROFILE LIVE";
 
   const proofsSub = totalProofs > 0
@@ -36,9 +53,16 @@ export function StatQuad({ profile, totalProofs, devProofs }: StatQuadProps) {
 
   const devSub = "FROM VERIFIED PROJECT DEVS";
 
-  // Wallet is always placeholder until token integration
-  const walletBalance = "0 LASTSHFT";
-  const walletUsd = "$0.00";
+  // Wallet display
+  const walletBalance = balance !== null
+    ? `${balance.toLocaleString("en-US", { maximumFractionDigits: 0 })} LASTSHFT`
+    : "— LASTSHFT";
+
+  // Parse price from ticker for USD calc
+  const priceNum = parseFloat(ticker.price.replace("$", "").replace("…", "0"));
+  const walletUsd = balance !== null && priceNum > 0
+    ? `$${(balance * priceNum).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : "$0.00";
 
   const dimmed = totalProofs === 0;
 

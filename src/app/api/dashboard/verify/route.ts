@@ -3,15 +3,14 @@ import { readSession } from "@/lib/session";
 import { getProfileByOperatorId } from "@/lib/profiles-store";
 
 /**
- * POST /api/dashboard/verify — link/unlink X or Telegram handle
- * Body: { platform: "x" | "tg", handle: string | null }
+ * POST /api/dashboard/verify — disconnect X or Telegram handle
+ * Body: { platform: "x" | "tg", handle: null }
  *
- * When handle is provided: sets the handle (verification is pending admin review).
- * When handle is null: disconnects the platform.
+ * Connecting is now handled via OAuth:
+ *   X:        GET /api/auth/x/authorize → Twitter OAuth → callback
+ *   Telegram: GET /api/auth/telegram/authorize → Telegram OAuth → callback
  *
- * NOTE: In a future iteration, X uses OAuth and Telegram uses a bot widget.
- * For MVP, operators self-report their handles. The `x_verified` and
- * `tg_verified` flags are set by admin/automated verification later.
+ * This route only handles DISCONNECT (handle: null).
  */
 
 async function getProfileAndSb(session: { walletAddress: string }) {
@@ -41,25 +40,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_platform" }, { status: 400 });
   }
 
-  const cleanHandle = handle
-    ? handle.replace(/^@/, "").trim().toLowerCase()
-    : null;
-
-  if (cleanHandle && (cleanHandle.length < 1 || cleanHandle.length > 40)) {
-    return NextResponse.json({ error: "invalid_handle" }, { status: 400 });
+  // Connecting is now OAuth-only — reject non-null handles
+  if (handle !== null) {
+    return NextResponse.json(
+      { error: "Use OAuth to connect. Send handle: null to disconnect." },
+      { status: 400 },
+    );
   }
 
   const updates: Record<string, unknown> = {};
 
   if (platform === "x") {
-    updates.x_handle = cleanHandle;
-    // Don't auto-verify — that requires OAuth or admin action
-    // If disconnecting, also clear verified flag
-    if (!cleanHandle) updates.x_verified = false;
+    updates.x_handle = null;
+    updates.x_verified = false;
   } else {
-    // DB column is telegram_handle, not tg_handle
-    updates.telegram_handle = cleanHandle;
-    if (!cleanHandle) updates.telegram_verified = false;
+    updates.telegram_handle = null;
+    updates.telegram_verified = false;
   }
 
   const { error } = await sb
@@ -75,7 +71,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     platform,
-    handle: cleanHandle,
-    verified: false, // Always false on self-link; admin verifies later
+    handle: null,
+    verified: false,
   });
 }

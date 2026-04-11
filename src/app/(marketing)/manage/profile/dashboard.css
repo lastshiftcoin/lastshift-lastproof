@@ -780,3 +780,36 @@ textarea.field-input{font-family:var(--sans);font-size:13px;resize:vertical;min-
   .shot-lb-nav.next { right: 8px; }
   .shot-lb-close { top: -36px; right: -4px; }
 }
+
+/* ═══ PREVIEW / VIEW PUBLIC BUTTONS ═══ */
+.btn-preview,
+.btn-viewpub {
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 7px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.btn-preview {
+  color: var(--accent, #ff9100);
+  border: 1.5px solid var(--accent, #ff9100);
+  background: rgba(255, 145, 0, .06);
+}
+.btn-preview:hover {
+  background: rgba(255, 145, 0, .15);
+}
+.btn-viewpub {
+  color: var(--text-2, #9ca3af);
+  border: 1.5px solid var(--border-2, #2a2d3e);
+  background: transparent;
+}
+.btn-viewpub:hover {
+  color: #fff;
+  border-color: var(--text-2, #9ca3af);
+  background: rgba(156, 163, 175, .08);
+}

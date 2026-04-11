@@ -39,6 +39,7 @@ interface DbProfileWithOperator {
   subscription_expires_at: string | null;
   last_payment_at: string | null;
   is_early_adopter: boolean | null;
+  ea_number: number | null;
   tier: number | null;
   is_dev: boolean | null;
   view_count: number;
@@ -74,6 +75,7 @@ function rowFromDb(r: DbProfileWithOperator): ProfileRow {
     subscriptionExpiresAt: r.subscription_expires_at,
     lastPaymentAt: r.last_payment_at,
     isEarlyAdopter: r.is_early_adopter ?? false,
+    eaNumber: r.ea_number ?? null,
     tier: (r.tier ?? 5) as ProfileRow["tier"],
     isDev: r.is_dev ?? false,
     viewCount: r.view_count ?? 0,
@@ -108,6 +110,7 @@ function rowToDb(row: ProfileRow): Record<string, unknown> {
     subscription_expires_at: row.subscriptionExpiresAt,
     last_payment_at: row.lastPaymentAt,
     is_early_adopter: row.isEarlyAdopter,
+    ea_number: row.eaNumber,
     tier: row.tier,
     is_dev: row.isDev,
     view_count: row.viewCount,
@@ -159,6 +162,7 @@ export async function updateProfileFields(
     dbPatch.subscription_expires_at = patch.subscriptionExpiresAt;
   if (patch.lastPaymentAt !== undefined) dbPatch.last_payment_at = patch.lastPaymentAt;
   if (patch.isEarlyAdopter !== undefined) dbPatch.is_early_adopter = patch.isEarlyAdopter;
+  if (patch.eaNumber !== undefined) dbPatch.ea_number = patch.eaNumber;
   if (patch.tier !== undefined) dbPatch.tier = patch.tier;
   if (patch.isDev !== undefined) dbPatch.is_dev = patch.isDev;
   if (patch.publishedAt !== undefined) dbPatch.published_at = patch.publishedAt;
