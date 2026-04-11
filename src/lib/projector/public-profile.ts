@@ -241,7 +241,8 @@ export async function getPublicProfileView(
     tgHandle: profile.tgHandle,
     tgVerified: profile.tgVerified,
     website: profile.website,
-    hireTelegramHandle: profile.hireTelegramHandle,
+    hireTelegramHandle: profile.hireTelegramHandle
+      ?? (profile.tgVerified ? profile.tgHandle : null),
     isVerified: profile.xVerified && profile.tgVerified,
 
     proofsConfirmed,
