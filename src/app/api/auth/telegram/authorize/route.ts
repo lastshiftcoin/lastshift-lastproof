@@ -44,7 +44,10 @@ export async function GET() {
   });
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://lastproof.app";
-  const returnTo = `${siteUrl}/api/auth/telegram/callback`;
+  // Telegram returns data as a hash fragment (#tgAuthResult=BASE64), which
+  // never reaches the server. Point return_to at the client-side handler page
+  // that reads the fragment and forwards to the real API callback.
+  const returnTo = `${siteUrl}/auth/telegram/callback`;
 
   const params = new URLSearchParams({
     bot_id: botId,
