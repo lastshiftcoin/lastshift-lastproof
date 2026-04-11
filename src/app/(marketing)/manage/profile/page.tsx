@@ -168,7 +168,9 @@ export default async function DashboardPage() {
 
   return (
     <div className="db-page">
-      <DashboardTopbar session={session} />
+      <div className="db-topbar-wrap">
+        <DashboardTopbar session={session} />
+      </div>
       <main className="main">
         <DashboardShell
           session={session}
