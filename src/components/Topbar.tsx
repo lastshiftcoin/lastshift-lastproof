@@ -10,6 +10,8 @@ import { useTickerPrice } from "@/hooks/useTickerPrice";
  *
  * Profile routes (/profile/[handle], /@handle) render their own profile-scoped
  * header (ProfileTopBar) with SHARE / REPORT actions instead of this global one.
+ *
+ * Styled to match ProfileTopBar (pp-topbar) for visual consistency.
  */
 export default function Topbar() {
   const pathname = usePathname() || "";
@@ -17,31 +19,33 @@ export default function Topbar() {
   if (pathname.startsWith("/profile/") || pathname.startsWith("/@")) return null;
   if (pathname.startsWith("/manage")) return null;
   return (
-    <div className="topbar">
-      <div className="topbar-left">
+    <div className="pp-topbar">
+      <div className="pp-topbar-left">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/shiftbot-logo.png" alt="SHIFTBOT" className="topbar-logo" />
+        <img src="/shiftbot-logo.png" alt="SHIFTBOT" className="pp-topbar-logo" />
         <div>
-          <div className="topbar-brand">
-            <span className="last">LAST</span>
-            <span className="proof">PROOF</span>
+          <div className="pp-topbar-brand">
+            <span className="pp-topbar-last">LAST</span>
+            <span className="pp-topbar-proof">PROOF</span>
           </div>
-          <div className="topbar-sub">VERIFIED OPERATORS</div>
+          <div className="pp-topbar-sub">VERIFIED OPERATORS</div>
         </div>
       </div>
-      <div className="ticker">
-        <span className="sym">$LASTSHFT</span>
-        <span className="price">{tickerPrice.price}</span>
+
+      <div className="pp-topbar-ticker">
+        <span className="pp-topbar-sym">$LASTSHFT</span>
+        <span className="pp-topbar-price">{tickerPrice.price}</span>
         {tickerPrice.change && (
-          <span className={`chg ${tickerPrice.direction === "down" ? "down" : ""}`}>{tickerPrice.change}</span>
+          <span className={`pp-topbar-chg${tickerPrice.direction === "down" ? " pp-topbar-chg-down" : ""}`}>{tickerPrice.change}</span>
         )}
       </div>
-      <div className="topbar-right">
-        <div className="topbar-nav">
-          <Link href="/how-it-works">HOW IT WORKS</Link>
-        </div>
-        <Link className="btn btn-ghost btn-sm" href="/manage">
-          MANAGE PROFILE
+
+      <div className="pp-topbar-right">
+        <Link href="/how-it-works" className="pp-topbar-btn">
+          <span>HOW IT WORKS</span>
+        </Link>
+        <Link href="/manage" className="pp-topbar-btn">
+          <span>MANAGE PROFILE</span>
         </Link>
       </div>
     </div>

@@ -2,7 +2,7 @@
 
 /**
  * Dashboard topbar — brand + ticker + wallet pill.
- * Wireframe: lastproof-dashboard.html `.topbar`
+ * Styled to match ProfileTopBar (pp-topbar) for visual consistency.
  *
  * Wallet pill shows truncated address, green dot. On hover, text
  * swaps to "DISCONNECT" and turns red (CSS-driven via ::before content swap).
@@ -21,28 +21,28 @@ export function DashboardTopbar({ session }: { session: Session }) {
   }
 
   return (
-    <div className="topbar">
-      <div className="topbar-left">
-        <div className="brand">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/shiftbot-logo.png" alt="SHIFTBOT" className="brand-logo" />
-          <span className="brand-name">
-            <span className="last">LAST</span>
-            <span className="proof">PROOF</span>
-          </span>
-          <span className="brand-tag">V1.0</span>
+    <div className="pp-topbar">
+      <div className="pp-topbar-left">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/shiftbot-logo.png" alt="SHIFTBOT" className="pp-topbar-logo" />
+        <div>
+          <div className="pp-topbar-brand">
+            <span className="pp-topbar-last">LAST</span>
+            <span className="pp-topbar-proof">PROOF</span>
+          </div>
+          <div className="pp-topbar-sub">VERIFIED OPERATORS</div>
         </div>
       </div>
 
-      <div className="ticker">
-        <span className="ticker-symbol">$LASTSHFT</span>
-        <span className="ticker-price">{tickerPrice.price}</span>
+      <div className="pp-topbar-ticker">
+        <span className="pp-topbar-sym">$LASTSHFT</span>
+        <span className="pp-topbar-price">{tickerPrice.price}</span>
         {tickerPrice.change && (
-          <span className={`ticker-change${tickerPrice.direction === "down" ? " ticker-down" : ""}`}>{tickerPrice.change}</span>
+          <span className={`pp-topbar-chg${tickerPrice.direction === "down" ? " pp-topbar-chg-down" : ""}`}>{tickerPrice.change}</span>
         )}
       </div>
 
-      <div className="topbar-right">
+      <div className="pp-topbar-right">
         <button
           type="button"
           className="wallet-pill"

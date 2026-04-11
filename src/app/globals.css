@@ -83,31 +83,102 @@ body::after {
 }
 
 /* ================================================================
-   TOPBAR
+   TOPBAR — global pp-topbar style (matches profile header)
    ================================================================ */
-.topbar {
-  position: relative; z-index: 2;
-  display: grid; grid-template-columns: 1fr auto 1fr;
-  align-items: center; padding: 14px 24px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-secondary);
+.pp-topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 24px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
-.topbar-left { display: flex; align-items: center; gap: 12px; justify-self: start; }
-.topbar-logo { width: 36px; height: 36px; object-fit: contain; }
-.topbar-brand { font-family: var(--mono); font-weight: 700; font-size: 14px; letter-spacing: 2px; }
-.topbar-brand .last { color: var(--text-primary); }
-.topbar-brand .proof { color: var(--orange); }
-.topbar-sub { font-family: var(--mono); font-size: 9px; color: var(--text-dim); letter-spacing: 2px; margin-top: 2px; }
-
-.ticker { justify-self: center; display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 12px; letter-spacing: 1px; }
-.ticker .sym { color: var(--orange); font-weight: 700; }
-.ticker .price { color: var(--text-primary); font-weight: 500; }
-.ticker .chg { color: var(--green); font-size: 11px; }
-.ticker .chg.down { color: var(--red); }
-
-.topbar-right { display: flex; align-items: center; gap: 16px; justify-self: end; }
-.topbar-nav { display: flex; gap: 20px; font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; color: var(--text-secondary); }
-.topbar-nav a:hover { color: var(--text-primary); }
+.pp-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-self: start;
+}
+.pp-topbar-logo {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.pp-topbar-brand {
+  font-family: var(--mono, "JetBrains Mono", ui-monospace, monospace);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+.pp-topbar-last { color: #ffffff; }
+.pp-topbar-proof { color: #ff9100; }
+.pp-topbar-sub {
+  margin-top: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+}
+.pp-topbar-ticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  font-family: var(--mono, "JetBrains Mono", ui-monospace, monospace);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  justify-self: center;
+}
+.pp-topbar-sym { color: #ff9100; }
+.pp-topbar-price { color: rgba(255, 255, 255, 0.85); }
+.pp-topbar-chg { color: #00e676; }
+.pp-topbar-chg-down { color: #ff5470; }
+.pp-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: end;
+}
+.pp-topbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.75);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+.pp-topbar-btn svg {
+  width: 14px;
+  height: 14px;
+}
+.pp-topbar-btn:hover {
+  background: rgba(255, 145, 0, 0.08);
+  border-color: rgba(255, 145, 0, 0.4);
+  color: #ff9100;
+  transform: translateY(-1px);
+}
+.pp-topbar-report:hover {
+  background: rgba(255, 84, 112, 0.08);
+  border-color: rgba(255, 84, 112, 0.4);
+  color: #ff5470;
+}
 
 /* ================================================================
    BUTTONS
@@ -396,12 +467,11 @@ footer.lp-footer a:hover { color: var(--text-primary); }
   .hero { padding: 50px 18px 40px; }
   .hero h1 { font-size: 32px; }
   .how-grid { grid-template-columns: 1fr; gap: 14px; }
-  .topbar { padding: 12px 14px; grid-template-columns: auto auto; gap: 10px; row-gap: 10px; }
-  .topbar-left { grid-column: 1; }
-  .topbar-right { grid-column: 2; }
-  .ticker { grid-column: 1 / -1; justify-self: center; order: 3; }
-  .topbar-nav { display: none; }
-  .topbar-brand { font-size: 12px; }
+  .pp-topbar { padding: 12px 14px; grid-template-columns: auto auto; gap: 10px; row-gap: 10px; }
+  .pp-topbar-left { grid-column: 1; }
+  .pp-topbar-right { grid-column: 2; }
+  .pp-topbar-ticker { grid-column: 1 / -1; justify-self: center; order: 3; }
+  .pp-topbar-brand { font-size: 13px; }
   .sb-inner h2 { font-size: 24px; }
   .sb-input { padding: 12px 16px; }
   .sb-input .ph { font-size: 11px; }
