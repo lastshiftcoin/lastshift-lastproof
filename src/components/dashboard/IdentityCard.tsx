@@ -319,22 +319,30 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate }: Iden
         <div className="profile-url">
           <span className="pu-base">lastproof.app/</span>
           <span className="pu-handle">@{profile.handle}</span>
-        </div>
-        <div className="profile-url-actions">
           <button
             type="button"
-            className="change-link"
+            className="change-link-red"
             onClick={openHandleModal}
           >
             CHANGE
           </button>
+        </div>
+        <div className="profile-url-actions">
           <a
             href={`/profile/${profile.handle}`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-mini green"
           >
-            VIEW PROFILE
+            VIEW LIVE
+          </a>
+          <a
+            href={`/profile/${profile.handle}?preview=true`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-mini orange"
+          >
+            PREVIEW
           </a>
         </div>
       </div>

@@ -114,7 +114,6 @@ export function DashboardContent({ profile, primaryCategory, additionalCategorie
         campaignSoldOut={campaignSoldOut}
         campaignActive={!profile.isPaid}
         onProfileUpdate={onProfileUpdate}
-        handle={profile.handle}
       />
 
       {/* ═══ CAMPAIGN FOMO STRIP — below status bar during 5000 campaign ═══ */}

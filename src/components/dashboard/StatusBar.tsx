@@ -23,8 +23,6 @@ interface StatusBarProps {
   campaignActive?: boolean;
   /** Called after successful free claim to refresh profile data */
   onProfileUpdate?: (profile: ProfileRow) => void;
-  /** Profile handle for preview/public links */
-  handle?: string;
 }
 
 type ProfileStatus = "active" | "pending" | "expired";
@@ -53,7 +51,7 @@ const STATUS_CONFIG: Record<ProfileStatus, { label: string; cls: string }> = {
   expired: { label: "EXPIRED", cls: "defunct" },
 };
 
-export function StatusBar({ profile, campaignSoldOut = false, campaignActive = false, onProfileUpdate, handle }: StatusBarProps) {
+export function StatusBar({ profile, campaignSoldOut = false, campaignActive = false, onProfileUpdate }: StatusBarProps) {
   const [countdown, setCountdown] = useState<string>("--");
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [claiming, setClaiming] = useState(false);
@@ -181,6 +179,7 @@ export function StatusBar({ profile, campaignSoldOut = false, campaignActive = f
           className={`btn-upgrade${campaignSoldOut ? " btn-soldout" : ""}${claimed ? " btn-claimed" : ""}${campaignActive && !profile.isPaid && !campaignSoldOut ? " btn-free" : ""}`}
           onClick={(campaignSoldOut || claimed || claiming) ? undefined : handleUpgradeClick}
           disabled={campaignSoldOut || claimed || claiming}
+          style={{ marginLeft: "auto" }}
         >
           {campaignSoldOut
             ? "SOLD OUT"
@@ -189,33 +188,11 @@ export function StatusBar({ profile, campaignSoldOut = false, campaignActive = f
               : claiming
                 ? "CLAIMING..."
                 : campaignActive && !profile.isPaid
-                  ? "Upgrade Profile — $0"
+                  ? "UPGRADE PROFILE"
                   : status === "active"
                     ? "Renew Profile"
                     : "Upgrade Profile"}
         </button>
-        {handle && (
-          <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
-            <a
-              href={`/profile/${handle}?preview=true`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-preview"
-            >
-              PREVIEW ↗
-            </a>
-            {profile.publishedAt && (
-              <a
-                href={`/profile/${handle}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-viewpub"
-              >
-                VIEW PUBLIC ↗
-              </a>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Upgrade / payment panel */}
