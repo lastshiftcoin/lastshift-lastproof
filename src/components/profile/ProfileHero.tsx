@@ -78,7 +78,7 @@ export function ProfileHero(props: Props) {
         {props.earlyAdopterNumber != null && !isFree && (
           <span className="pp-badge-5k" data-tip="First 5000 operator — founding member">
             {BADGE_5K_SVG}
-            <span className="pp-num">#{props.earlyAdopterNumber}</span>
+            <span className="pp-num">5K</span>
           </span>
         )}
       </div>
