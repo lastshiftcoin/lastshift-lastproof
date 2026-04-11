@@ -28,7 +28,7 @@ import type {
   ProofRow as ViewProofRow,
 } from "../public-profile-view";
 import type { Tier } from "../tier";
-import { deriveProfileVariant } from "../tier";
+import { computeTier, deriveProfileVariant } from "../tier";
 import { isPaidNow } from "../subscription";
 
 import { getProfileByHandle } from "../db/profiles-adapter";
@@ -93,15 +93,8 @@ export async function getPublicProfileView(
   const profile = await getProfileByHandle(handle);
   if (!profile) return null;
 
-  const tier = profile.tier as Tier;
   const paid = isPaidNow({ expiresAt: profile.subscriptionExpiresAt });
   const isPublished = profile.publishedAt !== null;
-
-  // Preview mode: force full profile variant regardless of tier/paid status.
-  // Auth check happens in the page — the projector trusts the caller.
-  const variant = options?.previewMode
-    ? (profile.isEarlyAdopter ? "legend" : "public")
-    : deriveProfileVariant({ tier, isEarlyAdopter: profile.isEarlyAdopter });
 
   // ─── 2. Fan out reads in parallel ──────────────────────────────────
   const [workItemRows, screenshotRows, linkRows, categoryRows, proofRows, handleHistoryRows] =
@@ -190,7 +183,18 @@ export async function getPublicProfileView(
     (p) => p.kind === "dev_verification",
   ).length;
 
-  // ─── 9. Tier bar math ──────────────────────────────────────────────
+  // ─── 9. Compute tier live (don't trust cached DB value) ────────────
+  const tier = computeTier({
+    isPaid: paid,
+    isPublished,
+    proofsConfirmed,
+  });
+
+  const variant = options?.previewMode
+    ? (profile.isEarlyAdopter ? "legend" : "public")
+    : deriveProfileVariant({ tier, isEarlyAdopter: profile.isEarlyAdopter });
+
+  // ─── 10. Tier bar math ─────────────────────────────────────────────
   const tierBarFillPct = Math.min(100, Math.round((proofsConfirmed / 50) * 100));
   const remaining = Math.max(0, 50 - proofsConfirmed);
   const tierSubtitle =
