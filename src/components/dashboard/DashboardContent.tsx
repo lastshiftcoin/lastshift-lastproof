@@ -76,10 +76,11 @@ interface DashboardContentProps {
   screenshots: ScreenshotData[];
   links: LinkData[];
   proofs: LedgerProofData[];
+  previousHandles: string[];
   onProfileUpdate: (profile: ProfileRow) => void;
 }
 
-export function DashboardContent({ profile, primaryCategory, additionalCategories, workItems, screenshots, links, proofs, onProfileUpdate }: DashboardContentProps) {
+export function DashboardContent({ profile, primaryCategory, additionalCategories, workItems, screenshots, links, proofs, previousHandles, onProfileUpdate }: DashboardContentProps) {
   const lastLogin = new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC";
   const [campaignSoldOut, setCampaignSoldOut] = useState(false);
   const [handleChangeRequested, setHandleChangeRequested] = useState(false);
@@ -193,7 +194,7 @@ export function DashboardContent({ profile, primaryCategory, additionalCategorie
       <LinksCard initialLinks={links} />
 
       {/* ═══ ABOUT ME — Step 11 ═══ */}
-      <AboutCard profile={profile} onProfileUpdate={onProfileUpdate} />
+      <AboutCard profile={profile} onProfileUpdate={onProfileUpdate} previousHandles={previousHandles} />
 
       {/* ═══ PROOFS LEDGER — Step 12 ═══ */}
       <ProofsLedgerCard proofs={proofs} />

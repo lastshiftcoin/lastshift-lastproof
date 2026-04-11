@@ -56,6 +56,7 @@ export default async function DashboardPage() {
     kind: "proof" | "dev_verification"; note: string | null;
     txSignature: string | null; createdAt: string;
   }> = [];
+  let previousHandles: string[] = [];
 
   if (operator) {
     profile = await getProfileByOperatorId(operator.id);
@@ -163,6 +164,16 @@ export default async function DashboardPage() {
           };
         });
       }
+
+      // Fetch previous handles
+      const { data: handleRows } = await sb
+        .from("handle_history")
+        .select("old_handle")
+        .eq("profile_id", profile.id)
+        .order("changed_at", { ascending: true });
+      if (handleRows) {
+        previousHandles = handleRows.map((h: { old_handle: string }) => h.old_handle);
+      }
     }
   }
 
@@ -182,6 +193,7 @@ export default async function DashboardPage() {
           screenshots={screenshots}
           links={links}
           proofs={proofs}
+          previousHandles={previousHandles}
         />
       </main>
       <DashboardFooter />

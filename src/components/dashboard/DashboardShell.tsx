@@ -39,9 +39,10 @@ interface DashboardShellProps {
     kind: "proof" | "dev_verification"; note: string | null;
     txSignature: string | null; createdAt: string;
   }>;
+  previousHandles: string[];
 }
 
-export function DashboardShell({ session, initialProfile, operatorId, primaryCategory, additionalCategories, workItems, screenshots, links, proofs }: DashboardShellProps) {
+export function DashboardShell({ session, initialProfile, operatorId, primaryCategory, additionalCategories, workItems, screenshots, links, proofs, previousHandles }: DashboardShellProps) {
   const [profile, setProfile] = useState(initialProfile);
   const { disconnect } = useWallet();
 
@@ -91,6 +92,7 @@ export function DashboardShell({ session, initialProfile, operatorId, primaryCat
       screenshots={screenshots}
       links={links}
       proofs={proofs}
+      previousHandles={previousHandles}
       onProfileUpdate={setProfile}
     />
   );

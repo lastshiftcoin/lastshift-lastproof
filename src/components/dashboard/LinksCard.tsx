@@ -189,6 +189,8 @@ export function LinksCard({ initialLinks }: LinksCardProps) {
   }
 
   // ─── Pin toggle ─────────────────────────────────────────────────────────
+  const [pinSaved, setPinSaved] = useState(false);
+
   async function togglePin(id: string) {
     const link = links.find((l) => l.id === id);
     if (!link) return;
@@ -207,10 +209,12 @@ export function LinksCard({ initialLinks }: LinksCardProps) {
         body: JSON.stringify({ id, pinned: newPinned }),
       });
       if (!res.ok) {
-        // Revert on failure
         setLinks((prev) => prev.map((l) =>
           l.id === id ? { ...l, pinned: !newPinned } : l
         ));
+      } else {
+        setPinSaved(true);
+        setTimeout(() => setPinSaved(false), 1500);
       }
     } catch {
       setLinks((prev) => prev.map((l) =>
@@ -223,6 +227,14 @@ export function LinksCard({ initialLinks }: LinksCardProps) {
     <div className="edit-card" id="linksCard">
       <div className="edit-head">
         <div className="edit-title">LINKS</div>
+        {pinSaved && (
+          <span style={{
+            fontFamily: "var(--mono)", fontSize: 10, color: "var(--green)",
+            letterSpacing: 1, marginLeft: "auto",
+          }}>
+            UPDATED
+          </span>
+        )}
       </div>
 
       <div className="field-help" style={{ margin: "0 0 14px" }}>

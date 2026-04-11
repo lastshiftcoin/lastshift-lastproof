@@ -162,7 +162,14 @@ export function PitchCard({ profile, onProfileUpdate }: PitchCardProps) {
           if (botTyping) return;
           e.preventDefault();
           const text = e.clipboardData.getData("text/plain");
-          setPitch(text);
+          const target = e.currentTarget;
+          const start = target.selectionStart;
+          const end = target.selectionEnd;
+          const current = pitch;
+          setPitch(current.slice(0, start) + text + current.slice(end));
+          requestAnimationFrame(() => {
+            target.selectionStart = target.selectionEnd = start + text.length;
+          });
         }}
         readOnly={botTyping}
         rows={6}

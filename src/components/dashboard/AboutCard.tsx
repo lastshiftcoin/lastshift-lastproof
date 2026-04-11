@@ -18,10 +18,14 @@ import type { ProfileRow } from "@/lib/profiles-store";
 interface AboutCardProps {
   profile: ProfileRow;
   onProfileUpdate: (profile: ProfileRow) => void;
+  /** Previous handles from handle_history, loaded server-side. */
+  previousHandles?: string[];
 }
 
-export function AboutCard({ profile, onProfileUpdate }: AboutCardProps) {
+export function AboutCard({ profile, onProfileUpdate, previousHandles = [] }: AboutCardProps) {
   const [about, setAbout] = useState(profile.about ?? "");
+  const [aliases, setAliases] = useState<string[]>(previousHandles);
+  const [aliasInput, setAliasInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -39,21 +43,31 @@ export function AboutCard({ profile, onProfileUpdate }: AboutCardProps) {
     if (savedTimer.current) clearTimeout(savedTimer.current);
 
     try {
-      const res = await fetch("/api/dashboard/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fields: { about: about.trim() || null },
+      const [profileRes, aliasRes] = await Promise.all([
+        fetch("/api/dashboard/profile", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fields: { about: about.trim() || null },
+          }),
         }),
-      });
+        fetch("/api/dashboard/aliases", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ aliases }),
+        }),
+      ]);
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+      if (!profileRes.ok) {
+        const data = await profileRes.json().catch(() => ({}));
         alert(data.error || "Save failed");
         return;
       }
+      if (!aliasRes.ok) {
+        console.error("[about] aliases save failed");
+      }
 
-      const { profile: updated } = await res.json();
+      const { profile: updated } = await profileRes.json();
       if (updated) onProfileUpdate(updated);
 
       setSaved(true);
@@ -160,7 +174,14 @@ export function AboutCard({ profile, onProfileUpdate }: AboutCardProps) {
           if (botTyping) return;
           e.preventDefault();
           const text = e.clipboardData.getData("text/plain");
-          setAbout(text);
+          const target = e.currentTarget;
+          const start = target.selectionStart;
+          const end = target.selectionEnd;
+          const current = about;
+          setAbout(current.slice(0, start) + text + current.slice(end));
+          requestAnimationFrame(() => {
+            target.selectionStart = target.selectionEnd = start + text.length;
+          });
         }}
         readOnly={botTyping}
         rows={5}
@@ -173,6 +194,75 @@ export function AboutCard({ profile, onProfileUpdate }: AboutCardProps) {
       {botError && (
         <div className="bot-error">{botError}</div>
       )}
+
+      {/* Previously Known As */}
+      <div style={{ marginTop: 18 }}>
+        <div className="field-key" style={{ marginBottom: 8 }}>Previously Known As</div>
+        <div className="field-help" style={{ marginBottom: 10 }}>
+          Add any past handles you&apos;ve used. Shown on your public profile so people can find you.
+        </div>
+        {aliases.length > 0 && (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+            {aliases.map((a) => (
+              <span
+                key={a}
+                style={{
+                  fontFamily: "var(--mono)", fontSize: 11, color: "var(--text-2)",
+                  background: "var(--bg-input)", border: "1px solid var(--border)",
+                  padding: "4px 8px", borderRadius: 4, display: "inline-flex",
+                  alignItems: "center", gap: 6,
+                }}
+              >
+                @{a}
+                <button
+                  type="button"
+                  onClick={() => setAliases((prev) => prev.filter((x) => x !== a))}
+                  style={{
+                    fontFamily: "var(--mono)", fontSize: 10, color: "var(--red, #ff5470)",
+                    background: "transparent", border: "none", cursor: "pointer", padding: 0,
+                  }}
+                >
+                  &times;
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--text-dim)" }}>@</span>
+          <input
+            className="field-input"
+            style={{ flex: 1, padding: "6px 10px", fontSize: 11 }}
+            placeholder="old_handle"
+            value={aliasInput}
+            onChange={(e) => setAliasInput(e.target.value.replace(/^@/, "").replace(/\s/g, "").toLowerCase())}
+            maxLength={30}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && aliasInput.trim()) {
+                e.preventDefault();
+                if (!aliases.includes(aliasInput.trim())) {
+                  setAliases((prev) => [...prev, aliasInput.trim()]);
+                }
+                setAliasInput("");
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="btn-add"
+            style={{ padding: "6px 12px", fontSize: 10 }}
+            onClick={() => {
+              if (aliasInput.trim() && !aliases.includes(aliasInput.trim())) {
+                setAliases((prev) => [...prev, aliasInput.trim()]);
+              }
+              setAliasInput("");
+            }}
+            disabled={!aliasInput.trim()}
+          >
+            ADD
+          </button>
+        </div>
+      </div>
 
       {/* SHIFTBOT inline strip */}
       <div className="bot-strip">
