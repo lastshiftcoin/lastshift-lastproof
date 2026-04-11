@@ -14,9 +14,9 @@ export default async function HomePage() {
       <section className="hero">
         <div className="hero-eyebrow">FULL LAUNCH REVEAL&nbsp;&nbsp;//&nbsp;&nbsp;MAY 2026</div>
         <h1>
-          The <span className="green">Trusted Web3 Marketers</span>
+          Discover <span className="green">Trusted Web3 Marketers</span>
           <br />
-          Are on <span style={{ color: "#fff" }}>LAST</span>
+          on <span style={{ color: "#fff" }}>LAST</span>
           <span className="orange">PROOF</span>
         </h1>
         <div className="subline">
