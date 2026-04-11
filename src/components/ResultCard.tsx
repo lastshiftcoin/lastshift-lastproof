@@ -8,7 +8,12 @@ import type { GridPreviewCard } from "@/lib/homepage-data";
 export default function ResultCard({ card }: { card: GridPreviewCard }) {
   return (
     <Link className="result-card" href="/manage">
-      <div className="result-avatar">{card.initials}</div>
+      {card.avatarUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="result-avatar result-avatar-img" src={card.avatarUrl} alt={card.name} />
+      ) : (
+        <div className="result-avatar">{card.initials}</div>
+      )}
       <div className="result-info">
         <div className="result-name-row">
           <span className="result-name">{card.name}</span>
