@@ -111,7 +111,7 @@ export default async function HomePage() {
               </svg>
             </div>
             <div className="num">STEP 01</div>
-            <h3>Browse Free</h3>
+            <h3>Scan Grid</h3>
             <p>
               Search the Grid by category, tier, or proof count. No wallet, no signup, no
               friction.
@@ -155,7 +155,7 @@ export default async function HomePage() {
           <span className="orange">Start trusting proof.</span>
         </h2>
         <p>
-          FREE FOR COIN DEVS&nbsp;&nbsp;//&nbsp;&nbsp;FIRST 5,000 OPERATORS FREE UNTIL 30
+          EARLY ACCESS&nbsp;&nbsp;//&nbsp;&nbsp;FIRST 5,000 OPERATORS FREE UNTIL 30
           DAYS AFTER GRID LAUNCH
         </p>
         <div className="hero-ctas">
