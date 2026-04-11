@@ -92,7 +92,7 @@ export function CampaignFomoStrip({ onSoldOut }: CampaignFomoStripProps) {
           {isLowStock ? "EARLY ACCESS · CLOSING SOON" : "EARLY ACCESS · FIRST 5,000 OPERATORS"}
         </div>
         <div className="cfs-price">
-          UPGRADE NOW — <b>$0</b>
+          CLICK UPGRADE PROFILE — <b>$0</b>
         </div>
       </div>
       <div className="cfs-counter-row">
