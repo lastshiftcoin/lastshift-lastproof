@@ -4,22 +4,16 @@
  * VerifiedCard — X and Telegram verification for the blue checkmark.
  *
  * - X: OAuth 2.0 with PKCE via full-page redirect
- * - Telegram: Login Widget (script injection + JS callback + POST to backend)
- *   Uses the proven approach from telegram-auth-bot-implementation.md.
- *   Widget runs directly on the page in a modal — no redirect flow,
- *   no return_to URL, no domain matching issues.
+ * - Telegram: popup to lastshift.ai bridge page → Login Widget there →
+ *   postMessage back with signed data → POST to our backend for HMAC verify
+ *
+ * The Telegram Login Widget requires a custom domain (*.vercel.app
+ * subdomains don't deliver confirmation messages). The bridge page
+ * on lastshift.ai hosts the widget; auth data comes back via postMessage.
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { createPortal } from "react-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { ProfileRow } from "@/lib/profiles-store";
-
-// Extend window for Telegram widget callback
-declare global {
-  interface Window {
-    onTelegramAuth?: (user: TelegramAuthUser) => void;
-  }
-}
 
 interface TelegramAuthUser {
   id: number;
@@ -36,6 +30,8 @@ interface VerifiedCardProps {
   onProfileUpdate?: (profile: ProfileRow) => void;
 }
 
+const BRIDGE_URL = "https://lastshift.ai/auth/telegram-bridge";
+
 export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
   const [xHandle, setXHandle] = useState(profile.xHandle ?? "");
   const [tgHandle, setTgHandle] = useState(profile.tgHandle ?? "");
@@ -45,21 +41,13 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
   const [tgSaving, setTgSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  // Telegram Login Widget state
-  const [showTgWidget, setShowTgWidget] = useState(false);
-  const [tgWidgetLoading, setTgWidgetLoading] = useState(false);
-  const mountTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const widgetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [tgConnecting, setTgConnecting] = useState(false);
+  const popupRef = useRef<Window | null>(null);
 
   const xLinked = !!xHandle;
   const tgLinked = !!tgHandle;
   const bothVerified = xVerified && tgVerified;
   const progressPct = (xVerified ? 50 : 0) + (tgVerified ? 50 : 0);
-
-  // Bot username from env (public, safe for client)
-  const botUsername =
-    process.env.NEXT_PUBLIC_TG_BOT_USERNAME ?? "Auth_lastproof_bot";
 
   // Detect ?verified=x on mount (X OAuth callback return)
   useEffect(() => {
@@ -125,11 +113,10 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
     }
   }, [successMsg, errorMsg]);
 
-  // Handle Telegram widget auth callback — POST data to our backend
+  // Handle Telegram auth data received via postMessage from bridge popup
   const handleTelegramAuth = useCallback(
     async (user: TelegramAuthUser) => {
-      setShowTgWidget(false);
-      setTgWidgetLoading(true);
+      setTgConnecting(true);
 
       try {
         const res = await fetch("/api/auth/telegram/callback", {
@@ -158,12 +145,10 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
           return;
         }
 
-        // Success
         setTgHandle(data.handle);
         setTgVerified(true);
         setSuccessMsg("Telegram verified!");
 
-        // Refresh profile from server
         if (onProfileUpdate) {
           fetch("/api/dashboard/profile")
             .then((r) => r.json())
@@ -175,61 +160,53 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
       } catch {
         setErrorMsg("Telegram verification failed — network error.");
       } finally {
-        setTgWidgetLoading(false);
+        setTgConnecting(false);
       }
     },
     [onProfileUpdate],
   );
 
-  // Mount Telegram Login Widget when modal opens
+  // Listen for postMessage from the bridge popup
   useEffect(() => {
-    if (!showTgWidget) return;
+    function onMessage(e: MessageEvent) {
+      // Only accept messages from lastshift.ai
+      if (e.origin !== "https://lastshift.ai") return;
+      if (e.data?.type !== "telegram-auth") return;
 
-    // Global callback — Telegram's widget calls this after auth
-    window.onTelegramAuth = (user: TelegramAuthUser) => {
-      handleTelegramAuth(user);
-    };
+      const user = e.data.payload as TelegramAuthUser;
+      if (user?.id && user?.hash && user?.auth_date) {
+        handleTelegramAuth(user);
+      }
+    }
 
-    // Small delay to ensure modal DOM is painted
-    mountTimeoutRef.current = setTimeout(() => {
-      const container = document.getElementById("telegram-widget-container");
-      if (!container) return;
-      container.innerHTML = ""; // clear any previous widget
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [handleTelegramAuth]);
 
-      const script = document.createElement("script");
-      script.src = "https://telegram.org/js/telegram-widget.js?23";
-      script.setAttribute("data-telegram-login", botUsername);
-      script.setAttribute("data-size", "large");
-      script.setAttribute("data-onauth", "onTelegramAuth(user)");
-      script.setAttribute("data-request-access", "write");
-      script.async = true;
+  // Open bridge popup for Telegram auth
+  function openTelegramBridge() {
+    const origin = window.location.origin;
+    const url = `${BRIDGE_URL}?origin=${encodeURIComponent(origin)}`;
 
-      script.onerror = () => {
-        setErrorMsg(
-          "Telegram widget failed to load. Check your ad blocker.",
-        );
-        setShowTgWidget(false);
-      };
+    const w = 450;
+    const h = 500;
+    const left = window.screenX + (window.outerWidth - w) / 2;
+    const top = window.screenY + (window.outerHeight - h) / 2;
 
-      container.appendChild(script);
+    popupRef.current = window.open(
+      url,
+      "telegram-bridge",
+      `width=${w},height=${h},left=${left},top=${top},popup=yes`,
+    );
 
-      // Timeout: if iframe hasn't appeared after 10s, show error
-      widgetTimeoutRef.current = setTimeout(() => {
-        if (container && !container.querySelector("iframe")) {
-          setErrorMsg(
-            "Telegram widget didn't load. Make sure telegram.org is not blocked.",
-          );
-          setShowTgWidget(false);
-        }
-      }, 10000);
-    }, 50);
-
-    return () => {
-      if (mountTimeoutRef.current) clearTimeout(mountTimeoutRef.current);
-      if (widgetTimeoutRef.current) clearTimeout(widgetTimeoutRef.current);
-      delete window.onTelegramAuth;
-    };
-  }, [showTgWidget, botUsername, handleTelegramAuth]);
+    // Poll for popup close (user cancelled)
+    const check = setInterval(() => {
+      if (popupRef.current?.closed) {
+        clearInterval(check);
+        popupRef.current = null;
+      }
+    }, 500);
+  }
 
   async function unlinkPlatform(platform: "x" | "tg") {
     if (
@@ -431,97 +408,14 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
             <button
               type="button"
               className="vr-action connect"
-              onClick={() => setShowTgWidget(true)}
-              disabled={tgWidgetLoading}
+              onClick={openTelegramBridge}
+              disabled={tgConnecting}
             >
-              {tgWidgetLoading ? "VERIFYING..." : "CONNECT"}
+              {tgConnecting ? "VERIFYING..." : "CONNECT"}
             </button>
           )}
         </div>
       </div>
-
-      {/* Telegram Login Widget modal — rendered via portal at body level
-          so no parent stacking context can trap it behind other cards */}
-      {showTgWidget &&
-        createPortal(
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 99999,
-              background: "rgba(0,0,0,0.85)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setShowTgWidget(false);
-            }}
-          >
-            <div
-              style={{
-                background: "#1a1a2e",
-                border: "1px solid #2a2a3e",
-                borderRadius: 8,
-                padding: "28px 32px",
-                minWidth: 320,
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: 12,
-                  letterSpacing: 1.5,
-                  color: "#fff",
-                  marginBottom: 6,
-                }}
-              >
-                CONNECT TELEGRAM
-              </div>
-              <div
-                style={{
-                  fontFamily: "var(--mono)",
-                  fontSize: 10,
-                  color: "#666",
-                  marginBottom: 20,
-                }}
-              >
-                Click the button below to verify your Telegram account
-              </div>
-
-              {/* Widget mounts here */}
-              <div
-                id="telegram-widget-container"
-                style={{
-                  minHeight: 48,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              />
-
-              <button
-                type="button"
-                onClick={() => setShowTgWidget(false)}
-                style={{
-                  marginTop: 18,
-                  fontFamily: "var(--mono)",
-                  fontSize: 9,
-                  letterSpacing: 1,
-                  color: "#666",
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: "6px 12px",
-                }}
-              >
-                CANCEL
-              </button>
-            </div>
-          </div>,
-          document.body,
-        )}
     </div>
   );
 }
