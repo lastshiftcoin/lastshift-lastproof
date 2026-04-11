@@ -87,11 +87,15 @@ interface IdentityCardProps {
   /** Primary category slug from profile_categories (loaded server-side). */
   primaryCategory: string | null;
   onProfileUpdate: (profile: ProfileRow) => void;
+  /** When true, auto-open the handle change modal (triggered externally). */
+  handleChangeRequested?: boolean;
+  /** Called after the modal opens so parent can reset the flag. */
+  onHandleChangeAck?: () => void;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function IdentityCard({ profile, primaryCategory, onProfileUpdate }: IdentityCardProps) {
+export function IdentityCard({ profile, primaryCategory, onProfileUpdate, handleChangeRequested, onHandleChangeAck }: IdentityCardProps) {
   // ─── Local form state ─────────────────────────────────────────────────────
   const [displayName, setDisplayName] = useState(profile.displayName ?? "");
   const [category, setCategory] = useState(primaryCategory ?? "");
@@ -107,6 +111,15 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate }: Iden
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── Handle change modal state ──────────────────────────────────────────
+  // External trigger from standalone URL bar
+  useEffect(() => {
+    if (handleChangeRequested) {
+      openHandleModal();
+      onHandleChangeAck?.();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handleChangeRequested]);
+
   const [showHandleModal, setShowHandleModal] = useState(false);
   const [handleInput, setHandleInput] = useState("");
   const [handleAvailable, setHandleAvailable] = useState<boolean | null>(null);
@@ -306,23 +319,14 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate }: Iden
     <div className="edit-card" data-card="identity">
       <div className="edit-head">
         <div className="edit-title">IDENTITY</div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", marginLeft: "auto" }}>
-          <button
-            type="button"
-            className="change-link-red"
-            onClick={openHandleModal}
-          >
-            CHANGE HANDLE
-          </button>
-          <button
-            type="button"
-            className={`edit-action${saved ? " saved" : ""}`}
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? "SAVING..." : saved ? "SAVED ✓" : "SAVE →"}
-          </button>
-        </div>
+        <button
+          type="button"
+          className={`edit-action${saved ? " saved" : ""}`}
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving ? "SAVING..." : saved ? "SAVED ✓" : "SAVE →"}
+        </button>
       </div>
 
       {/* Handle change modal (inline) */}

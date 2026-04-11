@@ -82,6 +82,7 @@ interface DashboardContentProps {
 export function DashboardContent({ profile, primaryCategory, additionalCategories, workItems, screenshots, links, proofs, onProfileUpdate }: DashboardContentProps) {
   const lastLogin = new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC";
   const [campaignSoldOut, setCampaignSoldOut] = useState(false);
+  const [handleChangeRequested, setHandleChangeRequested] = useState(false);
 
   return (
     <div className="content">
@@ -132,6 +133,13 @@ export function DashboardContent({ profile, primaryCategory, additionalCategorie
         <div className="profile-url">
           <span className="pu-base">lastproof.app/</span>
           <span className="pu-handle">@{profile.handle}</span>
+          <button
+            type="button"
+            className="change-link-red"
+            onClick={() => setHandleChangeRequested(true)}
+          >
+            CHANGE
+          </button>
         </div>
         <div className="profile-url-actions">
           <a
@@ -158,6 +166,8 @@ export function DashboardContent({ profile, primaryCategory, additionalCategorie
         profile={profile}
         primaryCategory={primaryCategory}
         onProfileUpdate={onProfileUpdate}
+        handleChangeRequested={handleChangeRequested}
+        onHandleChangeAck={() => setHandleChangeRequested(false)}
       />
 
       {/* ═══ ADDITIONAL CATEGORIES — Step 5 ═══ */}
