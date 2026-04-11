@@ -306,14 +306,23 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate }: Iden
     <div className="edit-card" data-card="identity">
       <div className="edit-head">
         <div className="edit-title">IDENTITY</div>
-        <button
-          type="button"
-          className={`edit-action${saved ? " saved" : ""}`}
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saving ? "SAVING..." : saved ? "SAVED ✓" : "SAVE →"}
-        </button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", marginLeft: "auto" }}>
+          <button
+            type="button"
+            className="change-link-red"
+            onClick={openHandleModal}
+          >
+            CHANGE HANDLE
+          </button>
+          <button
+            type="button"
+            className={`edit-action${saved ? " saved" : ""}`}
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? "SAVING..." : saved ? "SAVED ✓" : "SAVE →"}
+          </button>
+        </div>
       </div>
 
       {/* Handle change modal (inline) */}
