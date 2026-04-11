@@ -32,7 +32,7 @@
 
 /* ═══ MAIN ═══ */
 .main{flex:1;display:block;min-height:0}
-.stat-trio{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:0 0 12px}
+.stat-trio{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:0 0 12px;position:relative;z-index:1}
 .stat-box.dev .stat-val{display:flex;align-items:center;gap:10px}
 .stat-box.dev .dev-icon{display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:1px;color:var(--green);background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.5);padding:3px 7px;border-radius:3px}
 .tier-row-card{margin:0 0 18px;padding:22px 26px;border:1px solid rgba(255,145,0,.35);border-radius:8px;background:linear-gradient(135deg,rgba(255,215,0,.06),rgba(255,145,0,.04) 50%,rgba(10,11,15,.4));position:relative;overflow:hidden}
@@ -214,6 +214,7 @@
 .id-field{display:flex;flex-direction:column;gap:6px}
 .field-key{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1.8px;text-transform:uppercase}
 .profile-url-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 18px;background:linear-gradient(135deg,rgba(0,230,118,.05),rgba(0,230,118,.02));border:1px solid rgba(0,230,118,.25);border-radius:8px;margin-bottom:20px}
+.profile-url-bar.standalone{position:relative;z-index:1;margin-bottom:16px}
 .profile-url{display:flex;align-items:baseline;gap:2px;font-family:var(--mono);min-width:0;overflow:hidden}
 .profile-url .pu-base{font-size:13px;color:var(--text-dim);letter-spacing:.5px}
 .profile-url .pu-handle{font-size:18px;font-weight:700;color:var(--green);letter-spacing:.5px;text-shadow:0 0 18px rgba(0,230,118,.25)}

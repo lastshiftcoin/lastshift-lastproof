@@ -127,6 +127,32 @@ export function DashboardContent({ profile, primaryCategory, additionalCategorie
       {/* ═══ TRUST TIER ROW — Step 2 ═══ */}
       <TrustTierRow profile={profile} totalProofs={proofs.length} />
 
+      {/* ═══ PROFILE URL BAR — standalone above Identity ═══ */}
+      <div className="profile-url-bar standalone">
+        <div className="profile-url">
+          <span className="pu-base">lastproof.app/</span>
+          <span className="pu-handle">@{profile.handle}</span>
+        </div>
+        <div className="profile-url-actions">
+          <a
+            href={`/profile/${profile.handle}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-mini green"
+          >
+            VIEW LIVE
+          </a>
+          <a
+            href={`/profile/${profile.handle}?preview=true`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-mini orange"
+          >
+            PREVIEW
+          </a>
+        </div>
+      </div>
+
       {/* ═══ IDENTITY — Step 4 ═══ */}
       <IdentityCard
         profile={profile}
