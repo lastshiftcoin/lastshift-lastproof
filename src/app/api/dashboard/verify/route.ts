@@ -8,7 +8,7 @@ import { getProfileByOperatorId } from "@/lib/profiles-store";
  *
  * Connecting is now handled via OAuth:
  *   X:        GET /api/auth/x/authorize → Twitter OAuth → callback
- *   Telegram: GET /api/auth/telegram/authorize → Telegram OAuth → callback
+ *   Telegram: Login Widget on page → POST /api/auth/telegram/callback
  *
  * This route only handles DISCONNECT (handle: null).
  */

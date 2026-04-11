@@ -3,22 +3,32 @@
 /**
  * VerifiedCard — X and Telegram verification for the blue checkmark.
  *
- * Wireframe: lastproof-dashboard.html, GET VERIFIED section.
- *
- * - Blue checkmark badge (locked when incomplete, active when both verified)
- * - X / Twitter row: CONNECT → OAuth redirect, or shows @handle + DISCONNECT
- * - Telegram row: CONNECT → OAuth redirect, or shows @handle + DISCONNECT
- * - Progress bar: 0%, 50%, or 100% based on verified platforms
- *
- * OAuth flow: CONNECT redirects to /api/auth/{platform}/authorize, which
- * redirects to the platform's OAuth page. On success, the callback writes
- * the verified handle to the DB and redirects back with ?verified={platform}.
- *
- * Handle disconnect calls POST /api/dashboard/verify with handle: null.
+ * - X: OAuth 2.0 with PKCE via full-page redirect
+ * - Telegram: Login Widget (script injection + JS callback + POST to backend)
+ *   Uses the proven approach from telegram-auth-bot-implementation.md.
+ *   Widget runs directly on the page in a modal — no redirect flow,
+ *   no return_to URL, no domain matching issues.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { ProfileRow } from "@/lib/profiles-store";
+
+// Extend window for Telegram widget callback
+declare global {
+  interface Window {
+    onTelegramAuth?: (user: TelegramAuthUser) => void;
+  }
+}
+
+interface TelegramAuthUser {
+  id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+  auth_date: number;
+  hash: string;
+}
 
 interface VerifiedCardProps {
   profile: ProfileRow;
@@ -35,12 +45,22 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Telegram Login Widget state
+  const [showTgWidget, setShowTgWidget] = useState(false);
+  const [tgWidgetLoading, setTgWidgetLoading] = useState(false);
+  const mountTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const widgetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const xLinked = !!xHandle;
   const tgLinked = !!tgHandle;
   const bothVerified = xVerified && tgVerified;
   const progressPct = (xVerified ? 50 : 0) + (tgVerified ? 50 : 0);
 
-  // Detect ?verified=x|tg or ?verify_error=x|tg on mount (OAuth callback return)
+  // Bot username from env (public, safe for client)
+  const botUsername =
+    process.env.NEXT_PUBLIC_TG_BOT_USERNAME ?? "LastShiftAuthBot";
+
+  // Detect ?verified=x on mount (X OAuth callback return)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const verified = params.get("verified");
@@ -48,12 +68,12 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
     const reason = params.get("reason");
 
     if (verified === "x" || verified === "tg") {
-      setSuccessMsg(`${verified === "x" ? "X / Twitter" : "Telegram"} verified!`);
-      // Clean URL without reload
+      setSuccessMsg(
+        `${verified === "x" ? "X / Twitter" : "Telegram"} verified!`,
+      );
       const url = new URL(window.location.href);
       url.searchParams.delete("verified");
       window.history.replaceState({}, "", url.pathname);
-      // Trigger parent refresh to get updated profile data
       if (onProfileUpdate) {
         fetch("/api/dashboard/profile")
           .then((r) => r.json())
@@ -70,15 +90,14 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
         state_mismatch: "Security check failed. Please try again.",
         token_exchange: `Failed to complete ${platform} authorization.`,
         user_fetch: `Could not retrieve your ${platform} username.`,
-        hash_mismatch: "Telegram verification failed — invalid signature.",
-        expired_auth: "Telegram auth expired. Please try again.",
-        no_username: "Your Telegram account has no username set. Please set one in Telegram Settings first.",
         handle_taken: `This ${platform} account is already linked to another LASTPROOF profile.`,
-        no_session: "You're not logged in. Please connect your wallet first.",
+        no_session:
+          "You're not logged in. Please connect your wallet first.",
         db_error: "Database error. Please try again.",
       };
-      setErrorMsg(messages[reason ?? ""] ?? `${platform} verification failed.`);
-      // Clean URL
+      setErrorMsg(
+        messages[reason ?? ""] ?? `${platform} verification failed.`,
+      );
       const url = new URL(window.location.href);
       url.searchParams.delete("verify_error");
       url.searchParams.delete("reason");
@@ -86,7 +105,7 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
     }
   }, [onProfileUpdate]);
 
-  // Sync state when profile prop updates (e.g., after parent refresh)
+  // Sync state when profile prop updates
   useEffect(() => {
     setXHandle(profile.xHandle ?? "");
     setTgHandle(profile.tgHandle ?? "");
@@ -97,13 +116,127 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
   // Auto-dismiss messages
   useEffect(() => {
     if (successMsg || errorMsg) {
-      const t = setTimeout(() => { setSuccessMsg(null); setErrorMsg(null); }, 5000);
+      const t = setTimeout(() => {
+        setSuccessMsg(null);
+        setErrorMsg(null);
+      }, 5000);
       return () => clearTimeout(t);
     }
   }, [successMsg, errorMsg]);
 
+  // Handle Telegram widget auth callback — POST data to our backend
+  const handleTelegramAuth = useCallback(
+    async (user: TelegramAuthUser) => {
+      setShowTgWidget(false);
+      setTgWidgetLoading(true);
+
+      try {
+        const res = await fetch("/api/auth/telegram/callback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(user),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          const messages: Record<string, string> = {
+            hash_mismatch: "Telegram verification failed — invalid signature.",
+            expired_auth: "Telegram auth expired. Please try again.",
+            no_username:
+              "Your Telegram account has no username. Set one in Telegram Settings first.",
+            handle_taken:
+              "This Telegram account is already linked to another LASTPROOF profile.",
+            no_session:
+              "You're not logged in. Please connect your wallet first.",
+            db_error: "Database error. Please try again.",
+          };
+          setErrorMsg(
+            messages[data.error] ?? "Telegram verification failed.",
+          );
+          return;
+        }
+
+        // Success
+        setTgHandle(data.handle);
+        setTgVerified(true);
+        setSuccessMsg("Telegram verified!");
+
+        // Refresh profile from server
+        if (onProfileUpdate) {
+          fetch("/api/dashboard/profile")
+            .then((r) => r.json())
+            .then((d) => {
+              if (d.profile) onProfileUpdate(d.profile);
+            })
+            .catch(() => {});
+        }
+      } catch {
+        setErrorMsg("Telegram verification failed — network error.");
+      } finally {
+        setTgWidgetLoading(false);
+      }
+    },
+    [onProfileUpdate],
+  );
+
+  // Mount Telegram Login Widget when modal opens
+  useEffect(() => {
+    if (!showTgWidget) return;
+
+    // Global callback — Telegram's widget calls this after auth
+    window.onTelegramAuth = (user: TelegramAuthUser) => {
+      handleTelegramAuth(user);
+    };
+
+    // Small delay to ensure modal DOM is painted
+    mountTimeoutRef.current = setTimeout(() => {
+      const container = document.getElementById("telegram-widget-container");
+      if (!container) return;
+      container.innerHTML = ""; // clear any previous widget
+
+      const script = document.createElement("script");
+      script.src = "https://telegram.org/js/telegram-widget.js?22";
+      script.setAttribute("data-telegram-login", botUsername);
+      script.setAttribute("data-size", "large");
+      script.setAttribute("data-onauth", "onTelegramAuth(user)");
+      script.setAttribute("data-request-access", "write");
+      script.async = true;
+
+      script.onerror = () => {
+        setErrorMsg(
+          "Telegram widget failed to load. Check your ad blocker.",
+        );
+        setShowTgWidget(false);
+      };
+
+      container.appendChild(script);
+
+      // Timeout: if iframe hasn't appeared after 10s, show error
+      widgetTimeoutRef.current = setTimeout(() => {
+        if (container && !container.querySelector("iframe")) {
+          setErrorMsg(
+            "Telegram widget didn't load. Make sure telegram.org is not blocked.",
+          );
+          setShowTgWidget(false);
+        }
+      }, 10000);
+    }, 50);
+
+    return () => {
+      if (mountTimeoutRef.current) clearTimeout(mountTimeoutRef.current);
+      if (widgetTimeoutRef.current) clearTimeout(widgetTimeoutRef.current);
+      delete window.onTelegramAuth;
+    };
+  }, [showTgWidget, botUsername, handleTelegramAuth]);
+
   async function unlinkPlatform(platform: "x" | "tg") {
-    if (!confirm(`Disconnect ${platform === "x" ? "X / Twitter" : "Telegram"}?`)) return;
+    if (
+      !confirm(
+        `Disconnect ${platform === "x" ? "X / Twitter" : "Telegram"}?`,
+      )
+    )
+      return;
 
     const setSaving = platform === "x" ? setXSaving : setTgSaving;
     setSaving(true);
@@ -142,22 +275,36 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
 
       {/* Success/error toast */}
       {successMsg && (
-        <div style={{
-          padding: "8px 12px", margin: "0 0 12px", borderRadius: 4,
-          background: "rgba(0,230,118,0.1)", border: "1px solid var(--green)",
-          fontFamily: "var(--mono)", fontSize: 10, color: "var(--green)",
-          letterSpacing: 0.5,
-        }}>
+        <div
+          style={{
+            padding: "8px 12px",
+            margin: "0 0 12px",
+            borderRadius: 4,
+            background: "rgba(0,230,118,0.1)",
+            border: "1px solid var(--green)",
+            fontFamily: "var(--mono)",
+            fontSize: 10,
+            color: "var(--green)",
+            letterSpacing: 0.5,
+          }}
+        >
           {successMsg}
         </div>
       )}
       {errorMsg && (
-        <div style={{
-          padding: "8px 12px", margin: "0 0 12px", borderRadius: 4,
-          background: "rgba(255,107,107,0.1)", border: "1px solid #ff6b6b",
-          fontFamily: "var(--mono)", fontSize: 10, color: "#ff6b6b",
-          letterSpacing: 0.5,
-        }}>
+        <div
+          style={{
+            padding: "8px 12px",
+            margin: "0 0 12px",
+            borderRadius: 4,
+            background: "rgba(255,107,107,0.1)",
+            border: "1px solid #ff6b6b",
+            fontFamily: "var(--mono)",
+            fontSize: 10,
+            color: "#ff6b6b",
+            letterSpacing: 0.5,
+          }}
+        >
           {errorMsg}
         </div>
       )}
@@ -180,11 +327,15 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
             Earn the <span className="blue">blue checkmark</span>
           </div>
           <div className="verify-sub">
-            Link X and Telegram to unlock the badge. Telegram is required for the HIRE button.
+            Link X and Telegram to unlock the badge. Telegram is required
+            for the HIRE button.
           </div>
           <div className="verify-progress">
             <div className="verify-bar">
-              <div className="verify-bar-fill" style={{ width: `${progressPct}%` }} />
+              <div
+                className="verify-bar-fill"
+                style={{ width: `${progressPct}%` }}
+              />
             </div>
           </div>
         </div>
@@ -201,10 +352,17 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
               <div className="vr-handle connected">
                 @{xHandle}
                 {xVerified && (
-                  <span style={{
-                    fontFamily: "var(--mono)", fontSize: 8, letterSpacing: 1,
-                    color: "var(--green)", marginLeft: 8,
-                  }}>VERIFIED</span>
+                  <span
+                    style={{
+                      fontFamily: "var(--mono)",
+                      fontSize: 8,
+                      letterSpacing: 1,
+                      color: "var(--green)",
+                      marginLeft: 8,
+                    }}
+                  >
+                    VERIFIED
+                  </span>
                 )}
               </div>
             ) : (
@@ -224,7 +382,9 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
             <button
               type="button"
               className="vr-action connect"
-              onClick={() => { window.location.href = "/api/auth/x/authorize"; }}
+              onClick={() => {
+                window.location.href = "/api/auth/x/authorize";
+              }}
             >
               CONNECT
             </button>
@@ -240,10 +400,17 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
               <div className="vr-handle connected">
                 @{tgHandle}
                 {tgVerified && (
-                  <span style={{
-                    fontFamily: "var(--mono)", fontSize: 8, letterSpacing: 1,
-                    color: "var(--green)", marginLeft: 8,
-                  }}>VERIFIED</span>
+                  <span
+                    style={{
+                      fontFamily: "var(--mono)",
+                      fontSize: 8,
+                      letterSpacing: 1,
+                      color: "var(--green)",
+                      marginLeft: 8,
+                    }}
+                  >
+                    VERIFIED
+                  </span>
                 )}
               </div>
             ) : (
@@ -263,13 +430,94 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
             <button
               type="button"
               className="vr-action connect"
-              onClick={() => { window.location.href = "/api/auth/telegram/authorize"; }}
+              onClick={() => setShowTgWidget(true)}
+              disabled={tgWidgetLoading}
             >
-              CONNECT
+              {tgWidgetLoading ? "VERIFYING..." : "CONNECT"}
             </button>
           )}
         </div>
       </div>
+
+      {/* Telegram Login Widget modal */}
+      {showTgWidget && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(0,0,0,0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowTgWidget(false);
+          }}
+        >
+          <div
+            style={{
+              background: "var(--bg-card, #1a1a2e)",
+              border: "1px solid var(--border, #2a2a3e)",
+              borderRadius: 8,
+              padding: "28px 32px",
+              minWidth: 320,
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "var(--mono)",
+                fontSize: 12,
+                letterSpacing: 1.5,
+                color: "var(--text-1, #fff)",
+                marginBottom: 6,
+              }}
+            >
+              CONNECT TELEGRAM
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--mono)",
+                fontSize: 10,
+                color: "var(--text-dim, #666)",
+                marginBottom: 20,
+              }}
+            >
+              Click the button below to verify your Telegram account
+            </div>
+
+            {/* Widget mounts here */}
+            <div
+              id="telegram-widget-container"
+              style={{
+                minHeight: 48,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowTgWidget(false)}
+              style={{
+                marginTop: 18,
+                fontFamily: "var(--mono)",
+                fontSize: 9,
+                letterSpacing: 1,
+                color: "var(--text-dim, #666)",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                padding: "6px 12px",
+              }}
+            >
+              CANCEL
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

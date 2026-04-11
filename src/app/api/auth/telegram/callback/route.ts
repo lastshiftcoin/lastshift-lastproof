@@ -1,47 +1,60 @@
 /**
- * GET /api/auth/telegram/callback
+ * POST /api/auth/telegram/callback
  *
- * Telegram Login Widget callback.
- * - Validates HMAC hash using bot token (prevents forgery)
- * - Validates auth_date is within 5 minutes (prevents replay)
- * - Checks for duplicate handle across other profiles
- * - Writes telegram_handle + telegram_verified = true
- * - Redirects to /manage/profile?verified=tg
+ * Receives Telegram Login Widget auth data (JSON body from frontend).
+ * The Login Widget runs on the page itself — no redirect flow, no domain
+ * matching on return URLs. The widget calls `window.onTelegramAuth(user)`
+ * with signed user data; the frontend POSTs that data here.
+ *
+ * Security:
+ *   - HMAC-SHA256 verification: bot token → SHA256 → HMAC key
+ *   - auth_date within 5 minutes (anti-replay)
+ *   - Session required (readSession cookie)
+ *   - Duplicate handle guard across profiles
+ *   - Only Telegram-origin fields enter the HMAC — extra fields stripped
  */
 
 import { NextResponse, type NextRequest } from "next/server";
-import { cookies } from "next/headers";
 import crypto from "node:crypto";
 import { resolveProfileFromSession } from "@/lib/auth/resolve-profile";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const COOKIE_NAME = "lp_tg_oauth";
-const DASHBOARD_URL = "/manage/profile";
 const MAX_AUTH_AGE_S = 300; // 5 minutes
 
-function dashboardRedirect(query: string) {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://lastproof.app";
-  return NextResponse.redirect(new URL(`${DASHBOARD_URL}?${query}`, base));
-}
+/** Fields Telegram actually sends in the Login Widget callback. */
+const TELEGRAM_FIELDS = new Set([
+  "id",
+  "first_name",
+  "last_name",
+  "username",
+  "photo_url",
+  "auth_date",
+  "hash",
+]);
 
 /**
  * Verify Telegram Login Widget data per
  * https://core.telegram.org/widgets/login#checking-authorization
+ *
+ * CRITICAL: only Telegram-origin fields go into the check string.
+ * Any extra fields the frontend added (e.g. a custom field) are
+ * stripped before building the HMAC. This is the #1 cause of
+ * "all users fail verification" — see telegram-auth-bot-implementation.md.
  */
 function verifyTelegramHash(
-  params: Record<string, string>,
+  raw: Record<string, unknown>,
   botToken: string,
 ): boolean {
-  const hash = params.hash;
-  if (!hash) return false;
+  const hash = raw.hash;
+  if (typeof hash !== "string" || !hash) return false;
 
-  // Build data-check-string: all params except hash, sorted, joined with \n
-  const dataCheckString = Object.keys(params)
-    .filter((k) => k !== "hash")
+  // Build data-check-string from ONLY Telegram fields (minus hash)
+  const dataCheckString = Object.keys(raw)
+    .filter((k) => k !== "hash" && TELEGRAM_FIELDS.has(k))
     .sort()
-    .map((k) => `${k}=${params[k]}`)
+    .map((k) => `${k}=${raw[k]}`)
     .join("\n");
 
   // secret_key = SHA256(bot_token)
@@ -64,57 +77,79 @@ function verifyTelegramHash(
   }
 }
 
-export async function GET(request: NextRequest) {
-  const sp = request.nextUrl.searchParams;
-
-  // Collect all Telegram callback params
-  const tgParams: Record<string, string> = {};
-  for (const [key, value] of sp.entries()) {
-    tgParams[key] = value;
+export async function POST(request: NextRequest) {
+  let body: Record<string, unknown>;
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "invalid_json" },
+      { status: 400 },
+    );
   }
 
   // Basic presence checks
-  if (!tgParams.hash || !tgParams.id || !tgParams.auth_date) {
-    return dashboardRedirect("verify_error=tg&reason=missing_params");
-  }
-
-  // Read and delete the OAuth guard cookie
-  const jar = await cookies();
-  const rawCookie = jar.get(COOKIE_NAME)?.value;
-  jar.delete(COOKIE_NAME);
-
-  if (!rawCookie) {
-    return dashboardRedirect("verify_error=tg&reason=expired");
+  if (!body.hash || !body.id || !body.auth_date) {
+    return NextResponse.json(
+      { ok: false, error: "missing_params" },
+      { status: 400 },
+    );
   }
 
   // Verify HMAC hash
-  const botToken = process.env.TG_BOT_TOKEN;
+  const botToken = (process.env.TG_BOT_TOKEN ?? "").trim();
   if (!botToken) {
     console.error("[telegram/callback] TG_BOT_TOKEN not set");
-    return dashboardRedirect("verify_error=tg&reason=not_configured");
+    return NextResponse.json(
+      { ok: false, error: "not_configured" },
+      { status: 500 },
+    );
   }
 
-  if (!verifyTelegramHash(tgParams, botToken)) {
+  if (!verifyTelegramHash(body, botToken)) {
     console.error("[telegram/callback] HMAC verification failed");
-    return dashboardRedirect("verify_error=tg&reason=hash_mismatch");
+    return NextResponse.json(
+      { ok: false, error: "hash_mismatch" },
+      { status: 401 },
+    );
   }
 
   // Check auth_date is within 5 minutes (anti-replay)
-  const authDate = parseInt(tgParams.auth_date, 10);
-  if (Number.isNaN(authDate) || Math.abs(Date.now() / 1000 - authDate) > MAX_AUTH_AGE_S) {
-    return dashboardRedirect("verify_error=tg&reason=expired_auth");
+  const authDate = Number(body.auth_date);
+  if (
+    Number.isNaN(authDate) ||
+    Math.abs(Date.now() / 1000 - authDate) > MAX_AUTH_AGE_S
+  ) {
+    return NextResponse.json(
+      { ok: false, error: "expired_auth" },
+      { status: 401 },
+    );
   }
 
   // Get username from Telegram — some users don't have one
-  const username = tgParams.username?.toLowerCase();
+  const username =
+    typeof body.username === "string"
+      ? body.username.toLowerCase().trim()
+      : null;
   if (!username) {
-    return dashboardRedirect("verify_error=tg&reason=no_username");
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "no_username",
+        message:
+          "Your Telegram account has no username. Set one in Telegram Settings first.",
+      },
+      { status: 400 },
+    );
   }
 
-  // Resolve the current user's profile
+  // Resolve the current user's profile from session cookie
   const resolved = await resolveProfileFromSession();
   if (!resolved) {
-    return dashboardRedirect("verify_error=tg&reason=no_session");
+    return NextResponse.json(
+      { ok: false, error: "no_session" },
+      { status: 401 },
+    );
   }
 
   const { profile, sb } = resolved;
@@ -129,7 +164,10 @@ export async function GET(request: NextRequest) {
     .maybeSingle();
 
   if (existing) {
-    return dashboardRedirect("verify_error=tg&reason=handle_taken");
+    return NextResponse.json(
+      { ok: false, error: "handle_taken" },
+      { status: 409 },
+    );
   }
 
   // Write verified handle to profiles table
@@ -140,8 +178,11 @@ export async function GET(request: NextRequest) {
 
   if (updateErr) {
     console.error("[telegram/callback] update error:", updateErr.message);
-    return dashboardRedirect("verify_error=tg&reason=db_error");
+    return NextResponse.json(
+      { ok: false, error: "db_error" },
+      { status: 500 },
+    );
   }
 
-  return dashboardRedirect("verified=tg");
+  return NextResponse.json({ ok: true, handle: username });
 }
