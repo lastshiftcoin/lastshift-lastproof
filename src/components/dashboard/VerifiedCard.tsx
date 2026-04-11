@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import type { ProfileRow } from "@/lib/profiles-store";
 
 // Extend window for Telegram widget callback
@@ -58,7 +59,7 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
 
   // Bot username from env (public, safe for client)
   const botUsername =
-    process.env.NEXT_PUBLIC_TG_BOT_USERNAME ?? "LastShiftAuthBot";
+    process.env.NEXT_PUBLIC_TG_BOT_USERNAME ?? "lastproof_authbot";
 
   // Detect ?verified=x on mount (X OAuth callback return)
   useEffect(() => {
@@ -439,85 +440,88 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
         </div>
       </div>
 
-      {/* Telegram Login Widget modal */}
-      {showTgWidget && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            background: "rgba(0,0,0,0.7)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowTgWidget(false);
-          }}
-        >
+      {/* Telegram Login Widget modal — rendered via portal at body level
+          so no parent stacking context can trap it behind other cards */}
+      {showTgWidget &&
+        createPortal(
           <div
             style={{
-              background: "var(--bg-card, #1a1a2e)",
-              border: "1px solid var(--border, #2a2a3e)",
-              borderRadius: 8,
-              padding: "28px 32px",
-              minWidth: 320,
-              textAlign: "center",
+              position: "fixed",
+              inset: 0,
+              zIndex: 99999,
+              background: "rgba(0,0,0,0.85)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setShowTgWidget(false);
             }}
           >
             <div
               style={{
-                fontFamily: "var(--mono)",
-                fontSize: 12,
-                letterSpacing: 1.5,
-                color: "var(--text-1, #fff)",
-                marginBottom: 6,
+                background: "#1a1a2e",
+                border: "1px solid #2a2a3e",
+                borderRadius: 8,
+                padding: "28px 32px",
+                minWidth: 320,
+                textAlign: "center",
               }}
             >
-              CONNECT TELEGRAM
-            </div>
-            <div
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: 10,
-                color: "var(--text-dim, #666)",
-                marginBottom: 20,
-              }}
-            >
-              Click the button below to verify your Telegram account
-            </div>
+              <div
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: 12,
+                  letterSpacing: 1.5,
+                  color: "#fff",
+                  marginBottom: 6,
+                }}
+              >
+                CONNECT TELEGRAM
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--mono)",
+                  fontSize: 10,
+                  color: "#666",
+                  marginBottom: 20,
+                }}
+              >
+                Click the button below to verify your Telegram account
+              </div>
 
-            {/* Widget mounts here */}
-            <div
-              id="telegram-widget-container"
-              style={{
-                minHeight: 48,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            />
+              {/* Widget mounts here */}
+              <div
+                id="telegram-widget-container"
+                style={{
+                  minHeight: 48,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              />
 
-            <button
-              type="button"
-              onClick={() => setShowTgWidget(false)}
-              style={{
-                marginTop: 18,
-                fontFamily: "var(--mono)",
-                fontSize: 9,
-                letterSpacing: 1,
-                color: "var(--text-dim, #666)",
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                padding: "6px 12px",
-              }}
-            >
-              CANCEL
-            </button>
-          </div>
-        </div>
-      )}
+              <button
+                type="button"
+                onClick={() => setShowTgWidget(false)}
+                style={{
+                  marginTop: 18,
+                  fontFamily: "var(--mono)",
+                  fontSize: 9,
+                  letterSpacing: 1,
+                  color: "#666",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "6px 12px",
+                }}
+              >
+                CANCEL
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
