@@ -64,14 +64,12 @@ export function StatQuad({ profile, totalProofs, devProofs }: StatQuadProps) {
     ? `$${(balance * priceNum).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     : "$0.00";
 
-  const dimmed = totalProofs === 0;
-
   return (
     <div className="stat-trio">
       {/* Profile Views */}
       <div className="stat-box">
         <div className="stat-key">Profile Views</div>
-        <div className="stat-val" style={dimmed ? { opacity: 0.4 } : undefined}>
+        <div className="stat-val">
           {views}
         </div>
         <div className="stat-sub">{viewsSub}</div>
@@ -80,7 +78,7 @@ export function StatQuad({ profile, totalProofs, devProofs }: StatQuadProps) {
       {/* Total Proofs */}
       <div className="stat-box">
         <div className="stat-key">Total Proofs</div>
-        <div className="stat-val" style={dimmed ? { opacity: 0.4 } : undefined}>
+        <div className="stat-val">
           {totalProofs}
         </div>
         <div className="stat-sub">{proofsSub}</div>
@@ -89,7 +87,7 @@ export function StatQuad({ profile, totalProofs, devProofs }: StatQuadProps) {
       {/* Dev Proofs */}
       <div className="stat-box dev">
         <div className="stat-key">Dev Proofs</div>
-        <div className="stat-val" style={dimmed ? { opacity: 0.4 } : undefined}>
+        <div className="stat-val">
           {devProofs}
           <span className="dev-icon">DEV</span>
         </div>
@@ -99,7 +97,7 @@ export function StatQuad({ profile, totalProofs, devProofs }: StatQuadProps) {
       {/* $LASTSHFT Wallet */}
       <div className="stat-box wallet">
         <div className="stat-key">$LASTSHFT Wallet</div>
-        <div className="stat-val" style={dimmed ? { opacity: 0.4 } : undefined}>
+        <div className="stat-val">
           {walletBalance}
         </div>
         <div className="stat-sub">{walletUsd}</div>

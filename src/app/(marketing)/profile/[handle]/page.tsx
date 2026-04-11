@@ -56,7 +56,9 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
     const session = await readSession();
     if (session) {
       const profile = await getProfileByHandle(handle);
-      if (profile && profile.operatorId === session.walletAddress) {
+      // operatorId is a UUID; walletAddress is a Solana pubkey.
+      // Match via terminalWallet which equals session.walletAddress.
+      if (profile && profile.terminalWallet === session.walletAddress) {
         isPreview = true;
       }
     }
