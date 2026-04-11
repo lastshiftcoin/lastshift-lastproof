@@ -93,6 +93,9 @@ export function StatusBar({ profile, campaignSoldOut = false, campaignActive = f
         onProfileUpdate?.({
           ...profile,
           isPaid: true,
+          isEarlyAdopter: true,
+          eaNumber: data.eaNumber ?? null,
+          publishedAt: new Date().toISOString(),
           subscriptionExpiresAt: data.subscriptionExpiresAt ?? null,
         });
       } else if (data.reason === "sold_out") {

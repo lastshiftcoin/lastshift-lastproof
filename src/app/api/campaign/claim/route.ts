@@ -108,6 +108,7 @@ export async function POST() {
       ea_number: eaNumber,
       subscription_expires_at: subscriptionExpiresAt,
       is_early_adopter: true,
+      published_at: now.toISOString(),
     })
     .eq("id", profile.id);
 
