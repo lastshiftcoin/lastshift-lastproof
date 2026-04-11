@@ -59,7 +59,7 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
 
   // Bot username from env (public, safe for client)
   const botUsername =
-    process.env.NEXT_PUBLIC_TG_BOT_USERNAME ?? "lastproof_authbot";
+    process.env.NEXT_PUBLIC_TG_BOT_USERNAME ?? "Auth_lastproof_bot";
 
   // Detect ?verified=x on mount (X OAuth callback return)
   useEffect(() => {
