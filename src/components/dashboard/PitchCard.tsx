@@ -158,6 +158,12 @@ export function PitchCard({ profile, onProfileUpdate }: PitchCardProps) {
         onChange={(e) => {
           if (!botTyping) setPitch(e.target.value);
         }}
+        onPaste={(e) => {
+          if (botTyping) return;
+          e.preventDefault();
+          const text = e.clipboardData.getData("text/plain");
+          setPitch(text);
+        }}
         readOnly={botTyping}
         rows={6}
         placeholder="I run launch operations for memecoin projects on Solana..."

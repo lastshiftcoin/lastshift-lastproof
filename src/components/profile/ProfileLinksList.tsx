@@ -96,9 +96,12 @@ export function ProfileLinksList({
       </div>
       <div className="pp-lk-list">
         {visible.map((link) => (
-          <div
+          <a
             key={link.id}
             className={`pp-lk-row${link.isPinned ? " pp-pinned" : ""}`}
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
           >
             <div className={`pp-lk-icon pp-${link.platform}`}>{PLATFORM_ICON[link.platform]}</div>
             <div className="pp-lk-meta">
@@ -113,7 +116,7 @@ export function ProfileLinksList({
               <span />
             )}
             <span className="pp-lk-open">{OPEN_ICON}</span>
-          </div>
+          </a>
         ))}
         {hasHidden && (
           <div

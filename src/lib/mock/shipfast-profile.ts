@@ -65,6 +65,7 @@ export const shipfastProfile: PublicProfileView = {
     "Solana engineer since 2021. Built the first mint program for two of the top 10 memecoins by market cap. I don't ghost, I don't miss deadlines, and I don't deploy untested code. Hire me once and you'll never hire anyone else.",
   bioStatement:
     "Solana engineer since 2021. Built the first mint program for two of the top 10 memecoins by market cap.",
+  previousHandles: [],
 
   // ─── Work items ──────────────────────────────────────────────
   workItems: [

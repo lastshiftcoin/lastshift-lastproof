@@ -86,11 +86,11 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
     setSaving(true);
 
     const startedAt = formStartMonth && formStartYear
-      ? `${formStartYear}-${String(MONTHS.indexOf(formStartMonth) + 1).padStart(2, "0")}`
+      ? `${formStartYear}-${String(MONTHS.indexOf(formStartMonth) + 1).padStart(2, "0")}-01`
       : null;
     const endedAt = formPresent ? null
       : formEndMonth && formEndYear
-        ? `${formEndYear}-${String(MONTHS.indexOf(formEndMonth) + 1).padStart(2, "0")}`
+        ? `${formEndYear}-${String(MONTHS.indexOf(formEndMonth) + 1).padStart(2, "0")}-01`
         : null;
 
     try {

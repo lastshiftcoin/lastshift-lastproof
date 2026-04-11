@@ -78,6 +78,7 @@ export async function POST(request: Request) {
     .insert({
       profile_id: profile.id,
       image_url: imageUrl,
+      preview_url: imageUrl,
       linked_url: null,
       position,
     })

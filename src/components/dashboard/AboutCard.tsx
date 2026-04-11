@@ -156,6 +156,12 @@ export function AboutCard({ profile, onProfileUpdate }: AboutCardProps) {
         onChange={(e) => {
           if (!botTyping) setAbout(e.target.value);
         }}
+        onPaste={(e) => {
+          if (botTyping) return;
+          e.preventDefault();
+          const text = e.clipboardData.getData("text/plain");
+          setAbout(text);
+        }}
         readOnly={botTyping}
         rows={5}
         placeholder="Based in Europe. Started in gaming guilds, fell into crypto in 2022..."

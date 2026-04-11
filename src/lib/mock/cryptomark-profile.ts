@@ -61,6 +61,7 @@ export const cryptomarkProfile: PublicProfileView = {
     "I run launch operations for memecoin projects on Solana. Started in gaming guilds, fell into crypto in 2022, and have been shipping campaigns for memecoin teams ever since. I focus on the first 30 days post-launch — the window where attention is everything.",
   bioStatement:
     "I run launch operations for memecoin projects on Solana. Started in gaming guilds, fell into crypto in 2022, and have been shipping campaigns for memecoin teams ever since. I focus on the first 30 days post-launch — the window where attention is everything.",
+  previousHandles: ["CryptoMarkOG", "MarkTheShiller"],
 
   // ─── Work items ──────────────────────────────────────────────
   workItems: [

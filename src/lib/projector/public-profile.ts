@@ -37,6 +37,7 @@ import { listScreenshotsByProfile } from "../db/screenshots-adapter";
 import { listProfileLinksByProfile } from "../db/profile-links-adapter";
 import { listCategoriesByProfile } from "../db/profile-categories-adapter";
 import { listProofsByProfile } from "../db/proofs-adapter";
+import { listByProfile as listHandleHistory } from "../db/handle-history-adapter";
 import type { ProofRow as StoreProofRow } from "../proofs-store";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -103,13 +104,14 @@ export async function getPublicProfileView(
     : deriveProfileVariant({ tier, isEarlyAdopter: profile.isEarlyAdopter });
 
   // ─── 2. Fan out reads in parallel ──────────────────────────────────
-  const [workItemRows, screenshotRows, linkRows, categoryRows, proofRows] =
+  const [workItemRows, screenshotRows, linkRows, categoryRows, proofRows, handleHistoryRows] =
     await Promise.all([
       listWorkItemsByProfile(profile.id),
       listScreenshotsByProfile(profile.id),
       listProfileLinksByProfile(profile.id),
       listCategoriesByProfile(profile.id),
       listProofsByProfile(profile.id),
+      listHandleHistory(profile.id),
     ]);
 
   // ─── 3. Enrich work items with proof counts ────────────────────────
@@ -143,13 +145,13 @@ export async function getPublicProfileView(
   }));
 
   // ─── 5. Transform links with platform detection ────────────────────
-  const profileLinks: ProfileLink[] = linkRows.map((lk, i) => ({
+  const profileLinks: ProfileLink[] = linkRows.map((lk) => ({
     id: lk.id,
     label: lk.label,
     handle: extractHandle(lk.url),
     url: lk.url,
     platform: detectPlatform(lk.url),
-    isPinned: i < PINNED_LINKS_THRESHOLD,
+    isPinned: lk.pinned,
     position: lk.position,
   }));
 
@@ -246,6 +248,7 @@ export async function getPublicProfileView(
     pitchBody: profile.pitch ?? "",
     about: profile.about ?? "",
     bioStatement: profile.bioStatement ?? "",
+    previousHandles: handleHistoryRows.map((h) => h.oldHandle),
 
     workItems,
     screenshots,
@@ -257,6 +260,6 @@ export async function getPublicProfileView(
     totalProofs: proofsConfirmed,
     totalScreenshots: screenshots.length,
     totalLinks: profileLinks.length,
-    pinnedLinksCount: Math.min(profileLinks.length, PINNED_LINKS_THRESHOLD),
+    pinnedLinksCount: profileLinks.filter((l) => l.isPinned).length,
   };
 }

@@ -55,6 +55,7 @@ export const newbuilderProfile: PublicProfileView = {
   pitchBody: "",
   about: "",
   bioStatement: "",
+  previousHandles: [],
 
   workItems: [],
   screenshots: [],

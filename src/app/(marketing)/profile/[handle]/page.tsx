@@ -229,11 +229,14 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
         <section className="pp-section" data-pane="about">
           <h2 className="pp-section-title">ABOUT ME</h2>
           <p className="pp-about-body">{view.about}</p>
-          <div className="pp-aliases">
-            <span className="pp-key">PREVIOUSLY KNOWN AS:</span>
-            <span className="pp-alias-chip">@CryptoMarkOG</span>
-            <span className="pp-alias-chip">@MarkTheShiller</span>
-          </div>
+          {view.previousHandles.length > 0 && (
+            <div className="pp-aliases">
+              <span className="pp-key">PREVIOUSLY KNOWN AS:</span>
+              {view.previousHandles.map((h) => (
+                <span key={h} className="pp-alias-chip">@{h}</span>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* ═══ VERIFICATIONS ═══ */}

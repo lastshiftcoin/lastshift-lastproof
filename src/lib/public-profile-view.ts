@@ -74,6 +74,7 @@ export interface PublicProfileView {
   pitchBody: string;
   about: string;
   bioStatement: string;
+  previousHandles: string[];
 
   workItems: WorkItem[];
   screenshots: Screenshot[];
