@@ -196,6 +196,8 @@ body::after {
 .btn-primary:hover { background: var(--orange); color: #0a0b0f; box-shadow: 0 0 20px var(--accent-glow); }
 .btn-ghost { border-color: var(--border-2); color: var(--text-secondary); background: var(--bg-card); }
 .btn-ghost:hover { border-color: var(--green); color: var(--green); }
+.btn-green { border-color: var(--green); color: var(--green); background: rgba(0, 230, 118, 0.06); }
+.btn-green:hover { background: var(--green); color: #0a0b0f; box-shadow: 0 0 20px rgba(0, 230, 118, 0.3); }
 .btn-text { color: var(--text-dim); font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; }
 .btn-text:hover { color: var(--text-primary); }
 

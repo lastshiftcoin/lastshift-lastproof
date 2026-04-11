@@ -30,7 +30,7 @@ export default async function HomePage() {
           <Link className="btn btn-primary" href="/grid">
             &gt; SCAN GRID
           </Link>
-          <Link className="btn btn-ghost" href="/manage">
+          <Link className="btn btn-green" href="/manage">
             &gt; GET FOUND
           </Link>
         </div>
@@ -162,7 +162,7 @@ export default async function HomePage() {
           <Link className="btn btn-primary" href="/grid">
             &gt; SCAN GRID
           </Link>
-          <Link className="btn btn-ghost" href="/manage">
+          <Link className="btn btn-green" href="/manage">
             &gt; GET FOUND
           </Link>
         </div>
