@@ -68,11 +68,14 @@ export function ProfileLinksList({
   pinnedLinksCount: number;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState<"all" | ProfileLink["platform"]>("all");
 
-  const pinned = [...links].filter((l) => l.isPinned).sort((a, b) => a.position - b.position);
-  const rest = [...links].filter((l) => !l.isPinned).sort((a, b) => a.position - b.position);
+  const filtered = activeTab === "all" ? links : links.filter((l) => l.platform === activeTab);
+  const pinned = [...filtered].filter((l) => l.isPinned).sort((a, b) => a.position - b.position);
+  const rest = [...filtered].filter((l) => !l.isPinned).sort((a, b) => a.position - b.position);
   const hasHidden = rest.length > 0;
   const visible = expanded ? [...pinned, ...rest] : pinned;
+  const visibleCount = activeTab === "all" ? totalLinks : filtered.length;
 
   return (
     <>
@@ -80,14 +83,23 @@ export function ProfileLinksList({
         Operator&apos;s pinned channels and accounts. Pinned items appear first; the rest live behind SHOW ALL.
       </p>
       <div className="pp-lk-tabs">
-        <button type="button" className="pp-lk-tab pp-active">
+        <button
+          type="button"
+          className={`pp-lk-tab${activeTab === "all" ? " pp-active" : ""}`}
+          onClick={() => { setActiveTab("all"); setExpanded(false); }}
+        >
           ALL <span className="pp-ct">{totalLinks}</span>
         </button>
         {(["tg", "x", "web", "dc"] as const).map((pf) => {
           const count = links.filter((l) => l.platform === pf).length;
           if (count === 0) return null;
           return (
-            <button key={pf} type="button" className="pp-lk-tab">
+            <button
+              key={pf}
+              type="button"
+              className={`pp-lk-tab${activeTab === pf ? " pp-active" : ""}`}
+              onClick={() => { setActiveTab(pf); setExpanded(false); }}
+            >
               {PLATFORM_ICON[pf]}
               {PLATFORM_LABEL[pf]} <span className="pp-ct">{count}</span>
             </button>
@@ -126,7 +138,7 @@ export function ProfileLinksList({
             tabIndex={0}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setExpanded((prev) => !prev); }}
           >
-            {expanded ? `\u2013 SHOW LESS` : `+ SHOW ALL ${totalLinks} LINKS`}
+            {expanded ? `\u2013 SHOW LESS` : `+ SHOW ALL ${visibleCount} LINKS`}
           </div>
         )}
       </div>
