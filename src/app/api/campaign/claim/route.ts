@@ -31,11 +31,24 @@ export async function POST() {
 
   const sb = supabaseService();
 
-  // Look up profile by wallet
+  // Look up operator by wallet, then profile by operator ID
+  const { data: operator } = await sb
+    .from("operators")
+    .select("id")
+    .eq("terminal_wallet", session.walletAddress)
+    .maybeSingle();
+
+  if (!operator) {
+    return NextResponse.json(
+      { ok: false, reason: "profile_not_found" },
+      { status: 404 },
+    );
+  }
+
   const { data: profile, error: profileErr } = await sb
     .from("profiles")
     .select("id, is_paid, ea_claimed")
-    .eq("operator_id", session.walletAddress)
+    .eq("operator_id", operator.id)
     .maybeSingle();
 
   if (profileErr || !profile) {
