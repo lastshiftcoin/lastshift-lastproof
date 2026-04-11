@@ -75,12 +75,10 @@ export function ProfileHero(props: Props) {
         ) : (
           <div className="pp-avatar pp-avatar-default">{props.avatarMonogram}</div>
         )}
-        {props.isEarlyAdopter && !isFree && (
+        {props.earlyAdopterNumber != null && !isFree && (
           <span className="pp-badge-5k" data-tip="First 5000 operator — founding member">
             {BADGE_5K_SVG}
-            <span className="pp-num">
-              {props.earlyAdopterNumber != null ? `#${props.earlyAdopterNumber}` : "5K"}
-            </span>
+            <span className="pp-num">#{props.earlyAdopterNumber}</span>
           </span>
         )}
       </div>
