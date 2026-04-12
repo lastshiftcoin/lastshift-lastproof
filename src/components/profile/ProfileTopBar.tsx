@@ -43,7 +43,7 @@ export function ProfileTopBar({ handle }: Props) {
     const url =
       typeof window !== "undefined"
         ? window.location.href
-        : `https://lastproof.app/profile/${handle}`;
+        : `https://lastproof.app/@${handle}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);

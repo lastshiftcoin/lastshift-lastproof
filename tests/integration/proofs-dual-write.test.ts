@@ -43,12 +43,14 @@ test("proofs dual-write: proof + dev_verification round-trip", { skip: reason },
       workItemId: null,
       kind: "proof",
       txSignature: `TX_PROOF_${Date.now()}`,
+      payerWallet: "TEST_PAYER_WALLET",
     });
     insertProof({
       profileId: pf!.id,
       workItemId: null,
       kind: "dev_verification",
       txSignature: `TX_DEV_${Date.now()}`,
+      payerWallet: "TEST_DEV_PAYER_WALLET",
     });
 
     await new Promise((r) => setTimeout(r, 700));

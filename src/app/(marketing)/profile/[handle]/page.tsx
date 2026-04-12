@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { getPublicProfileView } from "@/lib/projector/public-profile";
 import { readSession } from "@/lib/session";
 import { getProfileByHandle, incrementViewCount } from "@/lib/db/profiles-adapter";
+import { supabaseService } from "@/lib/db/client";
 import { cryptomarkProfile } from "@/lib/mock/cryptomark-profile";
 import { shipfastProfile } from "@/lib/mock/shipfast-profile";
 import { newbuilderProfile } from "@/lib/mock/newbuilder-profile";
@@ -77,6 +78,18 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
     }
   }
 
+  // Look up if this profile owner is an ambassador → pass campaign slug to CTA strips
+  let campaignSlug: string | null = null;
+  if (view.ownerWallet) {
+    const { data: amb } = await supabaseService()
+      .from("ambassadors")
+      .select("campaign_slug")
+      .eq("wallet", view.ownerWallet)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (amb) campaignSlug = amb.campaign_slug;
+  }
+
   // ─── FREE variant: stripped layout (hero + CTA only) ──────────
   if (view.variant === "free") {
     return (
@@ -104,7 +117,7 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
             website={view.website}
             hireTelegramHandle={view.hireTelegramHandle}
           />
-          <CtaStrip variant="free" />
+          <CtaStrip variant="free" campaignSlug={campaignSlug} />
         </div>
       </div>
     );
@@ -248,7 +261,7 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
           <ProofsTable proofs={view.recentProofs} totalProofs={view.totalProofs} />
         </section>
 
-        {view.variant === "legend" ? <LegendCtaSwitch /> : <CtaStrip />}
+        {view.variant === "legend" ? <LegendCtaSwitch campaignSlug={campaignSlug} /> : <CtaStrip campaignSlug={campaignSlug} />}
       </div>
     </div>
   );

@@ -162,12 +162,14 @@ async function main() {
       workItemId: null,
       kind: "proof",
       txSignature: `TX_PROOF_SOAK_${stamp}_${i}`,
+      payerWallet: `SOAK_WALLET_${i}`,
     });
     insertProof({
       profileId: profile.id,
       workItemId: null,
       kind: "dev_verification",
       txSignature: `TX_DEV_SOAK_${stamp}_${i}`,
+      payerWallet: `SOAK_DEV_WALLET_${i}`,
     });
 
     // 7. Insert two notifications.

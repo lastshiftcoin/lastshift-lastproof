@@ -14,7 +14,7 @@ export function PreviewBanner({ handle }: { handle: string }) {
           This is a private preview. Only you can see this.
         </span>
         <a
-          href={`/profile/${handle}`}
+          href={`/@${handle}`}
           className="pp-preview-link"
         >
           VIEW PUBLIC →

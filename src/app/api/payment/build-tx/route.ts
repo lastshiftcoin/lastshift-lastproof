@@ -1,16 +1,17 @@
 /**
- * POST /api/proof/build-tx
+ * POST /api/payment/build-tx
  *
- * Builds a real Solana transaction for the given quote. Returns the
- * serialized transaction (base64), the expected signer pubkey, and
- * a memo string. The frontend deserializes, has the wallet sign it,
- * then POSTs the signed tx to /api/proof/broadcast.
+ * Generic payment transaction builder. Accepts only { quote_id } —
+ * everything else (kind, token, amount, reference) comes from the
+ * quote row. Used by subscription, handle_change, and mint flows.
  *
- * Response shape matches the mock at /api/mock/proof/build-tx exactly:
+ * Proof flow continues to use /api/proof/build-tx (proof-specific
+ * memo format). Both routes share the same buildSolanaTx() plumbing.
+ *
  *   200 { ok: true, tx_base64, expected_signer, memo }
  *   402 { ok: false, reason: "insufficient_balance" }
- *   409 { ok: false, reason: "lock_lost" | "dev_slot_taken" }
  *   410 { ok: false, reason: "quote_expired_hard" }
+ *   409 { ok: false, reason: "lock_lost" }
  *   503 { ok: false, reason: "rpc_degraded" }
  *   500 { ok: false, reason: "unknown" }
  */
@@ -39,7 +40,6 @@ function json(body: unknown, status = 200) {
 
 export async function POST(req: NextRequest) {
   try {
-    // Auth
     const session = await readSession();
     if (!session) {
       return json({ ok: false, reason: "no_session" }, 401);
@@ -47,16 +47,12 @@ export async function POST(req: NextRequest) {
 
     const body = (await req.json().catch(() => ({}))) as {
       quote_id?: string;
-      handle?: string;
-      ticker?: string;
-      path?: string;
     };
 
     if (!body.quote_id) {
       return json({ ok: false, reason: "missing_quote_id" }, 400);
     }
 
-    // Look up quote
     const quote = await getQuote(body.quote_id);
     if (!quote) {
       return json({ ok: false, reason: "quote_expired_hard" }, 410);
@@ -69,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!TREASURY) {
-      console.error("[build-tx] TREASURY wallet not configured");
+      console.error("[payment/build-tx] TREASURY wallet not configured");
       return json({ ok: false, reason: "unknown" }, 500);
     }
 
@@ -77,11 +73,8 @@ export async function POST(req: NextRequest) {
     const treasuryPubkey = new PublicKey(TREASURY);
     const connection = new Connection(RPC_URL, "confirmed");
 
-    // Build proof-specific memo
-    const handle = body.handle ?? "unknown";
-    const ticker = body.ticker ?? "$LASTSHFT";
-    const path = body.path ?? "collab";
-    const memo = `lp:v1:${handle}:${ticker}:${path}:${quote.id}`;
+    // Kind-aware memo: lp:v1:<kind>:<quote_id>
+    const memo = `lp:v1:${quote.kind}:${quote.id}`;
 
     const result = await buildSolanaTx({
       payerPubkey,
@@ -107,7 +100,7 @@ export async function POST(req: NextRequest) {
       memo,
     });
   } catch (err) {
-    console.error("[build-tx] unexpected error:", err);
+    console.error("[payment/build-tx] unexpected error:", err);
     return json({ ok: false, reason: "unknown" }, 500);
   }
 }

@@ -36,6 +36,8 @@ type Phase =
 
 interface ManageTerminalProps {
   initialSession: Session | null;
+  /** Ambassador campaign slug from ?ref= URL param. Carried through onboarding. */
+  ref_slug?: string | null;
 }
 
 // ─── Boot lines ───────────────────────────────────────────────────────────────
@@ -54,7 +56,7 @@ const CONNECT_DELAY = 4400;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function ManageTerminal({ initialSession }: ManageTerminalProps) {
+export default function ManageTerminal({ initialSession, ref_slug }: ManageTerminalProps) {
   const { select, wallets, publicKey, connected, connecting, disconnect } = useWallet();
 
   const [phase, setPhase] = useState<Phase>(initialSession ? "granted" : "boot");
@@ -458,7 +460,7 @@ export default function ManageTerminal({ initialSession }: ManageTerminalProps) 
                 <div className="mg-reveal-text">
                   ACCESS GRANTED // <span className="accent">LASTPROOF</span>
                 </div>
-                <Link href="/manage/profile" className="mg-cta-btn">
+                <Link href={ref_slug ? `/manage/profile?ref=${ref_slug}` : "/manage/profile"} className="mg-cta-btn">
                   MANAGE PROFILE
                 </Link>
                 {session && (

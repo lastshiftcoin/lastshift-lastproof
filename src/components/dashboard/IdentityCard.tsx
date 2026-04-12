@@ -21,6 +21,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { ProfileRow } from "@/lib/profiles-store";
+import { PaymentModal } from "@/components/payment-modal/PaymentModal";
 
 // ─── Option lists ────────────────────────────────────────────────────────────
 
@@ -131,6 +132,8 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate, handle
     baseUsd: number; lastshftUsd: number;
   } | null>(null);
   const [handleChanging, setHandleChanging] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [validatedHandle, setValidatedHandle] = useState<string | null>(null);
   const handleCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Avatar initials
@@ -223,22 +226,12 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate, handle
     if (!handleInput || !handleAvailable) return;
     setHandleChanging(true);
 
-    // For now, this requires a txSignature.
-    // Until the payment modal is wired, we prompt for it.
-    const txSig = prompt(
-      `Handle change costs $${handlePricing?.baseUsd ?? 100} (or $${handlePricing?.lastshftUsd ?? 60} with $LASTSHFT).\n\n` +
-      `Enter your payment transaction signature:`
-    );
-    if (!txSig) {
-      setHandleChanging(false);
-      return;
-    }
-
     try {
+      // Validate handle via the validate-only POST endpoint
       const res = await fetch("/api/dashboard/handle-change", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newHandle: handleInput, txSignature: txSig }),
+        body: JSON.stringify({ newHandle: handleInput }),
       });
 
       if (!res.ok) {
@@ -248,16 +241,16 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate, handle
         } else if (data.error === "handle_taken") {
           alert("That handle is already taken.");
           setHandleAvailable(false);
-        } else if (data.error === "missing_payment") {
-          alert("Payment transaction signature required.");
         } else {
-          alert(data.error || "Handle change failed");
+          alert(data.error || "Handle validation failed");
         }
         return;
       }
 
-      // Success — reload page to get fresh data
-      window.location.reload();
+      const data = await res.json();
+      // Validation passed — open payment modal
+      setValidatedHandle(data.validatedHandle);
+      setShowPaymentModal(true);
     } catch {
       alert("Handle change failed — please try again.");
     } finally {
@@ -587,6 +580,21 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate, handle
           </div>
         </div>
       </div>
+
+      {showPaymentModal && validatedHandle && (
+        <PaymentModal
+          open={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          kind="handle_change"
+          metadata={{ refId: validatedHandle }}
+          onSuccess={() => {
+            setShowPaymentModal(false);
+            // Webhook will apply the handle change — reload to pick it up.
+            // Small delay to let the webhook process.
+            setTimeout(() => window.location.reload(), 3000);
+          }}
+        />
+      )}
     </div>
   );
 }

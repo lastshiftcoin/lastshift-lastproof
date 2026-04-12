@@ -84,6 +84,7 @@ export function DashboardContent({ profile, primaryCategory, additionalCategorie
   const lastLogin = new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC";
   const [campaignSoldOut, setCampaignSoldOut] = useState(false);
   const [handleChangeRequested, setHandleChangeRequested] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   return (
     <div className="content">
@@ -143,8 +144,41 @@ export function DashboardContent({ profile, primaryCategory, additionalCategorie
           </button>
         </div>
         <div className="profile-url-actions">
+          <button
+            type="button"
+            className="btn-mini"
+            onClick={async () => {
+              const url = `https://lastproof.app/@${profile.handle}`;
+              try {
+                await navigator.clipboard.writeText(url);
+              } catch {
+                const ta = document.createElement("textarea");
+                ta.value = url;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand("copy");
+                document.body.removeChild(ta);
+              }
+              setShareCopied(true);
+              setTimeout(() => setShareCopied(false), 1600);
+            }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+          >
+            {shareCopied ? (
+              "COPIED"
+            ) : (
+              <>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                  <polyline points="16 6 12 2 8 6" />
+                  <line x1="12" y1="2" x2="12" y2="15" />
+                </svg>
+                SHARE
+              </>
+            )}
+          </button>
           <a
-            href={`/profile/${profile.handle}`}
+            href={`/@${profile.handle}`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-mini green"
@@ -152,7 +186,7 @@ export function DashboardContent({ profile, primaryCategory, additionalCategorie
             VIEW LIVE
           </a>
           <a
-            href={`/profile/${profile.handle}?preview=true`}
+            href={`/@${profile.handle}?preview=true`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-mini orange"

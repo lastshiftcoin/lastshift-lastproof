@@ -9,14 +9,13 @@
  * Structural source: `wireframes/lastproof-profile-5000.html` lines ~786–814.
  * Purple border + green price card + orange urgency counter + pulsing CTA.
  *
- * TODO(terminal-attribution): the "> BUILD YOUR PROFILE" button needs to
- * hand off to the real Terminal at lastshift.app with attribution so the
- * founding-5K slot is credited correctly.
+ * The "BUILD YOUR PROFILE" button links to the profile owner's campaign
+ * page if they're an ambassador, otherwise to /manage.
  */
 
 import { useCampaignCounter, TOTAL_SPOTS } from "@/hooks/useCampaignCounter";
 
-export function FomoCtaStrip() {
+export function FomoCtaStrip({ campaignSlug }: { campaignSlug?: string | null }) {
   const { spots, soldOut, filledPct } = useCampaignCounter(true);
 
   // Strip disappears completely when sold out
@@ -65,7 +64,7 @@ export function FomoCtaStrip() {
 
       <a
         className="pp-cta-btn pp-cta-orange-pulse"
-        href="#terminal-attribution-tbd"
+        href={campaignSlug ? `/${campaignSlug}` : "/manage"}
         data-testid="pp-fomo-build"
       >
         &gt; BUILD YOUR PROFILE

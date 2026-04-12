@@ -62,7 +62,7 @@ interface RawDraft {
 function validateDraft(raw: RawDraft, index: number): PaymentDraft | { error: string } {
   if (
     !raw.kind ||
-    !["subscription", "proof", "dev_verification", "handle_change"].includes(raw.kind)
+    !["subscription", "proof", "dev_verification", "handle_change", "mint"].includes(raw.kind)
   ) {
     return { error: `drafts[${index}].kind invalid or missing` };
   }

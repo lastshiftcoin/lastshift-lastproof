@@ -6,7 +6,15 @@ import { BASE_PRICES_USD, LASTSHFT_DISCOUNT, HANDLE_CHANGE_COOLDOWN_DAYS } from 
 
 /**
  * GET  /api/dashboard/handle-change — check cooldown eligibility + pricing
- * POST /api/dashboard/handle-change — execute handle change (after payment verified)
+ * POST /api/dashboard/handle-change — validate handle (format, availability, cooldown)
+ *
+ * POST is validate-only. It does NOT execute the handle change — that
+ * happens in the payment dispatcher (handleHandleChange in payment-events.ts)
+ * after the webhook confirms the on-chain payment. The client flow:
+ *   1. POST here to validate → { ok: true }
+ *   2. POST /api/quote with { kind: "handle_change", metadata: { refId: newHandle } }
+ *   3. Generic payment pipeline (build-tx → sign → broadcast → confirm)
+ *   4. Webhook fires → dispatcher writes the change
  */
 
 async function getProfileAndSb(session: { walletAddress: string }) {
@@ -50,7 +58,7 @@ export async function POST(request: Request) {
   if (!profile) return NextResponse.json({ error: "no_profile" }, { status: 404 });
 
   const body = await request.json();
-  const { newHandle, txSignature } = body;
+  const { newHandle } = body;
 
   if (!newHandle || typeof newHandle !== "string") {
     return NextResponse.json({ error: "missing_handle" }, { status: 400 });
@@ -74,7 +82,7 @@ export async function POST(request: Request) {
     }, { status: 429 });
   }
 
-  // Availability check (race-condition guard)
+  // Availability check
   const { data: existing } = await sb
     .from("profiles")
     .select("id")
@@ -85,39 +93,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "handle_taken" }, { status: 409 });
   }
 
-  // TODO: Verify txSignature is a valid on-chain payment for handle_change
-  // For now, require txSignature to be present as proof of payment
-  if (!txSignature || typeof txSignature !== "string") {
-    return NextResponse.json({ error: "missing_payment" }, { status: 402 });
-  }
-
-  const oldHandle = profile.handle;
-
-  // Update profile handle
-  const { error: updateErr } = await sb
-    .from("profiles")
-    .update({ handle: clean })
-    .eq("id", profile.id);
-
-  if (updateErr) {
-    console.error("[handle-change] update error:", updateErr);
-    return NextResponse.json({ error: updateErr.message }, { status: 500 });
-  }
-
-  // Record in handle_history
-  const { insertHandleChangeRow } = await import("@/lib/db/handle-history-adapter");
-  await insertHandleChangeRow({
-    id: crypto.randomUUID(),
-    profileId: profile.id,
-    oldHandle,
-    newHandle: clean,
-    txSignature,
-    changedAt: new Date().toISOString(),
-  });
-
-  return NextResponse.json({
-    ok: true,
-    oldHandle,
-    newHandle: clean,
-  });
+  // Validation passed — client should now issue a quote and pay via
+  // the generic payment pipeline. The dispatcher handles the actual
+  // handle change on payment confirmation.
+  return NextResponse.json({ ok: true, validatedHandle: clean });
 }

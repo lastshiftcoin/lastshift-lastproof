@@ -14,6 +14,7 @@
 
 import { useState, useEffect } from "react";
 import type { ProfileRow } from "@/lib/profiles-store";
+import { PaymentModal } from "@/components/payment-modal/PaymentModal";
 
 interface StatusBarProps {
   profile: ProfileRow;
@@ -56,17 +57,6 @@ export function StatusBar({ profile, campaignSoldOut = false, campaignActive = f
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [claimed, setClaimed] = useState(false);
-  const [quoteLoading, setQuoteLoading] = useState(false);
-  const [quote, setQuote] = useState<{
-    id: string;
-    amountUsd: number;
-    token: string;
-    amountToken: string;
-    treasury: string;
-    reference: string;
-    expiresAt: string;
-  } | null>(null);
-  const [quoteError, setQuoteError] = useState<string | null>(null);
 
   const status = deriveStatus(profile);
   const config = STATUS_CONFIG[status];
@@ -85,7 +75,15 @@ export function StatusBar({ profile, campaignSoldOut = false, campaignActive = f
   async function handleFreeClaim() {
     setClaiming(true);
     try {
-      const res = await fetch("/api/campaign/claim", { method: "POST" });
+      // Path A: read ref from URL searchParams (carried through onboarding)
+      const urlRef = typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("ref") ?? undefined
+        : undefined;
+      const res = await fetch("/api/campaign/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ref: urlRef }),
+      });
       const data = await res.json();
       if (data.ok) {
         setClaimed(true);
@@ -117,47 +115,8 @@ export function StatusBar({ profile, campaignSoldOut = false, campaignActive = f
       handleFreeClaim();
       return;
     }
-    if (status === "active") {
-      // Already active — show renewal info
-      setShowUpgrade(true);
-      return;
-    }
+    // Paid path — open PaymentModal
     setShowUpgrade(true);
-  }
-
-  async function requestQuote(token: "LASTSHFT" | "SOL" | "USDT") {
-    setQuoteLoading(true);
-    setQuoteError(null);
-    setQuote(null);
-
-    try {
-      const res = await fetch("/api/quote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: "subscription", token }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setQuoteError(data.reason || data.error || "Quote failed");
-        return;
-      }
-
-      const data = await res.json();
-      setQuote({
-        id: data.quoteId,
-        amountUsd: data.amountUsd,
-        token: data.token,
-        amountToken: data.amountToken,
-        treasury: data.treasury,
-        reference: data.reference,
-        expiresAt: data.expiresAt,
-      });
-    } catch {
-      setQuoteError("Failed to get quote — please try again.");
-    } finally {
-      setQuoteLoading(false);
-    }
   }
 
   return (
@@ -198,144 +157,18 @@ export function StatusBar({ profile, campaignSoldOut = false, campaignActive = f
         </button>
       </div>
 
-      {/* Upgrade / payment panel */}
+      {/* Subscription payment modal */}
       {showUpgrade && (
-        <div style={{
-          margin: "0 0 16px",
-          padding: 18,
-          background: "var(--bg-input)",
-          border: "1px solid var(--border-2)",
-          borderRadius: 8,
-        }}>
-          <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 14,
-          }}>
-            <div style={{
-              fontFamily: "var(--mono)",
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: 1,
-              color: "var(--text)",
-            }}>
-              {status === "active" ? "RENEW SUBSCRIPTION" : "ACTIVATE PROFILE"}
-            </div>
-            <button
-              type="button"
-              onClick={() => { setShowUpgrade(false); setQuote(null); setQuoteError(null); }}
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: 10,
-                color: "var(--text-dim)",
-                background: "transparent",
-                border: "1px solid var(--border)",
-                borderRadius: 4,
-                padding: "4px 10px",
-                cursor: "pointer",
-              }}
-            >
-              CLOSE
-            </button>
-          </div>
-
-          <div className="field-help" style={{ marginBottom: 14 }}>
-            Profile subscription is <strong>$10 / 30 days</strong> (or <strong>$6</strong> with $LASTSHFT — 40% off).
-            Pay with any supported token. Subscription activates instantly on confirmed payment.
-          </div>
-
-          {!quote && !quoteError && (
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button
-                type="button"
-                className="btn-add"
-                style={{ background: "rgba(255,145,0,.1)", color: "var(--accent)", border: "1px solid var(--accent)" }}
-                onClick={() => requestQuote("LASTSHFT")}
-                disabled={quoteLoading}
-              >
-                {quoteLoading ? "..." : "PAY WITH $LASTSHFT · $6"}
-              </button>
-              <button
-                type="button"
-                className="btn-add"
-                onClick={() => requestQuote("SOL")}
-                disabled={quoteLoading}
-              >
-                {quoteLoading ? "..." : "PAY WITH SOL · $10"}
-              </button>
-              <button
-                type="button"
-                className="btn-add"
-                onClick={() => requestQuote("USDT")}
-                disabled={quoteLoading}
-              >
-                {quoteLoading ? "..." : "PAY WITH USDT · $10"}
-              </button>
-            </div>
-          )}
-
-          {quoteError && (
-            <div style={{
-              fontFamily: "var(--mono)",
-              fontSize: 10,
-              color: "var(--red, #ef4444)",
-              letterSpacing: 0.5,
-              padding: "10px 0",
-            }}>
-              {quoteError}
-              <button
-                type="button"
-                style={{
-                  fontFamily: "var(--mono)", fontSize: 10, color: "var(--accent)",
-                  background: "transparent", border: "none", cursor: "pointer",
-                  marginLeft: 10, textDecoration: "underline",
-                }}
-                onClick={() => setQuoteError(null)}
-              >
-                TRY AGAIN
-              </button>
-            </div>
-          )}
-
-          {quote && (
-            <div style={{
-              padding: 14,
-              background: "rgba(0,0,0,.2)",
-              border: "1px solid var(--border)",
-              borderRadius: 6,
-              fontFamily: "var(--mono)",
-              fontSize: 10,
-              color: "var(--text-2)",
-              letterSpacing: 0.5,
-            }}>
-              <div style={{ marginBottom: 8 }}>
-                <strong style={{ color: "#fff" }}>Send exactly:</strong>{" "}
-                <span style={{ color: "var(--accent)", fontWeight: 700 }}>
-                  {quote.amountToken} {quote.token}
-                </span>{" "}
-                <span style={{ color: "var(--text-dim)" }}>
-                  (${quote.amountUsd})
-                </span>
-              </div>
-              <div style={{ marginBottom: 8 }}>
-                <strong style={{ color: "#fff" }}>To treasury:</strong>{" "}
-                <span style={{ wordBreak: "break-all" }}>{quote.treasury}</span>
-              </div>
-              <div style={{ marginBottom: 8 }}>
-                <strong style={{ color: "#fff" }}>Reference:</strong>{" "}
-                <span style={{ wordBreak: "break-all" }}>{quote.reference}</span>
-              </div>
-              <div style={{ color: "var(--text-dim)" }}>
-                Quote expires: {new Date(quote.expiresAt).toLocaleTimeString()}
-              </div>
-              <div className="field-help" style={{ marginTop: 10 }}>
-                Send the exact amount with the reference memo. Payment confirms automatically via webhook.
-                Page will update once the transaction is confirmed on-chain.
-              </div>
-            </div>
-          )}
-        </div>
+        <PaymentModal
+          open={showUpgrade}
+          onClose={() => setShowUpgrade(false)}
+          kind="subscription"
+          onSuccess={() => {
+            setShowUpgrade(false);
+            // Webhook will extend subscription — reload to pick it up.
+            setTimeout(() => window.location.reload(), 3000);
+          }}
+        />
       )}
     </>
   );

@@ -11,19 +11,25 @@
  *   - Pre-launch: profile becomes paid with no expiration until grid launch
  *   - At grid launch: 30-day countdown begins for all free-claimed profiles
  *   - Idempotent: re-claiming when already claimed is a no-op success
+ *
+ * Referral attribution (dual-track):
+ *   Path A: reads `ref` from POST body (URL param carried through onboarding)
+ *   Path B: reads `lp_ref` cookie (backup for return visits)
+ *   Either source → validates against ambassadors table → writes profiles.referred_by
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { readSession } from "@/lib/session";
 import { supabaseService } from "@/lib/db/client";
 import { GRID_LAUNCH_DATE, EA_FREE_WINDOW_DAYS } from "@/lib/constants";
+import { cookies } from "next/headers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_CLAIMS = 5000;
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   const session = await readSession();
   if (!session) {
     return NextResponse.json({ ok: false, reason: "no_session" }, { status: 401 });
@@ -81,24 +87,46 @@ export async function POST() {
     return NextResponse.json({ ok: false, reason: "sold_out" });
   }
 
-  // Compute subscription expiry:
-  // Before grid launch: no expiry (null → effectively infinite until grid launch)
-  // After grid launch: 30 days from grid launch date (for pre-launch claimants)
-  //                    or 30 days from now (for post-launch claimants)
+  // ─── Referral attribution (dual-track) ────────────────────────────
+  // Path A: POST body (primary — URL param carried through onboarding)
+  const body = await req.json().catch(() => ({}));
+  const bodyRef = (body as { ref?: string }).ref ?? null;
+
+  // Path B: cookie (backup — set in /manage server component)
+  const cookieStore = await cookies();
+  const cookieRef = cookieStore.get("lp_ref")?.value ?? null;
+
+  // Either source counts
+  const rawSlug = bodyRef || cookieRef;
+  let validatedSlug: string | null = null;
+
+  if (rawSlug) {
+    const { data: ambassador } = await sb
+      .from("ambassadors")
+      .select("campaign_slug")
+      .eq("campaign_slug", rawSlug)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (ambassador) {
+      validatedSlug = ambassador.campaign_slug;
+    }
+
+    // Consume the cookie regardless (one-time capture)
+    cookieStore.delete("lp_ref");
+  }
+
+  // Compute subscription expiry
   const now = new Date();
   let subscriptionExpiresAt: string | null = null;
 
   if (now >= GRID_LAUNCH_DATE) {
-    // Post grid launch — 30 days from now
     const expires = new Date(now.getTime() + EA_FREE_WINDOW_DAYS * 24 * 60 * 60 * 1000);
     subscriptionExpiresAt = expires.toISOString();
   }
-  // Pre grid launch: null expiry (handled by grid launch cron later)
 
-  // Assign sequential EA number: count of existing claimants + 1
   const eaNumber = (count ?? 0) + 1;
 
-  // Activate: set is_paid, ea_claimed, ea_number, subscription_expires_at
   const { error: updateErr } = await sb
     .from("profiles")
     .update({
@@ -110,12 +138,12 @@ export async function POST() {
       is_early_adopter: true,
       tier: 1,
       published_at: now.toISOString(),
+      ...(validatedSlug ? { referred_by: validatedSlug } : {}),
     })
     .eq("id", profile.id);
 
   if (updateErr) {
     console.error("[campaign/claim] update error:", updateErr.message);
-    // Check if columns don't exist yet
     if (updateErr.message.includes("ea_claimed")) {
       return NextResponse.json(
         { ok: false, reason: "migration_needed", message: "ea_claimed column not found — run migration" },
@@ -126,6 +154,10 @@ export async function POST() {
       { ok: false, reason: "server_error" },
       { status: 500 },
     );
+  }
+
+  if (validatedSlug) {
+    console.log(`[campaign/claim] referral attributed — profile=${profile.id} slug=${validatedSlug} source=${bodyRef ? "body" : "cookie"}`);
   }
 
   return NextResponse.json({

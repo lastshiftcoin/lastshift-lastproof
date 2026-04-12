@@ -5,17 +5,17 @@ import { BASE_PRICES_USD, LASTSHFT_DISCOUNT } from "@/lib/pricing";
 
 /**
  * POST /api/dashboard/work-items/mint
- * Body: { id: string, txSignature: string }
+ * Body: { id: string }
  *
- * Minting costs $1 (40% off with $LASTSHFT → $0.60).
- * Marks a work item as minted after verifying:
- *   - operator owns the item
- *   - item has at least 1 proof
- *   - max 4 minted items per profile
- *   - payment tx signature provided
+ * Validate-only. Checks ownership, proof count, mint cap. Does NOT
+ * set minted=true — that happens in the payment dispatcher (handleMint
+ * in payment-events.ts) after the webhook confirms the on-chain payment.
  *
- * NOTE: On-chain verification of txSignature is a future step.
- * The webhook pipeline confirms the payment separately.
+ * Client flow:
+ *   1. POST here to validate → { ok: true, pricing }
+ *   2. POST /api/quote with { kind: "mint", metadata: { refId: workItemId } }
+ *   3. Generic payment pipeline (build-tx → sign → broadcast → confirm)
+ *   4. Webhook fires → dispatcher sets minted=true
  */
 export async function POST(request: Request) {
   const session = await readSession();
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   if (!profile) return NextResponse.json({ error: "no_profile" }, { status: 404 });
 
   const body = await request.json();
-  const { id, txSignature } = body;
+  const { id } = body;
 
   if (!id) return NextResponse.json({ error: "missing_id" }, { status: 400 });
 
@@ -71,26 +71,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "no_proofs" }, { status: 400 });
   }
 
-  // Require payment — $1 base, $0.60 with $LASTSHFT
-  if (!txSignature || typeof txSignature !== "string") {
-    return NextResponse.json({
-      error: "payment_required",
-      pricing: {
-        baseUsd: BASE_PRICES_USD.mint,
-        lastshftUsd: +(BASE_PRICES_USD.mint * (1 - LASTSHFT_DISCOUNT)).toFixed(2),
-      },
-    }, { status: 402 });
-  }
-
-  const { error } = await sb
-    .from("work_items")
-    .update({ minted: true })
-    .eq("id", id);
-
-  if (error) {
-    console.error("[work-items/mint] update error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ ok: true, minted: true });
+  // Validation passed — client should now issue a quote and pay via
+  // the generic payment pipeline.
+  return NextResponse.json({
+    ok: true,
+    workItemId: id,
+    pricing: {
+      baseUsd: BASE_PRICES_USD.mint,
+      lastshftUsd: +(BASE_PRICES_USD.mint * (1 - LASTSHFT_DISCOUNT)).toFixed(2),
+    },
+  });
 }

@@ -11,6 +11,12 @@ const nextConfig: NextConfig = {
       { source: "/@:handle", destination: "/profile/:handle" },
     ];
   },
+  async redirects() {
+    return [
+      // If someone hits /profile/@handle directly, redirect to /@handle
+      { source: "/profile/:handle", destination: "/@:handle", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

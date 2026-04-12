@@ -22,6 +22,7 @@ function rowToDb(row: ProofRow): Record<string, unknown> {
     work_item_id: row.workItemId,
     kind: row.kind,
     tx_signature: row.txSignature,
+    payer_wallet: row.payerWallet,
     created_at: row.createdAt,
     // Required-ish columns made nullable in 0002 — we set them to safe
     // sentinels so reporting queries can still group cleanly.
@@ -36,6 +37,7 @@ function rowFromDb(r: Record<string, unknown>): ProofRow {
     workItemId: (r.work_item_id as string | null) ?? null,
     kind: r.kind as ProofRow["kind"],
     txSignature: r.tx_signature as string,
+    payerWallet: (r.payer_wallet as string | null) ?? null,
     createdAt: r.created_at as string,
   };
 }

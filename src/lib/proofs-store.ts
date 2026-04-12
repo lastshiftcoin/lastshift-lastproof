@@ -12,6 +12,7 @@ export interface ProofRow {
   workItemId: string | null;
   kind: "proof" | "dev_verification";
   txSignature: string;
+  payerWallet: string | null;
   createdAt: string;
 }
 

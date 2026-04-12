@@ -104,6 +104,7 @@ async function handleProof(row: PaymentRow): Promise<DispatchResult> {
     workItemId: row.refId ?? null,
     kind: "proof",
     txSignature: row.txSignature,
+    payerWallet: row.payerWallet,
   });
 
   insertNotification({
@@ -252,6 +253,7 @@ async function handleDevVerification(row: PaymentRow): Promise<DispatchResult> {
     workItemId: row.refId ?? null,
     kind: "dev_verification",
     txSignature: row.txSignature,
+    payerWallet: row.payerWallet,
   });
 
   await updateProfile(profile.id, { isDev: true });
@@ -274,16 +276,66 @@ async function handleDevVerification(row: PaymentRow): Promise<DispatchResult> {
 }
 
 async function handleMint(row: PaymentRow): Promise<DispatchResult> {
-  // Mint payment confirmed — the work item is set to minted=true by the
-  // dashboard mint endpoint after the user provides the txSignature.
-  // This handler just logs the event. The actual minting flag was already
-  // set optimistically by POST /api/dashboard/work-items/mint.
+  if (!row.profileId) {
+    return { handled: false, kind: "mint", note: "profileId missing" };
+  }
+  const profile = await getProfileById(row.profileId);
+  if (!profile) {
+    return { handled: false, kind: "mint", note: `profile ${row.profileId} not found` };
+  }
+
+  // Resolve workItemId from quote metadata (stored as refId on the payment row)
+  const workItemId = (row.refId ?? "").trim();
+  if (!workItemId) {
+    return { handled: false, kind: "mint", note: "no workItemId in refId" };
+  }
+
+  // Load and validate the work item
+  const { getWorkItemById, listWorkItemsByProfile } = await import("./db/work-items-adapter");
+  const item = await getWorkItemById(workItemId);
+  if (!item) {
+    return { handled: false, kind: "mint", note: `work item ${workItemId} not found` };
+  }
+  if (item.profileId !== profile.id) {
+    return { handled: false, kind: "mint", note: `work item ${workItemId} not owned by profile ${profile.id}` };
+  }
+  if (item.minted) {
+    // Idempotent — already minted (e.g. webhook replay)
+    return { handled: true, kind: "mint", note: "already minted (idempotent)" };
+  }
+
+  // Defense-in-depth: re-check max 4 minted cap
+  const allItems = await listWorkItemsByProfile(profile.id);
+  const mintedCount = allItems.filter((i) => i.minted).length;
+  if (mintedCount >= 4) {
+    return { handled: false, kind: "mint", note: `max_minted (${mintedCount}/4)` };
+  }
+
+  // Set minted=true via direct supabase for atomicity
+  const { supabaseService } = await import("./db/client");
+  const { error } = await supabaseService()
+    .from("work_items")
+    .update({ minted: true })
+    .eq("id", workItemId)
+    .eq("profile_id", profile.id);
+
+  if (error) {
+    console.error(`[payment-events] MINT update failed:`, error);
+    return { handled: false, kind: "mint", note: `db_error: ${error.message}` };
+  }
+
+  insertNotification({
+    profileId: profile.id,
+    kind: "proof_received", // reuse slot — no dedicated mint enum yet
+    body: `Work item minted successfully.`,
+  });
+
   console.log(
-    `[payment-events] MINT confirmed — profile=${row.profileId} tx=${row.txSignature}`,
+    `[payment-events] MINT confirmed — profile=${profile.id} workItem=${workItemId} tx=${row.txSignature}`,
   );
   return {
     handled: true,
     kind: "mint",
-    note: "mint payment confirmed",
+    note: `minted work item ${workItemId}`,
   };
 }

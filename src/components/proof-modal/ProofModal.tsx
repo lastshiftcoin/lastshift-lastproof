@@ -793,7 +793,6 @@ function Step2WalletPicker({
                 key={id}
                 className="pm-wallet"
                 href={href}
-                target="_blank"
                 rel="noopener noreferrer"
               >
                 <span className="pm-wallet-label">{meta.label}</span>

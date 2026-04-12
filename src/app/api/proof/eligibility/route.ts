@@ -121,16 +121,17 @@ export async function POST(req: NextRequest) {
         }
 
         if (!selfProof) {
-          // Check if this wallet already has a proof on this work item
+          // 1 wallet per work item — check proofs.payer_wallet
           const { count } = await sb
             .from("proofs")
             .select("id", { count: "exact", head: true })
             .eq("work_item_id", work_item_id)
-            .eq("tx_signature", pubkey); // TODO: need a wallet column on proofs
+            .eq("payer_wallet", pubkey);
 
-          // For now check via a broader approach — any proof from this wallet
-          // on this profile. Real implementation needs a payer_wallet column on proofs.
-          // Using the payment payer_wallet via quotes+payments join for now.
+          if ((count ?? 0) > 0) {
+            uniquenessOk = false;
+            uniquenessDetail = "this wallet already proofed this project";
+          }
         }
       } catch (err) {
         console.error("[eligibility] uniqueness check error:", err);
