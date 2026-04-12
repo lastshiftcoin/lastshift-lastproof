@@ -141,6 +141,21 @@ export function Step7Review({
         PRICE REFRESHES EVERY 5S · LOCKED AT SIGNATURE
       </div>
 
+      <div className="pm-notice" style={{ marginTop: 14, padding: "10px 12px", fontSize: 11, lineHeight: 1.5, color: "var(--pm-sub)", borderLeft: "2px solid var(--pm-accent)", background: "rgba(255,255,255,0.03)" }}>
+        <div style={{ marginBottom: 6 }}>
+          <strong style={{ color: "var(--pm-fg)" }}>SOL REQUIRED FOR GAS</strong>
+          <span style={{ display: "block", marginTop: 2 }}>
+            Your wallet needs a small amount of SOL (~0.005) to cover Solana network fees. The proof payment is in {tokenLabel} — SOL is only for gas.
+          </span>
+        </div>
+        <div>
+          <strong style={{ color: "var(--pm-fg)" }}>WALLET WARNINGS</strong>
+          <span style={{ display: "block", marginTop: 2 }}>
+            Your wallet may flag this as an unverified transaction. This is standard for new apps. $LASTSHFT is under active review for whitelisting with Phantom, Solflare, and Backpack.
+          </span>
+        </div>
+      </div>
+
       {refresh.expired ? (
         <div className="pm-expired">
           QUOTE EXPIRED — REFRESH PRICE

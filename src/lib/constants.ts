@@ -22,7 +22,7 @@ export const TOKEN_MINTS = {
 } as const;
 
 export const TOKEN_DECIMALS = {
-  LASTSHFT: 6,
+  LASTSHFT: 9,
   USDT: 6,
   SOL: 9,
 } as const;
