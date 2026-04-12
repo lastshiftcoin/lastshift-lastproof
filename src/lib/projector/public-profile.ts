@@ -192,9 +192,7 @@ export async function getPublicProfileView(
     proofsConfirmed,
   });
 
-  const variant = options?.previewMode
-    ? (profile.isEarlyAdopter ? "legend" : "public")
-    : deriveProfileVariant({ tier, isEarlyAdopter: profile.isEarlyAdopter });
+  const variant = deriveProfileVariant({ tier, isEarlyAdopter: profile.isEarlyAdopter });
 
   // ─── 10. Tier bar math ─────────────────────────────────────────────
   const tierBarFillPct = Math.min(100, Math.round((proofsConfirmed / 50) * 100));

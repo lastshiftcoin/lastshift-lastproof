@@ -46,7 +46,11 @@ export async function GET(req: NextRequest) {
   for (const p of profiles) {
     const state = deriveState({ expiresAt: p.subscriptionExpiresAt, now });
 
-    if ((state === "expired" || state === "none") && p.isPaid) {
+    // EA profiles with null expiry are paid by design — their 30-day
+    // timer doesn't start until grid launch. Don't downgrade them.
+    const isEaWithNoExpiry = p.isEarlyAdopter && !p.subscriptionExpiresAt;
+
+    if ((state === "expired" || state === "none") && p.isPaid && !isEaWithNoExpiry) {
       await updateProfile(p.id, { isPaid: false });
       await recalcProfileTier(p.id, now);
       expiredFlipped++;
