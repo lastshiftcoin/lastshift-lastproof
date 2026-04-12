@@ -70,11 +70,16 @@ export function Step2Connect({
         adapterConnected: adapter?.connected ?? null,
         adapterConnecting: adapter?.connecting ?? null,
       });
-      // Call adapter.connect() directly in the user gesture call stack.
-      // The provider's connect() wrapper has a guard (isConnectingRef) that
-      // may be stale from a prior failed attempt. Going direct on the adapter
-      // bypasses that guard while still being in the user gesture context
-      // (required by Chrome Android for solana-wallet:// intent navigation).
+      // The MWA adapter's #performAuthorization checks localStorage for a
+      // cached auth token BEFORE firing the solana-wallet:// intent. If a
+      // prior session left a stale cached auth, connect() resolves instantly
+      // using the cached token — but the wallet app doesn't have a live
+      // session for it, so connected stays false. Clear the cache to force
+      // the adapter to fire the actual MWA intent.
+      try {
+        localStorage.removeItem("SolanaMobileWalletAdapterDefaultAuthorizationCache");
+      } catch { /* localStorage not available — proceed anyway */ }
+      debug.log("mwa", "cleared_auth_cache", {});
       try {
         await adapter!.connect();
         debug.log("mwa", "connect_resolved", { connected: adapter?.connected });
