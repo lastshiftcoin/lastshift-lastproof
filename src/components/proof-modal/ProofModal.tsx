@@ -202,6 +202,7 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
         scenario: forceIneligible ? "ineligible" : "eligible",
         pubkey: connected.pubkey,
         project: ticker,
+        workItemId,
       });
       setStreamedToken(token);
     }
@@ -231,6 +232,7 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
           scenario: forceIneligible ? "ineligible" : "eligible",
           pubkey: connected.pubkey,
           project: ticker,
+          workItemId,
         });
         setStreamedToken(token);
       }
@@ -339,9 +341,10 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
       scenario: next ? "ineligible" : "eligible",
       pubkey: connected.pubkey,
       project: ticker,
+      workItemId,
     });
     setStreamedToken(token);
-  }, [path, connected, forceIneligible, token, start, ticker]);
+  }, [path, connected, forceIneligible, token, start, ticker, workItemId]);
 
   if (!open) return null;
 

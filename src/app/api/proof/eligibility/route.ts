@@ -66,14 +66,32 @@ function truncate(s: string): string {
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as RequestBody | null;
 
-  if (!body?.pubkey || !body?.path || !body?.work_item_id || !body?.profile_id) {
+  if (!body?.pubkey || !body?.path || !body?.work_item_id) {
     return new Response(
-      JSON.stringify({ error: "pubkey, path, work_item_id, and profile_id are required" }),
+      JSON.stringify({ error: "pubkey, path, and work_item_id are required" }),
       { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
 
-  const { pubkey, path, work_item_id, profile_id } = body;
+  const { pubkey, path, work_item_id } = body;
+
+  // Derive profile_id from work_item_id if not provided
+  let profile_id = body.profile_id;
+  if (!profile_id) {
+    const sb = supabaseService();
+    const { data: item } = await sb
+      .from("work_items")
+      .select("profile_id")
+      .eq("id", work_item_id)
+      .maybeSingle();
+    if (!item?.profile_id) {
+      return new Response(
+        JSON.stringify({ error: "work_item_id not found" }),
+        { status: 404, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    profile_id = item.profile_id;
+  }
   const token = normalizeToken(body.token ?? "lastshft");
   const mint = body.project || LASTSHFT_MINT;
 

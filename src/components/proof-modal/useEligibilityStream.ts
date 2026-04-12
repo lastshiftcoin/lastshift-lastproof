@@ -41,6 +41,9 @@ export interface StartEligibilityArgs {
   scenario?: "eligible" | "ineligible";
   pubkey?: string;
   project?: string;
+  /** Required by real eligibility endpoint for uniqueness + slot checks. */
+  workItemId?: string;
+  profileId?: string;
 }
 
 export function useEligibilityStream() {
@@ -73,6 +76,8 @@ export function useEligibilityStream() {
           scenario: args.scenario ?? "eligible",
           pubkey: args.pubkey,
           project: args.project,
+          work_item_id: args.workItemId,
+          profile_id: args.profileId,
         }),
         signal: ctrl.signal,
       });
