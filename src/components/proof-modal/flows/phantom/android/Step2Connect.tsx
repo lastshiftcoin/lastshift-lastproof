@@ -32,12 +32,9 @@ export function Step2Connect({
   onConnected,
   onBack,
 }: Step2ConnectProps) {
-  const { wallets, select, connect, connecting, wallet: selectedWallet } = useWallet();
+  const { wallets, select, connect, connecting } = useWallet();
   const [err, setErr] = useState<string | null>(null);
   const debug = useDebugLog();
-
-  const mwaIsSelected =
-    selectedWallet?.adapter.name === SolanaMobileWalletAdapterWalletName;
 
   const handleConnect = useCallback(async () => {
     setErr(null);
@@ -47,10 +44,7 @@ export function Step2Connect({
     );
 
     debug.log("mwa", "handle_connect_tap", {
-      mwaIsSelected,
       mwaFound: !!mwaWallet,
-      selectedWalletName: selectedWallet?.adapter.name ?? null,
-      selectedWalletReady: selectedWallet?.readyState ?? null,
       walletNames,
       connecting,
     });
@@ -61,65 +55,26 @@ export function Step2Connect({
       );
       return;
     }
-
-    if (mwaIsSelected) {
-      const adapter = selectedWallet?.adapter;
-      debug.log("mwa", "calling_connect", {
-        adapterName: adapter?.name,
-        readyState: selectedWallet?.readyState,
-        adapterConnected: adapter?.connected ?? null,
-        adapterConnecting: adapter?.connecting ?? null,
+    try {
+      debug.log("mwa", "calling_select_and_connect", {
+        adapterName: mwaWallet.adapter.name,
+        readyState: mwaWallet.readyState,
       });
-      // The MWA adapter's #performAuthorization checks localStorage for a
-      // cached auth token BEFORE firing the solana-wallet:// intent. If a
-      // prior session left a stale cached auth, connect() resolves instantly
-      // using the cached token — but the wallet app doesn't have a live
-      // session for it, so connected stays false. Clear the cache to force
-      // the adapter to fire the actual MWA intent.
-      try {
-        localStorage.removeItem("SolanaMobileWalletAdapterDefaultAuthorizationCache");
-      } catch { /* localStorage not available — proceed anyway */ }
-      // Also find the MWA wallet from the wallets list to compare object identity
-      const mwaFromList = wallets.find(
-        (w) => w.adapter.name === SolanaMobileWalletAdapterWalletName,
-      );
-      debug.log("mwa", "pre_connect_state", {
-        adapterIsSameInstance: adapter === mwaFromList?.adapter,
-        adapterConnectedGetter: adapter?.connected,
-        adapterConnectingGetter: adapter?.connecting,
-        walletConnected: (adapter as unknown as { _wallet?: { connected?: boolean } })?._wallet?.connected,
-      });
-      try {
-        // Use the adapter from the wallets list directly — selectedWallet.adapter
-        // may be a different wrapper instance
-        const target = mwaFromList?.adapter ?? adapter!;
-        debug.log("mwa", "calling_target_connect", {
-          targetName: target.name,
-          targetConnected: target.connected,
-          targetConnecting: target.connecting,
-        });
-        await target.connect();
-        debug.log("mwa", "connect_resolved", {
-          connected: target.connected,
-          targetConnected: target.connected,
-          adapterConnected: adapter?.connected,
-        });
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : "wallet connect failed";
-        debug.log("mwa", "connect_error", { message: msg, name: (e as Error)?.name });
-        if (msg.includes("Found no installed wallet")) {
-          setErr(
-            "Phantom app not found. Install Phantom from the Play Store and try again.",
-          );
-        } else {
-          setErr(msg);
-        }
-      }
-    } else {
-      debug.log("mwa", "calling_select", { name: mwaWallet.adapter.name });
       select(mwaWallet.adapter.name);
+      await connect();
+      debug.log("mwa", "connect_resolved", {});
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "wallet connect failed";
+      debug.log("mwa", "connect_error", { message: msg, name: (e as Error)?.name });
+      if (msg.includes("Found no installed wallet")) {
+        setErr(
+          "Phantom app not found. Install Phantom from the Play Store and try again.",
+        );
+      } else {
+        setErr(msg);
+      }
     }
-  }, [wallets, select, connect, mwaIsSelected, selectedWallet, connecting, debug]);
+  }, [wallets, select, connect, debug, connecting]);
 
   // Connected — show verified state card
   if (connected) {
@@ -221,11 +176,7 @@ export function Step2Connect({
         >
           <span className="pm-wallet-label">Phantom</span>
           <span className="pm-wallet-hint">
-            {connecting
-              ? "CONNECTING…"
-              : mwaIsSelected
-                ? "CONNECT WALLET →"
-                : "TAP TO CONNECT →"}
+            {connecting ? "CONNECTING…" : "CONNECT WALLET →"}
           </span>
         </button>
       </div>
