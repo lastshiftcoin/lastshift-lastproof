@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWallet, type Wallet } from "@solana/wallet-adapter-react";
 import { useConnected, type ConnectedWallet } from "@/lib/wallet/use-connected";
-import { WALLET_META, WALLET_ORDER, shouldUseDeepLinks } from "@/lib/wallet/deep-link";
+import { WALLET_META, WALLET_ORDER, detectWalletEnvironment } from "@/lib/wallet/deep-link";
 import { classifyWallet, type KnownWallet } from "@/lib/wallet-policy";
 import { usePaymentFlow, type PaymentPhase, type PaymentFailure } from "@/hooks/usePaymentFlow";
 import {
@@ -295,7 +295,7 @@ function StepWallet({
 }) {
   const { wallets, select, connect, connecting, wallet: selectedWallet } = useWallet();
   const [walletErr, setWalletErr] = useState<string | null>(null);
-  const useDeepLinks = useMemo(() => shouldUseDeepLinks(), []);
+  const walletEnv = useMemo(() => detectWalletEnvironment(), []);
 
   const liveByCanonical = useMemo(() => {
     const map = new Map<KnownWallet, Wallet>();
@@ -348,7 +348,8 @@ function StepWallet({
           const isConnecting =
             connecting && selectedWallet?.adapter.name === live?.adapter.name;
 
-          if (useDeepLinks && !live) {
+          // Mobile browser: per-wallet deep links
+          if (walletEnv === "mobile-browser") {
             const href =
               typeof window !== "undefined" ? meta.buildDeepLink(window.location.href) : "#";
             return (
@@ -359,11 +360,14 @@ function StepWallet({
                 rel="noopener noreferrer"
               >
                 <span className="pay-wallet-label">{meta.label}</span>
-                <span className="pay-wallet-hint">OPEN IN APP &rarr;</span>
+                <span className="pay-wallet-hint">
+                  {meta.hasBrowseLink ? "OPEN IN APP \u2192" : "GET APP \u2192"}
+                </span>
               </a>
             );
           }
 
+          // Desktop or in-app browser: standard adapter connect
           return (
             <button
               key={id}

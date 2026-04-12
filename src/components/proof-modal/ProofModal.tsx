@@ -9,7 +9,7 @@ import { useQuoteRefresh } from "./useQuoteRefresh";
 import { useSignFlow, type SignPhase } from "./useSignFlow";
 import type { ProofQuote, FailureReason } from "./types";
 import { useConnected, type ConnectedWallet } from "@/lib/wallet/use-connected";
-import { WALLET_META, WALLET_ORDER, shouldUseDeepLinks } from "@/lib/wallet/deep-link";
+import { WALLET_META, WALLET_ORDER, detectWalletEnvironment, type WalletEnv } from "@/lib/wallet/deep-link";
 import { classifyWallet, type KnownWallet } from "@/lib/wallet-policy";
 import {
   PROOF_TOKENS,
@@ -191,6 +191,9 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
    * step 2. The verified-state card stays visible until the user
    * explicitly clicks CONTINUE. Going fast here creates doubt.
    */
+  // Eligibility prefetch: fires when wallet connected (step 1 done) +
+  // path selected (step 2 done). Runs in background while user writes
+  // comment on step 3.
   useEffect(() => {
     if (step === 2 && connected && path) {
       start({
@@ -203,13 +206,14 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
       setStreamedToken(token);
     }
     // token/forceIneligible intentionally omitted — we only want this
-    // to fire on connect, not on every token flip.
+    // to fire on path select, not on every token flip.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, connected, path]);
 
   const handleContinue = useCallback(() => {
-    if (step === 1 && path) {
-      setStep(2);
+    // Step 2 (path select) → step 3
+    if (step === 2 && path) {
+      setStep(3);
       return;
     }
     if (step === 3) {
@@ -343,13 +347,13 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
 
   const commentTooLong = comment.length > COMMENT_MAX;
   const continueDisabled =
-    (step === 1 && !path) ||
+    (step === 2 && !path) ||
     (step === 3 && commentTooLong) ||
     (step === 5 && (elig.status !== "done" || !elig.eligible));
 
-  // Steps 2/6/7/8 drive their own CTAs. Hide the global continue bar.
+  // Steps 1/6/7/8 drive their own CTAs. Hide the global continue bar.
   const hideCta =
-    step === 2 ||
+    step === 1 ||
     step === 6 ||
     step === 7 ||
     step === 8 ||
@@ -397,13 +401,13 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
         {/* Step counter + connected-wallet pill (hidden on step 1/2 until a
             wallet is live; wireframe canon §ref-row). */}
         <div className="pm-ref-row">
-          {connected && step !== 1 && step !== 2 ? (
+          {connected && step >= 2 ? (
             <button
               type="button"
               className="pm-conn-pill"
               onClick={() => {
                 setMockConnected(null);
-                setStep(2);
+                setStep(1);
               }}
               title="Click to disconnect"
             >
@@ -432,19 +436,11 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
 
         <div className="pm-body">
           {step === 1 && (
-            <Step1PathSelect
-              path={path}
-              onPick={setPath}
-              ticker={ticker}
-              handle={handle}
-            />
-          )}
-          {step === 2 && (
             <Step2WalletPicker
-              onBack={() => setStep(1)}
+              onBack={() => {/* step 1 — no back */}}
               connected={connected}
               isSelfProof={isSelfProof}
-              onContinue={() => setStep(3)}
+              onContinue={() => setStep(2)}
               onDevMockConnect={
                 process.env.NODE_ENV !== "production"
                   ? () =>
@@ -456,6 +452,14 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
                       })
                   : undefined
               }
+            />
+          )}
+          {step === 2 && (
+            <Step1PathSelect
+              path={path}
+              onPick={setPath}
+              ticker={ticker}
+              handle={handle}
             />
           )}
           {step === 3 && (
@@ -653,7 +657,7 @@ function Step2WalletPicker({
 }) {
   const { wallets, select, connect, connecting, wallet: selectedWallet } = useWallet();
   const [err, setErr] = useState<string | null>(null);
-  const useDeepLinks = useMemo(() => shouldUseDeepLinks(), []);
+  const walletEnv = useMemo(() => detectWalletEnvironment(), []);
 
   /**
    * Map canonical wallet id → live adapter (if registered). Lookup is
@@ -785,7 +789,8 @@ function Step2WalletPicker({
           const isConnecting =
             connecting && selectedWallet?.adapter.name === live?.adapter.name;
 
-          if (useDeepLinks && !live) {
+          // Mobile browser: per-wallet deep links
+          if (walletEnv === "mobile-browser") {
             const href =
               typeof window !== "undefined" ? meta.buildDeepLink(window.location.href) : "#";
             return (
@@ -796,11 +801,17 @@ function Step2WalletPicker({
                 rel="noopener noreferrer"
               >
                 <span className="pm-wallet-label">{meta.label}</span>
-                <span className="pm-wallet-hint">OPEN IN APP →</span>
+                <span className="pm-wallet-hint">
+                  {meta.hasBrowseLink ? "OPEN IN APP →" : "GET APP →"}
+                </span>
+                <span className="pm-wallet-hint" style={{ fontSize: 8, marginTop: 2, display: "block", color: "#5a5e73" }}>
+                  {meta.mobileSub}
+                </span>
               </a>
             );
           }
 
+          // Desktop or in-app browser: standard adapter connect
           return (
             <button
               key={id}
