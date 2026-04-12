@@ -8,6 +8,10 @@
     {
       "path": "/api/affiliate/worker",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/proof/verify-tx/process",
+      "schedule": "* * * * *"
     }
   ]
 }

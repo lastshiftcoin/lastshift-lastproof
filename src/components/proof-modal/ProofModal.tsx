@@ -12,6 +12,7 @@ import { useConnected, type ConnectedWallet } from "@/lib/wallet/use-connected";
 import { WALLET_META, WALLET_ORDER, detectWalletEnvironment, isAndroid, type WalletEnv } from "@/lib/wallet/deep-link";
 import { classifyWallet, type KnownWallet } from "@/lib/wallet-policy";
 import { PhantomAndroidFlow } from "./flows/phantom/android/PhantomAndroidFlow";
+import { PasteVerifyFlow } from "./flows/paste-verify/PasteVerifyFlow";
 import {
   PROOF_TOKENS,
   PROOF_BASE_PRICE_USD,
@@ -466,107 +467,69 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
               </div>
             </div>
 
-            <div className="pm-body">
-              {step === 1 && (
-                <Step1WalletSelect
-                  onSelect={(id) => { setSelectedWallet(id); setStep(2); }}
-                />
-              )}
-              {step === 2 && selectedWallet && (
-                <Step2WalletPicker
-                  onBack={() => { setSelectedWallet(null); setStep(1); }}
-                  connected={connected}
-                  isSelfProof={isSelfProof}
-                  onContinue={() => setStep(3)}
-                  selectedWallet={selectedWallet}
-                  onDevMockConnect={
-                    process.env.NODE_ENV !== "production"
-                      ? () =>
-                          setMockConnected({
-                            adapterName: "DevMock",
-                            pubkey: "F7k2QJm9Np8xWv3sH5cB4aRtY6eZu1oKdL2fVgXpN9xMp",
-                            canonical: "phantom",
-                            supportsTransferRequestUri: true,
-                          })
-                      : undefined
-                  }
-                />
-              )}
-              {step === 3 && (
-                <Step1PathSelect
-                  path={path}
-                  onPick={setPath}
-                  ticker={ticker}
-                  handle={handle}
-                />
-              )}
-              {step === 4 && (
-                <Step3Comment
-                  comment={comment}
-                  onChange={setComment}
-                  tooLong={commentTooLong}
-                  ticker={ticker}
-                />
-              )}
-              {step === 5 && (
-                <Step4TokenPicker
-                  path={path!}
-                  token={token}
-                  onPick={setToken}
-                />
-              )}
-              {step === 6 && (
-                <Step5Eligibility
-                  path={path!}
-                  elig={elig}
-                  onTryNewWallet={handleTryNewWallet}
-                  forceIneligible={forceIneligible}
-                  onToggleIneligible={handleToggleIneligible}
-                />
-              )}
-              {step === 7 && elig.quote && path && (
-                <Step6Review
-                  initialQuote={elig.quote}
-                  path={path}
-                  ticker={ticker}
-                  handle={handle}
-                  comment={comment}
-                  pubkey={connected?.pubkey ?? ""}
-                  onStartOver={handleTryNewWallet}
-                  onSign={kickOffSigning}
-                />
-              )}
-              {step === 8 && <Step7Signing sign={sign} />}
-              {step === 9 && (
-                <Step8Outcome
-                  sign={sign}
-                  ticker={ticker}
-                  handle={handle}
-                  path={path}
-                  pubkey={connected?.pubkey ?? null}
-                  tokenLabel={token}
-                  amountUi={elig.quote?.amount_ui != null ? String(elig.quote.amount_ui) : null}
-                  onRetrySign={kickOffSigning}
-                  onRefreshQuote={handleRefreshQuote}
-                  onChangeToken={handleChangeToken}
-                  onStartOver={handleTryNewWallet}
-                  onClose={onClose}
-                />
-              )}
-            </div>
-
-            {!hideCta && (
-              <div className="pm-cta-bar">
-                <button
-                  type="button"
-                  className="pm-cta"
-                  disabled={continueDisabled}
-                  onClick={handleContinue}
-                >
-                  &gt; CONTINUE
-                </button>
-              </div>
-            )}
+            {/* Steps 1-2: wallet select + connect. Step 3+: PasteVerifyFlow takes over. */}
+            {step <= 2 ? (
+              <>
+                <div className="pm-ref-row">
+                  <span />
+                  <span className="pm-step-counter">
+                    STEP <span className="pm-step-now">{step}</span> / 7
+                  </span>
+                </div>
+                <div className="pm-progress-wrap">
+                  <div className="pm-bar-track">
+                    <div className="pm-bar-fill" style={{ width: `${(step / 7) * 100}%` }} />
+                  </div>
+                </div>
+                <div className="pm-body">
+                  {step === 1 && (
+                    <Step1WalletSelect
+                      onSelect={(id) => { setSelectedWallet(id); setStep(2); }}
+                    />
+                  )}
+                  {step === 2 && selectedWallet && (
+                    <Step2WalletPicker
+                      onBack={() => { setSelectedWallet(null); setStep(1); }}
+                      connected={connected}
+                      isSelfProof={isSelfProof}
+                      onContinue={() => setStep(3)}
+                      selectedWallet={selectedWallet}
+                      onDevMockConnect={
+                        process.env.NODE_ENV !== "production"
+                          ? () =>
+                              setMockConnected({
+                                adapterName: "DevMock",
+                                pubkey: "F7k2QJm9Np8xWv3sH5cB4aRtY6eZu1oKdL2fVgXpN9xMp",
+                                canonical: "phantom",
+                                supportsTransferRequestUri: true,
+                              })
+                          : undefined
+                      }
+                    />
+                  )}
+                </div>
+              </>
+            ) : connected ? (
+              <PasteVerifyFlow
+                workItemId={workItemId}
+                ticker={ticker}
+                handle={handle}
+                connected={connected}
+                onClose={onClose}
+                onBackToWalletSelect={() => {
+                  setSelectedWallet(null);
+                  setStep(1);
+                  setPath(null);
+                  setComment("");
+                  setToken("LASTSHFT");
+                  setStreamedToken(null);
+                  setForceIneligible(false);
+                  setMockConnected(null);
+                  reset();
+                  resetSign();
+                }}
+              />
+            ) : null}
           </>
         )}
       </div>
