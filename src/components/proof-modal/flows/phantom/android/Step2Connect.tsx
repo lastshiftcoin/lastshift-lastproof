@@ -79,10 +79,31 @@ export function Step2Connect({
       try {
         localStorage.removeItem("SolanaMobileWalletAdapterDefaultAuthorizationCache");
       } catch { /* localStorage not available — proceed anyway */ }
-      debug.log("mwa", "cleared_auth_cache", {});
+      // Also find the MWA wallet from the wallets list to compare object identity
+      const mwaFromList = wallets.find(
+        (w) => w.adapter.name === SolanaMobileWalletAdapterWalletName,
+      );
+      debug.log("mwa", "pre_connect_state", {
+        adapterIsSameInstance: adapter === mwaFromList?.adapter,
+        adapterConnectedGetter: adapter?.connected,
+        adapterConnectingGetter: adapter?.connecting,
+        walletConnected: (adapter as unknown as { _wallet?: { connected?: boolean } })?._wallet?.connected,
+      });
       try {
-        await adapter!.connect();
-        debug.log("mwa", "connect_resolved", { connected: adapter?.connected });
+        // Use the adapter from the wallets list directly — selectedWallet.adapter
+        // may be a different wrapper instance
+        const target = mwaFromList?.adapter ?? adapter!;
+        debug.log("mwa", "calling_target_connect", {
+          targetName: target.name,
+          targetConnected: target.connected,
+          targetConnecting: target.connecting,
+        });
+        await target.connect();
+        debug.log("mwa", "connect_resolved", {
+          connected: target.connected,
+          targetConnected: target.connected,
+          adapterConnected: adapter?.connected,
+        });
       } catch (e) {
         const msg = e instanceof Error ? e.message : "wallet connect failed";
         debug.log("mwa", "connect_error", { message: msg, name: (e as Error)?.name });
