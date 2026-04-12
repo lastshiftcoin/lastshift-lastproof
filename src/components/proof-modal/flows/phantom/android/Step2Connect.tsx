@@ -13,7 +13,7 @@
  * `@solana-mobile/mobile-wallet-adapter-protocol` under the hood.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import type { ConnectedWallet } from "@/lib/wallet/use-connected";
 import { SolanaMobileWalletAdapterWalletName } from "@solana-mobile/wallet-adapter-mobile";
@@ -32,38 +32,26 @@ export function Step2Connect({
   onConnected,
   onBack,
 }: Step2ConnectProps) {
-  const { wallets, select, connect, connecting } = useWallet();
+  const { wallets, select, connect, connecting, wallet: selectedWallet } = useWallet();
   const [err, setErr] = useState<string | null>(null);
+  const [connectRequested, setConnectRequested] = useState(false);
   const debug = useDebugLog();
 
-  const handleConnect = useCallback(async () => {
-    setErr(null);
-    const walletNames = wallets.map((w) => w.adapter.name);
-    const mwaWallet = wallets.find(
-      (w) => w.adapter.name === SolanaMobileWalletAdapterWalletName,
-    );
-
-    debug.log("mwa", "handle_connect_tap", {
-      mwaFound: !!mwaWallet,
-      walletNames,
-      connecting,
+  // Once React confirms MWA is selected, fire connect().
+  // select() is async through React state — calling connect() in the same
+  // tick throws WalletNotSelectedError. This effect waits for the provider
+  // to propagate the selection before connecting.
+  useEffect(() => {
+    if (!connectRequested) return;
+    if (!selectedWallet || selectedWallet.adapter.name !== SolanaMobileWalletAdapterWalletName) return;
+    setConnectRequested(false);
+    debug.log("mwa", "effect_calling_connect", {
+      adapterName: selectedWallet.adapter.name,
+      readyState: selectedWallet.readyState,
     });
-
-    if (!mwaWallet) {
-      setErr(
-        "Mobile Wallet Adapter not available. Make sure Phantom is installed on this device.",
-      );
-      return;
-    }
-    try {
-      debug.log("mwa", "calling_select_and_connect", {
-        adapterName: mwaWallet.adapter.name,
-        readyState: mwaWallet.readyState,
-      });
-      select(mwaWallet.adapter.name);
-      await connect();
+    connect().then(() => {
       debug.log("mwa", "connect_resolved", {});
-    } catch (e) {
+    }).catch((e) => {
       const msg = e instanceof Error ? e.message : "wallet connect failed";
       debug.log("mwa", "connect_error", { message: msg, name: (e as Error)?.name });
       if (msg.includes("Found no installed wallet")) {
@@ -73,8 +61,51 @@ export function Step2Connect({
       } else {
         setErr(msg);
       }
+    });
+  }, [connectRequested, selectedWallet, connect, debug]);
+
+  const handleConnect = useCallback(async () => {
+    setErr(null);
+    const mwaWallet = wallets.find(
+      (w) => w.adapter.name === SolanaMobileWalletAdapterWalletName,
+    );
+
+    debug.log("mwa", "handle_connect_tap", {
+      mwaFound: !!mwaWallet,
+      selectedWalletName: selectedWallet?.adapter.name ?? null,
+      connecting,
+    });
+
+    if (!mwaWallet) {
+      setErr(
+        "Mobile Wallet Adapter not available. Make sure Phantom is installed on this device.",
+      );
+      return;
     }
-  }, [wallets, select, connect, debug, connecting]);
+
+    // If MWA is already selected, call connect directly.
+    // Otherwise select it first — the useEffect above will call connect
+    // once React propagates the selection to the provider.
+    if (selectedWallet?.adapter.name === SolanaMobileWalletAdapterWalletName) {
+      debug.log("mwa", "already_selected_calling_connect", {});
+      try {
+        await connect();
+        debug.log("mwa", "connect_resolved", {});
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "wallet connect failed";
+        debug.log("mwa", "connect_error", { message: msg, name: (e as Error)?.name });
+        if (msg.includes("Found no installed wallet")) {
+          setErr("Phantom app not found. Install Phantom from the Play Store and try again.");
+        } else {
+          setErr(msg);
+        }
+      }
+    } else {
+      debug.log("mwa", "calling_select", { adapterName: mwaWallet.adapter.name });
+      select(mwaWallet.adapter.name);
+      setConnectRequested(true);
+    }
+  }, [wallets, select, connect, selectedWallet, debug, connecting]);
 
   // Connected — show verified state card
   if (connected) {
