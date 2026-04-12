@@ -244,19 +244,19 @@ export function PhantomAndroidFlow({
           throw new Error("Wallet does not support signing");
         }
         try {
-          const { Transaction } = await import("@solana/web3.js");
+          const { VersionedTransaction } = await import("@solana/web3.js");
           const rawBytes = Uint8Array.from(atob(txBase64), (c) => c.charCodeAt(0));
 
-          // Sign the legacy Transaction directly. MWA supports both
-          // legacy and versioned (supportedTransactionVersions: ["legacy", 0]).
-          // useWallet().signTransaction handles the adapter abstraction.
-          const tx = Transaction.from(rawBytes);
+          // Server builds a V0 VersionedTransaction. Deserialize directly —
+          // no conversion needed. VersionedTransaction.serialize() has no
+          // requireAllSignatures check, so MWA can transport unsigned bytes.
+          const vtx = VersionedTransaction.deserialize(rawBytes);
 
           debug.log("sign", "calling_adapter_sign", {
-            txType: "Transaction",
-            numInstructions: tx.instructions.length,
+            txType: "VersionedTransaction",
+            version: vtx.version,
           });
-          const signed = await signTransaction(tx);
+          const signed = await signTransaction(vtx);
           const bytes = signed.serialize();
           let bin = "";
           bytes.forEach((b: number) => (bin += String.fromCharCode(b)));

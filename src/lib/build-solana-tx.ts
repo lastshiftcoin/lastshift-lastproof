@@ -12,9 +12,11 @@
 import {
   Connection,
   PublicKey,
-  Transaction,
   SystemProgram,
   LAMPORTS_PER_SOL,
+  TransactionInstruction,
+  TransactionMessage,
+  VersionedTransaction,
 } from "@solana/web3.js";
 import {
   createTransferInstruction,
@@ -59,23 +61,17 @@ export type BuildSolanaTxResult = BuildSolanaTxOk | BuildSolanaTxErr;
 export async function buildSolanaTx(args: BuildSolanaTxArgs): Promise<BuildSolanaTxResult> {
   const { payerPubkey, treasuryPubkey, token, expectedToken, memo, reference, connection } = args;
 
-  const tx = new Transaction();
+  const instructions: TransactionInstruction[] = [];
 
   // Get recent blockhash
   let blockhash: string;
-  let lastValidBlockHeight: number;
   try {
     const bh = await connection.getLatestBlockhash("confirmed");
     blockhash = bh.blockhash;
-    lastValidBlockHeight = bh.lastValidBlockHeight;
   } catch (err) {
     console.error("[build-solana-tx] RPC getLatestBlockhash failed:", err);
     return { ok: false, reason: "rpc_degraded", status: 503 };
   }
-
-  tx.recentBlockhash = blockhash;
-  tx.lastValidBlockHeight = lastValidBlockHeight;
-  tx.feePayer = payerPubkey;
 
   if (token === "SOL") {
     // Native SOL transfer
@@ -97,7 +93,7 @@ export async function buildSolanaTx(args: BuildSolanaTxArgs): Promise<BuildSolan
       return { ok: false, reason: "rpc_degraded", status: 503 };
     }
 
-    tx.add(
+    instructions.push(
       SystemProgram.transfer({
         fromPubkey: payerPubkey,
         toPubkey: treasuryPubkey,
@@ -154,7 +150,7 @@ export async function buildSolanaTx(args: BuildSolanaTxArgs): Promise<BuildSolan
       };
     }
 
-    tx.add(
+    instructions.push(
       createTransferInstruction(
         payerAta,
         treasuryAta,
@@ -167,30 +163,43 @@ export async function buildSolanaTx(args: BuildSolanaTxArgs): Promise<BuildSolan
   }
 
   // Add memo instruction (SPL Memo v2)
-  tx.add({
-    keys: [{ pubkey: payerPubkey, isSigner: true, isWritable: false }],
-    programId: MEMO_PROGRAM_ID,
-    data: Buffer.from(memo, "utf-8"),
-  });
+  instructions.push(
+    new TransactionInstruction({
+      keys: [{ pubkey: payerPubkey, isSigner: true, isWritable: false }],
+      programId: MEMO_PROGRAM_ID,
+      data: Buffer.from(memo, "utf-8"),
+    }),
+  );
 
   // Add quote reference as a no-op instruction so Helius webhook can
   // correlate the on-chain tx back to the quote via Solana Pay reference.
   try {
     const refPubkey = new PublicKey(reference);
-    tx.add({
-      keys: [{ pubkey: refPubkey, isSigner: false, isWritable: false }],
-      programId: MEMO_PROGRAM_ID,
-      data: Buffer.from("ref", "utf-8"),
-    });
+    instructions.push(
+      new TransactionInstruction({
+        keys: [{ pubkey: refPubkey, isSigner: false, isWritable: false }],
+        programId: MEMO_PROGRAM_ID,
+        data: Buffer.from("ref", "utf-8"),
+      }),
+    );
   } catch {
     console.warn("[build-solana-tx] could not add reference key:", reference);
   }
 
-  // Serialize (without signature — payer signs client-side)
-  const serialized = tx.serialize({
-    requireAllSignatures: false,
-    verifySignatures: false,
-  });
+  // Build a V0 VersionedTransaction. MWA on Android requires
+  // VersionedTransaction — legacy Transaction.serialize() defaults to
+  // requireAllSignatures:true which rejects unsigned transactions,
+  // and the MWA adapter calls serialize() internally before sending
+  // bytes to the wallet app. VersionedTransaction.serialize() has no
+  // such check, so unsigned transactions transport correctly.
+  const messageV0 = new TransactionMessage({
+    payerKey: payerPubkey,
+    recentBlockhash: blockhash,
+    instructions,
+  }).compileToV0Message();
+
+  const vtx = new VersionedTransaction(messageV0);
+  const serialized = Buffer.from(vtx.serialize());
   const tx_base64 = serialized.toString("base64");
 
   return {
