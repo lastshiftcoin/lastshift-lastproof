@@ -25,16 +25,50 @@ interface CachedRate {
 const cache = new Map<PaymentToken, CachedRate>();
 const CACHE_TTL_MS = 60_000; // 60 seconds
 
-// ─── Jupiter Price API v2 ─────────────────────────────────────────────
-// Docs: https://station.jup.ag/docs/apis/price-api-v2
+// ─── Price APIs ──────────────────────────────────────────────────────
+// Jupiter Price API v2 for SOL/USDT (listed tokens).
+// Raydium Price API for LASTSHFT (minted via Raydium, not listed on Jupiter).
 const JUPITER_PRICE_URL = "https://api.jup.ag/price/v2";
+const RAYDIUM_PRICE_URL = "https://api-v3.raydium.io/mint/price";
 
-// Mint addresses Jupiter needs — SOL uses the wrapped SOL mint
-const JUPITER_MINTS: Record<string, string> = {
+// Mint addresses for price lookups — SOL uses the wrapped SOL mint
+const PRICE_MINTS: Record<string, string> = {
   SOL: "So11111111111111111111111111111111111111112",
   LASTSHFT: TOKEN_MINTS.LASTSHFT,
   USDT: TOKEN_MINTS.USDT,
 };
+
+async function fetchFromJupiter(mint: string): Promise<number | null> {
+  const res = await fetch(`${JUPITER_PRICE_URL}?ids=${mint}`, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as {
+    data?: Record<string, { price?: string }>;
+  };
+  const priceStr = data?.data?.[mint]?.price;
+  if (!priceStr) return null;
+  const usd = parseFloat(priceStr);
+  return Number.isFinite(usd) && usd > 0 ? usd : null;
+}
+
+async function fetchFromRaydium(mint: string): Promise<number | null> {
+  const res = await fetch(`${RAYDIUM_PRICE_URL}?mints=${mint}`, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as {
+    success?: boolean;
+    data?: Record<string, string>;
+  };
+  if (!data?.success) return null;
+  const priceStr = data.data?.[mint];
+  if (!priceStr) return null;
+  const usd = parseFloat(priceStr);
+  return Number.isFinite(usd) && usd > 0 ? usd : null;
+}
 
 async function fetchLiveRate(token: PaymentToken): Promise<number> {
   // USDT is always $1
@@ -46,47 +80,33 @@ async function fetchLiveRate(token: PaymentToken): Promise<number> {
     return cached.usd;
   }
 
-  const mint = JUPITER_MINTS[token];
+  const mint = PRICE_MINTS[token];
   if (!mint) {
     console.warn(`[token-rates] no mint for ${token}, falling back to stub`);
     return STUB_RATES[token];
   }
 
   try {
-    const url = `${JUPITER_PRICE_URL}?ids=${mint}`;
-    const res = await fetch(url, {
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(5000),
-    });
-
-    if (!res.ok) {
-      console.error(`[token-rates] Jupiter returned ${res.status} for ${token}`);
-      // Return cached value if available, otherwise stub
-      return cached?.usd ?? STUB_RATES[token];
+    // LASTSHFT is on Raydium, SOL/USDT on Jupiter. Try the primary
+    // source first, fall back to the other if it fails.
+    let usd: number | null = null;
+    if (token === "LASTSHFT") {
+      usd = await fetchFromRaydium(mint);
+      if (usd == null) usd = await fetchFromJupiter(mint);
+    } else {
+      usd = await fetchFromJupiter(mint);
+      if (usd == null) usd = await fetchFromRaydium(mint);
     }
 
-    const data = (await res.json()) as {
-      data?: Record<string, { price?: string }>;
-    };
-
-    const priceStr = data?.data?.[mint]?.price;
-    if (!priceStr) {
-      console.warn(`[token-rates] no price in Jupiter response for ${token}`);
-      return cached?.usd ?? STUB_RATES[token];
+    if (usd != null) {
+      cache.set(token, { usd, fetchedAt: Date.now() });
+      return usd;
     }
 
-    const usd = parseFloat(priceStr);
-    if (!Number.isFinite(usd) || usd <= 0) {
-      console.warn(`[token-rates] invalid price ${priceStr} for ${token}`);
-      return cached?.usd ?? STUB_RATES[token];
-    }
-
-    // Update cache
-    cache.set(token, { usd, fetchedAt: Date.now() });
-    return usd;
+    console.warn(`[token-rates] no live price for ${token}, using fallback`);
+    return cached?.usd ?? STUB_RATES[token];
   } catch (err) {
-    console.error(`[token-rates] Jupiter fetch failed for ${token}:`, err);
-    // Graceful degradation: use cached or stub
+    console.error(`[token-rates] price fetch failed for ${token}:`, err);
     return cached?.usd ?? STUB_RATES[token];
   }
 }
