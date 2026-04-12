@@ -13,7 +13,7 @@
  * `@solana-mobile/mobile-wallet-adapter-protocol` under the hood.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import type { ConnectedWallet } from "@/lib/wallet/use-connected";
 import { SolanaMobileWalletAdapterWalletName } from "@solana-mobile/wallet-adapter-mobile";
@@ -33,40 +33,29 @@ export function Step2Connect({
 }: Step2ConnectProps) {
   const { wallets, select, connect, connecting, wallet: selectedWallet } = useWallet();
   const [err, setErr] = useState<string | null>(null);
-  // Track whether we initiated the select so we can auto-connect after re-render
-  const pendingConnectRef = useRef(false);
 
-  // After select() triggers a re-render and the wallet-adapter resolves the
-  // MWA adapter as the active wallet, call connect() — now the provider is
-  // subscribed to the adapter's events so the connect callback will fire.
-  useEffect(() => {
-    if (
-      pendingConnectRef.current &&
-      selectedWallet?.adapter.name === SolanaMobileWalletAdapterWalletName &&
-      !connecting &&
-      !connected
-    ) {
-      pendingConnectRef.current = false;
-      connect().catch((e) => {
-        const msg = e instanceof Error ? e.message : "wallet connect failed";
-        if (msg.includes("Found no installed wallet")) {
-          setErr(
-            "Phantom app not found. Install Phantom from the Play Store and try again.",
-          );
-        } else {
-          setErr(msg);
-        }
-      });
-    }
-  }, [selectedWallet, connecting, connected, connect]);
+  /**
+   * MWA connect requires two things:
+   * 1. The WalletProviderBase must be subscribed to the MWA adapter's events
+   *    (happens after select() triggers a re-render and the adapter resolves)
+   * 2. The connect() call must be in a user gesture call stack (Chrome Android
+   *    blocks solana-wallet:// intent navigation otherwise — see
+   *    @solana-mobile/wallet-adapter-mobile README "Android Chrome Browser Issues")
+   *
+   * When the MWA adapter is already the selected wallet (from localStorage or
+   * a prior select()), the provider is already subscribed — so we call
+   * connect() directly in the click handler (user gesture preserved).
+   *
+   * When it's NOT selected yet, we call select() to set it. This triggers a
+   * re-render, and the button renders again with the MWA adapter now active.
+   * The user taps again → this time the adapter IS selected → connect() fires
+   * in the user gesture → Chrome allows the intent → Phantom opens.
+   */
+  const mwaIsSelected =
+    selectedWallet?.adapter.name === SolanaMobileWalletAdapterWalletName;
 
-  const handleConnect = useCallback(() => {
+  const handleConnect = useCallback(async () => {
     setErr(null);
-    // On Android, we must use the MWA (Mobile Wallet Adapter) which fires
-    // a solana-wallet:// intent. Selecting the PhantomWalletAdapter directly
-    // doesn't work — it can't find window.phantom.solana in Chrome and
-    // falls back to opening phantom.com. The MWA adapter is auto-created
-    // by WalletProvider on Android.
     const mwaWallet = wallets.find(
       (w) => w.adapter.name === SolanaMobileWalletAdapterWalletName,
     );
@@ -76,13 +65,26 @@ export function Step2Connect({
       );
       return;
     }
-    // select() sets walletName in localStorage → triggers React re-render →
-    // WalletProviderBase resolves the MWA adapter as active and subscribes
-    // to its events. The useEffect above detects this and calls connect()
-    // AFTER the provider is ready — so the connect event propagates properly.
-    pendingConnectRef.current = true;
-    select(mwaWallet.adapter.name);
-  }, [wallets, select]);
+
+    if (mwaIsSelected) {
+      // MWA adapter already active + provider subscribed → connect in user gesture
+      try {
+        await connect();
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "wallet connect failed";
+        if (msg.includes("Found no installed wallet")) {
+          setErr(
+            "Phantom app not found. Install Phantom from the Play Store and try again.",
+          );
+        } else {
+          setErr(msg);
+        }
+      }
+    } else {
+      // First tap: select the MWA adapter → re-render → button shows again
+      select(mwaWallet.adapter.name);
+    }
+  }, [wallets, select, connect, mwaIsSelected]);
 
   // Connected — show verified state card
   if (connected) {
@@ -184,7 +186,11 @@ export function Step2Connect({
         >
           <span className="pm-wallet-label">Phantom</span>
           <span className="pm-wallet-hint">
-            {connecting ? "CONNECTING…" : "CONNECT WALLET →"}
+            {connecting
+              ? "CONNECTING…"
+              : mwaIsSelected
+                ? "CONNECT WALLET →"
+                : "TAP TO CONNECT →"}
           </span>
         </button>
       </div>
