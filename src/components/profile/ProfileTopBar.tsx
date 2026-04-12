@@ -40,10 +40,7 @@ export function ProfileTopBar({ handle }: Props) {
   const tickerPrice = useTickerPrice();
 
   const onShare = async () => {
-    const url =
-      typeof window !== "undefined"
-        ? window.location.href
-        : `https://lastproof.app/@${handle}`;
+    const url = `${window.location.origin}/@${handle}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);

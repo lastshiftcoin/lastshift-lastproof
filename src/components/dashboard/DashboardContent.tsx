@@ -148,7 +148,7 @@ export function DashboardContent({ profile, primaryCategory, additionalCategorie
             type="button"
             className="btn-mini"
             onClick={async () => {
-              const url = `https://lastproof.app/@${profile.handle}`;
+              const url = `${window.location.origin}/@${profile.handle}`;
               try {
                 await navigator.clipboard.writeText(url);
               } catch {
