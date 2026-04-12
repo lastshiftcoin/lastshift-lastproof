@@ -137,15 +137,17 @@ export function Step6Eligibility({
         </div>
       )}
 
-      <button
-        type="button"
-        className="pm-cta-ghost"
-        style={{ marginTop: 14, padding: "8px 12px", fontSize: 11 }}
-        onClick={onToggleIneligible}
-      >
-        ⟳ TOGGLE ELIGIBILITY (DEV-ONLY) · currently{" "}
-        {forceIneligible ? "INELIGIBLE" : "ELIGIBLE"}
-      </button>
+      {process.env.NODE_ENV === "development" && (
+        <button
+          type="button"
+          className="pm-cta-ghost"
+          style={{ marginTop: 14, padding: "8px 12px", fontSize: 11 }}
+          onClick={onToggleIneligible}
+        >
+          ⟳ TOGGLE ELIGIBILITY (DEV-ONLY) · currently{" "}
+          {forceIneligible ? "INELIGIBLE" : "ELIGIBLE"}
+        </button>
+      )}
     </>
   );
 }
