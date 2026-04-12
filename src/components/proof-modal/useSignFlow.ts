@@ -223,9 +223,10 @@ export function useSignFlow() {
           ok?: boolean;
           signature?: string;
           reason?: string;
+          rpc_error?: string;
         };
 
-        d("broadcast_response", { status: res.status, ok: body.ok, reason: body.reason, signature: body.signature });
+        d("broadcast_response", { status: res.status, ok: body.ok, reason: body.reason, rpc_error: body.rpc_error, signature: body.signature });
 
         if (!res.ok || body.ok === false) {
           const reason = (body.reason ?? "unknown") as FailureReason;

@@ -81,8 +81,8 @@ export async function POST(req: NextRequest) {
         return json({ ok: false, reason: "insufficient_balance" }, 402);
       }
 
-      // Generic RPC failure
-      return json({ ok: false, reason: "rpc_degraded" }, 503);
+      // Generic RPC failure — include message for debug observability
+      return json({ ok: false, reason: "rpc_degraded", rpc_error: msg.slice(0, 500) }, 503);
     }
 
     return json({
