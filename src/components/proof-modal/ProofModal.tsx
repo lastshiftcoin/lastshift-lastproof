@@ -52,6 +52,7 @@ export interface ProofModalProps {
 
 export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWallet }: ProofModalProps) {
   const [step, setStep] = useState<ProofStep>(1);
+  const [selectedWallet, setSelectedWallet] = useState<KnownWallet | null>(null);
   const [path, setPath] = useState<ProofPath | null>(null);
   const [comment, setComment] = useState<string>("");
   const [token, setToken] = useState<ProofTokenKey>("LASTSHFT");
@@ -119,10 +120,11 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
         sign.phase === "idle" ||
         sign.phase === "building" ||
         sign.phase === "awaiting_signature";
-      if (hasQuote && preBroadcast && (step === 5 || step === 6 || step === 7)) {
+      if (hasQuote && preBroadcast && (step === 6 || step === 7 || step === 8)) {
         fireAbandon(elig.quote!.quote_id);
       }
       setStep(1);
+      setSelectedWallet(null);
       setPath(null);
       setComment("");
       setToken("LASTSHFT");
@@ -139,8 +141,8 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
 
   // Step 7 → 8 auto-advance on confirmed OR failed terminal phase.
   useEffect(() => {
-    if (step === 7 && (sign.phase === "confirmed" || sign.phase === "failed")) {
-      setStep(8);
+    if (step === 8 && (sign.phase === "confirmed" || sign.phase === "failed")) {
+      setStep(9);
     }
   }, [step, sign.phase]);
 
@@ -195,7 +197,7 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
   // path selected (step 2 done). Runs in background while user writes
   // comment on step 3.
   useEffect(() => {
-    if (step === 2 && connected && path) {
+    if (step === 3 && connected && path) {
       start({
         path,
         token,
@@ -212,16 +214,16 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
   }, [step, connected, path]);
 
   const handleContinue = useCallback(() => {
-    // Step 2 (path select) → step 3
-    if (step === 2 && path) {
-      setStep(3);
-      return;
-    }
-    if (step === 3) {
+    // Step 3 (path select) → step 4
+    if (step === 3 && path) {
       setStep(4);
       return;
     }
     if (step === 4) {
+      setStep(5);
+      return;
+    }
+    if (step === 5) {
       // Re-fire eligibility if the user changed token away from the
       // one the background stream was run against. Mock hits warm
       // cache for everything except the balance row (~200ms).
@@ -236,11 +238,11 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
         });
         setStreamedToken(token);
       }
-      setStep(5);
+      setStep(6);
       return;
     }
-    if (step === 5 && elig.status === "done" && elig.eligible) {
-      setStep(6);
+    if (step === 6 && elig.status === "done" && elig.eligible) {
+      setStep(7);
     }
   }, [
     step,
@@ -315,7 +317,7 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
    */
   const handleChangeToken = useCallback(() => {
     resetSign();
-    setStep(4);
+    setStep(5);
   }, [resetSign]);
 
   const handleTryNewWallet = useCallback(() => {
@@ -350,17 +352,18 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
 
   const commentTooLong = comment.length > COMMENT_MAX;
   const continueDisabled =
-    (step === 2 && !path) ||
-    (step === 3 && commentTooLong) ||
-    (step === 5 && (elig.status !== "done" || !elig.eligible));
+    (step === 3 && !path) ||
+    (step === 4 && commentTooLong) ||
+    (step === 6 && (elig.status !== "done" || !elig.eligible));
 
-  // Steps 1/6/7/8 drive their own CTAs. Hide the global continue bar.
+  // Steps 1/2/7/8/9 drive their own CTAs. Hide the global continue bar.
   const hideCta =
     step === 1 ||
-    step === 6 ||
+    step === 2 ||
     step === 7 ||
     step === 8 ||
-    (step === 5 && elig.status === "done" && !elig.eligible);
+    step === 9 ||
+    (step === 6 && elig.status === "done" && !elig.eligible);
 
   return (
     <div
@@ -404,7 +407,7 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
         {/* Step counter + connected-wallet pill (hidden on step 1/2 until a
             wallet is live; wireframe canon §ref-row). */}
         <div className="pm-ref-row">
-          {connected && step >= 2 ? (
+          {connected && step >= 3 ? (
             <button
               type="button"
               className="pm-conn-pill"
@@ -424,7 +427,7 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
             <span />
           )}
           <span className="pm-step-counter">
-            STEP <span className="pm-step-now">{step}</span> / 8
+            STEP <span className="pm-step-now">{step}</span> / 9
           </span>
         </div>
 
@@ -432,18 +435,24 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
           <div className="pm-bar-track">
             <div
               className="pm-bar-fill"
-              style={{ width: `${(step / 8) * 100}%` }}
+              style={{ width: `${(step / 9) * 100}%` }}
             />
           </div>
         </div>
 
         <div className="pm-body">
           {step === 1 && (
+            <Step1WalletSelect
+              onSelect={(id) => { setSelectedWallet(id); setStep(2); }}
+            />
+          )}
+          {step === 2 && selectedWallet && (
             <Step2WalletPicker
-              onBack={() => {/* step 1 — no back */}}
+              onBack={() => { setSelectedWallet(null); setStep(1); }}
               connected={connected}
               isSelfProof={isSelfProof}
-              onContinue={() => setStep(2)}
+              onContinue={() => setStep(3)}
+              selectedWallet={selectedWallet}
               onDevMockConnect={
                 process.env.NODE_ENV !== "production"
                   ? () =>
@@ -457,7 +466,7 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
               }
             />
           )}
-          {step === 2 && (
+          {step === 3 && (
             <Step1PathSelect
               path={path}
               onPick={setPath}
@@ -465,7 +474,7 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
               handle={handle}
             />
           )}
-          {step === 3 && (
+          {step === 4 && (
             <Step3Comment
               comment={comment}
               onChange={setComment}
@@ -473,14 +482,14 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
               ticker={ticker}
             />
           )}
-          {step === 4 && (
+          {step === 5 && (
             <Step4TokenPicker
               path={path!}
               token={token}
               onPick={setToken}
             />
           )}
-          {step === 5 && (
+          {step === 6 && (
             <Step5Eligibility
               path={path!}
               elig={elig}
@@ -489,7 +498,7 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
               onToggleIneligible={handleToggleIneligible}
             />
           )}
-          {step === 6 && elig.quote && path && (
+          {step === 7 && elig.quote && path && (
             <Step6Review
               initialQuote={elig.quote}
               path={path}
@@ -501,8 +510,8 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
               onSign={kickOffSigning}
             />
           )}
-          {step === 7 && <Step7Signing sign={sign} />}
-          {step === 8 && (
+          {step === 8 && <Step7Signing sign={sign} />}
+          {step === 9 && (
             <Step8Outcome
               sign={sign}
               ticker={ticker}
@@ -626,10 +635,53 @@ function Step1PathSelect({
   );
 }
 
-// ─── Step 2 ─────────────────────────────────────────────────────────────
+// ─── Step 1: Wallet Select (no connection) ────────────────────────────────
 
 /**
- * Wallet picker.
+ * Pure selection — user picks which wallet they want to use.
+ * No connection attempt. System silently detects desktop vs mobile.
+ * Step 2 handles the actual connection for the selected wallet.
+ */
+function Step1WalletSelect({ onSelect }: { onSelect: (id: KnownWallet) => void }) {
+  return (
+    <>
+      <div className="pm-eyebrow">&gt; SELECT YOUR WALLET</div>
+      <h2 className="pm-head">
+        Which <span className="pm-accent">wallet?</span>
+      </h2>
+      <p className="pm-sub">
+        Pick the wallet you&apos;ll use to sign and pay. We&apos;ll connect it on the
+        next screen.
+      </p>
+
+      <div className="pm-wallets">
+        {WALLET_ORDER.map((id) => {
+          const meta = WALLET_META[id];
+          return (
+            <button
+              key={id}
+              type="button"
+              className="pm-wallet"
+              onClick={() => onSelect(id)}
+            >
+              <span className="pm-wallet-label">{meta.label}</span>
+              <span className="pm-wallet-hint">SELECT &rarr;</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="pm-sub" style={{ marginTop: 14, marginBottom: 0, fontSize: 9, letterSpacing: "0.1em" }}>
+        LASTPROOF NEVER HOLDS OR CUSTODIES FUNDS
+      </div>
+    </>
+  );
+}
+
+// ─── Step 2: Connect Wallet ───────────────────────────────────────────────
+
+/**
+ * Wallet connection screen for the selected wallet.
  *
  * Renders the four-wallet static allowlist merged with the live
  * `useWallet().wallets` array (which is populated by
@@ -650,12 +702,14 @@ function Step2WalletPicker({
   connected,
   isSelfProof,
   onContinue,
+  selectedWallet: targetWallet,
   onDevMockConnect,
 }: {
   onBack: () => void;
   connected: ConnectedWallet | null;
   isSelfProof: boolean;
   onContinue: () => void;
+  selectedWallet: KnownWallet;
   onDevMockConnect?: () => void;
 }) {
   const { wallets, select, connect, connecting, wallet: selectedWallet } = useWallet();
@@ -766,70 +820,52 @@ function Step2WalletPicker({
     );
   }
 
+  const targetMeta = WALLET_META[targetWallet];
+  const targetLive = liveByCanonical.get(targetWallet);
+  const targetConnecting =
+    connecting && selectedWallet?.adapter.name === targetLive?.adapter.name;
+
   return (
     <>
-      <div className="pm-eyebrow">&gt; CONNECT YOUR WALLET</div>
+      <div className="pm-eyebrow">&gt; CONNECT {targetMeta.label.toUpperCase()}</div>
       <h2 className="pm-head">
-        Pick a <span className="pm-accent">wallet.</span>
+        Connect <span className="pm-accent">{targetMeta.label}.</span>
       </h2>
       <p className="pm-sub">
         One wallet, one proof per project. We&apos;ll verify it hasn&apos;t proofed this project
-        before you sign — no gas until you approve.{" "}
-        <a
-          href="/safety"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="pm-safety-link"
-        >
-          Is this safe? ↗
-        </a>
+        before you sign — no gas until you approve.
       </p>
 
       <div className="pm-wallets">
-        {WALLET_ORDER.map((id) => {
-          const meta = WALLET_META[id];
-          const live = liveByCanonical.get(id);
-          const isConnecting =
-            connecting && selectedWallet?.adapter.name === live?.adapter.name;
-
-          // Mobile browser: per-wallet deep links
-          if (walletEnv === "mobile-browser") {
-            const href =
-              typeof window !== "undefined" ? meta.buildDeepLink(window.location.href) : "#";
-            return (
-              <a
-                key={id}
-                className="pm-wallet"
-                href={href}
-                rel="noopener noreferrer"
-              >
-                <span className="pm-wallet-label">{meta.label}</span>
-                <span className="pm-wallet-hint">
-                  {meta.hasBrowseLink ? "OPEN IN APP →" : "GET APP →"}
-                </span>
-                <span className="pm-wallet-hint" style={{ fontSize: 8, marginTop: 2, display: "block", color: "#5a5e73" }}>
-                  {meta.mobileSub}
-                </span>
-              </a>
-            );
-          }
-
-          // Desktop or in-app browser: standard adapter connect
-          return (
-            <button
-              key={id}
-              type="button"
-              className={`pm-wallet${isConnecting ? " pm-connecting" : ""}`}
-              onClick={() => handleClick(id)}
-              disabled={connecting}
-            >
-              <span className="pm-wallet-label">{meta.label}</span>
-              <span className="pm-wallet-hint">
-                {isConnecting ? "CONNECTING…" : live ? "DETECTED" : "NOT INSTALLED"}
-              </span>
-            </button>
-          );
-        })}
+        {/* Mobile browser: deep-link / app-link for this wallet */}
+        {walletEnv === "mobile-browser" ? (
+          <a
+            className="pm-wallet"
+            href={typeof window !== "undefined" ? targetMeta.buildDeepLink(window.location.href) : "#"}
+            rel="noopener noreferrer"
+          >
+            <span className="pm-wallet-label">{targetMeta.label}</span>
+            <span className="pm-wallet-hint">
+              {targetMeta.hasBrowseLink ? "OPEN IN APP →" : "GET APP →"}
+            </span>
+            <span className="pm-wallet-hint" style={{ fontSize: 8, marginTop: 2, display: "block", color: "#5a5e73" }}>
+              {targetMeta.mobileSub}
+            </span>
+          </a>
+        ) : (
+          /* Desktop or in-app browser: adapter connect for this wallet */
+          <button
+            type="button"
+            className={`pm-wallet${targetConnecting ? " pm-connecting" : ""}`}
+            onClick={() => handleClick(targetWallet)}
+            disabled={connecting}
+          >
+            <span className="pm-wallet-label">{targetMeta.label}</span>
+            <span className="pm-wallet-hint">
+              {targetConnecting ? "CONNECTING…" : targetLive ? "CONNECT WALLET →" : "NOT INSTALLED"}
+            </span>
+          </button>
+        )}
       </div>
 
       {err && (

@@ -10,7 +10,7 @@ export type ProofPath = "collab" | "dev";
 
 export type ProofToken = "lastshft" | "sol" | "usdt";
 
-export type ProofStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+export type ProofStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
 /**
  * Tri-state. true=pass, false=fail, null=aspirational/neutral (v1 founder).
