@@ -25,7 +25,7 @@ import { buildSolanaTx } from "@/lib/build-solana-tx";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const RPC_URL = process.env.HELIUS_RPC_URL || "https://api.mainnet-beta.solana.com";
+const RPC_URL = process.env.HELIUS_RPC_URL_PAYMENTS || process.env.HELIUS_RPC_URL || "https://api.mainnet-beta.solana.com";
 const TREASURY =
   process.env.LASTPROOF_AR_WALLET ||
   process.env.TREASURY_WALLET ||

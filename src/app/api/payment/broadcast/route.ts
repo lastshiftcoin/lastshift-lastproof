@@ -18,7 +18,7 @@ import { readSession } from "@/lib/session";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const RPC_URL = process.env.HELIUS_RPC_URL || "https://api.mainnet-beta.solana.com";
+const RPC_URL = process.env.HELIUS_RPC_URL_PAYMENTS || process.env.HELIUS_RPC_URL || "https://api.mainnet-beta.solana.com";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
