@@ -77,6 +77,8 @@ export interface StartSignArgs {
   signTransactionBase64: (txBase64: string) => Promise<string>;
   /** Optional scenario override for mock testing. */
   scenario?: string;
+  /** Optional debug callback — fires for each sign-flow event. */
+  onDebug?: (event: string, payload: Record<string, unknown>) => void;
 }
 
 const INITIAL: SignState = {
@@ -117,18 +119,21 @@ export function useSignFlow() {
 
   const start = useCallback(
     async (args: StartSignArgs) => {
+      const d = args.onDebug ?? (() => {});
       // Fresh run — cancel any in-flight and reset.
       stopPolling();
       abortRef.current?.abort();
       const ctrl = new AbortController();
       abortRef.current = ctrl;
       setState({ ...INITIAL, phase: "building" });
+      d("sign_flow_start", { quoteId: args.quoteId, pubkey: args.pubkey, path: args.path });
 
       // ─── 1. build-tx ────────────────────────────────────────────
       let tx_base64: string;
       let expected_signer: string;
       let memo: string;
       try {
+        d("build_tx_request", { url: BUILD_TX_URL, quoteId: args.quoteId });
         const res = await fetch(BUILD_TX_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -149,9 +154,10 @@ export function useSignFlow() {
           reason?: string;
         };
 
+        d("build_tx_response", { status: res.status, ok: body.ok, reason: body.reason, hasTx: !!body.tx_base64, expectedSigner: body.expected_signer });
+
         if (!res.ok || body.ok === false) {
           const reason = (body.reason ?? "unknown") as FailureReason;
-          // Narrow 500/503/409/410/402 into known codes.
           const known: FailureReason[] = [
             "insufficient_balance",
             "quote_expired_hard",
@@ -160,6 +166,7 @@ export function useSignFlow() {
             "rpc_degraded",
             "unknown",
           ];
+          d("build_tx_failed", { reason, status: res.status });
           fail(known.includes(reason) ? reason : "unknown");
           return;
         }
@@ -169,6 +176,7 @@ export function useSignFlow() {
         memo = body.memo ?? "";
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
+        d("build_tx_error", { message: (err as Error).message });
         fail("unknown");
         return;
       }
@@ -177,26 +185,28 @@ export function useSignFlow() {
 
       // ─── 2. verify expected_signer ──────────────────────────────
       if (expected_signer !== args.pubkey) {
+        d("signer_mismatch", { expected: expected_signer, actual: args.pubkey });
         fail("signature_invalid");
         return;
       }
 
       // ─── 3. signTransaction ─────────────────────────────────────
       setState((s) => ({ ...s, phase: "awaiting_signature" }));
+      d("awaiting_signature", { txLength: tx_base64.length });
       let signed_tx_base64: string;
       try {
         signed_tx_base64 = await args.signTransactionBase64(tx_base64);
+        d("sign_complete", { signedLength: signed_tx_base64.length });
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
-        // Wallet adapter conventionally throws a user-rejection error.
-        // Any throw here is treated as user_rejected — the user
-        // actively cancelled at the wallet prompt.
+        d("sign_rejected", { message: (err as Error).message, name: (err as Error).name });
         fail("user_rejected");
         return;
       }
 
       // ─── 4. broadcast ───────────────────────────────────────────
       setState((s) => ({ ...s, phase: "broadcasting" }));
+      d("broadcast_request", { url: BROADCAST_URL, quoteId: args.quoteId });
       let signature: string;
       try {
         const res = await fetch(BROADCAST_URL, {
@@ -215,6 +225,8 @@ export function useSignFlow() {
           reason?: string;
         };
 
+        d("broadcast_response", { status: res.status, ok: body.ok, reason: body.reason, signature: body.signature });
+
         if (!res.ok || body.ok === false) {
           const reason = (body.reason ?? "unknown") as FailureReason;
           const known: FailureReason[] = [
@@ -222,6 +234,7 @@ export function useSignFlow() {
             "rpc_degraded",
             "unknown",
           ];
+          d("broadcast_failed", { reason, status: res.status });
           fail(known.includes(reason) ? reason : "unknown");
           return;
         }
@@ -229,6 +242,7 @@ export function useSignFlow() {
         signature = body.signature!;
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
+        d("broadcast_error", { message: (err as Error).message });
         fail("unknown");
         return;
       }

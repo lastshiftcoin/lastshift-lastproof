@@ -20,13 +20,14 @@
  *   9  Outcome   — confirmed or failed with recovery CTAs
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import type { ProofPath, ProofStep } from "../../../types";
 import type { ProofTokenKey } from "@/lib/proof-tokens";
 import { useEligibilityStream } from "../../../useEligibilityStream";
 import { useSignFlow } from "../../../useSignFlow";
 import { useConnected, type ConnectedWallet } from "@/lib/wallet/use-connected";
+import { useDebugLog } from "@/lib/debug/useDebugLog";
 
 import { Step1Select } from "./Step1Select";
 import { Step2Connect } from "./Step2Connect";
@@ -68,7 +69,68 @@ export function PhantomAndroidFlow({
   const { state: elig, start, reset } = useEligibilityStream();
   const { state: sign, start: startSign, reset: resetSign } = useSignFlow();
   const connected = useConnected();
-  const { signTransaction } = useWallet();
+  const { signTransaction, wallet: walletRef } = useWallet();
+  const debug = useDebugLog();
+  const prevStep = useRef<ProofStep>(1);
+
+  // Log flow init
+  useEffect(() => {
+    debug.log("proof_flow", "phantom_android_flow_init", {
+      workItemId, ticker, handle, ownerWallet,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Log step transitions
+  useEffect(() => {
+    if (step !== prevStep.current) {
+      debug.log("proof_flow", "step_transition", {
+        from: prevStep.current, to: step,
+        connected: !!connected, pubkey: connected?.pubkey ?? null,
+        adapterName: walletRef?.adapter.name ?? null,
+      });
+      prevStep.current = step;
+    }
+  }, [step, connected, walletRef, debug]);
+
+  // Log wallet connect/disconnect
+  useEffect(() => {
+    if (connected) {
+      debug.log("wallet", "connected", {
+        pubkey: connected.pubkey,
+        canonical: connected.canonical,
+        adapterName: connected.adapterName,
+      });
+    }
+  }, [connected, debug]);
+
+  // Log sign phase changes
+  useEffect(() => {
+    debug.log("sign", "phase_change", {
+      phase: sign.phase,
+      failure: sign.failure,
+      signature: sign.signature,
+      memo: sign.memo,
+    });
+  }, [sign.phase, sign.failure, sign.signature, sign.memo, debug]);
+
+  // Log eligibility state changes
+  useEffect(() => {
+    if (elig.status !== "idle") {
+      debug.log("api", "eligibility_state", {
+        status: elig.status,
+        eligible: elig.eligible,
+        quoteId: elig.quote?.quote_id ?? null,
+        amountUi: elig.quote?.amount_ui ?? null,
+      });
+    }
+  }, [elig.status, elig.eligible, elig.quote, debug]);
+
+  // Flush debug events on unmount
+  useEffect(() => {
+    return () => { debug.flush(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const isSelfProof = Boolean(
     connected && ownerWallet && connected.pubkey === ownerWallet,
@@ -154,6 +216,14 @@ export function PhantomAndroidFlow({
 
   const kickOffSigning = useCallback(() => {
     if (!elig.quote || !path || !connected) return;
+    debug.log("sign", "kick_off", {
+      quoteId: elig.quote.quote_id,
+      pubkey: connected.pubkey,
+      path,
+      token,
+      hasSignTransaction: !!signTransaction,
+      adapterName: walletRef?.adapter.name ?? null,
+    });
     setStep(8);
     startSign({
       quoteId: elig.quote.quote_id,
@@ -161,22 +231,45 @@ export function PhantomAndroidFlow({
       handle,
       ticker,
       path,
+      onDebug: (event, payload) => debug.log("api", event, payload),
       signTransactionBase64: async (txBase64: string) => {
+        debug.log("sign", "sign_tx_called", {
+          txBase64Length: txBase64.length,
+          hasSignTransaction: !!signTransaction,
+        });
         if (!signTransaction) {
+          debug.log("error", "no_sign_transaction", {
+            adapterName: walletRef?.adapter.name ?? null,
+          });
           throw new Error("Wallet does not support signing");
         }
-        const { Transaction } = await import("@solana/web3.js");
-        const tx = Transaction.from(
-          Uint8Array.from(atob(txBase64), (c) => c.charCodeAt(0)),
-        );
-        const signed = await signTransaction(tx);
-        const bytes = signed.serialize();
-        let bin = "";
-        bytes.forEach((b: number) => (bin += String.fromCharCode(b)));
-        return btoa(bin);
+        try {
+          const { Transaction } = await import("@solana/web3.js");
+          const tx = Transaction.from(
+            Uint8Array.from(atob(txBase64), (c) => c.charCodeAt(0)),
+          );
+          debug.log("sign", "calling_adapter_sign", {
+            txSignatures: tx.signatures.length,
+            txInstructions: tx.instructions.length,
+          });
+          const signed = await signTransaction(tx);
+          const bytes = signed.serialize();
+          let bin = "";
+          bytes.forEach((b: number) => (bin += String.fromCharCode(b)));
+          debug.log("sign", "sign_tx_success", {
+            signedLength: bytes.length,
+          });
+          return btoa(bin);
+        } catch (err) {
+          debug.log("error", "sign_tx_failed", {
+            message: err instanceof Error ? err.message : String(err),
+            name: err instanceof Error ? err.name : "unknown",
+          });
+          throw err;
+        }
       },
     });
-  }, [elig.quote, path, connected, handle, ticker, signTransaction, startSign]);
+  }, [elig.quote, path, connected, handle, ticker, token, signTransaction, walletRef, startSign, debug]);
 
   const handleRefreshQuote = useCallback(() => {
     resetSign();
