@@ -1,24 +1,17 @@
 /**
  * Wallet allowlist + Solana Pay capability classification.
  *
- * LASTPROOF accepts payments from four wallets, presented as equal-tier
- * in the UI per the proof-modal wireframe. This file is the single
- * source of truth for allowlist + Solana Pay URI capability.
+ * LASTPROOF accepts payments from three wallets — the top 3 Solana
+ * wallets by user count:
+ *   Phantom, Solflare, Backpack
  *
- * Locked allowlist (user decision):
- *   Phantom, Jupiter Mobile, Solflare, Binance App (Web3 wallet)
+ * Each wallet gets its own independent proof flow per platform
+ * (desktop, Android MWA, iOS browse deep link). See docs/WALLET-REPORT-*.md
+ * for complete integration reports.
  *
- * Historical note: an earlier version split these into TIER_1_VERIFIED
- * (Phantom, Solflare) vs TIER_2_UNVERIFIED (Jupiter, Binance) and emitted
- * `warnUser: true` for the latter. The wireframe direction is now
- * "all four equal" — no warning badges in the picker. The `warnUser`
- * flag is retained for telemetry/dev-console logging only and must NOT
- * drive user-facing copy in the proof modal picker.
- *
- * `supportsTransferRequestUri` still differentiates capability:
- * Phantom + Solflare use the Solana Pay URI deep-link; Jupiter + Binance
- * fall back to a Transaction Request flow. This is a backend routing
- * decision, invisible to the picker UI.
+ * `supportsTransferRequestUri` differentiates capability:
+ * Phantom + Solflare + Backpack all support Solana Pay URI deep-links.
+ * This is a backend routing decision, invisible to the picker UI.
  */
 
 export type WalletTier = "allowed" | "blocked";
@@ -31,24 +24,23 @@ export interface WalletClassification {
   reason?: string;
 }
 
-export type KnownWallet = "phantom" | "solflare" | "jupiter" | "binance";
+export type KnownWallet = "phantom" | "solflare" | "backpack";
 
 /**
- * Adapter-name strings as emitted by @solana/wallet-adapter-wallets.
+ * Adapter-name strings as emitted by wallet extensions and Wallet Standard.
  * Lowercased at lookup time for loose matching.
+ *
+ * Phantom + Solflare: explicit adapter packages.
+ * Backpack: auto-registers via Wallet Standard (no explicit adapter package).
  */
 const ADAPTER_NAME_MAP: Record<string, KnownWallet> = {
   phantom: "phantom",
   solflare: "solflare",
-  "jupiter mobile": "jupiter",
-  jupiter: "jupiter",
-  "binance wallet": "binance",
-  "binance web3 wallet": "binance",
-  binance: "binance",
+  backpack: "backpack",
 };
 
 /** Wallets that support Solana Pay Transfer Request URI deep-links. */
-const URI_CAPABLE = new Set<KnownWallet>(["phantom", "solflare"]);
+const URI_CAPABLE = new Set<KnownWallet>(["phantom", "solflare", "backpack"]);
 
 export function classifyWallet(adapterName: string | null | undefined): WalletClassification {
   if (!adapterName) {
@@ -74,9 +66,7 @@ export function classifyWallet(adapterName: string | null | undefined): WalletCl
     canonical,
     tier: "allowed",
     supportsTransferRequestUri: URI_CAPABLE.has(canonical),
-    // Telemetry-only flag. Must NOT drive picker UI copy — per the
-    // wireframe, all four wallets are presented as equal.
-    warnUser: !URI_CAPABLE.has(canonical),
+    warnUser: false,
   };
 }
 
@@ -87,6 +77,5 @@ export function isAllowlisted(adapterName: string | null | undefined): boolean {
 export const ALLOWLIST: ReadonlyArray<KnownWallet> = [
   "phantom",
   "solflare",
-  "jupiter",
-  "binance",
+  "backpack",
 ];
