@@ -68,7 +68,7 @@ export function PhantomAndroidFlow({
   const { state: elig, start, reset } = useEligibilityStream();
   const { state: sign, start: startSign, reset: resetSign } = useSignFlow();
   const connected = useConnected();
-  const { wallet: walletAdapter } = useWallet();
+  const { signTransaction } = useWallet();
 
   const isSelfProof = Boolean(
     connected && ownerWallet && connected.pubkey === ownerWallet,
@@ -162,26 +162,21 @@ export function PhantomAndroidFlow({
       ticker,
       path,
       signTransactionBase64: async (txBase64: string) => {
-        const adapter = walletAdapter?.adapter as
-          | { signTransaction?: (tx: unknown) => Promise<unknown> }
-          | undefined;
-        if (!adapter?.signTransaction) {
-          return txBase64;
+        if (!signTransaction) {
+          throw new Error("Wallet does not support signing");
         }
         const { Transaction } = await import("@solana/web3.js");
         const tx = Transaction.from(
           Uint8Array.from(atob(txBase64), (c) => c.charCodeAt(0)),
         );
-        const signed = (await adapter.signTransaction(tx)) as {
-          serialize: () => Uint8Array;
-        };
+        const signed = await signTransaction(tx);
         const bytes = signed.serialize();
         let bin = "";
-        bytes.forEach((b) => (bin += String.fromCharCode(b)));
+        bytes.forEach((b: number) => (bin += String.fromCharCode(b)));
         return btoa(bin);
       },
     });
-  }, [elig.quote, path, connected, handle, ticker, walletAdapter, startSign]);
+  }, [elig.quote, path, connected, handle, ticker, signTransaction, startSign]);
 
   const handleRefreshQuote = useCallback(() => {
     resetSign();
