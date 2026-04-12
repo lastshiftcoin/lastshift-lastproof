@@ -9,9 +9,8 @@ import { useQuoteRefresh } from "./useQuoteRefresh";
 import { useSignFlow, type SignPhase } from "./useSignFlow";
 import type { ProofQuote, FailureReason } from "./types";
 import { useConnected, type ConnectedWallet } from "@/lib/wallet/use-connected";
-import { WALLET_META, WALLET_ORDER, detectWalletEnvironment, isAndroid, type WalletEnv } from "@/lib/wallet/deep-link";
+import { WALLET_META, WALLET_ORDER, detectWalletEnvironment } from "@/lib/wallet/deep-link";
 import { classifyWallet, type KnownWallet } from "@/lib/wallet-policy";
-import { PhantomAndroidFlow } from "./flows/phantom/android/PhantomAndroidFlow";
 import { PasteVerifyFlow } from "./flows/paste-verify/PasteVerifyFlow";
 import {
   PROOF_TOKENS,
@@ -406,16 +405,59 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
           </div>
         </div>
 
-        {/* Route: Phantom + Android → dedicated MWA flow (own step machine,
-            ref-row, progress bar, body, CTA). All other combos fall through
-            to the default inline flow below. */}
-        {selectedWallet === "phantom" && step >= 2 && isAndroid() ? (
-          <PhantomAndroidFlow
+        {/* Steps 1-2: wallet select + connect. Step 3+: PasteVerifyFlow takes over.
+            All wallet/platform combos (including Phantom on Android) use the same
+            paste-to-verify flow. Each branch owns its own ref-row + progress bar. */}
+        {step <= 2 ? (
+          <>
+            <div className="pm-ref-row">
+              <span />
+              <span className="pm-step-counter">
+                STEP <span className="pm-step-now">{step}</span> / 7
+              </span>
+            </div>
+            <div className="pm-progress-wrap">
+              <div className="pm-bar-track">
+                <div className="pm-bar-fill" style={{ width: `${(step / 7) * 100}%` }} />
+              </div>
+            </div>
+            <div className="pm-body">
+              {step === 1 && (
+                <Step1WalletSelect
+                  onSelect={(id) => { setSelectedWallet(id); setStep(2); }}
+                />
+              )}
+              {step === 2 && selectedWallet && (
+                <Step2WalletPicker
+                  onBack={() => { setSelectedWallet(null); setStep(1); }}
+                  connected={connected}
+                  isSelfProof={isSelfProof}
+                  onContinue={() => setStep(3)}
+                  selectedWallet={selectedWallet}
+                  onDevMockConnect={
+                    process.env.NODE_ENV !== "production"
+                      ? () =>
+                          setMockConnected({
+                            adapterName: "DevMock",
+                            pubkey: "F7k2QJm9Np8xWv3sH5cB4aRtY6eZu1oKdL2fVgXpN9xMp",
+                            canonical: "phantom",
+                            supportsTransferRequestUri: true,
+                          })
+                      : undefined
+                  }
+                />
+              )}
+            </div>
+          </>
+        ) : connected ? (
+          <PasteVerifyFlow
             workItemId={workItemId}
             ticker={ticker}
             handle={handle}
-            ownerWallet={ownerWallet}
+            connected={connected}
             onClose={onClose}
+            stepOffset={2}
+            totalSteps={7}
             onBackToWalletSelect={() => {
               setSelectedWallet(null);
               setStep(1);
@@ -429,76 +471,7 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
               resetSign();
             }}
           />
-        ) : (
-          <>
-            {/* Steps 1-2: wallet select + connect. Step 3+: PasteVerifyFlow takes over.
-                Each branch owns its own ref-row + progress bar. */}
-            {step <= 2 ? (
-              <>
-                <div className="pm-ref-row">
-                  <span />
-                  <span className="pm-step-counter">
-                    STEP <span className="pm-step-now">{step}</span> / 7
-                  </span>
-                </div>
-                <div className="pm-progress-wrap">
-                  <div className="pm-bar-track">
-                    <div className="pm-bar-fill" style={{ width: `${(step / 7) * 100}%` }} />
-                  </div>
-                </div>
-                <div className="pm-body">
-                  {step === 1 && (
-                    <Step1WalletSelect
-                      onSelect={(id) => { setSelectedWallet(id); setStep(2); }}
-                    />
-                  )}
-                  {step === 2 && selectedWallet && (
-                    <Step2WalletPicker
-                      onBack={() => { setSelectedWallet(null); setStep(1); }}
-                      connected={connected}
-                      isSelfProof={isSelfProof}
-                      onContinue={() => setStep(3)}
-                      selectedWallet={selectedWallet}
-                      onDevMockConnect={
-                        process.env.NODE_ENV !== "production"
-                          ? () =>
-                              setMockConnected({
-                                adapterName: "DevMock",
-                                pubkey: "F7k2QJm9Np8xWv3sH5cB4aRtY6eZu1oKdL2fVgXpN9xMp",
-                                canonical: "phantom",
-                                supportsTransferRequestUri: true,
-                              })
-                          : undefined
-                      }
-                    />
-                  )}
-                </div>
-              </>
-            ) : connected ? (
-              <PasteVerifyFlow
-                workItemId={workItemId}
-                ticker={ticker}
-                handle={handle}
-                connected={connected}
-                onClose={onClose}
-                stepOffset={2}
-                totalSteps={7}
-                onBackToWalletSelect={() => {
-                  setSelectedWallet(null);
-                  setStep(1);
-                  setPath(null);
-                  setComment("");
-                  setToken("LASTSHFT");
-                  setStreamedToken(null);
-                  setForceIneligible(false);
-                  setMockConnected(null);
-                  reset();
-                  resetSign();
-                }}
-              />
-            ) : null}
-          </>
-        )}
+        ) : null}
       </div>
     </div>
   );
