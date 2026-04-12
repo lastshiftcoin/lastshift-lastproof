@@ -481,6 +481,8 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
                 handle={handle}
                 connected={connected}
                 onClose={onClose}
+                stepOffset={2}
+                totalSteps={7}
                 onBackToWalletSelect={() => {
                   setSelectedWallet(null);
                   setStep(1);

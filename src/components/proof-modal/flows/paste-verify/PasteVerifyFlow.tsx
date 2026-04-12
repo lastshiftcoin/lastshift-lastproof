@@ -39,6 +39,10 @@ export interface PasteVerifyFlowProps {
   connected: ConnectedWallet;
   onClose: () => void;
   onBackToWalletSelect: () => void;
+  /** Number of steps that preceded this flow (e.g. 2 for wallet select + connect). */
+  stepOffset?: number;
+  /** Total steps across the entire modal flow (offset + 5 screens). */
+  totalSteps?: number;
 }
 
 export function PasteVerifyFlow({
@@ -48,6 +52,8 @@ export function PasteVerifyFlow({
   connected,
   onClose,
   onBackToWalletSelect,
+  stepOffset = 0,
+  totalSteps = 5,
 }: PasteVerifyFlowProps) {
   const [screen, setScreen] = useState<PvScreen>(1);
   const [path, setPath] = useState<ProofPath | null>(null);
@@ -150,9 +156,10 @@ export function PasteVerifyFlow({
     setScreen(3);
   }, []);
 
-  // Screen number for progress bar (failed counts as screen 4)
-  const screenNum = screen === "failed" ? 4 : screen;
-  const totalScreens = 5;
+  // Screen number for progress bar (failed counts as screen 4).
+  // Add stepOffset so the counter continues from where the wallet steps left off.
+  const rawScreen = screen === "failed" ? 4 : screen;
+  const screenNum = rawScreen + stepOffset;
 
   return (
     <>
@@ -174,7 +181,7 @@ export function PasteVerifyFlow({
           <span />
         )}
         <span className="pm-step-counter">
-          STEP <span className="pm-step-now">{screenNum}</span> / {totalScreens}
+          STEP <span className="pm-step-now">{screenNum}</span> / {totalSteps}
         </span>
       </div>
 
@@ -182,7 +189,7 @@ export function PasteVerifyFlow({
         <div className="pm-bar-track">
           <div
             className="pm-bar-fill"
-            style={{ width: `${(screenNum / totalScreens) * 100}%` }}
+            style={{ width: `${(screenNum / totalSteps) * 100}%` }}
           />
         </div>
       </div>
