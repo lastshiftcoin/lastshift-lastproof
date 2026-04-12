@@ -162,29 +162,19 @@ export async function buildSolanaTx(args: BuildSolanaTxArgs): Promise<BuildSolan
     );
   }
 
-  // Add memo instruction (SPL Memo v2)
+  // Add memo instruction (SPL Memo v2).
+  // Include the quote reference in the memo text so Helius can correlate
+  // on-chain. Previously the reference was a separate Memo instruction
+  // with refPubkey as a non-signer account — but Memo v2 requires ALL
+  // accounts to be signers, and we don't have refPubkey's private key.
+  const memoWithRef = reference ? `${memo}:ref:${reference}` : memo;
   instructions.push(
     new TransactionInstruction({
       keys: [{ pubkey: payerPubkey, isSigner: true, isWritable: false }],
       programId: MEMO_PROGRAM_ID,
-      data: Buffer.from(memo, "utf-8"),
+      data: Buffer.from(memoWithRef, "utf-8"),
     }),
   );
-
-  // Add quote reference as a no-op instruction so Helius webhook can
-  // correlate the on-chain tx back to the quote via Solana Pay reference.
-  try {
-    const refPubkey = new PublicKey(reference);
-    instructions.push(
-      new TransactionInstruction({
-        keys: [{ pubkey: refPubkey, isSigner: false, isWritable: false }],
-        programId: MEMO_PROGRAM_ID,
-        data: Buffer.from("ref", "utf-8"),
-      }),
-    );
-  } catch {
-    console.warn("[build-solana-tx] could not add reference key:", reference);
-  }
 
   // Build a V0 VersionedTransaction. MWA on Android requires
   // VersionedTransaction — legacy Transaction.serialize() defaults to
