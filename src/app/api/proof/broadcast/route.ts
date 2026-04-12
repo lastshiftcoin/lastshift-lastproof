@@ -14,7 +14,6 @@
 
 import { NextRequest } from "next/server";
 import { Connection } from "@solana/web3.js";
-import { readSession } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,11 +29,8 @@ function json(body: unknown, status = 200) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await readSession();
-    if (!session) {
-      return json({ ok: false, reason: "no_session" }, 401);
-    }
-
+    // No session required — proof flow is public. The signed tx
+    // itself is the auth: only the wallet owner could have signed it.
     const body = (await req.json().catch(() => ({}))) as {
       quote_id?: string;
       signed_tx_base64?: string;

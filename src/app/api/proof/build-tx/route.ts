@@ -17,7 +17,6 @@
 
 import { NextRequest } from "next/server";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { readSession } from "@/lib/session";
 import { getQuote } from "@/lib/quotes-store";
 import { buildSolanaTx } from "@/lib/build-solana-tx";
 
@@ -39,12 +38,6 @@ function json(body: unknown, status = 200) {
 
 export async function POST(req: NextRequest) {
   try {
-    // Auth
-    const session = await readSession();
-    if (!session) {
-      return json({ ok: false, reason: "no_session" }, 401);
-    }
-
     const body = (await req.json().catch(() => ({}))) as {
       quote_id?: string;
       handle?: string;
@@ -68,12 +61,21 @@ export async function POST(req: NextRequest) {
       return json({ ok: false, reason: "quote_expired_hard" }, 410);
     }
 
+    // Payer pubkey from the quote metadata — set during eligibility
+    // when the prover connected their wallet. No session needed:
+    // the proof flow is public, provers don't have LASTPROOF accounts.
+    const payerWallet = (quote.metadata as { pubkey?: string } | undefined)?.pubkey;
+    if (!payerWallet) {
+      console.error("[build-tx] quote missing metadata.pubkey", quote.id);
+      return json({ ok: false, reason: "unknown" }, 500);
+    }
+
     if (!TREASURY) {
       console.error("[build-tx] TREASURY wallet not configured");
       return json({ ok: false, reason: "unknown" }, 500);
     }
 
-    const payerPubkey = new PublicKey(session.walletAddress);
+    const payerPubkey = new PublicKey(payerWallet);
     const treasuryPubkey = new PublicKey(TREASURY);
     const connection = new Connection(RPC_URL, "confirmed");
 
