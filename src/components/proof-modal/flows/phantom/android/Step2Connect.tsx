@@ -13,7 +13,7 @@
  * `@solana-mobile/mobile-wallet-adapter-protocol` under the hood.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import type { ConnectedWallet } from "@/lib/wallet/use-connected";
 import { SolanaMobileWalletAdapterWalletName } from "@solana-mobile/wallet-adapter-mobile";
@@ -31,10 +31,36 @@ export function Step2Connect({
   onConnected,
   onBack,
 }: Step2ConnectProps) {
-  const { wallets, select, connect, connecting } = useWallet();
+  const { wallets, select, connect, connecting, wallet: selectedWallet } = useWallet();
   const [err, setErr] = useState<string | null>(null);
+  // Track whether we initiated the select so we can auto-connect after re-render
+  const pendingConnectRef = useRef(false);
 
-  const handleConnect = useCallback(async () => {
+  // After select() triggers a re-render and the wallet-adapter resolves the
+  // MWA adapter as the active wallet, call connect() — now the provider is
+  // subscribed to the adapter's events so the connect callback will fire.
+  useEffect(() => {
+    if (
+      pendingConnectRef.current &&
+      selectedWallet?.adapter.name === SolanaMobileWalletAdapterWalletName &&
+      !connecting &&
+      !connected
+    ) {
+      pendingConnectRef.current = false;
+      connect().catch((e) => {
+        const msg = e instanceof Error ? e.message : "wallet connect failed";
+        if (msg.includes("Found no installed wallet")) {
+          setErr(
+            "Phantom app not found. Install Phantom from the Play Store and try again.",
+          );
+        } else {
+          setErr(msg);
+        }
+      });
+    }
+  }, [selectedWallet, connecting, connected, connect]);
+
+  const handleConnect = useCallback(() => {
     setErr(null);
     // On Android, we must use the MWA (Mobile Wallet Adapter) which fires
     // a solana-wallet:// intent. Selecting the PhantomWalletAdapter directly
@@ -50,25 +76,12 @@ export function Step2Connect({
       );
       return;
     }
-    try {
-      // select() updates React state, but connect() reads from that state
-      // via closure. If we call connect() immediately after select(), the
-      // wallet-adapter's handleConnect still has the OLD wallet ref and
-      // throws WalletNotSelectedError or hangs. Instead, select the wallet
-      // (so it persists in localStorage for reconnect) AND call
-      // adapter.connect() directly on the MWA adapter instance.
-      select(mwaWallet.adapter.name);
-      await mwaWallet.adapter.connect();
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "wallet connect failed";
-      if (msg.includes("Found no installed wallet")) {
-        setErr(
-          "Phantom app not found. Install Phantom from the Play Store and try again.",
-        );
-      } else {
-        setErr(msg);
-      }
-    }
+    // select() sets walletName in localStorage → triggers React re-render →
+    // WalletProviderBase resolves the MWA adapter as active and subscribes
+    // to its events. The useEffect above detects this and calls connect()
+    // AFTER the provider is ready — so the connect event propagates properly.
+    pendingConnectRef.current = true;
+    select(mwaWallet.adapter.name);
   }, [wallets, select]);
 
   // Connected — show verified state card
