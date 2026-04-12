@@ -63,14 +63,21 @@ export function Step2Connect({
     }
 
     if (mwaIsSelected) {
+      const adapter = selectedWallet?.adapter;
       debug.log("mwa", "calling_connect", {
-        adapterName: selectedWallet?.adapter.name,
+        adapterName: adapter?.name,
         readyState: selectedWallet?.readyState,
-        adapterConnected: selectedWallet?.adapter.connected,
+        adapterConnected: adapter?.connected ?? null,
+        adapterConnecting: adapter?.connecting ?? null,
       });
+      // Call adapter.connect() directly in the user gesture call stack.
+      // The provider's connect() wrapper has a guard (isConnectingRef) that
+      // may be stale from a prior failed attempt. Going direct on the adapter
+      // bypasses that guard while still being in the user gesture context
+      // (required by Chrome Android for solana-wallet:// intent navigation).
       try {
-        await connect();
-        debug.log("mwa", "connect_resolved", {});
+        await adapter!.connect();
+        debug.log("mwa", "connect_resolved", { connected: adapter?.connected });
       } catch (e) {
         const msg = e instanceof Error ? e.message : "wallet connect failed";
         debug.log("mwa", "connect_error", { message: msg, name: (e as Error)?.name });
