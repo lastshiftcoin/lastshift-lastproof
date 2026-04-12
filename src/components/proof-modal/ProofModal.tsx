@@ -431,43 +431,8 @@ export function ProofModal({ open, onClose, workItemId, ticker, handle, ownerWal
           />
         ) : (
           <>
-            {/* Step counter + connected-wallet pill (hidden on step 1/2 until a
-                wallet is live; wireframe canon §ref-row). */}
-            <div className="pm-ref-row">
-              {connected && step >= 3 ? (
-                <button
-                  type="button"
-                  className="pm-conn-pill"
-                  onClick={() => {
-                    setMockConnected(null);
-                    setStep(1);
-                  }}
-                  title="Click to disconnect"
-                >
-                  <span className="pm-conn-dot" />
-                  <span className="pm-conn-label">CONNECTED</span>
-                  <span className="pm-conn-addr">
-                    {connected.pubkey.slice(0, 4)}…{connected.pubkey.slice(-4)}
-                  </span>
-                </button>
-              ) : (
-                <span />
-              )}
-              <span className="pm-step-counter">
-                STEP <span className="pm-step-now">{step}</span> / 9
-              </span>
-            </div>
-
-            <div className="pm-progress-wrap">
-              <div className="pm-bar-track">
-                <div
-                  className="pm-bar-fill"
-                  style={{ width: `${(step / 9) * 100}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Steps 1-2: wallet select + connect. Step 3+: PasteVerifyFlow takes over. */}
+            {/* Steps 1-2: wallet select + connect. Step 3+: PasteVerifyFlow takes over.
+                Each branch owns its own ref-row + progress bar. */}
             {step <= 2 ? (
               <>
                 <div className="pm-ref-row">
