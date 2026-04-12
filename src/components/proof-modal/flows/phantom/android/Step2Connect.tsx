@@ -16,7 +16,7 @@
 import { useCallback, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import type { ConnectedWallet } from "@/lib/wallet/use-connected";
-import { classifyWallet } from "@/lib/wallet-policy";
+import { SolanaMobileWalletAdapterWalletName } from "@solana-mobile/wallet-adapter-mobile";
 
 export interface Step2ConnectProps {
   connected: ConnectedWallet | null;
@@ -36,23 +36,25 @@ export function Step2Connect({
 
   const handleConnect = useCallback(async () => {
     setErr(null);
-    // Find the Phantom adapter from registered wallets
-    const phantomWallet = wallets.find((w) => {
-      const c = classifyWallet(w.adapter.name);
-      return c.canonical === "phantom";
-    });
-    if (!phantomWallet) {
+    // On Android, we must use the MWA (Mobile Wallet Adapter) which fires
+    // a solana-wallet:// intent. Selecting the PhantomWalletAdapter directly
+    // doesn't work — it can't find window.phantom.solana in Chrome and
+    // falls back to opening phantom.com. The MWA adapter is auto-created
+    // by WalletProvider on Android.
+    const mwaWallet = wallets.find(
+      (w) => w.adapter.name === SolanaMobileWalletAdapterWalletName,
+    );
+    if (!mwaWallet) {
       setErr(
-        "Phantom wallet adapter not found. Make sure Phantom is installed on this device.",
+        "Mobile Wallet Adapter not available. Make sure Phantom is installed on this device.",
       );
       return;
     }
     try {
-      select(phantomWallet.adapter.name);
+      select(mwaWallet.adapter.name);
       await connect();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "wallet connect failed";
-      // MWA-specific: 3s timeout means Phantom app not installed
       if (msg.includes("Found no installed wallet")) {
         setErr(
           "Phantom app not found. Install Phantom from the Play Store and try again.",

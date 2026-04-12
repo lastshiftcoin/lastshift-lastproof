@@ -32,11 +32,18 @@ export type KnownWallet = "phantom" | "solflare" | "backpack";
  *
  * Phantom + Solflare: explicit adapter packages.
  * Backpack: auto-registers via Wallet Standard (no explicit adapter package).
+ * "mobile wallet adapter": the SolanaMobileWalletAdapter auto-created by
+ * WalletProvider on Android. Fires a solana-wallet:// intent; whichever
+ * wallet responds handles it. Mapped to "phantom" because our only MWA
+ * flow is Phantom Android. If Solflare/Backpack MWA flows are added later,
+ * this mapping still works — the canonical is used for display + capability
+ * routing, not identity enforcement.
  */
 const ADAPTER_NAME_MAP: Record<string, KnownWallet> = {
   phantom: "phantom",
   solflare: "solflare",
   backpack: "backpack",
+  "mobile wallet adapter": "phantom",
 };
 
 /** Wallets that support Solana Pay Transfer Request URI deep-links. */
