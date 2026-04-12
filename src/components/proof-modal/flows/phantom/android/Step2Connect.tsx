@@ -51,8 +51,14 @@ export function Step2Connect({
       return;
     }
     try {
+      // select() updates React state, but connect() reads from that state
+      // via closure. If we call connect() immediately after select(), the
+      // wallet-adapter's handleConnect still has the OLD wallet ref and
+      // throws WalletNotSelectedError or hangs. Instead, select the wallet
+      // (so it persists in localStorage for reconnect) AND call
+      // adapter.connect() directly on the MWA adapter instance.
       select(mwaWallet.adapter.name);
-      await connect();
+      await mwaWallet.adapter.connect();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "wallet connect failed";
       if (msg.includes("Found no installed wallet")) {
@@ -63,7 +69,7 @@ export function Step2Connect({
         setErr(msg);
       }
     }
-  }, [wallets, select, connect]);
+  }, [wallets, select]);
 
   // Connected — show verified state card
   if (connected) {
