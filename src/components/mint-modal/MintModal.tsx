@@ -14,6 +14,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useWallet } from "@solana/wallet-adapter-react";
 import "./mint-modal.css";
 import { useSignFlow, type SignPhase } from "@/components/proof-modal/useSignFlow";
@@ -240,7 +241,9 @@ export function MintModal({
   // ─── Log lines for step 3 ────────────────────────────────────────
   const logLines = buildLogLines(sign.phase);
 
-  return (
+  // Portal to document.body to escape dashboard stacking contexts
+  // (.edit-card has position:relative which traps fixed children)
+  return createPortal(
     <div
       className="mm-backdrop"
       onClick={onClose}
@@ -395,7 +398,8 @@ export function MintModal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

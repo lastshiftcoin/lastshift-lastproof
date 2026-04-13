@@ -17,7 +17,7 @@
  */
 
 import { useState, useRef, useCallback } from "react";
-import { PaymentModal } from "@/components/payment-modal/PaymentModal";
+import { MintModal } from "@/components/mint-modal/MintModal";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -389,20 +389,28 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
         </div>
       )}
 
-      {/* Mint payment modal */}
-      {showMintPayment && mintingId && (
-        <PaymentModal
-          open={showMintPayment}
-          onClose={() => { setShowMintPayment(false); setMintingId(null); }}
-          kind="mint"
-          metadata={{ refId: mintingId }}
-          onSuccess={() => {
-            setShowMintPayment(false);
-            // Webhook will set minted=true — reload to pick it up.
-            setTimeout(() => window.location.reload(), 3000);
-          }}
-        />
-      )}
+      {/* Mint modal */}
+      {showMintPayment && mintingId && (() => {
+        const mintItem = items.find((i) => i.id === mintingId);
+        if (!mintItem) return null;
+        const mintDates = mintItem.startedAt
+          ? mintItem.endedAt
+            ? `${mintItem.startedAt} — ${mintItem.endedAt}`
+            : `${mintItem.startedAt} — Present`
+          : "—";
+        return (
+          <MintModal
+            open={showMintPayment}
+            onClose={() => { setShowMintPayment(false); setMintingId(null); }}
+            workItemId={mintingId}
+            ticker={mintItem.ticker ?? "—"}
+            role={mintItem.role}
+            dates={mintDates}
+            proofCount={mintItem.proofCount}
+            mintedCount={items.filter((i) => i.minted).length}
+          />
+        );
+      })()}
 
       {/* Add button / form */}
       {!showForm ? (
