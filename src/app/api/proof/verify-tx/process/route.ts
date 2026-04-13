@@ -18,6 +18,7 @@
 import { Connection } from "@solana/web3.js";
 import { supabaseService } from "@/lib/db/client";
 import { verifyAndRecordProof, RPC_URL, type VerificationRow } from "@/lib/proof-verification";
+import { verifyAndRecordPayment, type PaymentVerificationRow } from "@/lib/payment-verification";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -96,9 +97,61 @@ async function handler(req: Request) {
     }
   }
 
+  // ─── Also process queued payment_verifications ───────────────────
+  const { data: payRows } = await db
+    .from("payment_verifications")
+    .select("id, signature, pubkey, kind, token, profile_id, ref_id, attempt_number, session_opened_at")
+    .eq("status", "queued")
+    .order("created_at", { ascending: true })
+    .limit(BATCH_SIZE);
+
+  let payProcessed = 0;
+  let payVerified = 0;
+  let payFailed = 0;
+
+  if (payRows && payRows.length > 0) {
+    const payIds = payRows.map((r: PaymentVerificationRow) => r.id);
+    await db
+      .from("payment_verifications")
+      .update({ status: "processing" })
+      .in("id", payIds);
+
+    for (const payRow of payRows as PaymentVerificationRow[]) {
+      const result = await verifyAndRecordPayment(payRow, connection);
+      payProcessed++;
+
+      if (result.ok) {
+        await db
+          .from("payment_verifications")
+          .update({
+            status: "verified",
+            payment_id: result.paymentId,
+            processed_at: new Date().toISOString(),
+          })
+          .eq("id", payRow.id);
+        payVerified++;
+      } else {
+        await db
+          .from("payment_verifications")
+          .update({
+            status: "failed",
+            failure_check: result.check,
+            failure_detail: result.detail,
+            processed_at: new Date().toISOString(),
+          })
+          .eq("id", payRow.id);
+        payFailed++;
+      }
+    }
+  }
+
   console.log(
-    `[verify-tx/process] batch done: ${processed} processed, ${verified} verified, ${failed} failed, ${Date.now() - start}ms`,
+    `[verify-tx/process] proofs: ${processed}/${verified}/${failed} | payments: ${payProcessed}/${payVerified}/${payFailed} | ${Date.now() - start}ms`,
   );
 
-  return json({ processed, verified, failed, ms: Date.now() - start });
+  return json({
+    processed, verified, failed,
+    payProcessed, payVerified, payFailed,
+    ms: Date.now() - start,
+  });
 }

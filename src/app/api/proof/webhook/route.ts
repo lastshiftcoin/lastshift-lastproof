@@ -16,6 +16,7 @@
 import { supabaseService } from "@/lib/db/client";
 import { verifyHeliusRequest } from "@/lib/helius-verify";
 import { verifyAndRecordProof, type VerificationRow } from "@/lib/proof-verification";
+import { verifyAndRecordPayment, type PaymentVerificationRow } from "@/lib/payment-verification";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,73 +44,119 @@ export async function POST(req: Request) {
     let verified = 0;
     let failed = 0;
     let cached = 0;
+    let payMatched = 0;
+    let payVerified = 0;
+    let payFailed = 0;
 
     for (const txData of transactions) {
       const tx = txData as { signature?: string };
       if (!tx.signature) continue;
 
       // Try to match against queued proof_verification
-      const { data: row } = await db
+      const { data: proofRow } = await db
         .from("proof_verifications")
         .select("id, signature, pubkey, path, token, work_item_id, profile_id, attempt_number, comment, session_opened_at")
         .eq("signature", tx.signature)
         .in("status", ["queued", "processing"])
         .single();
 
-      if (!row) {
-        // No queue row yet — user hasn't submitted. Cache the signature
-        // so verify-tx can process immediately when the user submits.
+      if (proofRow) {
+        matched++;
+
         await db
-          .from("pending_webhook_sigs")
-          .upsert(
-            { signature: tx.signature, received_at: new Date().toISOString() },
-            { onConflict: "signature" },
-          );
-        cached++;
+          .from("proof_verifications")
+          .update({ status: "processing" })
+          .eq("id", proofRow.id);
+
+        const result = await verifyAndRecordProof(proofRow as VerificationRow);
+
+        if (result.ok) {
+          await db
+            .from("proof_verifications")
+            .update({
+              status: "verified",
+              proof_id: result.proofId,
+              processed_at: new Date().toISOString(),
+            })
+            .eq("id", proofRow.id);
+          verified++;
+        } else {
+          await db
+            .from("proof_verifications")
+            .update({
+              status: "failed",
+              failure_check: result.check,
+              failure_detail: result.detail,
+              processed_at: new Date().toISOString(),
+            })
+            .eq("id", proofRow.id);
+          failed++;
+        }
+
+        await db.from("pending_webhook_sigs").delete().eq("signature", tx.signature);
         continue;
       }
 
-      matched++;
+      // Try to match against queued payment_verification
+      const { data: payRow } = await db
+        .from("payment_verifications")
+        .select("id, signature, pubkey, kind, token, profile_id, ref_id, attempt_number, session_opened_at")
+        .eq("signature", tx.signature)
+        .in("status", ["queued", "processing"])
+        .single();
 
-      await db
-        .from("proof_verifications")
-        .update({ status: "processing" })
-        .eq("id", row.id);
+      if (payRow) {
+        payMatched++;
 
-      const result = await verifyAndRecordProof(row as VerificationRow);
-
-      if (result.ok) {
         await db
-          .from("proof_verifications")
-          .update({
-            status: "verified",
-            proof_id: result.proofId,
-            processed_at: new Date().toISOString(),
-          })
-          .eq("id", row.id);
-        verified++;
-      } else {
-        await db
-          .from("proof_verifications")
-          .update({
-            status: "failed",
-            failure_check: result.check,
-            failure_detail: result.detail,
-            processed_at: new Date().toISOString(),
-          })
-          .eq("id", row.id);
-        failed++;
+          .from("payment_verifications")
+          .update({ status: "processing" })
+          .eq("id", payRow.id);
+
+        const result = await verifyAndRecordPayment(payRow as PaymentVerificationRow);
+
+        if (result.ok) {
+          await db
+            .from("payment_verifications")
+            .update({
+              status: "verified",
+              payment_id: result.paymentId,
+              processed_at: new Date().toISOString(),
+            })
+            .eq("id", payRow.id);
+          payVerified++;
+        } else {
+          await db
+            .from("payment_verifications")
+            .update({
+              status: "failed",
+              failure_check: result.check,
+              failure_detail: result.detail,
+              processed_at: new Date().toISOString(),
+            })
+            .eq("id", payRow.id);
+          payFailed++;
+        }
+
+        await db.from("pending_webhook_sigs").delete().eq("signature", tx.signature);
+        continue;
       }
 
-      // Clean up cached sig if it was there
-      await db.from("pending_webhook_sigs").delete().eq("signature", tx.signature);
+      // No match in either table — cache for later
+      await db
+        .from("pending_webhook_sigs")
+        .upsert(
+          { signature: tx.signature, received_at: new Date().toISOString() },
+          { onConflict: "signature" },
+        );
+      cached++;
     }
 
     console.log(
-      `[proof/webhook] ${matched} matched, ${verified} verified, ${failed} failed, ${cached} cached`,
+      `[proof/webhook] proofs: ${matched} matched, ${verified} verified, ${failed} failed | payments: ${payMatched} matched, ${payVerified} verified, ${payFailed} failed | ${cached} cached`,
     );
 
-    return json({ ok: true, matched, verified, failed, cached });
+    return json({ ok: true, matched, verified, failed, payMatched, payVerified, payFailed, cached });
   } catch (err) {
     console.error("[proof/webhook] error:", err);
     return json({ ok: true });
