@@ -84,14 +84,14 @@ export default async function DashboardPage() {
         const itemIds = rawItems.map((wi: { id: string }) => wi.id);
         const { data: proofCounts } = await sb
           .from("proofs")
-          .select("work_item_id, is_dev_verification")
+          .select("work_item_id, kind")
           .in("work_item_id", itemIds.length > 0 ? itemIds : ["__none__"]);
 
         const countMap = new Map<string, { total: number; hasDev: boolean }>();
         for (const p of proofCounts ?? []) {
           const existing = countMap.get(p.work_item_id) ?? { total: 0, hasDev: false };
           existing.total++;
-          if (p.is_dev_verification) existing.hasDev = true;
+          if (p.kind === "dev_verification") existing.hasDev = true;
           countMap.set(p.work_item_id, existing);
         }
 

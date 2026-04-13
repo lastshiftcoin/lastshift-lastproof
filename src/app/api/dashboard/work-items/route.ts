@@ -105,9 +105,9 @@ export async function PATCH(request: Request) {
   if (!item) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   // Check for proofs — locked items cannot be edited
-  const { count } = await sb
+  const { count, data: proofRows } = await sb
     .from("proofs")
-    .select("id", { count: "exact", head: true })
+    .select("id, kind", { count: "exact" })
     .eq("work_item_id", id);
 
   if ((count ?? 0) > 0) {
@@ -132,6 +132,8 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  const hasDevProof = (proofRows ?? []).some((p: { kind: string }) => p.kind === "dev_verification");
+
   return NextResponse.json({
     item: {
       id: data.id,
@@ -141,8 +143,8 @@ export async function PATCH(request: Request) {
       startedAt: data.started_at,
       endedAt: data.ended_at,
       minted: data.minted ?? false,
-      proofCount: 0,
-      hasDevProof: false,
+      proofCount: count ?? 0,
+      hasDevProof,
       position: data.position,
     },
   });
