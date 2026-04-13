@@ -259,7 +259,13 @@ export async function POST(req: NextRequest) {
           proof_id: result.proofId,
           processed_at: new Date().toISOString(),
         }).eq("id", row.id);
-        return json({ ok: true, verification_id: row.id, status: "verified", proof_id: result.proofId });
+        return json({
+          ok: true,
+          verification_id: row.id,
+          status: "verified",
+          proof_id: result.proofId,
+          sender_wallet: result.extractedSender,
+        });
       } else {
         await db.from("proof_verifications").update({
           status: "failed",

@@ -137,6 +137,7 @@ export function PasteVerifyFlow({
           detail?: string;
           status?: string;
           proof_id?: string;
+          sender_wallet?: string;
           silent_duplicate?: boolean;
         };
 
@@ -148,11 +149,14 @@ export function PasteVerifyFlow({
           return;
         }
 
-        // Silent duplicate or already verified
+        // Instant verify (webhook cache hit) or silent duplicate
         if (data.status === "verified" && data.proof_id) {
-          // Clear session from localStorage on success
           try { localStorage.removeItem(storageKey); } catch {}
-          setProofData({ proof_id: data.proof_id });
+          setProofData({
+            proof_id: data.proof_id,
+            sender_wallet: data.sender_wallet ?? "",
+            comment: comment || "",
+          });
           setScreen(6);
           return;
         }
