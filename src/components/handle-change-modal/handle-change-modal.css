@@ -163,6 +163,88 @@
 }
 .hc-btn-back:hover { color: var(--hc-fg); border-color: var(--hc-fg); }
 
+/* Sub text */
+.hc-sub {
+  font-size: 12px; color: var(--hc-dim); line-height: 1.6;
+  margin: 0 0 18px; text-align: center;
+}
+.hc-red { color: var(--hc-red); }
+
+/* Handle input — onboarding-style (matches ob-handle-wrap) */
+.hc-handle-wrap {
+  display: flex;
+  align-items: stretch;
+  background: var(--hc-bg);
+  border: 1px solid var(--hc-line);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.hc-handle-wrap.ok {
+  border-color: var(--hc-green);
+  box-shadow: 0 0 0 1px rgba(0, 230, 118, 0.25);
+}
+.hc-handle-wrap.taken {
+  border-color: var(--hc-red);
+  box-shadow: 0 0 0 1px rgba(255, 84, 112, 0.25);
+}
+.hc-handle-wrap:focus-within:not(.ok):not(.taken) {
+  border-color: var(--hc-accent);
+}
+.hc-handle-prefix {
+  display: flex;
+  align-items: center;
+  padding: 0 12px 0 14px;
+  font-size: 11px;
+  color: var(--hc-dim);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  border-right: 1px solid var(--hc-line);
+  background: rgba(0, 0, 0, 0.2);
+}
+.hc-at { color: var(--hc-accent); font-weight: 700; }
+.hc-handle-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--hc-fg);
+  padding: 12px 14px;
+  letter-spacing: 0.02em;
+}
+.hc-handle-input::placeholder { color: var(--hc-dim); opacity: 0.5; }
+.hc-handle-status {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--hc-dim);
+  white-space: nowrap;
+  gap: 6px;
+}
+.hc-handle-status.ok { color: var(--hc-green); }
+.hc-handle-status.taken { color: var(--hc-red); }
+.hc-check-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--hc-dim);
+}
+.hc-handle-status.ok .hc-check-dot {
+  background: var(--hc-green);
+  box-shadow: 0 0 6px var(--hc-green);
+}
+.hc-handle-status.taken .hc-check-dot {
+  background: var(--hc-red);
+  box-shadow: 0 0 6px var(--hc-red);
+}
+
 /* Fine print */
 .hc-fine {
   padding: 0 28px 20px; font-size: 9px; letter-spacing: 0.12em;

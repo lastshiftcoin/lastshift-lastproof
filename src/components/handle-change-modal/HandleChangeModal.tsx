@@ -1,16 +1,17 @@
 "use client";
 
 /**
- * HandleChangeModal — paste-verify payment flow for handle changes ($100).
+ * HandleChangeModal — 6-screen paste-verify flow for handle changes ($100).
  *
- * 4 screens:
- *   1. Confirm handle change + token select (90-day cooldown warning)
- *   2. Send payment (treasury address + exact amount)
- *   3. Paste TX + submit
- *   4. Terminal cascade → outcome (receipt with cooldown notice)
+ * Screens:
+ *   1. Eligibility check (cooldown gate — blocks if on cooldown)
+ *   2. Handle setup (onboarding-style input with live availability)
+ *   3. Token select ($100/$60 with LASTSHFT)
+ *   4. Send payment (treasury address + exact amount)
+ *   5. Paste TX + submit
+ *   6. Terminal cascade → outcome (receipt with cooldown notice)
  *
- * IdentityCard validates the handle (format, cooldown, availability)
- * BEFORE opening this modal. This modal is purely a payment flow.
+ * The modal owns the ENTIRE handle change flow — IdentityCard just opens it.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -30,7 +31,7 @@ import {
   type PaymentToken,
 } from "@/lib/pricing";
 
-type HcStep = 1 | 2 | 3 | 4;
+type HcStep = 1 | 2 | 3 | 4 | 5 | 6;
 
 const TREASURY_WALLET = process.env.NEXT_PUBLIC_TREASURY_WALLET ?? "";
 const SESSION_STORAGE_PREFIX = "lp_hc_session_";
@@ -39,7 +40,6 @@ export interface HandleChangeModalProps {
   open: boolean;
   onClose: () => void;
   oldHandle: string;
-  newHandle: string;
   onSuccess?: () => void;
 }
 
@@ -58,11 +58,24 @@ export function HandleChangeModal({
   open,
   onClose,
   oldHandle,
-  newHandle,
   onSuccess,
 }: HandleChangeModalProps) {
   const [step, setStep] = useState<HcStep>(1);
   const [token, setToken] = useState<ProofTokenKey>("LASTSHFT");
+
+  // Screen 1: cooldown
+  const [cooldown, setCooldown] = useState<{ eligible: boolean; daysRemaining: number } | null>(null);
+  const [cooldownLoading, setCooldownLoading] = useState(true);
+
+  // Screen 2: handle input
+  const [newHandle, setNewHandle] = useState<string | null>(null);
+  const [handleInput, setHandleInput] = useState("");
+  const [handleStatus, setHandleStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const [validating, setValidating] = useState(false);
+  const [screenError, setScreenError] = useState<string | null>(null);
+  const handleCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Paste-verify state
   const [verificationId, setVerificationId] = useState<string | null>(null);
   const [paymentData, setPaymentData] = useState<Record<string, unknown> | null>(null);
   const [solscanUrl, setSolscanUrl] = useState<string | null>(null);
@@ -71,40 +84,116 @@ export function HandleChangeModal({
   const [failureDetail, setFailureDetail] = useState<string | null>(null);
   const [showFailure, setShowFailure] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
-
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const storageKey = `${SESSION_STORAGE_PREFIX}${newHandle}`;
 
   const basePrice = BASE_PRICES_USD.handle_change;
   const discountedPrice = priceFor("handle_change", "LASTSHFT");
-
   const shellRef = useRef<HTMLDivElement | null>(null);
 
   // Reset on close
   useEffect(() => {
     if (!open) {
-      setStep(1);
-      setToken("LASTSHFT");
-      setVerificationId(null);
-      setPaymentData(null);
-      setSolscanUrl(null);
-      setFailureAttempt(0);
-      setFailureCheck(null);
-      setFailureDetail(null);
-      setShowFailure(false);
-      setConfirmed(false);
-      setSessionId(null);
+      setStep(1); setToken("LASTSHFT"); setCooldown(null); setCooldownLoading(true);
+      setNewHandle(null); setHandleInput(""); setHandleStatus("idle");
+      setValidating(false); setScreenError(null);
+      setVerificationId(null); setPaymentData(null); setSolscanUrl(null);
+      setFailureAttempt(0); setFailureCheck(null); setFailureDetail(null);
+      setShowFailure(false); setConfirmed(false); setSessionId(null);
     }
   }, [open]);
 
-  // Create session on open
+  // Fetch cooldown on open
   useEffect(() => {
     if (!open) return;
+    setCooldownLoading(true);
+    fetch("/api/dashboard/handle-change")
+      .then((r) => r.json())
+      .then((data: { cooldown?: { eligible: boolean; daysRemaining: number } }) => {
+        if (data.cooldown) setCooldown(data.cooldown);
+        setCooldownLoading(false);
+      })
+      .catch(() => setCooldownLoading(false));
+  }, [open]);
+
+  // ESC to close
+  useEffect(() => {
+    if (!open) return;
+    shellRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && step < 6) onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, step, onClose]);
+
+  // ─── Screen 2: handle input with debounced availability ───────────
+  const onHandleInputChange = useCallback((val: string) => {
+    const clean = val.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20);
+    setHandleInput(clean);
+    setHandleStatus("idle");
+    setScreenError(null);
+
+    if (handleCheckTimer.current) clearTimeout(handleCheckTimer.current);
+    if (clean.length < 3) return;
+
+    setHandleStatus("checking");
+    handleCheckTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/onboarding/check-handle?handle=${clean}`);
+        const data = await res.json();
+        setHandleStatus(data.available ? "available" : "taken");
+      } catch {
+        setHandleStatus("idle");
+      }
+    }, 400);
+  }, []);
+
+  // ─── Screen 2 → 3: validate handle then advance ──────────────────
+  const handleValidateAndContinue = useCallback(async () => {
+    if (!handleInput || handleStatus !== "available") return;
+    setValidating(true);
+    setScreenError(null);
+
     try {
-      const stored = localStorage.getItem(storageKey);
+      const res = await fetch("/api/dashboard/handle-change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newHandle: handleInput }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.error === "cooldown_active") {
+          setCooldown({ eligible: false, daysRemaining: data.daysRemaining ?? 0 });
+          setStep(1);
+        } else if (data.error === "handle_taken") {
+          setHandleStatus("taken");
+          setScreenError("That handle was just taken.");
+        } else {
+          setScreenError(data.error || "Handle validation failed.");
+        }
+        return;
+      }
+
+      const data = await res.json();
+      setNewHandle(data.validatedHandle);
+      setStep(3);
+    } catch {
+      setScreenError("Handle change failed — please try again.");
+    } finally {
+      setValidating(false);
+    }
+  }, [handleInput, handleStatus]);
+
+  // ─── Create session when advancing to Screen 4 ────────────────────
+  const advanceToSend = useCallback(() => {
+    if (!newHandle) return;
+    const key = `${SESSION_STORAGE_PREFIX}${newHandle}`;
+
+    try {
+      const stored = localStorage.getItem(key);
       if (stored) {
         const parsed = JSON.parse(stored) as { session_id: string };
         setSessionId(parsed.session_id);
+        setStep(4);
         return;
       }
     } catch {}
@@ -118,48 +207,30 @@ export function HandleChangeModal({
       .then((data: { ok: boolean; session_id?: string; opened_at?: string }) => {
         if (data.ok && data.session_id) {
           setSessionId(data.session_id);
-          try {
-            localStorage.setItem(storageKey, JSON.stringify({ session_id: data.session_id, opened_at: data.opened_at }));
-          } catch {}
+          try { localStorage.setItem(key, JSON.stringify({ session_id: data.session_id, opened_at: data.opened_at })); } catch {}
+          setStep(4);
         }
       })
       .catch(() => {});
-  }, [open, newHandle, storageKey]);
+  }, [newHandle]);
 
-  // ESC to close (not during verification)
-  useEffect(() => {
-    if (!open) return;
-    shellRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && step < 4) onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, step, onClose]);
-
+  // ─── Submit TX ────────────────────────────────────────────────────
   const handleSubmit = useCallback(
     async (signatureInput: string) => {
-      if (!sessionId) return;
+      if (!sessionId || !newHandle) return;
+      const key = `${SESSION_STORAGE_PREFIX}${newHandle}`;
       try {
         const res = await fetch("/api/payment/paste-verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            signature: signatureInput,
-            kind: "handle_change",
-            token,
-            ref_id: newHandle,
-            session_id: sessionId,
-            deep: failureAttempt >= 1,
+            signature: signatureInput, kind: "handle_change", token,
+            ref_id: newHandle, session_id: sessionId, deep: failureAttempt >= 1,
           }),
         });
         const data = (await res.json()) as {
-          ok: boolean;
-          verification_id?: string;
-          error?: string;
-          status?: string;
-          payment_id?: string;
-          sender_wallet?: string;
+          ok: boolean; verification_id?: string; error?: string;
+          status?: string; payment_id?: string; sender_wallet?: string;
         };
 
         if (!data.ok) {
@@ -171,20 +242,16 @@ export function HandleChangeModal({
         }
 
         if (data.status === "verified" && data.payment_id) {
-          try { localStorage.removeItem(storageKey); } catch {}
-          setPaymentData({
-            payment_id: data.payment_id,
-            sender_wallet: data.sender_wallet ?? "",
-            tx_signature: signatureInput,
-          });
+          try { localStorage.removeItem(key); } catch {}
+          setPaymentData({ payment_id: data.payment_id, sender_wallet: data.sender_wallet ?? "", tx_signature: signatureInput });
           setConfirmed(true);
-          setStep(4);
+          setStep(6);
           return;
         }
 
         setVerificationId(data.verification_id!);
         setShowFailure(false);
-        setStep(4);
+        setStep(6);
       } catch {
         setFailureAttempt((a) => a + 1);
         setFailureCheck("network");
@@ -192,17 +259,17 @@ export function HandleChangeModal({
         setShowFailure(true);
       }
     },
-    [token, newHandle, sessionId, failureAttempt, storageKey],
+    [token, newHandle, sessionId, failureAttempt],
   );
 
   const handleVerified = useCallback(
     (data: Record<string, unknown>, sUrl: string | null) => {
-      try { localStorage.removeItem(storageKey); } catch {}
+      if (newHandle) { try { localStorage.removeItem(`${SESSION_STORAGE_PREFIX}${newHandle}`); } catch {} }
       setPaymentData(data);
       setSolscanUrl(sUrl);
       setConfirmed(true);
     },
-    [storageKey],
+    [newHandle],
   );
 
   const handleTerminalFailed = useCallback(
@@ -211,14 +278,16 @@ export function HandleChangeModal({
       setFailureCheck(check);
       setFailureDetail(detail);
       setShowFailure(true);
-      setStep(3);
+      setStep(5);
     },
     [],
   );
 
   const handleBack = useCallback(() => {
     if (step === 2) setStep(1);
-    else if (step === 3) { setStep(2); setShowFailure(false); }
+    else if (step === 3) setStep(2);
+    else if (step === 4) setStep(3);
+    else if (step === 5) { setStep(4); setShowFailure(false); }
   }, [step]);
 
   if (!open) return null;
@@ -229,14 +298,9 @@ export function HandleChangeModal({
   return createPortal(
     <div className="hc-backdrop" onClick={onClose} role="dialog" aria-modal="true">
       <div className="hc-shell" ref={shellRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
-        {/* TITLEBAR */}
         <div className="hc-bar">
           <div className="hc-bar-left">
-            <div className="hc-dots" aria-hidden="true">
-              <span className="hc-dot-r" />
-              <span className="hc-dot-y" />
-              <span className="hc-dot-g" />
-            </div>
+            <div className="hc-dots" aria-hidden="true"><span className="hc-dot-r" /><span className="hc-dot-y" /><span className="hc-dot-g" /></div>
             <span className="hc-bar-title">lastproof — handle change</span>
           </div>
           <div className="hc-bar-right">
@@ -244,54 +308,68 @@ export function HandleChangeModal({
           </div>
         </div>
 
-        {/* PROGRESS */}
         <div className="hc-ref-row">
           <span />
-          <span className="hc-step-counter">STEP <span className="hc-step-now">{step}</span> / 4</span>
+          <span className="hc-step-counter">STEP <span className="hc-step-now">{step}</span> / 6</span>
         </div>
         <div className="hc-progress-wrap">
           <div className="hc-bar-track">
-            <div className="hc-bar-fill" style={{ width: `${(step / 4) * 100}%` }} />
+            <div className="hc-bar-fill" style={{ width: `${(step / 6) * 100}%` }} />
           </div>
         </div>
 
-        {/* BODY */}
         <div className="hc-body">
           {step === 1 && (
-            <HcStep1Confirm
+            <HcStep1Eligibility
+              cooldown={cooldown}
+              cooldownLoading={cooldownLoading}
+              basePrice={basePrice}
+              discountedPrice={discountedPrice}
+            />
+          )}
+          {step === 2 && (
+            <HcStep2HandleInput
+              oldHandle={oldHandle}
+              handleInput={handleInput}
+              handleStatus={handleStatus}
+              onInputChange={onHandleInputChange}
+              screenError={screenError}
+            />
+          )}
+          {step === 3 && newHandle && (
+            <HcStep3Token
               oldHandle={oldHandle}
               newHandle={newHandle}
               basePrice={basePrice}
               discountedPrice={discountedPrice}
               token={token}
               onPickToken={setToken}
-              cooldownDays={HANDLE_CHANGE_COOLDOWN_DAYS}
             />
           )}
-          {step === 2 && (
-            <HcStep2Send token={token as PaymentToken} />
+          {step === 4 && (
+            <HcStep4Send token={token as PaymentToken} />
           )}
-          {step === 3 && (
-            <HcStep3Paste
+          {step === 5 && (
+            <HcStep5Paste
               onSubmit={handleSubmit}
               failureCheck={showFailure ? failureCheck : null}
               failureDetail={showFailure ? failureDetail : null}
               failureAttempt={failureAttempt}
             />
           )}
-          {step === 4 && !confirmed && verificationId && (
-            <HcStep4Terminal
+          {step === 6 && !confirmed && verificationId && (
+            <HcStep6Terminal
               verificationId={verificationId}
               oldHandle={oldHandle}
-              newHandle={newHandle}
+              newHandle={newHandle ?? ""}
               onVerified={handleVerified}
               onFailed={handleTerminalFailed}
             />
           )}
-          {step === 4 && confirmed && (
+          {step === 6 && confirmed && (
             <HcOutcome
               oldHandle={oldHandle}
-              newHandle={newHandle}
+              newHandle={newHandle ?? ""}
               paymentData={paymentData}
               solscanUrl={solscanUrl}
               token={token}
@@ -302,30 +380,40 @@ export function HandleChangeModal({
         </div>
 
         {/* CTA ROW */}
-        {step === 1 && (
+        {step === 1 && cooldown?.eligible && (
           <div className="hc-cta-row">
-            <button type="button" className="hc-cta" onClick={() => setStep(2)}>
-              &gt; CONTINUE
+            <button type="button" className="hc-cta" onClick={() => setStep(2)}>&gt; NEXT</button>
+          </div>
+        )}
+        {step === 2 && (
+          <div className="hc-cta-row" style={{ display: "flex", gap: 10 }}>
+            <button type="button" className="hc-btn-back" onClick={handleBack}>&larr; BACK</button>
+            <button type="button" className="hc-cta" style={{ flex: 1 }}
+              disabled={handleStatus !== "available" || handleInput.length < 3 || validating}
+              onClick={handleValidateAndContinue}>
+              {validating ? "> VALIDATING…" : "> NEXT"}
             </button>
           </div>
         )}
-        {(step === 2 || step === 3) && (
+        {step === 3 && (
           <div className="hc-cta-row" style={{ display: "flex", gap: 10 }}>
-            <button type="button" className="hc-btn-back" onClick={handleBack}>
-              &larr; BACK
-            </button>
-            {step === 2 && (
-              <button type="button" className="hc-cta" style={{ flex: 1 }} onClick={() => setStep(3)}>
+            <button type="button" className="hc-btn-back" onClick={handleBack}>&larr; BACK</button>
+            <button type="button" className="hc-cta" style={{ flex: 1 }} onClick={advanceToSend}>&gt; CONTINUE</button>
+          </div>
+        )}
+        {(step === 4 || step === 5) && (
+          <div className="hc-cta-row" style={{ display: "flex", gap: 10 }}>
+            <button type="button" className="hc-btn-back" onClick={handleBack}>&larr; BACK</button>
+            {step === 4 && (
+              <button type="button" className="hc-cta" style={{ flex: 1 }} onClick={() => setStep(5)}>
                 &gt; SUBMIT TRANSACTION RECEIPT
               </button>
             )}
           </div>
         )}
 
-        {step <= 2 && (
-          <div className="hc-fine">
-            HANDLE CHANGE IS PERMANENT &middot; 90-DAY COOLDOWN &middot; $100 / $60 WITH $LASTSHFT
-          </div>
+        {step <= 3 && (
+          <div className="hc-fine">HANDLE CHANGE IS PERMANENT · 90-DAY COOLDOWN · $100 / $60 WITH $LASTSHFT</div>
         )}
       </div>
     </div>,
@@ -333,38 +421,128 @@ export function HandleChangeModal({
   );
 }
 
-// ─── Screen 1: Confirm + Token Select ───────────────────────────────────
+// ─── Screen 1: Eligibility Check ────────────────────────────────────────
 
-function HcStep1Confirm({
-  oldHandle,
-  newHandle,
-  basePrice,
-  discountedPrice,
-  token,
-  onPickToken,
-  cooldownDays,
+function HcStep1Eligibility({
+  cooldown, cooldownLoading, basePrice, discountedPrice,
 }: {
-  oldHandle: string;
-  newHandle: string;
+  cooldown: { eligible: boolean; daysRemaining: number } | null;
+  cooldownLoading: boolean;
   basePrice: number;
   discountedPrice: number;
-  token: ProofTokenKey;
-  onPickToken: (t: ProofTokenKey) => void;
-  cooldownDays: number;
+}) {
+  if (cooldownLoading) {
+    return (
+      <>
+        <div className="hc-eyebrow">&gt; HANDLE CHANGE</div>
+        <h2 className="hc-head">Checking <span className="hc-accent">eligibility</span><AnimatedDots /></h2>
+      </>
+    );
+  }
+
+  if (cooldown && !cooldown.eligible) {
+    return (
+      <>
+        <div className="hc-eyebrow">&gt; HANDLE CHANGE</div>
+        <h2 className="hc-head">Cooldown <span className="hc-red">active.</span></h2>
+        <div className="hc-warning">
+          <strong>⚠ {cooldown.daysRemaining} DAYS REMAINING</strong>
+          <p>Handle changes are limited to once every 90 days. You cannot change your handle until the cooldown expires.</p>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className="hc-eyebrow">&gt; HANDLE CHANGE</div>
+      <h2 className="hc-head">Change your <span className="hc-accent">@handle.</span></h2>
+      <p className="hc-sub">
+        This costs <strong>${basePrice}</strong> (or <strong>${discountedPrice}</strong> with $LASTSHFT).
+        A 90-day cooldown starts after each change.
+      </p>
+      <div className="hc-warning">
+        <strong>⚠ 90-DAY COOLDOWN</strong>
+        <p>You will not be able to change your handle again for 90 days after this change. Choose carefully.</p>
+      </div>
+    </>
+  );
+}
+
+// ─── Screen 2: Handle Input (onboarding-style) ─────────────────────────
+
+function HcStep2HandleInput({
+  oldHandle, handleInput, handleStatus, onInputChange, screenError,
+}: {
+  oldHandle: string;
+  handleInput: string;
+  handleStatus: "idle" | "checking" | "available" | "taken";
+  onInputChange: (val: string) => void;
+  screenError: string | null;
+}) {
+  const wrapClass = handleStatus === "available" ? "hc-handle-wrap ok" :
+    handleStatus === "taken" ? "hc-handle-wrap taken" : "hc-handle-wrap";
+
+  const statusClass = handleStatus === "available" ? "hc-handle-status ok" :
+    handleStatus === "taken" ? "hc-handle-status taken" : "hc-handle-status";
+
+  const statusText = handleStatus === "checking" ? "CHECKING..." :
+    handleStatus === "available" ? "AVAILABLE" :
+    handleStatus === "taken" ? "TAKEN" : "3-20 CHARS";
+
+  return (
+    <>
+      <div className="hc-eyebrow">&gt; PICK YOUR NEW HANDLE</div>
+      <h2 className="hc-head">
+        Current: <span className="hc-dim">@{oldHandle}</span>
+      </h2>
+
+      {screenError && (
+        <div className="hc-error"><strong>{screenError}</strong></div>
+      )}
+
+      <label className="hc-field-help" style={{ display: "block", marginBottom: 8 }}>YOUR NEW HANDLE</label>
+      <div className={wrapClass}>
+        <div className="hc-handle-prefix">
+          lastproof.app/<span className="hc-at">@</span>
+        </div>
+        <input
+          className="hc-handle-input"
+          type="text"
+          value={handleInput}
+          onChange={(e) => onInputChange(e.target.value)}
+          maxLength={20}
+          placeholder="yourhandle"
+          autoFocus
+        />
+        <div className={statusClass}>
+          <span className="hc-check-dot" />
+          {statusText}
+        </div>
+      </div>
+
+      <div className="hc-field-help" style={{ marginTop: 8 }}>
+        3–20 characters · lowercase · letters, numbers, underscores
+      </div>
+    </>
+  );
+}
+
+// ─── Screen 3: Token Select ─────────────────────────────────────────────
+
+function HcStep3Token({
+  oldHandle, newHandle, basePrice, discountedPrice, token, onPickToken,
+}: {
+  oldHandle: string; newHandle: string; basePrice: number; discountedPrice: number;
+  token: ProofTokenKey; onPickToken: (t: ProofTokenKey) => void;
 }) {
   return (
     <>
-      <div className="hc-eyebrow">&gt; CHANGE YOUR HANDLE</div>
+      <div className="hc-eyebrow">&gt; SELECT TOKEN</div>
       <h2 className="hc-head">
         <span className="hc-dim">@{oldHandle}</span> → <span className="hc-accent">@{newHandle}</span>
       </h2>
 
-      <div className="hc-warning">
-        <strong>⚠ {cooldownDays}-DAY COOLDOWN</strong>
-        <p>You will not be able to change your handle again for {cooldownDays} days after this change. Choose carefully.</p>
-      </div>
-
-      {/* Pricing */}
       <div className="hc-price-row">
         <div className="hc-price-item">
           <div className="hc-price-amount">${basePrice.toFixed(0)}</div>
@@ -377,21 +555,13 @@ function HcStep1Confirm({
         </div>
       </div>
 
-      {/* Token picker */}
       <div className="hc-tokens">
         {PROOF_TOKENS.map((t) => {
           const isSelected = token === t.key;
           const price = priceFor("handle_change", t.key as PaymentToken);
           return (
-            <button
-              key={t.key}
-              type="button"
-              className={`hc-token${isSelected ? " hc-selected" : ""}`}
-              onClick={() => onPickToken(t.key)}
-            >
-              <div className="hc-token-meta">
-                <span className="hc-token-name">{t.label}</span>
-              </div>
+            <button key={t.key} type="button" className={`hc-token${isSelected ? " hc-selected" : ""}`} onClick={() => onPickToken(t.key)}>
+              <div className="hc-token-meta"><span className="hc-token-name">{t.label}</span></div>
               <span className={`hc-token-price${t.hasDiscountBadge ? " hc-discount" : ""}`}>
                 ${price.toFixed(0)}
                 {t.hasDiscountBadge && <span className="hc-token-strike">${basePrice.toFixed(0)}</span>}
@@ -401,67 +571,46 @@ function HcStep1Confirm({
           );
         })}
       </div>
-
       <div className="hc-field-help" style={{ textAlign: "center" }}>
-        <a href={BUY_LASTSHFT_URL} target="_blank" rel="noreferrer" style={{ color: "var(--hc-accent)", textDecoration: "none" }}>
-          NEED $LASTSHFT? → BUY HERE ↗
-        </a>
+        <a href={BUY_LASTSHFT_URL} target="_blank" rel="noreferrer" style={{ color: "var(--hc-accent)", textDecoration: "none" }}>NEED $LASTSHFT? → BUY HERE ↗</a>
       </div>
     </>
   );
 }
 
-// ─── Screen 2: Send Payment ─────────────────────────────────────────────
+// ─── Screen 4: Send Payment ─────────────────────────────────────────────
 
-function HcStep2Send({ token }: { token: PaymentToken }) {
+function HcStep4Send({ token }: { token: PaymentToken }) {
   const [copied, setCopied] = useState(false);
   const [tokenAmount, setTokenAmount] = useState<number | null>(null);
   const [rateUsd, setRateUsd] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   const baseUsd = BASE_PRICES_USD.handle_change;
-  const priceUsd = token === "LASTSHFT"
-    ? +(baseUsd * (1 - LASTSHFT_DISCOUNT)).toFixed(2)
-    : baseUsd;
+  const priceUsd = token === "LASTSHFT" ? +(baseUsd * (1 - LASTSHFT_DISCOUNT)).toFixed(2) : baseUsd;
 
   useEffect(() => {
     setLoading(true);
     fetch(`/api/payment/convert?kind=handle_change&token=${token}`)
       .then((r) => r.json())
       .then((data: { ok: boolean; token_amount?: number; rate_usd?: number }) => {
-        if (data.ok) {
-          setTokenAmount(data.token_amount ?? null);
-          setRateUsd(data.rate_usd ?? null);
-        }
+        if (data.ok) { setTokenAmount(data.token_amount ?? null); setRateUsd(data.rate_usd ?? null); }
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, [token]);
 
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(TREASURY_WALLET).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {});
-  }, []);
-
-  const handleCopyAmount = useCallback(() => {
-    if (tokenAmount !== null) {
-      navigator.clipboard.writeText(formatTokenAmount(tokenAmount, token)).catch(() => {});
-    }
-  }, [tokenAmount, token]);
-
   return (
     <>
       <div className="hc-eyebrow">&gt; SEND PAYMENT</div>
       <h2 className="hc-head">Send and <span className="hc-accent">come back.</span></h2>
-
       <div className="hc-review">
         <div className="hc-review-row">
           <span className="hc-review-key">SEND TO</span>
           <span className="hc-review-val" style={{ fontSize: 10, wordBreak: "break-all", fontFamily: "var(--mono)" }}>
             {TREASURY_WALLET}
-            <button type="button" className="hc-btn-back" style={{ marginLeft: 8, padding: "2px 8px", fontSize: 9 }} onClick={handleCopy}>
+            <button type="button" className="hc-btn-back" style={{ marginLeft: 8, padding: "2px 8px", fontSize: 9 }}
+              onClick={() => { navigator.clipboard.writeText(TREASURY_WALLET).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {}); }}>
               {copied ? "COPIED ✓" : "COPY"}
             </button>
           </span>
@@ -469,16 +618,13 @@ function HcStep2Send({ token }: { token: PaymentToken }) {
         <div className="hc-review-row">
           <span className="hc-review-key">AMOUNT</span>
           <span className="hc-review-val hc-accent" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {loading ? (
-              <span style={{ opacity: 0.5 }}>calculating…</span>
-            ) : tokenAmount !== null ? (
+            {loading ? <span style={{ opacity: 0.5 }}>calculating…</span> : tokenAmount !== null ? (
               <>
                 <span>{formatTokenAmount(tokenAmount, token)} {token}</span>
-                <button type="button" className="hc-btn-back" style={{ padding: "2px 8px", fontSize: 9 }} onClick={handleCopyAmount}>COPY</button>
+                <button type="button" className="hc-btn-back" style={{ padding: "2px 8px", fontSize: 9 }}
+                  onClick={() => navigator.clipboard.writeText(formatTokenAmount(tokenAmount, token)).catch(() => {})}>COPY</button>
               </>
-            ) : (
-              <span>${priceUsd.toFixed(2)} in {token}</span>
-            )}
+            ) : <span>${priceUsd.toFixed(2)} in {token}</span>}
           </span>
         </div>
         <div className="hc-review-row">
@@ -486,14 +632,11 @@ function HcStep2Send({ token }: { token: PaymentToken }) {
           <span className="hc-review-val">
             ${priceUsd.toFixed(2)}
             {rateUsd !== null && token !== "USDT" && (
-              <span style={{ opacity: 0.5, marginLeft: 6, fontSize: 10 }}>
-                (1 {token} ≈ ${rateUsd.toFixed(token === "LASTSHFT" ? 6 : 2)})
-              </span>
+              <span style={{ opacity: 0.5, marginLeft: 6, fontSize: 10 }}>(1 {token} ≈ ${rateUsd.toFixed(token === "LASTSHFT" ? 6 : 2)})</span>
             )}
           </span>
         </div>
       </div>
-
       <div style={{ marginTop: 16, fontSize: 12, lineHeight: 1.7, color: "var(--hc-dim)" }}>
         <div>• Send the exact amount in one transaction</div>
         <div>• Save your Solscan link or TX signature</div>
@@ -503,59 +646,29 @@ function HcStep2Send({ token }: { token: PaymentToken }) {
   );
 }
 
-// ─── Screen 3: Paste TX ─────────────────────────────────────────────────
+// ─── Screen 5: Paste TX ─────────────────────────────────────────────────
 
-function HcStep3Paste({
-  onSubmit,
-  failureCheck,
-  failureDetail,
-  failureAttempt,
-}: {
-  onSubmit: (sig: string) => void;
-  failureCheck: string | null;
-  failureDetail: string | null;
-  failureAttempt: number;
+function HcStep5Paste({ onSubmit, failureCheck, failureDetail, failureAttempt }: {
+  onSubmit: (sig: string) => void; failureCheck: string | null; failureDetail: string | null; failureAttempt: number;
 }) {
   const [input, setInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = useCallback(async () => {
-    const trimmed = input.trim();
-    if (!trimmed || submitting) return;
-    setSubmitting(true);
-    await onSubmit(trimmed);
-    setSubmitting(false);
-  }, [input, submitting, onSubmit]);
-
   const hasFailure = failureCheck !== null;
 
   return (
     <>
       <div className="hc-eyebrow">&gt; VERIFY YOUR PAYMENT</div>
       <h2 className="hc-head">Paste your <span className="hc-accent">transaction.</span></h2>
-
-      {hasFailure && (
-        <div className="hc-error">
-          <strong>&gt; ✕ {DENIAL_MESSAGES[failureCheck] ?? failureDetail ?? "VERIFICATION FAILED"}</strong>
-        </div>
-      )}
-
+      {hasFailure && <div className="hc-error"><strong>&gt; ✕ {DENIAL_MESSAGES[failureCheck] ?? failureDetail ?? "VERIFICATION FAILED"}</strong></div>}
       <div style={{ marginBottom: 12 }}>
         <label className="hc-field-help" style={{ display: "block", marginBottom: 6 }}>TRANSACTION SIGNATURE</label>
-        <textarea
-          placeholder="Paste Solscan URL or transaction signature…"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          inputMode="url"
-          className="hc-paste-input"
-        />
+        <textarea placeholder="Paste Solscan URL or transaction signature…" value={input} onChange={(e) => setInput(e.target.value)} inputMode="url" className="hc-paste-input" />
         <div className="hc-field-help" style={{ marginTop: 4 }}>SOLSCAN · SOLANA EXPLORER · SOLANA.FM · RAW SIGNATURE</div>
       </div>
-
-      <button type="button" className="hc-cta" disabled={!input.trim() || submitting} onClick={handleSubmit}>
+      <button type="button" className="hc-cta" disabled={!input.trim() || submitting}
+        onClick={async () => { const t = input.trim(); if (!t || submitting) return; setSubmitting(true); await onSubmit(t); setSubmitting(false); }}>
         {submitting ? "> SUBMITTING…" : "> SUBMIT"}
       </button>
-
       {hasFailure && failureAttempt >= 3 && (
         <div style={{ marginTop: 12, textAlign: "center" }}>
           <a className="hc-btn-back" style={{ display: "inline-block", textDecoration: "none", padding: "8px 12px", fontSize: 11 }}
@@ -568,42 +681,16 @@ function HcStep3Paste({
   );
 }
 
-// ─── Screen 4: Terminal Cascade ─────────────────────────────────────────
+// ─── Screen 6: Terminal Cascade ─────────────────────────────────────────
 
-interface StatusResponse {
-  ok: boolean;
-  status: "queued" | "processing" | "verified" | "failed";
-  failure_check?: string;
-  failure_detail?: string;
-  attempt_number?: number;
-  payment_data?: Record<string, unknown> | null;
-  solscan_url?: string | null;
-}
-
+interface StatusResponse { ok: boolean; status: string; failure_check?: string; failure_detail?: string; attempt_number?: number; payment_data?: Record<string, unknown> | null; solscan_url?: string | null; }
 interface TermLine { text: string; status: "ok" | "fail" | "info"; }
 
-const CHECKS = [
-  "SCANNING SOLANA MAINNET FOR TX...",
-  "TX LOCATED",
-  "CHECKING RECIPIENT... ✓ CONFIRMED",
-  "CHECKING AMOUNT... ✓ $100 CONFIRMED",
-  "CHECKING TIME WINDOW... ✓ CONFIRMED",
-  "ALL CHECKS PASSED",
-];
-const DEPLOY = (o: string, n: string) => [
-  "PROCESSING HANDLE CHANGE...",
-  `UPDATING @${o} → @${n}...`,
-  "RECORDING TO HANDLE HISTORY...",
-  "STARTING 90-DAY COOLDOWN...",
-  "HANDLE CHANGE CONFIRMED — LIVE ON PROFILE",
-];
+const CHECKS = ["SCANNING SOLANA MAINNET FOR TX...", "TX LOCATED", "CHECKING RECIPIENT... ✓ CONFIRMED", "CHECKING AMOUNT... ✓ CONFIRMED", "CHECKING TIME WINDOW... ✓ CONFIRMED", "ALL CHECKS PASSED"];
+const DEPLOY = (o: string, n: string) => ["PROCESSING HANDLE CHANGE...", `UPDATING @${o} → @${n}...`, "RECORDING TO HANDLE HISTORY...", "STARTING 90-DAY COOLDOWN...", "HANDLE CHANGE CONFIRMED — LIVE ON PROFILE"];
 
-function HcStep4Terminal({
-  verificationId, oldHandle, newHandle, onVerified, onFailed,
-}: {
-  verificationId: string;
-  oldHandle: string;
-  newHandle: string;
+function HcStep6Terminal({ verificationId, oldHandle, newHandle, onVerified, onFailed }: {
+  verificationId: string; oldHandle: string; newHandle: string;
   onVerified: (data: Record<string, unknown>, url: string | null) => void;
   onFailed: (check: string, detail: string, attempt: number) => void;
 }) {
@@ -616,14 +703,9 @@ function HcStep4Terminal({
     let pollTimer: ReturnType<typeof setInterval> | null = null;
     const timers: ReturnType<typeof setInterval>[] = [];
 
-    function cascade(newLines: TermLine[], ms: number, cb?: () => void) {
+    function cascade(nl: TermLine[], ms: number, cb?: () => void) {
       let i = 0;
-      const t = setInterval(() => {
-        if (i >= newLines.length) { clearInterval(t); cb?.(); return; }
-        const line = newLines[i];
-        if (line) setLines((p) => [...p, line]);
-        i++;
-      }, ms);
+      const t = setInterval(() => { if (i >= nl.length) { clearInterval(t); cb?.(); return; } const l = nl[i]; if (l) setLines((p) => [...p, l]); i++; }, ms);
       timers.push(t);
     }
 
@@ -633,21 +715,17 @@ function HcStep4Terminal({
         const res = await fetch(`/api/payment/paste-verify/status?id=${verificationId}`);
         if (!res.ok) return;
         const d = (await res.json()) as StatusResponse;
-
         if (d.status === "verified" && d.payment_data) {
-          done = true;
-          if (pollTimer) clearInterval(pollTimer);
+          done = true; if (pollTimer) clearInterval(pollTimer);
           cascade(CHECKS.map((t) => ({ text: `> ${t}`, status: "ok" as const })), 250, () => {
             setPhase("deploying");
             cascade(DEPLOY(oldHandle, newHandle).map((t) => ({ text: `> ${t}`, status: "ok" as const })), 300, () => {
-              setPhase("done");
-              setDoneData({ data: d.payment_data!, url: d.solscan_url ?? null });
+              setPhase("done"); setDoneData({ data: d.payment_data!, url: d.solscan_url ?? null });
             });
           });
         }
         if (d.status === "failed") {
-          done = true;
-          if (pollTimer) clearInterval(pollTimer);
+          done = true; if (pollTimer) clearInterval(pollTimer);
           const msg = DENIAL_MESSAGES[d.failure_check ?? ""] ?? d.failure_detail ?? "Verification failed.";
           setLines((p) => [...p, { text: `> ✕ ${msg}`, status: "fail" }]);
           setPhase("failed");
@@ -656,8 +734,7 @@ function HcStep4Terminal({
       } catch {}
     }
 
-    poll();
-    pollTimer = setInterval(poll, 2500);
+    poll(); pollTimer = setInterval(poll, 2500);
     return () => { done = true; if (pollTimer) clearInterval(pollTimer); timers.forEach((t) => clearInterval(t)); };
   }, [verificationId, oldHandle, newHandle, onFailed]);
 
@@ -665,40 +742,20 @@ function HcStep4Terminal({
     <>
       <div className="hc-term">
         <div style={{ opacity: 0.5 }}>&gt; lastproof handle-change --tx {verificationId.slice(0, 8)}…</div>
-        {lines.map((l, i) => (
-          <div key={i} style={{ color: l.status === "ok" ? "var(--hc-green)" : l.status === "fail" ? "var(--hc-red)" : "var(--hc-fg)" }}>
-            {l.text}
-          </div>
-        ))}
-        {phase === "verifying" && (
-          <div style={{ color: "var(--hc-fg)" }}>{"  > WAITING FOR VERIFICATION"}<AnimatedDots /></div>
-        )}
+        {lines.map((l, i) => <div key={i} style={{ color: l.status === "ok" ? "var(--hc-green)" : l.status === "fail" ? "var(--hc-red)" : "var(--hc-fg)" }}>{l.text}</div>)}
+        {phase === "verifying" && <div style={{ color: "var(--hc-fg)" }}>{"  > WAITING FOR VERIFICATION"}<AnimatedDots /></div>}
       </div>
-
-      {phase === "done" && doneData && (
-        <button type="button" className="hc-cta" style={{ marginTop: 14 }} onClick={() => onVerified(doneData.data, doneData.url)}>
-          &gt; CONFIRM
-        </button>
-      )}
-      {phase !== "done" && phase !== "failed" && (
-        <div className="hc-field-help" style={{ textAlign: "center", marginTop: 14 }}>DO NOT CLOSE THIS WINDOW · VERIFICATION IN PROGRESS</div>
-      )}
+      {phase === "done" && doneData && <button type="button" className="hc-cta" style={{ marginTop: 14 }} onClick={() => onVerified(doneData.data, doneData.url)}>&gt; CONFIRM</button>}
+      {phase !== "done" && phase !== "failed" && <div className="hc-field-help" style={{ textAlign: "center", marginTop: 14 }}>DO NOT CLOSE THIS WINDOW · VERIFICATION IN PROGRESS</div>}
     </>
   );
 }
 
 // ─── Outcome ────────────────────────────────────────────────────────────
 
-function HcOutcome({
-  oldHandle, newHandle, paymentData, solscanUrl, token, cooldownDate, onClose,
-}: {
-  oldHandle: string;
-  newHandle: string;
-  paymentData: Record<string, unknown> | null;
-  solscanUrl: string | null;
-  token: ProofTokenKey;
-  cooldownDate: string;
-  onClose: () => void;
+function HcOutcome({ oldHandle, newHandle, paymentData, solscanUrl, token, cooldownDate, onClose }: {
+  oldHandle: string; newHandle: string; paymentData: Record<string, unknown> | null;
+  solscanUrl: string | null; token: ProofTokenKey; cooldownDate: string; onClose: () => void;
 }) {
   const txSig = (paymentData?.tx_signature as string) ?? "";
   const url = solscanUrl ?? (txSig ? `https://solscan.io/tx/${txSig}` : null);
@@ -706,47 +763,17 @@ function HcOutcome({
 
   return (
     <div style={{ textAlign: "center" }}>
-      <div className="hc-done-check">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      </div>
+      <div className="hc-done-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg></div>
       <div className="hc-eyebrow" style={{ color: "var(--hc-green)" }}>HANDLE CHANGED</div>
-      <h2 className="hc-head">
-        <span className="hc-dim">@{oldHandle}</span> → <span className="hc-accent">@{newHandle}</span>
-      </h2>
-
+      <h2 className="hc-head"><span className="hc-dim">@{oldHandle}</span> → <span className="hc-accent">@{newHandle}</span></h2>
       <div className="hc-review" style={{ textAlign: "left" }}>
-        <div className="hc-review-row">
-          <span className="hc-review-key">OLD HANDLE</span>
-          <span className="hc-review-val">@{oldHandle}</span>
-        </div>
-        <div className="hc-review-row">
-          <span className="hc-review-key">NEW HANDLE</span>
-          <span className="hc-review-val hc-accent">@{newHandle}</span>
-        </div>
-        <div className="hc-review-row">
-          <span className="hc-review-key">TOKEN</span>
-          <span className="hc-review-val">{token}</span>
-        </div>
-        {url && shortSig && (
-          <div className="hc-review-row">
-            <span className="hc-review-key">SOLSCAN</span>
-            <span className="hc-review-val">
-              <a href={url} target="_blank" rel="noreferrer" style={{ color: "var(--hc-accent)", textDecoration: "none" }}>{shortSig} ↗</a>
-            </span>
-          </div>
-        )}
+        <div className="hc-review-row"><span className="hc-review-key">OLD HANDLE</span><span className="hc-review-val">@{oldHandle}</span></div>
+        <div className="hc-review-row"><span className="hc-review-key">NEW HANDLE</span><span className="hc-review-val hc-accent">@{newHandle}</span></div>
+        <div className="hc-review-row"><span className="hc-review-key">TOKEN</span><span className="hc-review-val">{token}</span></div>
+        {url && shortSig && <div className="hc-review-row"><span className="hc-review-key">SOLSCAN</span><span className="hc-review-val"><a href={url} target="_blank" rel="noreferrer" style={{ color: "var(--hc-accent)", textDecoration: "none" }}>{shortSig} ↗</a></span></div>}
       </div>
-
-      <div className="hc-cooldown-notice">
-        YOUR 90-DAY COOLDOWN HAS STARTED
-        <div className="hc-cooldown-date">Next eligible: {cooldownDate}</div>
-      </div>
-
-      <button type="button" className="hc-cta" onClick={onClose}>
-        &gt; BACK TO DASHBOARD
-      </button>
+      <div className="hc-cooldown-notice">YOUR 90-DAY COOLDOWN HAS STARTED<div className="hc-cooldown-date">Next eligible: {cooldownDate}</div></div>
+      <button type="button" className="hc-cta" onClick={onClose}>&gt; BACK TO DASHBOARD</button>
     </div>
   );
 }
@@ -755,10 +782,7 @@ function HcOutcome({
 
 function AnimatedDots() {
   const [count, setCount] = useState(1);
-  useEffect(() => {
-    const t = setInterval(() => setCount((c) => (c % 3) + 1), 500);
-    return () => clearInterval(t);
-  }, []);
+  useEffect(() => { const t = setInterval(() => setCount((c) => (c % 3) + 1), 500); return () => clearInterval(t); }, []);
   return <span style={{ display: "inline-block", width: "1.5em" }}>{".".repeat(count)}</span>;
 }
 
