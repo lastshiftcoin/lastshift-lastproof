@@ -541,7 +541,7 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
                       ? "RE-AUTHENTICATE"
                       : "AUTHENTICATE"}
                 </button>
-                <div className="mg-connect-sub" style={{ marginTop: 14, opacity: 0.35 }}>
+                <div className="mg-connect-sub" style={{ marginTop: 14, color: "#fff", textShadow: "0 0 8px rgba(255,255,255,0.4)" }}>
                   Don&apos;t have a Terminal ID?
                 </div>
                 <a
@@ -549,7 +549,7 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mg-safe-link"
-                  style={{ marginTop: 6 }}
+                  style={{ marginTop: 6, color: "#fff", textShadow: "0 0 8px rgba(255,255,255,0.4)" }}
                 >
                   LAUNCH TERMINAL
                 </a>
