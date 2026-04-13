@@ -190,10 +190,13 @@ export async function verifyAndRecordProof(
       .eq("id", row.work_item_id)
       .single();
 
-    const ticker = wi?.ticker;
-    if (!ticker) {
+    const rawTicker = wi?.ticker;
+    if (!rawTicker) {
       return { ok: false, check: "dev_not_qualified", detail: "Work item has no associated token." };
     }
+
+    // Strip $ prefix if present — work items store "$LASTSHFT" but TOKEN_MINTS keys are "LASTSHFT"
+    const ticker = rawTicker.replace(/^\$/, "");
 
     // Look up the mint address for this ticker
     const mintAddress = TOKEN_MINTS[ticker as keyof typeof TOKEN_MINTS];
