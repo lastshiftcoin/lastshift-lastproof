@@ -39,9 +39,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Bypass via URL param — sets cookie for future requests
-  const bypassKey = process.env.MAINTENANCE_BYPASS_KEY || "lastshift-god-mode";
-  if (searchParams.get("bypass") === bypassKey) {
+  // Bypass via URL param — sets cookie for future requests.
+  // MAINTENANCE_BYPASS_KEY must be set in Vercel env vars. No default — if
+  // not set, bypass is completely disabled and no one can get through.
+  const bypassKey = process.env.MAINTENANCE_BYPASS_KEY;
+  if (bypassKey && searchParams.get("bypass") === bypassKey) {
     const response = NextResponse.next();
     response.cookies.set("maintenance_bypass", bypassKey, {
       httpOnly: true,
@@ -54,7 +56,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Bypass via cookie (already authenticated)
-  if (request.cookies.get("maintenance_bypass")?.value === bypassKey) {
+  if (bypassKey && request.cookies.get("maintenance_bypass")?.value === bypassKey) {
     return NextResponse.next();
   }
 
