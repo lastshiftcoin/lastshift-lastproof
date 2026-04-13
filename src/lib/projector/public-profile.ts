@@ -37,7 +37,7 @@ import { listScreenshotsByProfile } from "../db/screenshots-adapter";
 import { listProfileLinksByProfile } from "../db/profile-links-adapter";
 import { listCategoriesByProfile } from "../db/profile-categories-adapter";
 import { listProofsByProfile } from "../db/proofs-adapter";
-import { listByProfile as listHandleHistory } from "../db/handle-history-adapter";
+import { supabaseService } from "../db/client";
 import type { ProofRow as StoreProofRow } from "../proofs-store";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -99,14 +99,19 @@ export async function getPublicProfileView(
   const isPublished = profile.publishedAt !== null;
 
   // ─── 2. Fan out reads in parallel ──────────────────────────────────
-  const [workItemRows, screenshotRows, linkRows, categoryRows, proofRows, handleHistoryRows] =
+  const [workItemRows, screenshotRows, linkRows, categoryRows, proofRows, aliasRows] =
     await Promise.all([
       listWorkItemsByProfile(profile.id),
       listScreenshotsByProfile(profile.id),
       listProfileLinksByProfile(profile.id),
       listCategoriesByProfile(profile.id),
       listProofsByProfile(profile.id),
-      listHandleHistory(profile.id),
+      supabaseService()
+        .from("profile_aliases")
+        .select("alias")
+        .eq("profile_id", profile.id)
+        .order("position", { ascending: true })
+        .then((r) => r.data ?? []),
     ]);
 
   // ─── 3. Enrich work items with proof counts ────────────────────────
@@ -270,7 +275,7 @@ export async function getPublicProfileView(
     pitchBody: profile.pitch ?? "",
     about: profile.about ?? "",
     bioStatement: profile.bioStatement ?? "",
-    previousHandles: handleHistoryRows.map((h) => h.oldHandle),
+    previousHandles: (aliasRows as { alias: string }[]).map((r) => r.alias),
 
     workItems,
     screenshots,

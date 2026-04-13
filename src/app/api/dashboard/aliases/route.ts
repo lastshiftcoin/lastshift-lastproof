@@ -2,9 +2,9 @@
  * PUT /api/dashboard/aliases — set the "Previously Known As" handles.
  * Body: { aliases: string[] }
  *
- * Replaces all handle_history rows for this profile with the provided
- * aliases. Each alias is stored as a history entry with the current
- * handle as new_handle.
+ * Stores aliases in profile_aliases table (cosmetic, user-managed).
+ * Does NOT touch handle_history (system-managed audit trail for
+ * cooldown + redirects).
  */
 
 import { NextResponse } from "next/server";
@@ -30,20 +30,18 @@ export async function PUT(request: Request) {
   const body = await request.json();
   const aliases: string[] = Array.isArray(body.aliases) ? body.aliases : [];
 
-  // Delete existing history entries
-  await sb.from("handle_history").delete().eq("profile_id", profile.id);
+  // Delete existing aliases for this profile
+  await sb.from("profile_aliases").delete().eq("profile_id", profile.id);
 
-  // Insert new entries
+  // Insert new aliases
   if (aliases.length > 0) {
-    const rows = aliases.map((oldHandle) => ({
-      id: crypto.randomUUID(),
+    const rows = aliases.map((alias, i) => ({
       profile_id: profile.id,
-      old_handle: oldHandle.toLowerCase().replace(/^@/, "").trim(),
-      new_handle: profile.handle,
-      changed_at: new Date().toISOString(),
+      alias: alias.toLowerCase().replace(/^@/, "").trim(),
+      position: i,
     }));
 
-    const { error } = await sb.from("handle_history").insert(rows);
+    const { error } = await sb.from("profile_aliases").insert(rows);
     if (error) {
       console.error("[aliases] insert error:", error.message);
       return NextResponse.json({ error: error.message }, { status: 500 });

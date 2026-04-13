@@ -165,14 +165,14 @@ export default async function DashboardPage() {
         });
       }
 
-      // Fetch previous handles
-      const { data: handleRows } = await sb
-        .from("handle_history")
-        .select("old_handle")
+      // Fetch "Previously Known As" aliases (cosmetic, user-managed)
+      const { data: aliasRows } = await sb
+        .from("profile_aliases")
+        .select("alias")
         .eq("profile_id", profile.id)
-        .order("changed_at", { ascending: true });
-      if (handleRows) {
-        previousHandles = handleRows.map((h: { old_handle: string }) => h.old_handle);
+        .order("position", { ascending: true });
+      if (aliasRows) {
+        previousHandles = aliasRows.map((r: { alias: string }) => r.alias);
       }
     }
   }
