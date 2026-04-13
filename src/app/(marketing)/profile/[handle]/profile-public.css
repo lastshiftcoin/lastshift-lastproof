@@ -348,13 +348,12 @@
   border-radius: inherit; pointer-events: none;
 }
 
-/* 5K badge — pinned to the 5-o'clock position on the avatar circle.
-   Avatar center + (sin 150°, cos 150°)·r puts the badge down-and-slightly-right
-   of the 4-o'clock default, reading more clearly as "lower right" to the eye. */
+/* 5K badge — pinned to the 4:30 position on the avatar circle.
+   Right edge of badge vertically aligns with the circle perimeter. */
 .pp-hero .pp-avatar-wrap .pp-badge-5k {
   position: absolute !important;
-  right: 8px !important;
-  bottom: -10px !important;
+  right: -2px !important;
+  bottom: -4px !important;
   left: auto !important;
   top: auto !important;
   display: inline-flex; align-items: center; justify-content: center;
@@ -880,7 +879,7 @@ body:has(.pp-page) .shiftbot { display: none !important; }
   .pp-hero { grid-template-columns: 1fr; padding: 24px; gap: 22px; text-align: center; }
   .pp-hero .pp-avatar-wrap { width: 110px; height: 110px; margin: 0 auto; }
   .pp-hero .pp-avatar { width: 110px; height: 110px; font-size: 48px; }
-  .pp-hero .pp-badge-5k { width: 40px; height: 46px; font-size: 11px; right: 6px !important; bottom: -8px !important; }
+  .pp-hero .pp-badge-5k { width: 40px; height: 46px; font-size: 11px; right: -2px !important; bottom: -2px !important; }
   .pp-id-name-row { justify-content: center; }
   .pp-id-handle-row { justify-content: center; }
   .pp-id-name { font-size: 26px; }
