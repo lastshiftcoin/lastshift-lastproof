@@ -30,8 +30,12 @@ const COOKIE_NAME = "lp_session";
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12h soft — validate still re-checks on gated actions
 
 function getSecret(): string {
-  const s = process.env.INTER_TOOL_API_SECRET;
-  if (!s) throw new Error("INTER_TOOL_API_SECRET not set (used as session HMAC key in v1)");
+  // SESSION_HMAC_SECRET is the dedicated session signing key.
+  // Falls back to INTER_TOOL_API_SECRET for backward compatibility,
+  // but production MUST set SESSION_HMAC_SECRET independently so
+  // compromising the inter-tool secret doesn't compromise user sessions.
+  const s = process.env.SESSION_HMAC_SECRET || process.env.INTER_TOOL_API_SECRET;
+  if (!s) throw new Error("SESSION_HMAC_SECRET (or INTER_TOOL_API_SECRET fallback) not set");
   return s;
 }
 

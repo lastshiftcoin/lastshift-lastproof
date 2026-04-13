@@ -12,10 +12,14 @@
  * No auth needed — sessions are anonymous (tied to work_item_id, not user).
  */
 
+import { NextRequest } from "next/server";
 import { supabaseService } from "@/lib/db/client";
+import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const sessionLimiter = createRateLimiter({ window: 60_000, max: 10 });
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -24,7 +28,10 @@ function json(body: unknown, status = 200) {
   });
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const rl = sessionLimiter.check(getClientIp(req));
+  if (!rl.ok) return json({ ok: false, error: "rate_limited" }, 429);
+
   try {
     const body = (await req.json().catch(() => ({}))) as {
       work_item_id?: string;

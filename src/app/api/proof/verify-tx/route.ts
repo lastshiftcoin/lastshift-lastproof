@@ -15,9 +15,12 @@
 import { NextRequest } from "next/server";
 import { supabaseService } from "@/lib/db/client";
 import { verifyAndRecordProof, type VerificationRow } from "@/lib/proof-verification";
+import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const limiter = createRateLimiter({ window: 60_000, max: 5 });
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -59,6 +62,9 @@ function parseSolscanInput(input: string): string | null {
 }
 
 export async function POST(req: NextRequest) {
+  const rl = limiter.check(getClientIp(req));
+  if (!rl.ok) return json({ ok: false, error: "rate_limited", detail: "Too many requests. Try again shortly." }, 429);
+
   try {
     const body = (await req.json().catch(() => ({}))) as {
       signature?: string;

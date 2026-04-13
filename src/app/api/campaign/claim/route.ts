@@ -23,6 +23,9 @@ import { readSession } from "@/lib/session";
 import { supabaseService } from "@/lib/db/client";
 import { GRID_LAUNCH_DATE, EA_FREE_WINDOW_DAYS } from "@/lib/constants";
 import { cookies } from "next/headers";
+import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
+
+const claimLimiter = createRateLimiter({ window: 60_000, max: 3 });
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,6 +33,9 @@ export const dynamic = "force-dynamic";
 const MAX_CLAIMS = 5000;
 
 export async function POST(req: NextRequest) {
+  const rl = claimLimiter.check(getClientIp(req));
+  if (!rl.ok) return NextResponse.json({ ok: false, reason: "rate_limited" }, { status: 429 });
+
   const session = await readSession();
   if (!session) {
     return NextResponse.json({ ok: false, reason: "no_session" }, { status: 401 });

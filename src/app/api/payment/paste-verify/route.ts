@@ -11,9 +11,12 @@ import { NextRequest } from "next/server";
 import { supabaseService } from "@/lib/db/client";
 import { readSession } from "@/lib/session";
 import { verifyAndRecordPayment, type PaymentVerificationRow } from "@/lib/payment-verification";
+import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const paymentLimiter = createRateLimiter({ window: 60_000, max: 5 });
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -49,6 +52,9 @@ function parseSolscanInput(input: string): string | null {
 }
 
 export async function POST(req: NextRequest) {
+  const rl = paymentLimiter.check(getClientIp(req));
+  if (!rl.ok) return json({ ok: false, error: "rate_limited", detail: "Too many requests." }, 429);
+
   try {
     const session = await readSession();
     if (!session) {
