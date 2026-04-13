@@ -16,10 +16,10 @@ export interface Screen2TokenProps {
   onPick: (t: ProofTokenKey) => void;
 }
 
-const TOKEN_GLYPH: Record<ProofTokenKey, string> = {
-  LASTSHFT: "LS",
-  SOL: "◎",
-  USDT: "₮",
+const TOKEN_LOGO: Record<ProofTokenKey, string> = {
+  LASTSHFT: "/tokens/lastshft.png",
+  SOL: "/tokens/sol.png",
+  USDT: "/tokens/usdt.svg",
 };
 
 export function Screen2Token({ path, token, onPick }: Screen2TokenProps) {
@@ -47,9 +47,11 @@ export function Screen2Token({ path, token, onPick }: Screen2TokenProps) {
               onClick={() => onPick(t.key)}
             >
               <div className="pm-tc-left">
-                <div className={`pm-token-icon pm-token-icon-${t.key.toLowerCase()}`}>
-                  {TOKEN_GLYPH[t.key]}
-                </div>
+                <img
+                  src={TOKEN_LOGO[t.key]}
+                  alt={t.label}
+                  className={`pm-token-icon pm-token-icon-${t.key.toLowerCase()}`}
+                />
                 <div className="pm-token-meta">
                   <div className="pm-token-name">{t.label}</div>
                 </div>

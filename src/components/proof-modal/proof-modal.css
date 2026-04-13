@@ -453,27 +453,8 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 12px;
-  background: #fff;
-  color: #0a0b0f;
+  object-fit: cover;
   flex-shrink: 0;
-}
-.pm-token-icon-lastshft {
-  background: #0a0b0f;
-  color: var(--pm-accent);
-  border: 1px solid var(--pm-accent);
-}
-.pm-token-icon-sol {
-  background: linear-gradient(135deg, #9945ff, #14f195);
-  color: #fff;
-}
-.pm-token-icon-usdt {
-  background: #fff;
-  color: #26a17b;
 }
 .pm-token-meta { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .pm-token-name {
