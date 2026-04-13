@@ -21,7 +21,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { ProfileRow } from "@/lib/profiles-store";
-import { PaymentModal } from "@/components/payment-modal/PaymentModal";
+import { HandleChangeModal } from "@/components/handle-change-modal/HandleChangeModal";
 
 // ─── Option lists ────────────────────────────────────────────────────────────
 
@@ -582,16 +582,13 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate, handle
       </div>
 
       {showPaymentModal && validatedHandle && (
-        <PaymentModal
+        <HandleChangeModal
           open={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
-          kind="handle_change"
-          metadata={{ refId: validatedHandle }}
+          oldHandle={profile.handle}
+          newHandle={validatedHandle}
           onSuccess={() => {
             setShowPaymentModal(false);
-            // Webhook will apply the handle change — reload to pick it up.
-            // Small delay to let the webhook process.
-            setTimeout(() => window.location.reload(), 3000);
           }}
         />
       )}
