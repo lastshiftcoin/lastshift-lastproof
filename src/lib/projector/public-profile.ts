@@ -174,7 +174,7 @@ export async function getPublicProfileView(
       isDev: p.kind === "dev_verification",
       ticker: wi?.ticker ?? "",
       date: formatDate(p.createdAt),
-      comment: null, // NOTE: proofs store doesn't have comment field yet; future migration
+      comment: (p as unknown as { note: string | null }).note ?? null,
       solscanUrl: `https://solscan.io/tx/${p.txSignature}`,
     };
   });
@@ -195,18 +195,21 @@ export async function getPublicProfileView(
   const variant = deriveProfileVariant({ tier, isEarlyAdopter: profile.isEarlyAdopter });
 
   // ─── 10. Tier bar math ─────────────────────────────────────────────
-  const tierBarFillPct = Math.min(100, Math.round((proofsConfirmed / 50) * 100));
-  const remaining = Math.max(0, 50 - proofsConfirmed);
+  const nextThreshold = tier === 1 ? 10 : tier === 2 ? 25 : tier === 3 ? 50 : 50;
+  const tierBarFillPct = Math.min(100, Math.round((proofsConfirmed / nextThreshold) * 100));
+  const remaining = Math.max(0, nextThreshold - proofsConfirmed);
+  const nextTier = Math.min(tier + 1, 4);
+  const progressLabel: Record<number, string> = {
+    1: "NEW → VERIFIED",
+    2: "VERIFIED → EXPERIENCED",
+    3: "EXPERIENCED → LEGEND",
+    4: "LEGEND",
+    5: "",
+  };
   const tierSubtitle =
     tier === 4
       ? `${proofsConfirmed} verified proofs · TIER 4 · LEGEND`
-      : `${proofsConfirmed} verified proofs · ${remaining} to TIER ${tier + 1 > 4 ? 4 : tier + 1} · ${{
-          1: "NEW → VERIFIED",
-          2: "VERIFIED → EXPERIENCED",
-          3: "EXPERIENCED → LEGEND",
-          4: "LEGEND",
-          5: "",
-        }[tier]}`;
+      : `${proofsConfirmed} verified proofs · ${remaining} to TIER ${nextTier} · ${progressLabel[tier]}`;
 
   // ─── 10. Assemble the view ─────────────────────────────────────────
   return {

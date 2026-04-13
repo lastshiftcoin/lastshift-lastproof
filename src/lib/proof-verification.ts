@@ -220,18 +220,8 @@ export async function verifyAndRecordProof(
     kind: proofKind,
     txSignature: row.signature,
     payerWallet: feePayer,
+    note: row.comment ? row.comment.slice(0, 500) : null,
   });
-
-  // Write comment to proofs.note if provided.
-  // insertProof fires DB write async — wait briefly for it to land, then update note.
-  if (row.comment) {
-    // Give insertProofRow time to commit
-    await new Promise((r) => setTimeout(r, 200));
-    await db
-      .from("proofs")
-      .update({ note: row.comment.slice(0, 500) })
-      .eq("id", proof.id);
-  }
 
   // Recompute tier
   await recalcProfileTier(row.profile_id);

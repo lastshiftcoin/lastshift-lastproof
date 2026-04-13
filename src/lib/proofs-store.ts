@@ -13,6 +13,7 @@ export interface ProofRow {
   kind: "proof" | "dev_verification";
   txSignature: string;
   payerWallet: string | null;
+  note: string | null;
   createdAt: string;
 }
 

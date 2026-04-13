@@ -199,8 +199,8 @@ export function Screen5Terminal({
         })}
         {phase === "verifying" && !doneRef.current && (
           <div className="pm-term-line pm-neutral">
-            {"  > WAITING FOR VERIFICATION..."}
-            <span className="pm-term-cursor">█</span>
+            {"  > WAITING FOR VERIFICATION"}
+            <AnimatedDots />
           </div>
         )}
       </div>
@@ -220,4 +220,14 @@ export function Screen5Terminal({
       )}
     </>
   );
+}
+
+/** Cycling dots animation: . → .. → ... → . */
+function AnimatedDots() {
+  const [count, setCount] = useState(1);
+  useEffect(() => {
+    const t = setInterval(() => setCount((c) => (c % 3) + 1), 500);
+    return () => clearInterval(t);
+  }, []);
+  return <span style={{ display: "inline-block", width: "1.5em" }}>{".".repeat(count)}</span>;
 }

@@ -105,6 +105,7 @@ async function handleProof(row: PaymentRow): Promise<DispatchResult> {
     kind: "proof",
     txSignature: row.txSignature,
     payerWallet: row.payerWallet,
+    note: null,
   });
 
   insertNotification({
@@ -254,6 +255,7 @@ async function handleDevVerification(row: PaymentRow): Promise<DispatchResult> {
     kind: "dev_verification",
     txSignature: row.txSignature,
     payerWallet: row.payerWallet,
+    note: null,
   });
 
   await updateProfile(profile.id, { isDev: true });

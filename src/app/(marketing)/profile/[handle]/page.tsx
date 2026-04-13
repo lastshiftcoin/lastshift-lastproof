@@ -125,9 +125,9 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
 
   const mintedItems = view.workItems.filter((w) => w.section === "minted");
   const recentItems = view.workItems.filter((w) => w.section === "recent");
-  // Wireframe literally says "SEE 43 PAST PROJECTS →" even though
-  // 50 − 8 = 42. Mirroring verbatim per handoff §6 #4.
-  const pastProjectsCount = 43;
+  const totalWorkItems = view.workItems.length;
+  const visibleItems = mintedItems.length + recentItems.length;
+  const pastProjectsCount = Math.max(0, totalWorkItems - visibleItems);
 
   return (
     <div className="pp-page pp-page-bg">
@@ -211,7 +211,9 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
             </>
           )}
 
-          <a className="pp-pow-archive">SEE {pastProjectsCount} PAST PROJECTS →</a>
+          {pastProjectsCount > 0 && (
+            <a className="pp-pow-archive">SEE {pastProjectsCount} PAST PROJECTS →</a>
+          )}
         </section>
 
         {/* ═══ SCREENSHOTS ═══ */}
