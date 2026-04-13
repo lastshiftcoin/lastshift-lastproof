@@ -131,7 +131,11 @@ export async function getPublicProfileView(
     isCurrent: wi.endedAt === null,
     proofCount: proofCounts[i],
     section: wi.minted ? "minted" as const : "recent" as const,
-  }));
+  })).sort((a, b) => {
+    // Current (no end date) first, then newest startedAt first
+    if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
+    return new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime();
+  });
 
   // ─── 4. Transform screenshots ──────────────────────────────────────
   const screenshots: Screenshot[] = screenshotRows.map((s) => ({
