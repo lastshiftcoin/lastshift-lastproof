@@ -21,8 +21,8 @@ export async function probeDb(): Promise<DbHealth> {
   try {
     // Cheapest possible round-trip: count(*) on a tiny lookup table.
     const { error } = await supabaseService()
-      .from("categories")
-      .select("slug", { count: "exact", head: true });
+      .from("profiles")
+      .select("id", { count: "exact", head: true });
     const latencyMs = Date.now() - start;
     if (error) {
       return { ok: false, reachable: false, latencyMs, error: error.message, modes };
