@@ -67,13 +67,13 @@ body::before {
     linear-gradient(rgba(30, 32, 48, 0.3) 1px, transparent 1px),
     linear-gradient(90deg, rgba(30, 32, 48, 0.3) 1px, transparent 1px);
   background-size: 60px 60px;
-  pointer-events: none; z-index: 0;
+  pointer-events: none; z-index: -1;
 }
 body::after {
   content: ""; position: fixed; top: -200px; right: -200px;
   width: 700px; height: 700px;
   background: radial-gradient(circle, var(--accent-glow) 0%, transparent 60%);
-  pointer-events: none; z-index: 0;
+  pointer-events: none; z-index: -1;
 }
 
 .wrap {
