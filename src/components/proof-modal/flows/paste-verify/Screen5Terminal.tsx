@@ -88,6 +88,10 @@ export function Screen5Terminal({
 
   const cascadeLines = useCallback(
     (newLines: TerminalLine[], delayMs: number, onDone?: () => void) => {
+      if (newLines.length === 0) {
+        onDone?.();
+        return null;
+      }
       let i = 0;
       const timer = setInterval(() => {
         if (i >= newLines.length) {
@@ -95,7 +99,10 @@ export function Screen5Terminal({
           onDone?.();
           return;
         }
-        setLines((prev) => [...prev, newLines[i]]);
+        const line = newLines[i];
+        if (line) {
+          setLines((prev) => [...prev, line]);
+        }
         i++;
       }, delayMs);
       cascadeTimersRef.current.push(timer);
@@ -179,6 +186,7 @@ export function Screen5Terminal({
           &gt; lastproof verify --tx {verificationId.slice(0, 8)}…
         </div>
         {lines.map((line, i) => {
+          if (!line) return null;
           const cls =
             line.status === "ok" ? "pm-ok" :
             line.status === "fail" ? "pm-no" :
