@@ -121,7 +121,15 @@ export function Screen6Receipt({
       </div>
 
       <div className="pm-cta-bar" style={{ marginTop: 18, padding: 0, border: 0 }}>
-        <button type="button" className="pm-cta pm-cta-green" onClick={onClose}>
+        <button
+          type="button"
+          className="pm-cta pm-cta-green"
+          onClick={() => {
+            onClose();
+            // Refresh page to show updated proof count + tier
+            window.location.reload();
+          }}
+        >
           &gt; BACK TO PROFILE
         </button>
       </div>
