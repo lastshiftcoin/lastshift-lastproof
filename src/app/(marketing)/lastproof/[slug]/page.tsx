@@ -71,7 +71,7 @@ export default async function AmbassadorLandingPage({ params }: PageProps) {
         {/* ═══ THE REALITY ═══ */}
         <section className="af-section">
           <div className="af-section-label">The reality</div>
-          <h2 className="af-section-title">Memecoins die. Your reputation shouldn&apos;t.</h2>
+          <h2 className="af-section-title"><span className="accent">Memecoins die.</span> Your reputation shouldn&apos;t.</h2>
           <p className="af-section-body">
             Short-lived projects mean constant gig hunting. LASTPROOF makes your work permanent so the next one finds you.
           </p>
@@ -89,11 +89,10 @@ export default async function AmbassadorLandingPage({ params }: PageProps) {
                 <span className="af-ba-tag before">WITHOUT LASTPROOF</span>
               </div>
               <div className="af-ba-body before-bg">
-                <div className="af-ba-placeholder">
-                  <div className="af-ba-placeholder-icon">&#128172;</div>
-                  <div className="af-ba-placeholder-text">
-                    DM chaos. Screenshots. &ldquo;Trust me bro.&rdquo; No way to verify anything.
-                  </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/before-lastproof.jpg" alt="Without LASTPROOF — desperate DMs and screenshot dumps" style={{ width: "100%", borderRadius: 6 }} />
+                <div className="af-ba-placeholder-text" style={{ marginTop: 12 }}>
+                  DMing devs cold. Dumping screenshots. Hoping someone remembers your last campaign before the chart died.
                 </div>
               </div>
             </div>
@@ -102,11 +101,10 @@ export default async function AmbassadorLandingPage({ params }: PageProps) {
                 <span className="af-ba-tag after">WITH LASTPROOF</span>
               </div>
               <div className="af-ba-body after-bg">
-                <div className="af-ba-placeholder">
-                  <div className="af-ba-placeholder-icon">&#128279;</div>
-                  <div className="af-ba-placeholder-text">
-                    One link. On-chain proofs. Verified by the people who paid you. Instant trust.
-                  </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/after-lastproof.jpg" alt="With LASTPROOF — one link, full proof, direct hire" style={{ width: "100%", borderRadius: 6 }} />
+                <div className="af-ba-placeholder-text" style={{ marginTop: 12 }}>
+                  One link. On-chain proofs. Verified by the people who paid you. Instant trust.
                 </div>
               </div>
             </div>
