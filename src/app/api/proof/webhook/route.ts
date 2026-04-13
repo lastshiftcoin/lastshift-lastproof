@@ -4,15 +4,13 @@
  * Helius webhook receiver — PRIMARY verification path for proof flow V3.
  * Fires within 1-5 seconds of a TX hitting the treasury wallet.
  *
- * Flow:
- *   1. Helius sends enhanced TX data when treasury receives a transfer
- *   2. We extract the TX signature from the webhook payload
- *   3. Match against queued proof_verifications rows
- *   4. Run full verification pipeline (shared with cron fallback)
- *   5. Update row status to "verified" or "failed"
+ * Key insight: Helius fires when the TX hits the chain, which is BEFORE
+ * the user pastes and submits the signature. So the webhook often arrives
+ * before the queue row exists. We store unmatched signatures in a
+ * pending_webhook_sigs table. When the user submits, the verify-tx route
+ * checks this table and processes immediately instead of waiting for cron.
  *
  * Auth: same HELIUS_WEBHOOK_SECRET as the payments webhook.
- * Both endpoints watch the same treasury address.
  */
 
 import { supabaseService } from "@/lib/db/client";
@@ -31,7 +29,6 @@ function json(body: unknown, status = 200) {
 }
 
 export async function POST(req: Request) {
-  // ─── Auth — same secret as payments webhook ───────────────────────
   const auth = verifyHeliusRequest(req);
   if (!auth.ok) {
     return json({ error: "unauthorized", reason: auth.reason }, 401);
@@ -39,25 +36,19 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-
-    // Helius sends an array of enhanced transactions
     const transactions: unknown[] = Array.isArray(body) ? body : [body];
 
     const db = supabaseService();
     let matched = 0;
     let verified = 0;
     let failed = 0;
+    let cached = 0;
 
     for (const txData of transactions) {
-      const tx = txData as {
-        signature?: string;
-        type?: string;
-        description?: string;
-      };
-
+      const tx = txData as { signature?: string };
       if (!tx.signature) continue;
 
-      // Find matching queued proof_verification
+      // Try to match against queued proof_verification
       const { data: row } = await db
         .from("proof_verifications")
         .select("id, signature, pubkey, path, token, work_item_id, profile_id, attempt_number, comment, session_opened_at")
@@ -65,16 +56,26 @@ export async function POST(req: Request) {
         .in("status", ["queued", "processing"])
         .single();
 
-      if (!row) continue; // No matching queue entry — ignore this TX
+      if (!row) {
+        // No queue row yet — user hasn't submitted. Cache the signature
+        // so verify-tx can process immediately when the user submits.
+        await db
+          .from("pending_webhook_sigs")
+          .upsert(
+            { signature: tx.signature, received_at: new Date().toISOString() },
+            { onConflict: "signature" },
+          );
+        cached++;
+        continue;
+      }
+
       matched++;
 
-      // Mark as processing
       await db
         .from("proof_verifications")
         .update({ status: "processing" })
         .eq("id", row.id);
 
-      // Run shared verification pipeline
       const result = await verifyAndRecordProof(row as VerificationRow);
 
       if (result.ok) {
@@ -99,15 +100,18 @@ export async function POST(req: Request) {
           .eq("id", row.id);
         failed++;
       }
+
+      // Clean up cached sig if it was there
+      await db.from("pending_webhook_sigs").delete().eq("signature", tx.signature);
     }
 
     console.log(
-      `[proof/webhook] processed: ${matched} matched, ${verified} verified, ${failed} failed`,
+      `[proof/webhook] ${matched} matched, ${verified} verified, ${failed} failed, ${cached} cached`,
     );
 
-    return json({ ok: true, matched, verified, failed });
+    return json({ ok: true, matched, verified, failed, cached });
   } catch (err) {
     console.error("[proof/webhook] error:", err);
-    return json({ ok: true }); // Always 200 to prevent Helius retries on our errors
+    return json({ ok: true });
   }
 }

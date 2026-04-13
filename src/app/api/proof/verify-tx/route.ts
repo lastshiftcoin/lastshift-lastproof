@@ -14,6 +14,7 @@
 
 import { NextRequest } from "next/server";
 import { supabaseService } from "@/lib/db/client";
+import { verifyAndRecordProof, type VerificationRow } from "@/lib/proof-verification";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -222,6 +223,51 @@ export async function POST(req: NextRequest) {
       }
       console.error("[verify-tx] insert failed:", insertErr.message);
       return json({ ok: false, error: "queue_failed" }, 500);
+    }
+
+    // ─── Check webhook cache: if Helius already saw this TX, process now ─
+    const { data: cached } = await db
+      .from("pending_webhook_sigs")
+      .select("signature")
+      .eq("signature", signature)
+      .maybeSingle();
+
+    if (cached) {
+      // Webhook already fired — process immediately instead of waiting for cron
+      console.log("[verify-tx] webhook cache hit — processing immediately");
+      await db.from("pending_webhook_sigs").delete().eq("signature", signature);
+
+      const pvRow = {
+        id: row.id,
+        signature,
+        pubkey: null,
+        path: body.path,
+        token: body.token,
+        work_item_id: body.work_item_id,
+        profile_id: profileId,
+        attempt_number: body.deep ? 2 : 1,
+        comment,
+        session_opened_at: session.opened_at,
+      } as VerificationRow;
+
+      await db.from("proof_verifications").update({ status: "processing" }).eq("id", row.id);
+      const result = await verifyAndRecordProof(pvRow);
+
+      if (result.ok) {
+        await db.from("proof_verifications").update({
+          status: "verified",
+          proof_id: result.proofId,
+          processed_at: new Date().toISOString(),
+        }).eq("id", row.id);
+        return json({ ok: true, verification_id: row.id, status: "verified", proof_id: result.proofId });
+      } else {
+        await db.from("proof_verifications").update({
+          status: "failed",
+          failure_check: result.check,
+          failure_detail: result.detail,
+          processed_at: new Date().toISOString(),
+        }).eq("id", row.id);
+      }
     }
 
     return json({
