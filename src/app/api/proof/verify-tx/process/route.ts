@@ -32,7 +32,11 @@ function json(body: unknown, status = 200) {
   });
 }
 
-export async function POST(req: Request) {
+// Vercel crons send GET requests. Support both GET and POST.
+export const GET = handler;
+export const POST = handler;
+
+async function handler(req: Request) {
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return json({ error: "unauthorized" }, 401);
