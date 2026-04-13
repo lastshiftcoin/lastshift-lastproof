@@ -222,8 +222,11 @@ export async function verifyAndRecordProof(
     payerWallet: feePayer,
   });
 
-  // Write comment to proofs.note if provided
+  // Write comment to proofs.note if provided.
+  // insertProof fires DB write async — wait briefly for it to land, then update note.
   if (row.comment) {
+    // Give insertProofRow time to commit
+    await new Promise((r) => setTimeout(r, 200));
     await db
       .from("proofs")
       .update({ note: row.comment.slice(0, 500) })

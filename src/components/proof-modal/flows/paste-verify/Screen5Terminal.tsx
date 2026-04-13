@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 
 /** Preloaded denial messages — factual, no detail leakage. */
 const DENIAL_MESSAGES: Record<string, string> = {
@@ -73,6 +73,7 @@ export function Screen5Terminal({
   ]);
   const [phase, setPhase] = useState<"verifying" | "deploying" | "done" | "failed">("verifying");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cascadeTimersRef = useRef<ReturnType<typeof setInterval>[]>([]);
   const doneRef = useRef(false);
   const proofDataRef = useRef<Record<string, unknown> | null>(null);
   const solscanRef = useRef<string | null>(null);
@@ -97,6 +98,7 @@ export function Screen5Terminal({
         setLines((prev) => [...prev, newLines[i]]);
         i++;
       }, delayMs);
+      cascadeTimersRef.current.push(timer);
       return timer;
     },
     [],
@@ -159,6 +161,8 @@ export function Screen5Terminal({
     pollRef.current = setInterval(poll, 2500);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
+      cascadeTimersRef.current.forEach((t) => clearInterval(t));
+      cascadeTimersRef.current = [];
     };
   }, [poll]);
 
