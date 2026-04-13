@@ -17,6 +17,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useDebugLog } from "@/lib/debug/useDebugLog";
 import "./mint-modal.css";
 import {
   PROOF_TOKENS,
@@ -80,6 +81,13 @@ export function MintModal({
   const [failureCheck, setFailureCheck] = useState<string | null>(null);
   const [failureDetail, setFailureDetail] = useState<string | null>(null);
   const [showFailure, setShowFailure] = useState(false);
+
+  const debug = useDebugLog();
+  useEffect(() => {
+    if (open) debug.log("proof_flow", "mint_modal_open", { workItemId, ticker });
+    return () => { if (open) { debug.log("proof_flow", "mint_modal_close", { step }); debug.flush(); } };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // Session anti-scam
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -157,6 +165,7 @@ export function MintModal({
   const handleSubmit = useCallback(
     async (signatureInput: string) => {
       if (!sessionId) return;
+      debug.log("proof_flow", "mint_submit", { token, workItemId, attempt: failureAttempt });
       try {
         const res = await fetch("/api/payment/paste-verify", {
           method: "POST",
@@ -180,6 +189,7 @@ export function MintModal({
         };
 
         if (!data.ok) {
+          debug.log("error", "mint_submit_failed", { error: data.error, attempt: failureAttempt + 1 });
           setFailureAttempt((a) => a + 1);
           setFailureCheck(data.error ?? "unknown");
           setFailureDetail(data.error ?? "Submission failed.");
@@ -187,6 +197,7 @@ export function MintModal({
           return;
         }
 
+        debug.log("proof_flow", "mint_submit_ok", { status: data.status, instant: data.status === "verified" });
         // Instant verify (webhook cache hit)
         if (data.status === "verified" && data.payment_id) {
           try { localStorage.removeItem(storageKey); } catch {}
@@ -214,23 +225,25 @@ export function MintModal({
 
   const handleVerified = useCallback(
     (data: Record<string, unknown>, sUrl: string | null) => {
+      debug.log("proof_flow", "mint_verified", { payment_id: data.payment_id, solscan: sUrl });
       try { localStorage.removeItem(storageKey); } catch {}
       setPaymentData(data);
       setSolscanUrl(sUrl);
       setStep(5);
     },
-    [storageKey],
+    [storageKey, debug],
   );
 
   const handleTerminalFailed = useCallback(
     (check: string, detail: string, attempt: number) => {
+      debug.log("error", "mint_terminal_failed", { check, detail, attempt });
       setFailureAttempt(attempt);
       setFailureCheck(check);
       setFailureDetail(detail);
       setShowFailure(true);
       setStep(3);
     },
-    [],
+    [debug],
   );
 
   const handleBack = useCallback(() => {

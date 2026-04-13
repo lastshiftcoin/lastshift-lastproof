@@ -21,6 +21,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { useDebugLog } from "@/lib/debug/useDebugLog";
 import type { ProofPath } from "../../types";
 import type { ProofTokenKey } from "@/lib/proof-tokens";
 
@@ -60,6 +61,15 @@ export function PasteVerifyFlow({
   const [failureDetail, setFailureDetail] = useState<string | null>(null);
   const [showFailure, setShowFailure] = useState(false);
 
+  const debug = useDebugLog();
+
+  // Log modal open
+  useEffect(() => {
+    debug.log("proof_flow", "modal_open", { workItemId, ticker, handle });
+    return () => { debug.log("proof_flow", "modal_close", { screen }); debug.flush(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Session anti-scam: create session on mount, persist in localStorage
   const [sessionId, setSessionId] = useState<string | null>(null);
   const storageKey = `${SESSION_STORAGE_PREFIX}${workItemId}`;
@@ -97,9 +107,10 @@ export function PasteVerifyFlow({
   }, [workItemId, storageKey]);
 
   const handlePathPick = useCallback((p: ProofPath) => {
+    debug.log("proof_flow", "path_selected", { path: p });
     setPath(p);
     setScreen(2);
-  }, []);
+  }, [debug]);
 
   const handleTokenPick = useCallback((t: ProofTokenKey) => {
     setToken(t);
@@ -116,6 +127,7 @@ export function PasteVerifyFlow({
   const handleSubmit = useCallback(
     async (signatureInput: string) => {
       if (!path || !sessionId) return;
+      debug.log("proof_flow", "submit_tx", { path, token, workItemId, attempt: failureAttempt });
       try {
         const res = await fetch("/api/proof/verify-tx", {
           method: "POST",
@@ -142,6 +154,7 @@ export function PasteVerifyFlow({
         };
 
         if (!data.ok) {
+          debug.log("error", "submit_failed", { error: data.error, detail: data.detail, attempt: failureAttempt + 1 });
           setFailureAttempt((a) => a + 1);
           setFailureCheck(data.error ?? "unknown");
           setFailureDetail(data.detail ?? data.error ?? "Submission failed.");
@@ -150,6 +163,7 @@ export function PasteVerifyFlow({
         }
 
         // Instant verify (webhook cache hit) or silent duplicate
+        debug.log("proof_flow", "submit_ok", { status: data.status, verification_id: data.verification_id, instant: data.status === "verified" });
         if (data.status === "verified" && data.proof_id) {
           try { localStorage.removeItem(storageKey); } catch {}
           setProofData({
@@ -176,7 +190,7 @@ export function PasteVerifyFlow({
 
   const handleVerified = useCallback(
     (data: Record<string, unknown>, sUrl: string | null) => {
-      // Clear session from localStorage on success
+      debug.log("proof_flow", "verified_success", { proof_id: data.proof_id, solscan: sUrl });
       try { localStorage.removeItem(storageKey); } catch {}
       setProofData(data);
       setSolscanUrl(sUrl);
@@ -187,6 +201,7 @@ export function PasteVerifyFlow({
 
   const handleTerminalFailed = useCallback(
     (check: string, detail: string, attempt: number) => {
+      debug.log("error", "terminal_failed", { check, detail, attempt });
       setFailureAttempt(attempt);
       setFailureCheck(check);
       setFailureDetail(detail);

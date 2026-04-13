@@ -16,6 +16,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useDebugLog } from "@/lib/debug/useDebugLog";
 import "./handle-change-modal.css";
 import {
   PROOF_TOKENS,
@@ -85,6 +86,13 @@ export function HandleChangeModal({
   const [showFailure, setShowFailure] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+
+  const debug = useDebugLog();
+  useEffect(() => {
+    if (open) debug.log("proof_flow", "handle_change_modal_open", { oldHandle });
+    return () => { if (open) { debug.log("proof_flow", "handle_change_modal_close", { step }); debug.flush(); } };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const basePrice = BASE_PRICES_USD.handle_change;
   const discountedPrice = priceFor("handle_change", "LASTSHFT");
@@ -218,6 +226,7 @@ export function HandleChangeModal({
   const handleSubmit = useCallback(
     async (signatureInput: string) => {
       if (!sessionId || !newHandle) return;
+      debug.log("proof_flow", "handle_change_submit", { token, newHandle, attempt: failureAttempt });
       const key = `${SESSION_STORAGE_PREFIX}${newHandle}`;
       try {
         const res = await fetch("/api/payment/paste-verify", {
@@ -234,6 +243,7 @@ export function HandleChangeModal({
         };
 
         if (!data.ok) {
+          debug.log("error", "handle_change_submit_failed", { error: data.error, attempt: failureAttempt + 1 });
           setFailureAttempt((a) => a + 1);
           setFailureCheck(data.error ?? "unknown");
           setFailureDetail(data.error ?? "Submission failed.");
@@ -241,6 +251,7 @@ export function HandleChangeModal({
           return;
         }
 
+        debug.log("proof_flow", "handle_change_submit_ok", { status: data.status, instant: data.status === "verified" });
         if (data.status === "verified" && data.payment_id) {
           try { localStorage.removeItem(key); } catch {}
           setPaymentData({ payment_id: data.payment_id, sender_wallet: data.sender_wallet ?? "", tx_signature: signatureInput });
@@ -264,23 +275,25 @@ export function HandleChangeModal({
 
   const handleVerified = useCallback(
     (data: Record<string, unknown>, sUrl: string | null) => {
+      debug.log("proof_flow", "handle_change_verified", { payment_id: data.payment_id, newHandle });
       if (newHandle) { try { localStorage.removeItem(`${SESSION_STORAGE_PREFIX}${newHandle}`); } catch {} }
       setPaymentData(data);
       setSolscanUrl(sUrl);
       setConfirmed(true);
     },
-    [newHandle],
+    [newHandle, debug],
   );
 
   const handleTerminalFailed = useCallback(
     (check: string, detail: string, attempt: number) => {
+      debug.log("error", "handle_change_terminal_failed", { check, detail, attempt });
       setFailureAttempt(attempt);
       setFailureCheck(check);
       setFailureDetail(detail);
       setShowFailure(true);
       setStep(5);
     },
-    [],
+    [debug],
   );
 
   const handleBack = useCallback(() => {
