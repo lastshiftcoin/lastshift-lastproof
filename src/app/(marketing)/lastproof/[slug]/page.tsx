@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function AmbassadorLandingPage({ params }: PageProps) {
   const { slug } = await params;
-  const terminalUrl = `https://lastshift-lastproof.vercel.app/manage?ref=${slug}`;
+  const terminalUrl = `/manage?ref=${slug}`;
 
   return (
     <div className="af-page">
