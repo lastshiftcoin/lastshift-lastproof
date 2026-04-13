@@ -17,39 +17,37 @@
 .pay-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.82);
+  background: var(--pm-bg);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  padding: 20px;
-  backdrop-filter: blur(4px);
 }
 
 .pay-shell {
-  width: min(520px, 100%);
-  max-height: calc(100vh - 40px);
+  width: 100%;
+  height: 100%;
+  max-width: 600px;
+  margin: 0 auto;
   background: var(--pm-bg);
-  border: 1px solid var(--pm-line);
-  border-radius: 8px;
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   color: var(--pm-fg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
 }
 
 .pay-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
+  padding: 14px 24px;
   background: rgba(0, 0, 0, 0.3);
   border-bottom: 1px solid var(--pm-line);
   font-size: 10px;
   letter-spacing: 0.1em;
   color: var(--pm-dim);
+  flex-shrink: 0;
 }
 .pay-bar-left { display: flex; align-items: center; gap: 8px; }
 .pay-bar-title { font-weight: 400; text-transform: lowercase; }
@@ -72,8 +70,15 @@
 .pay-bar-close:hover { color: var(--pm-fg); border-color: var(--pm-fg); }
 
 .pay-body {
-  padding: 28px 36px 22px;
+  padding: 40px 36px 32px;
   overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .pay-eyebrow {
@@ -84,10 +89,10 @@
   margin-bottom: 8px;
 }
 .pay-head {
-  font-size: 20px;
+  font-size: 26px;
   font-weight: 800;
-  letter-spacing: -0.01em;
-  margin: 0 0 10px;
+  letter-spacing: -0.02em;
+  margin: 0 0 14px;
   line-height: 1.3;
 }
 .pay-sub {
@@ -209,7 +214,15 @@
 }
 .pay-cta:hover { filter: brightness(1.1); }
 .pay-cta:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
-.pay-cta-green { background: rgba(0, 230, 118, 0.15); color: var(--pm-green); border: 1px solid rgba(0, 230, 118, 0.4); }
+.pay-cta-green {
+  display: block; width: 100%; padding: 14px;
+  font: inherit; font-size: 12px; font-weight: 800;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  text-align: center; cursor: pointer; border-radius: 6px;
+  background: rgba(0, 230, 118, 0.15); color: var(--pm-green);
+  border: 1px solid rgba(0, 230, 118, 0.4);
+  transition: all 0.15s ease;
+}
 .pay-cta-green:hover { background: var(--pm-green); color: #0a0b0f; }
 .pay-cta-ghost {
   background: none;
