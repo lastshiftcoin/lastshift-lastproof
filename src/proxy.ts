@@ -16,7 +16,7 @@ import { NextResponse, type NextRequest } from "next/server";
  * To disable: set to false or delete → redeploy
  */
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   if (process.env.NEXT_PUBLIC_MAINTENANCE_MODE !== "true") {
     return NextResponse.next();
   }
