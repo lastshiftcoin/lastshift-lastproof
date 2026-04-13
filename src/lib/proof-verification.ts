@@ -226,6 +226,14 @@ export async function verifyAndRecordProof(
     note: row.comment ? row.comment.slice(0, 500) : null,
   });
 
+  // Set is_dev on work item if dev path
+  if (row.path === "dev") {
+    await db
+      .from("work_items")
+      .update({ is_dev: true })
+      .eq("id", row.work_item_id);
+  }
+
   // Recompute tier
   await recalcProfileTier(row.profile_id);
 
