@@ -646,12 +646,17 @@ body:has(.pp-page) .shiftbot { display: none !important; }
 .pp-pow-verify {
   display: inline-flex; align-items: center; gap: 6px;
   font-family: var(--mono); font-size: 9px; font-weight: 700;
-  color: var(--text-dim); padding: 6px 11px;
-  border: 1px solid var(--border-2); border-radius: var(--r-pill);
-  background: transparent; cursor: pointer;
-  letter-spacing: 1px; text-transform: uppercase; transition: all 0.15s;
+  color: var(--gold); padding: 6px 11px;
+  border: 1px solid var(--gold); border-radius: var(--r-pill);
+  background: rgba(255, 215, 0, 0.08); cursor: pointer;
+  letter-spacing: 1px; text-transform: uppercase; transition: all 0.2s;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.15);
 }
-.pp-pow-verify:hover { color: var(--orange); border-color: var(--orange); }
+.pp-pow-verify:hover {
+  color: #fff; border-color: var(--gold);
+  background: rgba(255, 215, 0, 0.2);
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.35), 0 0 32px rgba(255, 215, 0, 0.15);
+}
 .pp-pow-verify svg { width: 10px; height: 10px; }
 
 .pp-pow-archive {
