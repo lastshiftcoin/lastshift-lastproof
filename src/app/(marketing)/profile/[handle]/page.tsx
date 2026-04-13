@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 import { getPublicProfileView } from "@/lib/projector/public-profile";
@@ -33,7 +33,34 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { handle } = await params;
-  return { title: `@${handle} — LASTPROOF` };
+  const view = (await getPublicProfileView(handle)) ?? FIXTURES[handle] ?? null;
+  if (!view) return { title: `@${handle} — LASTPROOF` };
+
+  const title = `@${view.handle} — ${view.displayName} | LASTPROOF Operator`;
+  const description = view.bioStatement
+    ? view.bioStatement.slice(0, 160)
+    : `${view.displayName} is a verified web3 operator on LASTPROOF with ${view.proofsConfirmed} on-chain proofs.`;
+  const profileUrl = `https://lastproof.app/@${view.handle}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      type: "profile",
+      title,
+      description,
+      url: profileUrl,
+      ...(view.avatarUrl && {
+        images: [{ url: view.avatarUrl, width: 400, height: 400, alt: view.displayName }],
+      }),
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+      ...(view.avatarUrl && { images: [view.avatarUrl] }),
+    },
+  };
 }
 
 /**
@@ -67,7 +94,23 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
 
   // Try the real projector first (reads Supabase), fall back to mock fixtures.
   const view = (await getPublicProfileView(handle, { previewMode: isPreview })) ?? FIXTURES[handle] ?? null;
-  if (!view) notFound();
+
+  if (!view) {
+    // Check if this is an old handle that was changed — redirect to new handle
+    const { data: historyRow } = await supabaseService()
+      .from("handle_history")
+      .select("new_handle")
+      .ilike("old_handle", handle)
+      .order("changed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (historyRow?.new_handle) {
+      redirect(`/@${historyRow.new_handle}`);
+    }
+
+    notFound();
+  }
 
   // Increment view count for non-owner visitors (fire-and-forget)
   if (!isPreview) {
