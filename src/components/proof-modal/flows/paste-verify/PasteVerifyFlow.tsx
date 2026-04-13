@@ -1,95 +1,132 @@
 "use client";
 
 /**
- * PasteVerifyFlow — 5-screen proof flow (paste-to-verify).
+ * PasteVerifyFlow V3 — 6-screen proof flow, no wallet connect.
  *
- * User pays manually in their wallet, pastes the Solscan URL or tx
- * signature, server verifies via queue + Helius RPC, records proof.
+ * User is anonymous until they submit a TX. Everything we need
+ * comes from the on-chain transaction itself.
  *
  * Screens:
- *   1  Path     — collab / dev
- *   2  Token    — LASTSHFT / SOL / USDT
- *   3  Pay      — treasury address + paste field
- *   4  Verify   — terminal-style verification polling
- *   5  Success  — proof confirmed
+ *   1  Path      — collab / dev
+ *   2  Token     — LASTSHFT / SOL / USDT with prices
+ *   3  Send      — treasury address + copy button + instructions
+ *   4  Paste     — paste TX URL + optional comment + submit
+ *   5  Terminal  — verification cascade + deployment
+ *   6  Receipt   — proof confirmed, screenshot-friendly
  *
  * 3-tier failure recovery:
- *   Tier 1 (attempt 1): TRY AGAIN → back to Screen 3
+ *   Tier 1 (attempt 1): TRY AGAIN → back to Screen 4
  *   Tier 2 (attempt 2): DEEP VERIFY → re-submit with deep=true
- *   Tier 3 (attempt 3+): OPEN SUPPORT TICKET → mailto:reportclaims@lastproof.app
+ *   Tier 3 (attempt 3+): OPEN SUPPORT TICKET
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ProofPath } from "../../types";
 import type { ProofTokenKey } from "@/lib/proof-tokens";
-import type { ConnectedWallet } from "@/lib/wallet/use-connected";
 
 import { Screen1Path } from "./Screen1Path";
 import { Screen2Token } from "./Screen2Token";
-import { Screen3Pay } from "./Screen3Pay";
-import { Screen4Verify } from "./Screen4Verify";
-import { Screen5Success } from "./Screen5Success";
+import { Screen3Send } from "./Screen3Send";
+import { Screen4Paste } from "./Screen4Paste";
+import { Screen5Terminal } from "./Screen5Terminal";
+import { Screen6Receipt } from "./Screen6Receipt";
 
-type PvScreen = 1 | 2 | 3 | 4 | 5 | "failed";
+type PvScreen = 1 | 2 | 3 | 4 | 5 | 6;
+
+const SESSION_STORAGE_PREFIX = "lp_session_";
 
 export interface PasteVerifyFlowProps {
   workItemId: string;
   ticker: string;
   handle: string;
-  connected: ConnectedWallet;
   onClose: () => void;
-  onBackToWalletSelect: () => void;
-  /** Number of steps that preceded this flow (e.g. 2 for wallet select + connect). */
-  stepOffset?: number;
-  /** Total steps across the entire modal flow (offset + 5 screens). */
-  totalSteps?: number;
 }
 
 export function PasteVerifyFlow({
   workItemId,
   ticker,
   handle,
-  connected,
   onClose,
-  onBackToWalletSelect,
-  stepOffset = 0,
-  totalSteps = 5,
 }: PasteVerifyFlowProps) {
   const [screen, setScreen] = useState<PvScreen>(1);
   const [path, setPath] = useState<ProofPath | null>(null);
   const [token, setToken] = useState<ProofTokenKey>("LASTSHFT");
+  const [comment, setComment] = useState("");
   const [verificationId, setVerificationId] = useState<string | null>(null);
-  const [proofId, setProofId] = useState<string | null>(null);
+  const [proofData, setProofData] = useState<Record<string, unknown> | null>(null);
   const [solscanUrl, setSolscanUrl] = useState<string | null>(null);
   const [failureAttempt, setFailureAttempt] = useState(0);
   const [failureCheck, setFailureCheck] = useState<string | null>(null);
   const [failureDetail, setFailureDetail] = useState<string | null>(null);
+  const [showFailure, setShowFailure] = useState(false);
+
+  // Session anti-scam: create session on mount, persist in localStorage
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const storageKey = `${SESSION_STORAGE_PREFIX}${workItemId}`;
+
+  useEffect(() => {
+    // Check localStorage for existing session
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored) as { session_id: string; opened_at: string };
+        setSessionId(parsed.session_id);
+        return;
+      }
+    } catch { /* no stored session */ }
+
+    // Create new session
+    fetch("/api/proof/session-start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ work_item_id: workItemId }),
+    })
+      .then((r) => r.json())
+      .then((data: { ok: boolean; session_id?: string; opened_at?: string }) => {
+        if (data.ok && data.session_id) {
+          setSessionId(data.session_id);
+          try {
+            localStorage.setItem(
+              storageKey,
+              JSON.stringify({ session_id: data.session_id, opened_at: data.opened_at }),
+            );
+          } catch { /* storage full — continue without persistence */ }
+        }
+      })
+      .catch(() => { /* session creation failed — submit will fail gracefully */ });
+  }, [workItemId, storageKey]);
 
   const handlePathPick = useCallback((p: ProofPath) => {
     setPath(p);
+    setScreen(2);
   }, []);
 
-  const handleContinueFromPath = useCallback(() => {
-    if (path) setScreen(2);
-  }, [path]);
+  const handleTokenPick = useCallback((t: ProofTokenKey) => {
+    setToken(t);
+  }, []);
 
   const handleContinueFromToken = useCallback(() => {
     setScreen(3);
   }, []);
 
-  const handleSubmitSignature = useCallback(
+  const handleContinueToSubmit = useCallback(() => {
+    setScreen(4);
+  }, []);
+
+  const handleSubmit = useCallback(
     async (signatureInput: string) => {
-      if (!path) return;
+      if (!path || !sessionId) return;
       try {
         const res = await fetch("/api/proof/verify-tx", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             signature: signatureInput,
-            pubkey: connected.pubkey,
             path,
             token,
             work_item_id: workItemId,
+            session_id: sessionId,
+            comment: comment || undefined,
             deep: failureAttempt >= 1,
           }),
         });
@@ -100,96 +137,85 @@ export function PasteVerifyFlow({
           detail?: string;
           status?: string;
           proof_id?: string;
+          silent_duplicate?: boolean;
         };
 
         if (!data.ok) {
           setFailureAttempt((a) => a + 1);
           setFailureCheck(data.error ?? "unknown");
           setFailureDetail(data.detail ?? data.error ?? "Submission failed.");
-          setScreen("failed");
+          setShowFailure(true);
           return;
         }
 
-        // Already verified (re-submission of previously verified sig)
+        // Silent duplicate or already verified
         if (data.status === "verified" && data.proof_id) {
-          setProofId(data.proof_id);
-          setScreen(5);
+          // Clear session from localStorage on success
+          try { localStorage.removeItem(storageKey); } catch {}
+          setProofData({ proof_id: data.proof_id });
+          setScreen(6);
           return;
         }
 
         setVerificationId(data.verification_id!);
-        setScreen(4);
+        setShowFailure(false);
+        setScreen(5);
       } catch {
         setFailureAttempt((a) => a + 1);
         setFailureCheck("network");
         setFailureDetail("Failed to reach the server. Check your connection.");
-        setScreen("failed");
+        setShowFailure(true);
       }
     },
-    [path, token, connected.pubkey, workItemId, failureAttempt],
+    [path, token, workItemId, sessionId, comment, failureAttempt, storageKey],
   );
 
-  const handleVerified = useCallback((pId: string, sUrl: string | null) => {
-    setProofId(pId);
-    setSolscanUrl(sUrl);
-    setScreen(5);
-  }, []);
+  const handleVerified = useCallback(
+    (data: Record<string, unknown>, sUrl: string | null) => {
+      // Clear session from localStorage on success
+      try { localStorage.removeItem(storageKey); } catch {}
+      setProofData(data);
+      setSolscanUrl(sUrl);
+      setScreen(6);
+    },
+    [storageKey],
+  );
 
-  const handleFailed = useCallback(
+  const handleTerminalFailed = useCallback(
     (check: string, detail: string, attempt: number) => {
       setFailureAttempt(attempt);
       setFailureCheck(check);
       setFailureDetail(detail);
-      setScreen("failed");
+      setShowFailure(true);
+      setScreen(4);
     },
     [],
   );
 
   const handleTryAgain = useCallback(() => {
     setVerificationId(null);
-    setScreen(3);
+    setShowFailure(false);
+    setScreen(4);
   }, []);
 
-  const handleDeepVerify = useCallback(() => {
-    // Go back to paste screen — the next submit will have deep=true
-    setVerificationId(null);
-    setScreen(3);
-  }, []);
+  // Back navigation
+  const handleBack = useCallback(() => {
+    if (screen === 2) setScreen(1);
+    else if (screen === 3) setScreen(2);
+    else if (screen === 4) setScreen(3);
+  }, [screen]);
 
-  // Screen number for progress bar (failed counts as screen 4).
-  // Add stepOffset so the counter continues from where the wallet steps left off.
-  const rawScreen = screen === "failed" ? 4 : screen;
-  const screenNum = rawScreen + stepOffset;
+  // Screen number for progress bar
+  const totalSteps = 6;
 
   return (
     <>
-      <div className="pm-ref-row">
-        {connected && screen !== 1 ? (
-          <button
-            type="button"
-            className="pm-conn-pill"
-            onClick={onBackToWalletSelect}
-            title="Click to disconnect"
-          >
-            <span className="pm-conn-dot" />
-            <span className="pm-conn-label">CONNECTED</span>
-            <span className="pm-conn-addr">
-              {connected.pubkey.slice(0, 4)}…{connected.pubkey.slice(-4)}
-            </span>
-          </button>
-        ) : (
-          <span />
-        )}
-        <span className="pm-step-counter">
-          STEP <span className="pm-step-now">{screenNum}</span> / {totalSteps}
-        </span>
-      </div>
-
+      {/* Progress bar — no step counter, just the bar */}
       <div className="pm-progress-wrap">
         <div className="pm-bar-track">
           <div
             className="pm-bar-fill"
-            style={{ width: `${(screenNum / totalSteps) * 100}%` }}
+            style={{ width: `${(screen / totalSteps) * 100}%` }}
           />
         </div>
       </div>
@@ -204,135 +230,63 @@ export function PasteVerifyFlow({
           />
         )}
         {screen === 2 && path && (
-          <Screen2Token path={path} token={token} onPick={setToken} />
+          <Screen2Token path={path} token={token} onPick={handleTokenPick} />
         )}
         {screen === 3 && path && (
-          <Screen3Pay
-            path={path}
-            token={token}
-            pubkey={connected.pubkey}
-            onSubmit={handleSubmitSignature}
+          <Screen3Send path={path} token={token} />
+        )}
+        {screen === 4 && path && (
+          <Screen4Paste
+            comment={comment}
+            onCommentChange={setComment}
+            onSubmit={handleSubmit}
+            failureCheck={showFailure ? failureCheck : null}
+            failureDetail={showFailure ? failureDetail : null}
+            failureAttempt={failureAttempt}
+            onTryAgain={handleTryAgain}
           />
         )}
-        {screen === 4 && verificationId && (
-          <Screen4Verify
+        {screen === 5 && verificationId && (
+          <Screen5Terminal
             verificationId={verificationId}
+            handle={handle}
             onVerified={handleVerified}
-            onFailed={handleFailed}
+            onFailed={handleTerminalFailed}
           />
         )}
-        {screen === 5 && proofId && path && (
-          <Screen5Success
+        {screen === 6 && proofData && (
+          <Screen6Receipt
+            proofData={proofData}
+            solscanUrl={solscanUrl}
             ticker={ticker}
             handle={handle}
-            path={path}
-            pubkey={connected.pubkey}
-            tokenLabel={token}
-            proofId={proofId}
-            solscanUrl={solscanUrl}
+            path={path!}
+            token={token}
             onClose={onClose}
           />
         )}
-
-        {/* 3-tier failure recovery */}
-        {screen === "failed" && (
-          <>
-            <div className="pm-done-wrap">
-              <div className="pm-done-check pm-fail" aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </div>
-              <div className="pm-eyebrow pm-eyebrow-fail">
-                &gt; VERIFICATION FAILED
-              </div>
-              <h2 className="pm-head">
-                {failureCheck === "wrong_sender"
-                  ? "wrong wallet"
-                  : failureCheck === "wrong_amount"
-                    ? "wrong amount"
-                    : failureCheck === "tx_too_old"
-                      ? "transaction too old"
-                      : failureCheck === "already_used"
-                        ? "already used"
-                        : "verification failed"}{" "}
-                — <span className="pm-red">nothing was recorded.</span>
-              </h2>
-              <p className="pm-sub">{failureDetail}</p>
-            </div>
-
-            {/* Tier 1: Try Again (attempt 1) */}
-            {failureAttempt <= 1 && (
-              <div className="pm-cta-bar" style={{ marginTop: 18, padding: 0, border: 0 }}>
-                <button type="button" className="pm-cta" onClick={handleTryAgain}>
-                  &gt; TRY AGAIN
-                </button>
-              </div>
-            )}
-
-            {/* Tier 2: Deep Verify (attempt 2) */}
-            {failureAttempt === 2 && (
-              <>
-                <div className="pm-cta-bar" style={{ marginTop: 18, padding: 0, border: 0 }}>
-                  <button type="button" className="pm-cta" onClick={handleDeepVerify}>
-                    &gt; DEEP VERIFICATION
-                  </button>
-                </div>
-                <div className="pm-field-help" style={{ marginTop: 6 }}>
-                  RUNS ADDITIONAL CHECKS INCLUDING INNER INSTRUCTIONS AND ALTERNATE TOKEN ACCOUNTS
-                </div>
-              </>
-            )}
-
-            {/* Tier 3: Support Ticket (attempt 3+) */}
-            {failureAttempt >= 3 && (
-              <>
-                <div className="pm-cta-bar" style={{ marginTop: 18, padding: 0, border: 0 }}>
-                  <a
-                    className="pm-cta"
-                    style={{ display: "block", textAlign: "center", textDecoration: "none" }}
-                    href={`mailto:reportclaims@lastproof.app?subject=Proof%20Verification%20Failed%20—%20${encodeURIComponent(failureCheck ?? "unknown")}&body=${encodeURIComponent(`Wallet: ${connected.pubkey}\nCheck: ${failureCheck}\nDetail: ${failureDetail}\nAttempts: ${failureAttempt}`)}`}
-                  >
-                    &gt; OPEN SUPPORT TICKET
-                  </a>
-                </div>
-                <p className="pm-sub" style={{ marginTop: 10 }}>
-                  If you believe this transaction is valid, our team will review
-                  it manually.
-                </p>
-                <button
-                  type="button"
-                  className="pm-cta-ghost"
-                  style={{ marginTop: 10, padding: "8px 12px", fontSize: 11 }}
-                  onClick={handleTryAgain}
-                >
-                  TRY AGAIN
-                </button>
-              </>
-            )}
-          </>
-        )}
       </div>
 
-      {/* Continue bar for screens 1 and 2 */}
-      {(screen === 1 || screen === 2) && (
-        <div className="pm-cta-bar">
+      {/* Navigation bar for screens 2-4 */}
+      {(screen === 2 || screen === 3 || screen === 4) && (
+        <div className="pm-cta-bar" style={{ display: "flex", justifyContent: "space-between" }}>
           <button
             type="button"
-            className="pm-cta"
-            disabled={screen === 1 && !path}
-            onClick={screen === 1 ? handleContinueFromPath : handleContinueFromToken}
+            className="pm-cta-ghost"
+            onClick={handleBack}
           >
-            &gt; CONTINUE
+            &lt; BACK
           </button>
+          {screen === 2 && (
+            <button type="button" className="pm-cta" onClick={handleContinueFromToken}>
+              &gt; CONTINUE
+            </button>
+          )}
+          {screen === 3 && (
+            <button type="button" className="pm-cta" onClick={handleContinueToSubmit}>
+              &gt; SUBMIT TRANSACTION RECEIPT
+            </button>
+          )}
         </div>
       )}
     </>

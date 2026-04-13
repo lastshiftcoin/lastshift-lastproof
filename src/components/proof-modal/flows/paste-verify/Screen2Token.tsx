@@ -32,7 +32,7 @@ export function Screen2Token({ path, token, onPick }: Screen2TokenProps) {
       </h2>
       <p className="pm-sub">
         Three options, all permissionless. Paying in $LASTSHFT unlocks the
-        operator discount and routes straight to the buy-back wallet.
+        operator discount.
       </p>
 
       <div className="pm-tokens">
@@ -52,7 +52,6 @@ export function Screen2Token({ path, token, onPick }: Screen2TokenProps) {
                 </div>
                 <div className="pm-token-meta">
                   <div className="pm-token-name">{t.label}</div>
-                  <div className="pm-token-sub">BAL: — · ≈ $—</div>
                 </div>
               </div>
               <div className="pm-tc-right">
@@ -64,19 +63,6 @@ export function Screen2Token({ path, token, onPick }: Screen2TokenProps) {
                 ) : (
                   <div className="pm-token-price">${price.toFixed(2)}</div>
                 )}
-                {t.hasDiscountBadge ? (
-                  <a
-                    className="pm-buy-btn"
-                    href={BUY_LASTSHFT_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    BUY $LASTSHFT ↗
-                  </a>
-                ) : (
-                  <div className="pm-token-live">≈ {price.toFixed(2)} {t.key}</div>
-                )}
               </div>
               {t.hasDiscountBadge && (
                 <span className="pm-token-badge">{LASTSHFT_DISCOUNT_LABEL}</span>
@@ -85,8 +71,16 @@ export function Screen2Token({ path, token, onPick }: Screen2TokenProps) {
           );
         })}
       </div>
-      <div className="pm-field-help">
-        PAYMENT GOES TO $LASTSHFT AR WALLET · MEMO INCLUDES PROOF ID
+
+      <div className="pm-field-help" style={{ marginTop: 12 }}>
+        <a
+          href={BUY_LASTSHFT_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "var(--pm-accent)", textDecoration: "none" }}
+        >
+          NEED $LASTSHFT? → BUY HERE ↗
+        </a>
       </div>
     </>
   );

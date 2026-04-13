@@ -20,16 +20,6 @@ export function Screen1Path({ path, onPick, ticker, handle }: Screen1PathProps) 
         Pick the path that matches your relationship to <b>{ticker}</b>. Proofs
         are permanent — you can&apos;t edit, delete, or refund after signature.
       </p>
-      <div className="pm-proj-card">
-        <div className="pm-proj-ticker">{ticker}</div>
-        <div className="pm-proj-meta">
-          <div className="pm-proj-role">COLLABORATOR</div>
-          <div className="pm-proj-dates">PROJECT PROOF</div>
-        </div>
-        <div className="pm-proj-tags">
-          <span className="pm-proj-tag pm-proj-tag-current">CURRENT</span>
-        </div>
-      </div>
       <div className="pm-paths">
         <button
           type="button"
@@ -38,7 +28,6 @@ export function Screen1Path({ path, onPick, ticker, handle }: Screen1PathProps) 
         >
           <span className="pm-path-lim">1 PER WALLET</span>
           <div className="pm-path-title">COLLABORATOR</div>
-          <div className="pm-path-price">$1</div>
           <div className="pm-path-desc">
             You worked alongside them on {ticker}. No token-level claim.
           </div>
@@ -50,7 +39,6 @@ export function Screen1Path({ path, onPick, ticker, handle }: Screen1PathProps) 
         >
           <span className="pm-path-lim">1 DEV PROOF / PROJECT</span>
           <div className="pm-path-title">DEV</div>
-          <div className="pm-path-price">$5</div>
           <div className="pm-path-desc">
             You deployed or co-founded {ticker}. Wallet verified against mint
             authority + first-5 holders.

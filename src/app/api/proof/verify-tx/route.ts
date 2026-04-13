@@ -1,9 +1,13 @@
 /**
  * POST /api/proof/verify-tx
  *
- * Submit a transaction signature for verification. Validates input format,
- * checks for duplicate signatures, and queues the verification for the
- * cron consumer to process against Helius RPC.
+ * Submit a transaction signature for verification. V3 changes:
+ *   - pubkey removed from required fields (extracted from TX post-verification)
+ *   - session_id required (validated against proof_sessions table)
+ *   - comment field accepted (optional, max 500 chars server-side)
+ *   - Silent duplicate handling: if signature exists in proofs, return
+ *     existing proof data as "verified" — scammer sees success
+ *   - Expanded parseSolscanInput: solscan, explorer.solana.com, solana.fm, xray.helius.xyz
  *
  * Returns immediately with a verification_id for polling.
  */
@@ -24,16 +28,32 @@ function json(body: unknown, status = 200) {
 const VALID_PATHS = new Set(["collab", "dev"]);
 const VALID_TOKENS = new Set(["LASTSHFT", "SOL", "USDT"]);
 
-/** Extract a Solana signature from a Solscan URL or raw base58 string. */
+/**
+ * Extract a Solana signature from various explorer URLs or raw base58 string.
+ * Supports: Solscan, Solana Explorer, solana.fm, xray.helius.xyz, raw base58.
+ */
 function parseSolscanInput(input: string): string | null {
   const trimmed = input.trim();
-  // Solscan URL: https://solscan.io/tx/{signature} or https://solscan.io/tx/{signature}?cluster=...
-  const urlMatch = trimmed.match(
-    /solscan\.io\/tx\/([A-Za-z1-9]{80,90})/,
-  );
-  if (urlMatch) return urlMatch[1];
-  // Raw base58 signature (typically 87-88 chars)
-  if (/^[A-HJ-NP-Za-km-z1-9]{80,90}$/.test(trimmed)) return trimmed;
+
+  // Solscan URL: https://solscan.io/tx/{signature}
+  const solscanMatch = trimmed.match(/solscan\.io\/tx\/([A-Za-z1-9]{43,90})/);
+  if (solscanMatch) return solscanMatch[1];
+
+  // Solana Explorer: https://explorer.solana.com/tx/{signature}
+  const explorerMatch = trimmed.match(/explorer\.solana\.com\/tx\/([A-Za-z1-9]{43,90})/);
+  if (explorerMatch) return explorerMatch[1];
+
+  // solana.fm: https://solana.fm/tx/{signature}
+  const fmMatch = trimmed.match(/solana\.fm\/tx\/([A-Za-z1-9]{43,90})/);
+  if (fmMatch) return fmMatch[1];
+
+  // xray.helius.xyz: https://xray.helius.xyz/tx/{signature}
+  const xrayMatch = trimmed.match(/xray\.helius\.xyz\/tx\/([A-Za-z1-9]{43,90})/);
+  if (xrayMatch) return xrayMatch[1];
+
+  // Raw base58 signature (44-88 chars, typical Solana signatures are 87-88)
+  if (/^[A-HJ-NP-Za-km-z1-9]{43,90}$/.test(trimmed)) return trimmed;
+
   return null;
 }
 
@@ -41,16 +61,17 @@ export async function POST(req: NextRequest) {
   try {
     const body = (await req.json().catch(() => ({}))) as {
       signature?: string;
-      pubkey?: string;
       path?: string;
       token?: string;
       work_item_id?: string;
       profile_id?: string;
+      session_id?: string;
+      comment?: string;
       deep?: boolean;
     };
 
-    // Validate required fields
-    if (!body.signature || !body.pubkey || !body.path || !body.token || !body.work_item_id) {
+    // Validate required fields (pubkey removed — V3 extracts from TX)
+    if (!body.signature || !body.path || !body.token || !body.work_item_id || !body.session_id) {
       return json({ ok: false, error: "missing required fields" }, 400);
     }
 
@@ -61,27 +82,48 @@ export async function POST(req: NextRequest) {
       return json({ ok: false, error: "invalid token" }, 400);
     }
 
-    // Parse Solscan URL or raw signature
+    // Parse signature from URL or raw input
     const signature = parseSolscanInput(body.signature);
     if (!signature) {
       return json({ ok: false, error: "invalid signature format — paste a Solscan URL or transaction signature" }, 400);
     }
 
+    // Truncate comment server-side (defense in depth)
+    const comment = body.comment ? body.comment.slice(0, 500) : null;
+
     const db = supabaseService();
 
-    // Check if signature already used in proofs table (instant dedup)
+    // ─── Silent duplicate: signature already in proofs → fake success ──
     const { data: existingProof } = await db
       .from("proofs")
-      .select("id")
+      .select("id, payer_wallet, tx_signature, note, created_at")
       .eq("tx_signature", signature)
       .limit(1)
       .single();
 
     if (existingProof) {
-      return json({ ok: false, error: "signature_already_used", detail: "This transaction has already been used for a proof." }, 409);
+      // Scammer sees success. Proof already counted for the real person.
+      return json({
+        ok: true,
+        verification_id: null,
+        status: "verified",
+        proof_id: existingProof.id,
+        silent_duplicate: true,
+      });
     }
 
-    // Check if already queued/processing in proof_verifications
+    // ─── Validate session_id against proof_sessions table ─────────────
+    const { data: session } = await db
+      .from("proof_sessions")
+      .select("id, opened_at")
+      .eq("id", body.session_id)
+      .single();
+
+    if (!session) {
+      return json({ ok: false, error: "invalid or expired session" }, 400);
+    }
+
+    // ─── Check if already queued/processing in proof_verifications ────
     const { data: existingVerification } = await db
       .from("proof_verifications")
       .select("id, status, failure_check, failure_detail, proof_id")
@@ -90,7 +132,6 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (existingVerification) {
-      // If it already verified successfully, return the result
       if (existingVerification.status === "verified") {
         return json({
           ok: true,
@@ -110,6 +151,9 @@ export async function POST(req: NextRequest) {
             failure_detail: null,
             attempt_number: newAttempt,
             processed_at: null,
+            comment,
+            session_id: session.id,
+            session_opened_at: session.opened_at,
           })
           .eq("id", existingVerification.id);
 
@@ -131,7 +175,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Derive profile_id from work_item_id if not provided
+    // ─── Derive profile_id from work_item_id if not provided ──────────
     let profileId = body.profile_id;
     if (!profileId) {
       const { data: item } = await db
@@ -145,24 +189,27 @@ export async function POST(req: NextRequest) {
       profileId = item.profile_id;
     }
 
-    // Insert new verification into queue
+    // ─── Insert new verification into queue ───────────────────────────
     const { data: row, error: insertErr } = await db
       .from("proof_verifications")
       .insert({
         signature,
-        pubkey: body.pubkey,
+        pubkey: null,
         path: body.path,
         token: body.token,
         work_item_id: body.work_item_id,
         profile_id: profileId,
         status: "queued",
         attempt_number: body.deep ? 2 : 1,
+        comment,
+        session_id: session.id,
+        session_opened_at: session.opened_at,
       })
       .select("id")
       .single();
 
     if (insertErr) {
-      // Unique constraint violation = race condition, another request queued it
+      // Unique constraint violation = race condition
       if (insertErr.code === "23505") {
         const { data: raced } = await db
           .from("proof_verifications")

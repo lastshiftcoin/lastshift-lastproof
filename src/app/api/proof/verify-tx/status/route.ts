@@ -1,8 +1,10 @@
 /**
  * GET /api/proof/verify-tx/status?id={verification_id}
  *
- * Poll endpoint for paste-verify flow. Returns current verification
- * status + queue position if still waiting.
+ * Poll endpoint for paste-verify flow. V3 additions:
+ *   - sender_pubkey: extracted sender wallet (from proof_verifications.pubkey after extraction)
+ *   - comment: user comment from Screen 4
+ *   - proof_data: full proof details for receipt screen (on verified)
  */
 
 import { NextRequest } from "next/server";
@@ -28,7 +30,7 @@ export async function GET(req: NextRequest) {
 
   const { data: row, error } = await db
     .from("proof_verifications")
-    .select("id, status, failure_check, failure_detail, attempt_number, proof_id, processed_at, created_at")
+    .select("id, status, failure_check, failure_detail, attempt_number, proof_id, processed_at, created_at, pubkey, comment, path, token, work_item_id, profile_id")
     .eq("id", id)
     .single();
 
@@ -47,16 +49,56 @@ export async function GET(req: NextRequest) {
     queue_position = (count ?? 0) + 1;
   }
 
-  // If verified, fetch the Solscan URL for the proof
+  // If verified, fetch full proof data for receipt screen
   let solscan_url: string | null = null;
+  let proof_data: Record<string, unknown> | null = null;
   if (row.status === "verified" && row.proof_id) {
     const { data: proof } = await db
       .from("proofs")
-      .select("tx_signature")
+      .select("id, tx_signature, payer_wallet, note, kind, created_at, work_item_id")
       .eq("id", row.proof_id)
       .single();
+
     if (proof?.tx_signature) {
       solscan_url = `https://solscan.io/tx/${proof.tx_signature}`;
+    }
+
+    if (proof) {
+      // Get work item details for receipt
+      const { data: workItem } = await db
+        .from("work_items")
+        .select("ticker, role")
+        .eq("id", proof.work_item_id)
+        .single();
+
+      // Get profile handle for receipt
+      const { data: profile } = await db
+        .from("profiles")
+        .select("handle")
+        .eq("id", row.profile_id)
+        .single();
+
+      // Get proof count for tier display
+      const { count: proofCount } = await db
+        .from("proofs")
+        .select("id", { count: "exact", head: true })
+        .eq("profile_id", row.profile_id)
+        .in("kind", ["proof", "dev_verification"]);
+
+      proof_data = {
+        proof_id: proof.id,
+        tx_signature: proof.tx_signature,
+        sender_wallet: proof.payer_wallet,
+        comment: proof.note,
+        kind: proof.kind,
+        token: row.token,
+        path: row.path,
+        created_at: proof.created_at,
+        work_item_ticker: workItem?.ticker ?? null,
+        work_item_role: workItem?.role ?? null,
+        handle: profile?.handle ?? null,
+        proof_count: proofCount ?? 0,
+      };
     }
   }
 
@@ -70,5 +112,8 @@ export async function GET(req: NextRequest) {
     proof_id: row.proof_id,
     queue_position,
     solscan_url,
+    sender_pubkey: row.pubkey,
+    comment: row.comment,
+    proof_data,
   });
 }
