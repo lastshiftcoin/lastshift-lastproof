@@ -22,9 +22,15 @@ export function WorkItemCard({ item, handle, ownerWallet }: { item: WorkItem; ha
     .filter(Boolean)
     .join(" ");
 
+  const fmt = (d: string) => {
+    const [y, m] = d.split("-");
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return `${months[parseInt(m, 10) - 1]} ${y}`;
+  };
+
   const dateRange = item.endedAt
-    ? `${item.startedAt} — ${item.endedAt}`
-    : `${item.startedAt} — PRESENT`;
+    ? `${fmt(item.startedAt)} — ${fmt(item.endedAt)}`
+    : `${fmt(item.startedAt)} — PRESENT`;
 
   return (
     <>
