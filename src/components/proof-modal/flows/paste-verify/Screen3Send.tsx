@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ProofPath } from "../../types";
 import type { ProofTokenKey } from "@/lib/proof-tokens";
 import { getProofPriceUsd } from "@/lib/proof-tokens";
@@ -12,9 +12,35 @@ export interface Screen3SendProps {
   token: ProofTokenKey;
 }
 
+interface ConvertResponse {
+  ok: boolean;
+  usd: number;
+  token_amount: number;
+  token: string;
+  rate_usd: number;
+}
+
 export function Screen3Send({ path, token }: Screen3SendProps) {
   const [copied, setCopied] = useState(false);
+  const [tokenAmount, setTokenAmount] = useState<number | null>(null);
+  const [rateUsd, setRateUsd] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
   const price = getProofPriceUsd(path, token);
+
+  // Fetch live token conversion on mount
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/proof/convert?path=${path}&token=${token}`)
+      .then((r) => r.json())
+      .then((data: ConvertResponse) => {
+        if (data.ok) {
+          setTokenAmount(data.token_amount);
+          setRateUsd(data.rate_usd);
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [path, token]);
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(TREASURY_WALLET).then(() => {
@@ -22,6 +48,13 @@ export function Screen3Send({ path, token }: Screen3SendProps) {
       setTimeout(() => setCopied(false), 2000);
     }).catch(() => {});
   }, []);
+
+  const handleCopyAmount = useCallback(() => {
+    if (tokenAmount !== null) {
+      const formatted = formatTokenAmount(tokenAmount, token);
+      navigator.clipboard.writeText(formatted).catch(() => {});
+    }
+  }, [tokenAmount, token]);
 
   if (!TREASURY_WALLET) {
     return (
@@ -61,13 +94,38 @@ export function Screen3Send({ path, token }: Screen3SendProps) {
         </div>
         <div className="pm-review-row">
           <span className="pm-review-key">AMOUNT</span>
-          <span className="pm-review-val pm-accent">
-            ${price.toFixed(2)} in {token}
+          <span className="pm-review-val pm-accent" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {loading ? (
+              <span style={{ opacity: 0.5 }}>calculating…</span>
+            ) : tokenAmount !== null ? (
+              <>
+                <span>
+                  {formatTokenAmount(tokenAmount, token)} {token}
+                </span>
+                <button
+                  type="button"
+                  className="pm-cta-ghost"
+                  style={{ padding: "2px 8px", fontSize: 9 }}
+                  onClick={handleCopyAmount}
+                >
+                  COPY
+                </button>
+              </>
+            ) : (
+              <span>${price.toFixed(2)} in {token}</span>
+            )}
           </span>
         </div>
         <div className="pm-review-row">
-          <span className="pm-review-key">TOKEN</span>
-          <span className="pm-review-val">{token}</span>
+          <span className="pm-review-key">USD VALUE</span>
+          <span className="pm-review-val">
+            ${price.toFixed(2)}
+            {rateUsd !== null && token !== "USDT" && (
+              <span style={{ opacity: 0.5, marginLeft: 6, fontSize: 10 }}>
+                (1 {token} ≈ ${rateUsd.toFixed(token === "LASTSHFT" ? 6 : 2)})
+              </span>
+            )}
+          </span>
         </div>
       </div>
 
@@ -78,4 +136,14 @@ export function Screen3Send({ path, token }: Screen3SendProps) {
       </div>
     </>
   );
+}
+
+/** Format token amount with appropriate decimal places */
+function formatTokenAmount(amount: number, token: ProofTokenKey): string {
+  if (token === "USDT") return amount.toFixed(2);
+  if (token === "SOL") return amount.toFixed(6);
+  // LASTSHFT — show enough precision but not excessive
+  if (amount >= 100) return amount.toFixed(2);
+  if (amount >= 1) return amount.toFixed(4);
+  return amount.toFixed(6);
 }
