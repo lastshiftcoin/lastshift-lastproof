@@ -195,8 +195,18 @@ export async function getPublicProfileView(
   const variant = deriveProfileVariant({ tier, isEarlyAdopter: profile.isEarlyAdopter });
 
   // ─── 10. Tier bar math ─────────────────────────────────────────────
+  // Progress bar fills from current tier threshold to next tier threshold.
+  // Tier 1 (NEW):         0 → 10   (next: VERIFIED)
+  // Tier 2 (VERIFIED):   10 → 25   (next: EXPERIENCED)
+  // Tier 3 (EXPERIENCED): 25 → 50  (next: LEGEND)
+  // Tier 4 (LEGEND):     50+       (bar stays full)
+  const currentThreshold = tier === 1 ? 0 : tier === 2 ? 10 : tier === 3 ? 25 : 50;
   const nextThreshold = tier === 1 ? 10 : tier === 2 ? 25 : tier === 3 ? 50 : 50;
-  const tierBarFillPct = Math.min(100, Math.round((proofsConfirmed / nextThreshold) * 100));
+  const segmentSize = nextThreshold - currentThreshold;
+  const progressInSegment = proofsConfirmed - currentThreshold;
+  const tierBarFillPct = tier === 4
+    ? 100
+    : Math.min(100, Math.round((progressInSegment / segmentSize) * 100));
   const remaining = Math.max(0, nextThreshold - proofsConfirmed);
   const nextTier = Math.min(tier + 1, 4);
   const progressLabel: Record<number, string> = {
