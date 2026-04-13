@@ -608,13 +608,15 @@
 .pp-page ~ .shiftbot,
 body:has(.pp-page) .shiftbot { display: none !important; }
 .pp-pow-card.pp-current {
-  border-color: rgba(0, 230, 118, 0.35);
-  background: linear-gradient(135deg, rgba(0, 230, 118, 0.04) 0%, var(--bg-secondary) 60%);
+  border-color: rgba(167, 139, 250, 0.35);
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.04) 0%, var(--bg-secondary) 60%);
 }
 .pp-pow-card:hover { border-color: var(--border-2); }
 
 .pp-pow-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 8px; flex-wrap: wrap; }
 .pp-pow-title { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pp-pow-ticker-row { display: flex; align-items: center; gap: 8px; }
+
 .pp-pow-title .pp-ticker {
   font-family: var(--mono); font-size: 16px; font-weight: 800;
   color: var(--green); letter-spacing: 0.5px;
@@ -631,7 +633,7 @@ body:has(.pp-page) .shiftbot { display: none !important; }
   text-transform: uppercase;
 }
 .pp-pow-tag.pp-minted { color: var(--gold); background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.5); }
-.pp-pow-tag.pp-current { color: var(--green); background: var(--green-dim); border: 1px solid var(--green); }
+.pp-pow-tag.pp-current { color: #a78bfa; background: rgba(167, 139, 250, 0.1); border: 1px solid rgba(167, 139, 250, 0.5); }
 .pp-pow-tag.pp-dev { color: var(--green); background: var(--green-dim); border: 1px solid var(--green); }
 
 .pp-pow-dates { font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.8px; margin-bottom: 10px; }

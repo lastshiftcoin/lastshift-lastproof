@@ -37,7 +37,10 @@ export function WorkItemCard({ item, handle, ownerWallet }: { item: WorkItem; ha
       <div className={cardClass}>
         <div className="pp-pow-head">
           <div className="pp-pow-title">
-            <span className="pp-ticker">{item.ticker}</span>
+            <div className="pp-pow-ticker-row">
+              <span className="pp-ticker">{item.ticker}</span>
+              {item.isCurrent && <span className="pp-pow-tag pp-current">CURRENT</span>}
+            </div>
             <span className="pp-role">{item.role}</span>
           </div>
           <div className="pp-pow-tags">
@@ -46,7 +49,6 @@ export function WorkItemCard({ item, handle, ownerWallet }: { item: WorkItem; ha
                 MINTED
               </span>
             )}
-            {item.isCurrent && <span className="pp-pow-tag pp-current">CURRENT</span>}
             {item.isDev && <span className="pp-pow-tag pp-dev">DEV</span>}
           </div>
         </div>
