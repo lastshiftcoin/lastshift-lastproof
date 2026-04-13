@@ -47,15 +47,19 @@ export async function verifyDevWallet(
     return stubResult(pubkey);
   }
 
-  // Run mint-authority and deployer+first-5 in parallel
-  const [mintAuth, deployerFirst5] = await Promise.all([
+  // Run mint-authority, original-deployer, and deployer+first-5 in parallel
+  const [mintAuth, originalDeployer, deployerFirst5] = await Promise.all([
     checkMintAuthority(rpcUrl, mint, pubkey),
+    checkOriginalDeployer(rpcUrl, mint, pubkey),
     checkDeployerAndFirstN(rpcUrl, mint, pubkey, FIRST_N),
   ]);
 
+  // Fuse: original deployer overrides the deployer+first5 check if it passes
+  const deployerResult = originalDeployer.ok === true ? originalDeployer : deployerFirst5;
+
   return {
     mintAuthority: mintAuth,
-    deployer: deployerFirst5,
+    deployer: deployerResult,
     founder: { ok: null, detail: "not checked in v1" },
   };
 }
@@ -105,6 +109,108 @@ async function checkMintAuthority(
   } catch (err) {
     console.error("[token-dev-verify] checkMintAuthority failed:", err);
     return { ok: false, detail: "RPC error checking mint authority" };
+  }
+}
+
+// ─── Original Deployer Check (creation TX) ──────────────────────────
+// getSignaturesForAddress(mint) often misses the creation TX because
+// Helius indexes it under the wallet, not the mint. This check fetches
+// the mint account's creation TX via getTransaction on the account
+// itself to find who called initializeMint.
+
+async function checkOriginalDeployer(
+  rpcUrl: string,
+  mint: string,
+  pubkey: string,
+): Promise<DevCheckResult> {
+  try {
+    // Get the wallet's ATA for this mint
+    const { PublicKey } = await import("@solana/web3.js");
+    const { getAssociatedTokenAddress } = await import("@solana/spl-token");
+    const walletPk = new PublicKey(pubkey);
+    const mintPk = new PublicKey(mint);
+    const ata = await getAssociatedTokenAddress(mintPk, walletPk);
+
+    // Get earliest signatures for the wallet's ATA
+    const sigsRes = await fetch(rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "getSignaturesForAddress",
+        params: [ata.toBase58(), { limit: 20 }],
+      }),
+      signal: AbortSignal.timeout(10000),
+    });
+
+    const sigsJson = await sigsRes.json() as {
+      result?: Array<{ signature: string; slot: number }>;
+    };
+    const sigs = sigsJson.result;
+    if (!sigs || sigs.length === 0) {
+      return { ok: false, detail: "no ATA history found" };
+    }
+
+    // Sort oldest first and check the earliest TX
+    const sorted = [...sigs].sort((a, b) => a.slot - b.slot);
+    const txRes = await fetch(rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "getTransaction",
+        params: [sorted[0].signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }],
+      }),
+      signal: AbortSignal.timeout(10000),
+    });
+
+    const txJson = await txRes.json() as {
+      result?: {
+        transaction?: {
+          message?: {
+            instructions?: Array<{
+              parsed?: {
+                type?: string;
+                info?: { mintAuthority?: string; source?: string; mint?: string; newAccount?: string };
+              };
+            }>;
+            accountKeys?: Array<{ pubkey: string; signer: boolean }>;
+          };
+        };
+      };
+    };
+
+    const tx = txJson.result?.transaction;
+    if (!tx) {
+      return { ok: false, detail: "could not fetch wallet ATA creation TX" };
+    }
+
+    // Check if this TX has initializeMint with the wallet as mintAuthority
+    const instructions = tx.message?.instructions ?? [];
+    for (const ix of instructions) {
+      if (ix.parsed?.type === "initializeMint" && ix.parsed?.info?.mint === mint) {
+        if (ix.parsed.info.mintAuthority === pubkey) {
+          return { ok: true, detail: `${truncate(pubkey)} was original mint authority · deployer` };
+        }
+      }
+    }
+
+    // Also check if wallet is a signer on a TX that contains createAccount for the mint
+    const accountKeys = tx.message?.accountKeys ?? [];
+    const isSigner = accountKeys.some((k) => k.pubkey === pubkey && k.signer);
+    const createsMint = instructions.some(
+      (ix) => ix.parsed?.type === "createAccount" && ix.parsed?.info?.newAccount === mint,
+    );
+    if (isSigner && createsMint) {
+      return { ok: true, detail: `${truncate(pubkey)} created mint account · deployer` };
+    }
+
+    return { ok: false, detail: "wallet ATA exists but not the deployer" };
+  } catch (err) {
+    console.error("[token-dev-verify] checkOriginalDeployer failed:", err);
+    return { ok: false, detail: "RPC error checking original deployer" };
   }
 }
 
