@@ -146,7 +146,7 @@ export default async function DashboardPage() {
       // Fetch proofs (joined with work_items for ticker)
       const { data: rawProofs } = await sb
         .from("proofs")
-        .select("id, voucher_wallet, kind, note, tx_signature, created_at, work_item_id, work_items(ticker)")
+        .select("id, voucher_wallet, payer_wallet, kind, note, tx_signature, created_at, work_item_id, work_items(ticker)")
         .eq("profile_id", profile.id)
         .order("created_at", { ascending: false });
 
@@ -155,7 +155,7 @@ export default async function DashboardPage() {
           const wi = p.work_items as { ticker: string | null } | null;
           return {
             id: p.id as string,
-            voucherWallet: (p.voucher_wallet as string) ?? "unknown",
+            voucherWallet: (p.payer_wallet as string) ?? (p.voucher_wallet as string) ?? "unknown",
             ticker: wi?.ticker ?? null,
             kind: (p.kind as "proof" | "dev_verification") ?? "proof",
             note: (p.note as string | null) ?? null,

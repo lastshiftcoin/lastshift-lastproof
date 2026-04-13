@@ -170,7 +170,7 @@ export async function getPublicProfileView(
     const wi = p.workItemId ? workItemMap.get(p.workItemId) : null;
     return {
       id: p.id,
-      shortWallet: shortenWallet(p.txSignature.slice(0, 16)),
+      shortWallet: p.payerWallet ? shortenWallet(p.payerWallet) : "unknown",
       isDev: p.kind === "dev_verification",
       ticker: wi?.ticker ?? "",
       date: formatDate(p.createdAt),

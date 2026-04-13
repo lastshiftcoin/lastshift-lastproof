@@ -110,7 +110,7 @@ export function ProofsLedgerCard({ proofs }: ProofsLedgerCardProps) {
                       )}
                     </td>
                     <td className="pf-tick">
-                      {proof.ticker ? `$${proof.ticker}` : "—"}
+                      {proof.ticker ?? "—"}
                     </td>
                     <td className="pf-date">{formatDate(proof.createdAt)}</td>
                     <td className="pf-comment">{proof.note || "—"}</td>
