@@ -1,30 +1,31 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Maintenance gate middleware.
+ * Maintenance gate.
  *
- * When MAINTENANCE_MODE=true (Vercel env var), all requests show
- * the maintenance page EXCEPT:
- *   - /maintenance (the page itself)
- *   - /_next/* (static assets, JS bundles)
- *   - /api/* (webhooks, crons must keep running)
- *   - favicon.ico, robots.txt, sitemap.xml
- *   - Requests with ?bypass={MAINTENANCE_BYPASS_KEY} cookie set
+ * NEXT_PUBLIC_MAINTENANCE_MODE=true → all public pages show maintenance.html.
+ * APIs, webhooks, crons, and static assets always pass through.
  *
- * Bypass: visit any page with ?bypass={key} once → sets a cookie →
- * all subsequent requests pass through. Key is MAINTENANCE_BYPASS_KEY
- * env var (defaults to "lastshift-god-mode" if not set).
+ * Uses NEXT_PUBLIC_ prefix so it's inlined at build time — guaranteed
+ * available in middleware (regular env vars are NOT available at the edge).
+ *
+ * Bypass: NEXT_PUBLIC_MAINTENANCE_BYPASS env var as a cookie.
+ * Visit any page with ?bypass={key} to set the cookie for 24h.
+ *
+ * To enable:  set NEXT_PUBLIC_MAINTENANCE_MODE=true in Vercel → redeploy
+ * To disable: set to false or delete → redeploy
  */
 
 export function middleware(request: NextRequest) {
-  const maintenance = process.env.MAINTENANCE_MODE === "true";
-  if (!maintenance) return NextResponse.next();
+  if (process.env.NEXT_PUBLIC_MAINTENANCE_MODE !== "true") {
+    return NextResponse.next();
+  }
 
   const { pathname, searchParams } = request.nextUrl;
 
-  // Always allow these paths
+  // Always pass through
   if (
-    pathname === "/maintenance" ||
+    pathname === "/maintenance.html" ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
     pathname === "/favicon.ico" ||
@@ -34,41 +35,35 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/avatars/") ||
     pathname.endsWith(".png") ||
     pathname.endsWith(".jpg") ||
-    pathname.endsWith(".svg")
+    pathname.endsWith(".svg") ||
+    pathname.endsWith(".ico")
   ) {
     return NextResponse.next();
   }
 
-  // Bypass via URL param — sets cookie for future requests.
-  // MAINTENANCE_BYPASS_KEY must be set in Vercel env vars. No default — if
-  // not set, bypass is completely disabled and no one can get through.
-  const bypassKey = process.env.MAINTENANCE_BYPASS_KEY;
-  if (bypassKey && searchParams.get("bypass") === bypassKey) {
-    const response = NextResponse.next();
-    response.cookies.set("maintenance_bypass", bypassKey, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24, // 24 hours
-      path: "/",
-    });
-    return response;
+  // Bypass
+  const bypassKey = process.env.NEXT_PUBLIC_MAINTENANCE_BYPASS;
+  if (bypassKey) {
+    if (searchParams.get("bypass") === bypassKey) {
+      const response = NextResponse.next();
+      response.cookies.set("maintenance_bypass", bypassKey, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24,
+        path: "/",
+      });
+      return response;
+    }
+    if (request.cookies.get("maintenance_bypass")?.value === bypassKey) {
+      return NextResponse.next();
+    }
   }
 
-  // Bypass via cookie (already authenticated)
-  if (bypassKey && request.cookies.get("maintenance_bypass")?.value === bypassKey) {
-    return NextResponse.next();
-  }
-
-  // Redirect to maintenance page
-  const url = request.nextUrl.clone();
-  url.pathname = "/maintenance";
-  return NextResponse.rewrite(url);
+  // Serve static maintenance page
+  return NextResponse.rewrite(new URL("/maintenance.html", request.url));
 }
 
 export const config = {
-  matcher: [
-    // Match all paths except static files
-    "/((?!_next/static|_next/image).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image).*)"],
 };
