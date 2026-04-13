@@ -68,6 +68,17 @@ export default async function AmbassadorLandingPage({ params }: PageProps) {
 
         <hr className="af-divider" />
 
+        {/* ═══ THE REALITY ═══ */}
+        <section className="af-section">
+          <div className="af-section-label">The reality</div>
+          <h2 className="af-section-title">Memecoins die. Your reputation shouldn&apos;t.</h2>
+          <p className="af-section-body">
+            Short-lived projects mean constant gig hunting. LASTPROOF makes your work permanent so the next one finds you.
+          </p>
+        </section>
+
+        <hr className="af-divider" />
+
         {/* ═══ BEFORE / AFTER ═══ */}
         <section className="af-section">
           <div className="af-section-label">The difference</div>
