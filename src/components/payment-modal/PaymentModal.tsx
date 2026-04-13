@@ -15,6 +15,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   BASE_PRICES_USD,
   LASTSHFT_DISCOUNT,
@@ -220,7 +221,9 @@ export function PaymentModal({ open, onClose, kind, metadata, onSuccess }: Payme
 
   const barTitle = KIND_LABELS[kind] ?? kind;
 
-  return (
+  // Portal to document.body to escape dashboard stacking contexts
+  // (.edit-card has position:relative; z-index:1 which traps fixed children)
+  return createPortal(
     <div className="pay-backdrop">
       <div className="pay-shell">
         <div className="pay-bar">
@@ -289,7 +292,8 @@ export function PaymentModal({ open, onClose, kind, metadata, onSuccess }: Payme
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
