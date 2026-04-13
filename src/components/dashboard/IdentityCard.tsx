@@ -44,32 +44,32 @@ const CATEGORIES = [
 ] as const;
 
 const TIMEZONES = [
-  "UTC−12 · Baker Island",
-  "UTC−11 · Pago Pago",
-  "UTC−10 · Honolulu (HST)",
-  "UTC−9 · Anchorage (AKST)",
-  "UTC−8 · Los Angeles (PST)",
-  "UTC−7 · Denver (MST)",
-  "UTC−6 · Mexico City (CST)",
-  "UTC−5 · New York (EST)",
-  "UTC−4 · Caracas / Halifax",
-  "UTC−3 · São Paulo / Buenos Aires",
-  "UTC−2 · South Georgia",
-  "UTC−1 · Azores",
-  "UTC+0 · London (GMT)",
-  "UTC+1 · Berlin / Paris (CET)",
-  "UTC+2 · Athens / Cairo (EET)",
-  "UTC+3 · Moscow / Istanbul",
-  "UTC+4 · Dubai",
-  "UTC+5 · Karachi / Islamabad",
-  "UTC+5:30 · Mumbai / Delhi (IST)",
-  "UTC+6 · Dhaka / Almaty",
-  "UTC+7 · Bangkok / Jakarta / HCMC",
-  "UTC+8 · Singapore / HK / Beijing",
-  "UTC+9 · Tokyo / Seoul",
-  "UTC+10 · Sydney / Melbourne",
-  "UTC+11 · Solomon Islands",
-  "UTC+12 · Auckland / Fiji",
+  "UTC−12",
+  "UTC−11",
+  "UTC−10",
+  "UTC−9",
+  "UTC−8",
+  "UTC−7",
+  "UTC−6",
+  "UTC−5",
+  "UTC−4",
+  "UTC−3",
+  "UTC−2",
+  "UTC−1",
+  "UTC+0",
+  "UTC+1",
+  "UTC+2",
+  "UTC+3",
+  "UTC+4",
+  "UTC+5",
+  "UTC+5:30",
+  "UTC+6",
+  "UTC+7",
+  "UTC+8",
+  "UTC+9",
+  "UTC+10",
+  "UTC+11",
+  "UTC+12",
 ] as const;
 
 const LANGUAGES = [
@@ -100,7 +100,10 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate, handle
   // ─── Local form state ─────────────────────────────────────────────────────
   const [displayName, setDisplayName] = useState(profile.displayName ?? "");
   const [category, setCategory] = useState(primaryCategory ?? "");
-  const [timezone, setTimezone] = useState(profile.timezone ?? "UTC−5 · New York (EST)");
+  const [timezone, setTimezone] = useState(() => {
+    const raw = profile.timezone ?? "UTC−5";
+    return raw.includes(" · ") ? raw.split(" · ")[0] : raw;
+  });
   const [feeRange, setFeeRange] = useState(profile.feeRange ?? "$$$");
   const [language, setLanguage] = useState(profile.language ?? "English");
   const [secondaryLang, setSecondaryLang] = useState(profile.secondaryLanguage ?? "");

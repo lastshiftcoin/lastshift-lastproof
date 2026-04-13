@@ -112,7 +112,7 @@ export function ProfileHero(props: Props) {
         <div className="pp-id-meta">
           <div className="pp-id-meta-item">
             {CLOCK_ICON}
-            {props.timezone}
+            {props.timezone?.includes(" · ") ? props.timezone.split(" · ")[0] : props.timezone}
           </div>
           <div className="pp-id-meta-item">
             {GLOBE_ICON}
