@@ -1,25 +1,23 @@
 "use client";
 
 /**
- * MintModal — 4-step payment modal for minting a work item on-chain.
+ * MintModal — 5-step mint flow with paste-verify architecture.
  *
  * Steps:
- *   1. Info + Token Select (work item card, mint explainer, pricing, token picker)
- *   2. Review + Confirm (summary card, fine print, back/confirm CTAs)
- *   3. Pending (gold spinner, log lines mapped from useSignFlow phases)
- *   4. Outcome (success: gold check + summary, failure: red X + retry)
+ *   1. Info + Token Select (work item card, mint explainer, pricing, token picker) — KEPT FROM V1
+ *   2. Send Payment (treasury address + exact token amount + COPY)
+ *   3. Paste TX (Solscan URL or raw signature + SUBMIT)
+ *   4. Terminal Cascade (poll verification status, animate checks)
+ *   5. Outcome (minted receipt or failure with retry)
  *
- * Visual canon: wireframes/lastproof-mint-modal.html
- * Gold theme (vs orange for proof modal). All CSS classes `mm-` prefixed.
+ * Visual canon: wireframes/lastproof-mint-modal.html (Screen 1)
+ * Gold theme. All CSS classes `mm-` prefixed.
+ * No wallet connect. No adapter. No signing popups.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useWallet } from "@solana/wallet-adapter-react";
 import "./mint-modal.css";
-import { useSignFlow, type SignPhase } from "@/components/proof-modal/useSignFlow";
-import type { FailureReason } from "@/components/proof-modal/types";
-import { useConnected } from "@/lib/wallet/use-connected";
 import {
   PROOF_TOKENS,
   LASTSHFT_DISCOUNT_LABEL,
@@ -33,7 +31,10 @@ import {
   type PaymentToken,
 } from "@/lib/pricing";
 
-type MintStep = 1 | 2 | 3 | 4;
+type MintStep = 1 | 2 | 3 | 4 | 5;
+
+const TREASURY_WALLET = process.env.NEXT_PUBLIC_TREASURY_WALLET ?? "";
+const SESSION_STORAGE_PREFIX = "lp_mint_session_";
 
 export interface MintModalProps {
   open: boolean;
@@ -46,24 +47,18 @@ export interface MintModalProps {
   mintedCount: number;
 }
 
-/** Shorten a pubkey to `F7k2...9xMp` form. */
-function shortPubkey(pk: string): string {
-  if (pk.length <= 10) return pk;
-  return `${pk.slice(0, 4)}\u2026${pk.slice(-4)}`;
-}
-
-/** FAILURE_LABELS — human-readable copy for each failure code. */
-const FAILURE_LABELS: Record<FailureReason, string> = {
-  user_rejected: "WALLET SIGNATURE REJECTED",
-  insufficient_balance: "INSUFFICIENT BALANCE",
-  blockhash_expired: "BLOCKHASH EXPIRED",
-  tx_reverted: "TRANSACTION REVERTED ON-CHAIN",
-  rpc_degraded: "SOLANA RPC DEGRADED",
-  quote_expired_hard: "QUOTE EXPIRED",
-  lock_lost: "LOCK LOST",
-  dev_slot_taken: "SLOT TAKEN",
-  signature_invalid: "SIGNATURE MISMATCH",
-  unknown: "UNKNOWN ERROR",
+/** Denial messages — factual, no detail leakage. */
+const DENIAL_MESSAGES: Record<string, string> = {
+  tx_not_found: "TRANSACTION NOT FOUND ON SOLANA",
+  tx_failed_onchain: "TRANSACTION FAILED ON-CHAIN",
+  wrong_recipient: "PAYMENT NOT SENT TO LASTPROOF TREASURY",
+  amount_too_low: "AMOUNT DOES NOT MATCH REQUIRED PAYMENT",
+  amount_too_high: "AMOUNT DOES NOT MATCH REQUIRED PAYMENT",
+  amount_not_found: "AMOUNT DOES NOT MATCH REQUIRED PAYMENT",
+  tx_before_session: "Nice try. Scamming will die in web3.",
+  rpc_error: "VERIFICATION INTERRUPTED — TRY AGAIN",
+  config_error: "SYSTEM CONFIGURATION ERROR — CONTACT SUPPORT",
+  network: "FAILED TO REACH SERVER — CHECK YOUR CONNECTION",
 };
 
 export function MintModal({
@@ -78,171 +73,173 @@ export function MintModal({
 }: MintModalProps) {
   const [step, setStep] = useState<MintStep>(1);
   const [token, setToken] = useState<ProofTokenKey>("LASTSHFT");
-  /** Quote ID from /api/quote. */
-  const [quoteId, setQuoteId] = useState<string | null>(null);
-  /** Amount in token units from quote response. */
-  const [amountUi, setAmountUi] = useState<string | null>(null);
-  /** DEV-ONLY: toggle outcome between success/failure. */
-  const [forceOutcome, setForceOutcome] = useState<"ok" | "fail">("ok");
+  const [verificationId, setVerificationId] = useState<string | null>(null);
+  const [paymentData, setPaymentData] = useState<Record<string, unknown> | null>(null);
+  const [solscanUrl, setSolscanUrl] = useState<string | null>(null);
+  const [failureAttempt, setFailureAttempt] = useState(0);
+  const [failureCheck, setFailureCheck] = useState<string | null>(null);
+  const [failureDetail, setFailureDetail] = useState<string | null>(null);
+  const [showFailure, setShowFailure] = useState(false);
 
-  const { state: sign, start: startSign, reset: resetSign } = useSignFlow();
-  const connected = useConnected();
-  const { wallet: walletAdapter } = useWallet();
-
-  const shellRef = useRef<HTMLDivElement | null>(null);
-  const openerRef = useRef<Element | null>(null);
+  // Session anti-scam
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const storageKey = `${SESSION_STORAGE_PREFIX}${workItemId}`;
 
   const maxMints = 4;
   const availableMints = maxMints - mintedCount;
   const basePrice = BASE_PRICES_USD.mint;
   const discountedPrice = priceFor("mint", "LASTSHFT");
-  const selectedPrice = priceFor("mint", token as PaymentToken);
 
-  // ─── Reset on close ───────────────────────────────────────────────
+  const shellRef = useRef<HTMLDivElement | null>(null);
+  const openerRef = useRef<Element | null>(null);
+
+  // Reset on close
   useEffect(() => {
     if (!open) {
       setStep(1);
       setToken("LASTSHFT");
-      setQuoteId(null);
-      setAmountUi(null);
-      setForceOutcome("ok");
-      resetSign();
+      setVerificationId(null);
+      setPaymentData(null);
+      setSolscanUrl(null);
+      setFailureAttempt(0);
+      setFailureCheck(null);
+      setFailureDetail(null);
+      setShowFailure(false);
+      setSessionId(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // ─── Step 3 → 4 auto-advance on terminal sign phase ──────────────
+  // Create session on open
   useEffect(() => {
-    if (step === 3 && (sign.phase === "confirmed" || sign.phase === "failed")) {
-      setStep(4);
-    }
-  }, [step, sign.phase]);
+    if (!open) return;
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored) as { session_id: string; opened_at: string };
+        setSessionId(parsed.session_id);
+        return;
+      }
+    } catch { /* no stored session */ }
 
-  // ─── ESC to close (blocked during signing) ────────────────────────
+    fetch("/api/payment/session-start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "mint", ref_id: workItemId }),
+    })
+      .then((r) => r.json())
+      .then((data: { ok: boolean; session_id?: string; opened_at?: string }) => {
+        if (data.ok && data.session_id) {
+          setSessionId(data.session_id);
+          try {
+            localStorage.setItem(storageKey, JSON.stringify({ session_id: data.session_id, opened_at: data.opened_at }));
+          } catch { /* storage full */ }
+        }
+      })
+      .catch(() => {});
+  }, [open, workItemId, storageKey]);
+
+  // ESC to close
   useEffect(() => {
     if (!open) return;
     openerRef.current = document.activeElement;
     shellRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      if (
-        sign.phase === "awaiting_signature" ||
-        sign.phase === "broadcasting" ||
-        sign.phase === "confirming"
-      ) {
-        return;
-      }
-      onClose();
+      if (e.key === "Escape" && step < 4) onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("keydown", onKey);
-      if (openerRef.current instanceof HTMLElement) {
-        openerRef.current.focus();
-      }
+      if (openerRef.current instanceof HTMLElement) openerRef.current.focus();
     };
-  }, [open, sign.phase, onClose]);
+  }, [open, step, onClose]);
 
-  // ─── Quote + signing pipeline ─────────────────────────────────────
-  const fetchQuoteAndSign = useCallback(async () => {
-    if (!connected) return;
-    setStep(3);
+  // ─── Submit TX signature ──────────────────────────────────────────
+  const handleSubmit = useCallback(
+    async (signatureInput: string) => {
+      if (!sessionId) return;
+      try {
+        const res = await fetch("/api/payment/paste-verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            signature: signatureInput,
+            kind: "mint",
+            token,
+            ref_id: workItemId,
+            session_id: sessionId,
+            deep: failureAttempt >= 1,
+          }),
+        });
+        const data = (await res.json()) as {
+          ok: boolean;
+          verification_id?: string;
+          error?: string;
+          status?: string;
+          payment_id?: string;
+          sender_wallet?: string;
+        };
 
-    try {
-      const res = await fetch("/api/quote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          kind: "mint",
-          token,
-          work_item_id: workItemId,
-          pubkey: connected.pubkey,
-        }),
-      });
-      const body = await res.json().catch(() => ({})) as {
-        ok?: boolean;
-        quote_id?: string;
-        amount_ui?: number;
-        reason?: string;
-      };
+        if (!data.ok) {
+          setFailureAttempt((a) => a + 1);
+          setFailureCheck(data.error ?? "unknown");
+          setFailureDetail(data.error ?? "Submission failed.");
+          setShowFailure(true);
+          return;
+        }
 
-      if (!res.ok || body.ok === false) {
-        // Can't proceed — treat as unknown failure
-        resetSign();
+        // Instant verify (webhook cache hit)
+        if (data.status === "verified" && data.payment_id) {
+          try { localStorage.removeItem(storageKey); } catch {}
+          setPaymentData({
+            payment_id: data.payment_id,
+            sender_wallet: data.sender_wallet ?? "",
+            tx_signature: signatureInput,
+          });
+          setStep(5);
+          return;
+        }
+
+        setVerificationId(data.verification_id!);
+        setShowFailure(false);
         setStep(4);
-        return;
+      } catch {
+        setFailureAttempt((a) => a + 1);
+        setFailureCheck("network");
+        setFailureDetail("Failed to reach the server.");
+        setShowFailure(true);
       }
+    },
+    [token, workItemId, sessionId, failureAttempt, storageKey],
+  );
 
-      const qid = body.quote_id!;
-      setQuoteId(qid);
-      setAmountUi(body.amount_ui != null ? String(body.amount_ui) : null);
+  const handleVerified = useCallback(
+    (data: Record<string, unknown>, sUrl: string | null) => {
+      try { localStorage.removeItem(storageKey); } catch {}
+      setPaymentData(data);
+      setSolscanUrl(sUrl);
+      setStep(5);
+    },
+    [storageKey],
+  );
 
-      // Kick off signing
-      startSign({
-        quoteId: qid,
-        pubkey: connected.pubkey,
-        handle: ticker,
-        ticker,
-        path: "collab",
-        signTransactionBase64: async (txBase64) => {
-          const adapter = walletAdapter?.adapter as
-            | { signTransaction?: (tx: unknown) => Promise<unknown> }
-            | undefined;
-          if (!adapter?.signTransaction) {
-            // Dev mock passthrough
-            return txBase64;
-          }
-          const { Transaction } = await import("@solana/web3.js");
-          const tx = Transaction.from(
-            Uint8Array.from(atob(txBase64), (c) => c.charCodeAt(0)),
-          );
-          const signed = (await adapter.signTransaction(tx)) as {
-            serialize: () => Uint8Array;
-          };
-          const bytes = signed.serialize();
-          let bin = "";
-          bytes.forEach((b: number) => (bin += String.fromCharCode(b)));
-          return btoa(bin);
-        },
-      });
-    } catch {
-      resetSign();
-      setStep(4);
-    }
-  }, [connected, token, workItemId, ticker, walletAdapter, startSign, resetSign]);
-
-  // ─── Step navigation ──────────────────────────────────────────────
-  const handleContinueToReview = useCallback(() => {
-    if (step === 1) setStep(2);
-  }, [step]);
+  const handleTerminalFailed = useCallback(
+    (check: string, detail: string, attempt: number) => {
+      setFailureAttempt(attempt);
+      setFailureCheck(check);
+      setFailureDetail(detail);
+      setShowFailure(true);
+      setStep(3);
+    },
+    [],
+  );
 
   const handleBack = useCallback(() => {
     if (step === 2) setStep(1);
+    else if (step === 3) { setStep(2); setShowFailure(false); }
   }, [step]);
-
-  const handleConfirmAndPay = useCallback(() => {
-    if (step === 2) {
-      fetchQuoteAndSign();
-    }
-  }, [step, fetchQuoteAndSign]);
-
-  const handleRetry = useCallback(() => {
-    resetSign();
-    setQuoteId(null);
-    setAmountUi(null);
-    fetchQuoteAndSign();
-  }, [resetSign, fetchQuoteAndSign]);
 
   if (!open) return null;
 
-  const isSuccess = sign.phase === "confirmed";
-  const isFailed = sign.phase === "failed";
-
-  // ─── Log lines for step 3 ────────────────────────────────────────
-  const logLines = buildLogLines(sign.phase);
-
-  // Portal to document.body to escape dashboard stacking contexts
-  // (.edit-card has position:relative which traps fixed children)
   return createPortal(
     <div
       className="mm-backdrop"
@@ -283,31 +280,16 @@ export function MintModal({
           </div>
         </div>
 
-        {/* REF ROW: connected wallet pill + step counter */}
+        {/* STEP COUNTER + PROGRESS */}
         <div className="mm-ref-row">
-          {connected ? (
-            <div className="mm-conn-pill">
-              <span className="mm-conn-dot" />
-              <span className="mm-conn-label">CONNECTED</span>
-              <span className="mm-conn-addr">
-                {connected.canonical.toUpperCase()} &middot; {shortPubkey(connected.pubkey)}
-              </span>
-            </div>
-          ) : (
-            <span />
-          )}
+          <span />
           <span className="mm-step-counter">
-            STEP <span className="mm-step-now">{step}</span> / 4
+            STEP <span className="mm-step-now">{step}</span> / 5
           </span>
         </div>
-
-        {/* PROGRESS BAR */}
         <div className="mm-progress-wrap">
           <div className="mm-bar-track">
-            <div
-              className="mm-bar-fill"
-              style={{ width: `${(step / 4) * 100}%` }}
-            />
+            <div className="mm-bar-fill" style={{ width: `${(step / 5) * 100}%` }} />
           </div>
         </div>
 
@@ -326,73 +308,64 @@ export function MintModal({
             />
           )}
           {step === 2 && (
-            <Step2Review
-              ticker={ticker}
-              role={role}
-              availableMints={availableMints}
-              token={token}
-              selectedPrice={selectedPrice}
-              pubkey={connected?.pubkey ?? ""}
-              amountUi={amountUi}
-            />
+            <Step2Send kind="mint" token={token as PaymentToken} />
           )}
           {step === 3 && (
-            <Step3Pending logLines={logLines} />
+            <Step3Paste
+              onSubmit={handleSubmit}
+              failureCheck={showFailure ? failureCheck : null}
+              failureDetail={showFailure ? failureDetail : null}
+              failureAttempt={failureAttempt}
+            />
           )}
-          {step === 4 && (
-            <Step4Outcome
-              isSuccess={isSuccess}
+          {step === 4 && verificationId && (
+            <Step4Terminal
+              verificationId={verificationId}
+              onVerified={handleVerified}
+              onFailed={handleTerminalFailed}
+            />
+          )}
+          {step === 5 && (
+            <Step5Outcome
+              paymentData={paymentData}
+              solscanUrl={solscanUrl}
               ticker={ticker}
               role={role}
               proofCount={proofCount}
               token={token}
-              amountUi={amountUi}
-              selectedPrice={selectedPrice}
-              sign={sign}
-              onRetry={handleRetry}
-              onClose={onClose}
-              forceOutcome={forceOutcome}
-              onToggleOutcome={() =>
-                setForceOutcome((o) => (o === "ok" ? "fail" : "ok"))
-              }
+              onClose={() => { onClose(); window.location.reload(); }}
             />
           )}
         </div>
 
-        {/* CTA ROW — steps 1 and 2 only */}
+        {/* CTA ROW */}
         {step === 1 && (
           <div className="mm-cta-row">
             <button
               type="button"
               className="mm-cta"
-              onClick={handleContinueToReview}
+              onClick={() => setStep(2)}
               disabled={availableMints <= 0 || proofCount < 1}
             >
               &gt; CONTINUE TO REVIEW
             </button>
           </div>
         )}
-        {step === 2 && (
-          <div className="mm-cta-row">
-            <button
-              type="button"
-              className="mm-btn-back"
-              onClick={handleBack}
-            >
+        {(step === 2 || step === 3) && (
+          <div className="mm-cta-row" style={{ display: "flex", gap: 10 }}>
+            <button type="button" className="mm-btn-back" onClick={handleBack}>
               &larr; BACK
             </button>
-            <button
-              type="button"
-              className="mm-cta"
-              onClick={handleConfirmAndPay}
-            >
-              CONFIRM &amp; PAY &rarr;
-            </button>
+            {step === 2 && (
+              <button type="button" className="mm-cta" style={{ flex: 1 }} onClick={() => setStep(3)}>
+                &gt; SUBMIT TRANSACTION RECEIPT
+              </button>
+            )}
           </div>
         )}
 
         {/* Fine print */}
-        {(step === 1 || step === 2) && (
+        {step <= 2 && (
           <div className="mm-fine">
             MINTING IS PERMANENT &middot; MAX 4 PER PROFILE &middot; REQUIRES 1+ PROOF
           </div>
@@ -403,7 +376,7 @@ export function MintModal({
   );
 }
 
-// ─── Step 1: Info + Token Select ──────────────────────────────────────
+// ─── Screen 1: Info + Token Select (KEPT FROM V1) ───────────────────────
 
 function Step1Info({
   ticker,
@@ -549,354 +522,444 @@ function Step1Info({
   );
 }
 
-// ─── Step 2: Review + Confirm ─────────────────────────────────────────
+// ─── Screen 2: Send Payment ─────────────────────────────────────────────
 
-function Step2Review({
-  ticker,
-  role,
-  availableMints,
-  token,
-  selectedPrice,
-  pubkey,
-  amountUi,
-}: {
-  ticker: string;
-  role: string;
-  availableMints: number;
-  token: ProofTokenKey;
-  selectedPrice: number;
-  pubkey: string;
-  amountUi: string | null;
-}) {
-  const tokenInfo = PROOF_TOKENS.find((t) => t.key === token)!;
-  const isDiscount = token === "LASTSHFT";
+function Step2Send({ kind, token }: { kind: string; token: PaymentToken }) {
+  const [copied, setCopied] = useState(false);
+  const [tokenAmount, setTokenAmount] = useState<number | null>(null);
+  const [rateUsd, setRateUsd] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const baseUsd = BASE_PRICES_USD[kind as keyof typeof BASE_PRICES_USD] ?? 1;
+  const priceUsd = token === "LASTSHFT"
+    ? +(baseUsd * (1 - LASTSHFT_DISCOUNT)).toFixed(2)
+    : baseUsd;
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/payment/convert?kind=${kind}&token=${token}`)
+      .then((r) => r.json())
+      .then((data: { ok: boolean; token_amount?: number; rate_usd?: number }) => {
+        if (data.ok) {
+          setTokenAmount(data.token_amount ?? null);
+          setRateUsd(data.rate_usd ?? null);
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [kind, token]);
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(TREASURY_WALLET).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  }, []);
+
+  const handleCopyAmount = useCallback(() => {
+    if (tokenAmount !== null) {
+      navigator.clipboard.writeText(formatTokenAmount(tokenAmount, token)).catch(() => {});
+    }
+  }, [tokenAmount, token]);
 
   return (
     <>
-      <div className="mm-eyebrow"> REVIEW BEFORE YOU SIGN</div>
+      <div className="mm-eyebrow">&gt; SEND PAYMENT</div>
       <h2 className="mm-head">
-        One last <span className="mm-gold">look.</span>
+        Send and <span className="mm-gold">come back.</span>
       </h2>
-      <p className="mm-sub">
-        Confirm everything below. Once minted, this work item is locked
-        permanently. No edits, no deletes.
-      </p>
 
       <div className="mm-review-card">
         <div className="mm-review-row">
-          <span className="mm-review-key">WORK ITEM</span>
-          <span className="mm-review-val mm-green">
-            {ticker} &middot; {role}
-          </span>
-        </div>
-        <div className="mm-review-row">
-          <span className="mm-review-key">AVAILABLE MINTS</span>
-          <span className="mm-review-val mm-green">
-            {availableMints} OF 4
-          </span>
-        </div>
-        <div className="mm-review-row">
-          <span className="mm-review-key">RESULT</span>
-          <span className="mm-review-val mm-gold">PERMANENT GOLD MINTED BADGE</span>
-        </div>
-        <div className="mm-review-row">
-          <span className="mm-review-key">FROM WALLET</span>
-          <span className="mm-review-val">{shortPubkey(pubkey).toUpperCase()}</span>
-        </div>
-        <div className="mm-review-row">
-          <span className="mm-review-key">TO</span>
-          <span className="mm-review-val">$LASTSHFT AR WALLET</span>
-        </div>
-        <div className="mm-review-row">
-          <span className="mm-review-key">PAY WITH</span>
-          <span className="mm-review-val">
-            {tokenInfo.label}
-            {isDiscount ? ` (\u2212${Math.round(LASTSHFT_DISCOUNT * 100)}%)` : ""}
+          <span className="mm-review-key">SEND TO</span>
+          <span className="mm-review-val" style={{ fontSize: 10, wordBreak: "break-all", fontFamily: "var(--mono)" }}>
+            {TREASURY_WALLET}
+            <button
+              type="button"
+              className="mm-btn-back"
+              style={{ marginLeft: 8, padding: "2px 8px", fontSize: 9 }}
+              onClick={handleCopy}
+            >
+              {copied ? "COPIED ✓" : "COPY"}
+            </button>
           </span>
         </div>
         <div className="mm-review-row">
           <span className="mm-review-key">AMOUNT</span>
-          <span className="mm-review-val mm-gold">
-            ${selectedPrice.toFixed(2)}
-            {amountUi ? ` = ${amountUi} ${tokenInfo.label}` : ""}
-            <span className="mm-live-pill">
-              <span className="mm-live-dot" />
-              LIVE
-            </span>
+          <span className="mm-review-val mm-gold" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {loading ? (
+              <span style={{ opacity: 0.5 }}>calculating…</span>
+            ) : tokenAmount !== null ? (
+              <>
+                <span>{formatTokenAmount(tokenAmount, token)} {token}</span>
+                <button
+                  type="button"
+                  className="mm-btn-back"
+                  style={{ padding: "2px 8px", fontSize: 9 }}
+                  onClick={handleCopyAmount}
+                >
+                  COPY
+                </button>
+              </>
+            ) : (
+              <span>${priceUsd.toFixed(2)} in {token}</span>
+            )}
+          </span>
+        </div>
+        <div className="mm-review-row">
+          <span className="mm-review-key">USD VALUE</span>
+          <span className="mm-review-val">
+            ${priceUsd.toFixed(2)}
+            {rateUsd !== null && token !== "USDT" && (
+              <span style={{ opacity: 0.5, marginLeft: 6, fontSize: 10 }}>
+                (1 {token} ≈ ${rateUsd.toFixed(token === "LASTSHFT" ? 6 : 2)})
+              </span>
+            )}
           </span>
         </div>
       </div>
 
-      <div className="mm-field-help" style={{ textAlign: "center", marginTop: 10 }}>
-        PRICE LOCKED AT SIGNATURE &middot; MINTING IS IRREVERSIBLE
+      <div style={{ marginTop: 16, fontSize: 12, lineHeight: 1.7, color: "var(--mm-sub)" }}>
+        <div>• Send the exact amount in one transaction</div>
+        <div>• Save your Solscan link or TX signature</div>
+        <div>• Come back here when you&apos;re done</div>
       </div>
     </>
   );
 }
 
-// ─── Step 3: Pending ──────────────────────────────────────────────────
+// ─── Screen 3: Paste TX ─────────────────────────────────────────────────
 
-interface LogLine {
-  text: string;
-  status: "ok" | "pending";
-}
+function Step3Paste({
+  onSubmit,
+  failureCheck,
+  failureDetail,
+  failureAttempt,
+}: {
+  onSubmit: (signature: string) => void;
+  failureCheck: string | null;
+  failureDetail: string | null;
+  failureAttempt: number;
+}) {
+  const [input, setInput] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-function buildLogLines(phase: SignPhase): LogLine[] {
-  const lines: LogLine[] = [];
+  const handleSubmit = useCallback(async () => {
+    const trimmed = input.trim();
+    if (!trimmed || submitting) return;
+    setSubmitting(true);
+    await onSubmit(trimmed);
+    setSubmitting(false);
+  }, [input, submitting, onSubmit]);
 
-  const phases: { phase: SignPhase; label: string }[] = [
-    { phase: "building", label: "QUOTE LOCKED" },
-    { phase: "awaiting_signature", label: "BUILDING TRANSACTION" },
-    { phase: "broadcasting", label: "AWAITING WALLET SIGNATURE" },
-    { phase: "confirming", label: "BROADCASTING TO SOLANA" },
-  ];
+  const hasFailure = failureCheck !== null;
 
-  const phaseOrder: SignPhase[] = [
-    "idle",
-    "building",
-    "awaiting_signature",
-    "broadcasting",
-    "confirming",
-    "confirmed",
-    "failed",
-  ];
-
-  const currentIdx = phaseOrder.indexOf(phase);
-
-  for (const p of phases) {
-    const idx = phaseOrder.indexOf(p.phase);
-    if (currentIdx > idx) {
-      lines.push({ text: p.label, status: "ok" });
-    } else if (currentIdx === idx) {
-      lines.push({ text: `${p.label}...`, status: "pending" });
-    }
-    // Skip lines for phases we haven't reached yet
-  }
-
-  if (phase === "confirming") {
-    lines.push({ text: "WAITING FOR ON-CHAIN CONFIRMATION...", status: "pending" });
-  }
-
-  return lines;
-}
-
-function Step3Pending({ logLines }: { logLines: LogLine[] }) {
   return (
     <>
-      <div className="mm-eyebrow"> CONFIRMING ON-CHAIN</div>
+      <div className="mm-eyebrow">&gt; VERIFY YOUR PAYMENT</div>
       <h2 className="mm-head">
-        Minting <span className="mm-gold">in progress.</span>
+        Paste your <span className="mm-gold">transaction.</span>
       </h2>
-      <p className="mm-sub">
-        Your wallet signed the transaction. Waiting for on-chain confirmation.
-      </p>
 
-      <div className="mm-pending-wrap">
-        <div className="mm-spinner" />
-        <div className="mm-pending-status">CONFIRMING TRANSACTION&hellip;</div>
-        <div className="mm-pending-log">
-          {logLines.map((line, i) => (
-            <div
-              key={i}
-              className={line.status === "ok" ? "mm-log-ok" : "mm-log-pending"}
-            >
-              {line.text}
-            </div>
-          ))}
+      {hasFailure && (
+        <div style={{
+          marginBottom: 14,
+          padding: "10px 12px",
+          fontSize: 11,
+          lineHeight: 1.5,
+          color: "var(--mm-red)",
+          borderLeft: "2px solid var(--mm-red)",
+          background: "rgba(255,84,112,0.05)",
+        }}>
+          <strong>&gt; ✕ {DENIAL_MESSAGES[failureCheck] ?? failureDetail ?? "VERIFICATION FAILED"}</strong>
+        </div>
+      )}
+
+      <div style={{ marginBottom: 12 }}>
+        <label className="mm-field-help" style={{ display: "block", marginBottom: 6 }}>
+          TRANSACTION SIGNATURE
+        </label>
+        <textarea
+          placeholder="Paste Solscan URL or transaction signature…"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          inputMode="url"
+          className="mm-paste-input"
+        />
+        <div className="mm-field-help" style={{ marginTop: 4 }}>
+          SOLSCAN · SOLANA EXPLORER · SOLANA.FM · RAW SIGNATURE
         </div>
       </div>
 
-      <div className="mm-field-help" style={{ textAlign: "center", marginTop: 14 }}>
-        DO NOT CLOSE THIS WINDOW &middot; AVERAGE CONFIRMATION: 5&ndash;15 SECONDS
-      </div>
+      <button
+        type="button"
+        className="mm-cta"
+        disabled={!input.trim() || submitting}
+        onClick={handleSubmit}
+      >
+        {submitting ? "> SUBMITTING…" : "> SUBMIT"}
+      </button>
+
+      {hasFailure && failureAttempt >= 3 && (
+        <div style={{ marginTop: 12, textAlign: "center" }}>
+          <a
+            className="mm-btn-back"
+            style={{ display: "inline-block", textDecoration: "none", padding: "8px 12px", fontSize: 11 }}
+            href={`mailto:reportclaims@lastproof.app?subject=Mint%20Verification%20Failed&body=${encodeURIComponent(`Check: ${failureCheck}\nDetail: ${failureDetail}\nAttempts: ${failureAttempt}`)}`}
+          >
+            &gt; OPEN SUPPORT TICKET
+          </a>
+        </div>
+      )}
     </>
   );
 }
 
-// ─── Step 4: Outcome ──────────────────────────────────────────────────
+// ─── Screen 4: Terminal Cascade ─────────────────────────────────────────
 
-function Step4Outcome({
-  isSuccess,
+interface StatusResponse {
+  ok: boolean;
+  status: "queued" | "processing" | "verified" | "failed";
+  failure_check?: string;
+  failure_detail?: string;
+  attempt_number?: number;
+  payment_id?: string;
+  solscan_url?: string | null;
+  payment_data?: Record<string, unknown> | null;
+}
+
+interface TerminalLine {
+  text: string;
+  status: "ok" | "fail" | "info";
+}
+
+const VERIFY_CHECKS = [
+  "SCANNING SOLANA MAINNET FOR TX...",
+  "TX LOCATED",
+  "CHECKING RECIPIENT... ✓ CONFIRMED",
+  "CHECKING AMOUNT... ✓ CONFIRMED",
+  "CHECKING TIME WINDOW... ✓ CONFIRMED",
+  "ALL CHECKS PASSED",
+];
+
+const DEPLOY_LINES = [
+  "PROCESSING MINT PAYMENT...",
+  "WRITING TO PAYMENT LEDGER...",
+  "SETTING MINTED FLAG ON WORK ITEM...",
+  "UPDATING OPERATOR PROFILE...",
+  "MINT CONFIRMED — LIVE ON PROFILE",
+];
+
+function Step4Terminal({
+  verificationId,
+  onVerified,
+  onFailed,
+}: {
+  verificationId: string;
+  onVerified: (data: Record<string, unknown>, solscanUrl: string | null) => void;
+  onFailed: (check: string, detail: string, attempt: number) => void;
+}) {
+  const [lines, setLines] = useState<TerminalLine[]>([
+    { text: "INITIATING MINT VERIFICATION...", status: "info" },
+  ]);
+  const [phase, setPhase] = useState<"verifying" | "deploying" | "done" | "failed">("verifying");
+  const [doneData, setDoneData] = useState<{ data: Record<string, unknown>; url: string | null } | null>(null);
+
+  useEffect(() => {
+    let done = false;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    const cascadeTimers: ReturnType<typeof setInterval>[] = [];
+
+    function cascade(newLines: TerminalLine[], delayMs: number, onDone?: () => void) {
+      let i = 0;
+      const timer = setInterval(() => {
+        if (i >= newLines.length) { clearInterval(timer); onDone?.(); return; }
+        const line = newLines[i];
+        if (line) setLines((prev) => [...prev, line]);
+        i++;
+      }, delayMs);
+      cascadeTimers.push(timer);
+    }
+
+    async function poll() {
+      if (done) return;
+      try {
+        const res = await fetch(`/api/payment/paste-verify/status?id=${verificationId}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as StatusResponse;
+
+        if (data.status === "verified" && data.payment_data) {
+          done = true;
+          if (pollTimer) clearInterval(pollTimer);
+
+          cascade(
+            VERIFY_CHECKS.map((t) => ({ text: `> ${t}`, status: "ok" as const })),
+            250,
+            () => {
+              setPhase("deploying");
+              cascade(
+                DEPLOY_LINES.map((t) => ({ text: `> ${t}`, status: "ok" as const })),
+                300,
+                () => {
+                  setPhase("done");
+                  setDoneData({ data: data.payment_data!, url: data.solscan_url ?? null });
+                },
+              );
+            },
+          );
+        }
+
+        if (data.status === "failed") {
+          done = true;
+          if (pollTimer) clearInterval(pollTimer);
+          const msg = DENIAL_MESSAGES[data.failure_check ?? ""] ?? data.failure_detail ?? "Verification failed.";
+          setLines((prev) => [...prev, { text: `> ✕ ${msg}`, status: "fail" }]);
+          setPhase("failed");
+          setTimeout(() => onFailed(data.failure_check ?? "unknown", data.failure_detail ?? "", data.attempt_number ?? 1), 1500);
+        }
+      } catch { /* retry next poll */ }
+    }
+
+    poll();
+    pollTimer = setInterval(poll, 2500);
+    return () => {
+      done = true;
+      if (pollTimer) clearInterval(pollTimer);
+      cascadeTimers.forEach((t) => clearInterval(t));
+    };
+  }, [verificationId, onFailed]);
+
+  return (
+    <>
+      <div className="mm-term">
+        <div style={{ opacity: 0.5 }}>&gt; lastproof mint --tx {verificationId.slice(0, 8)}…</div>
+        {lines.map((line, i) => (
+          <div key={i} style={{
+            color: line.status === "ok" ? "var(--mm-green)" : line.status === "fail" ? "var(--mm-red)" : "var(--mm-fg)",
+          }}>
+            {line.text}
+          </div>
+        ))}
+        {phase === "verifying" && (
+          <div style={{ color: "var(--mm-fg)" }}>
+            {"  > WAITING FOR VERIFICATION"}<AnimatedDots />
+          </div>
+        )}
+      </div>
+
+      {phase === "done" && doneData && (
+        <button
+          type="button"
+          className="mm-cta mm-ok-back"
+          style={{ marginTop: 14 }}
+          onClick={() => onVerified(doneData.data, doneData.url)}
+        >
+          &gt; CONFIRM
+        </button>
+      )}
+
+      {phase !== "done" && phase !== "failed" && (
+        <div className="mm-field-help" style={{ textAlign: "center", marginTop: 14 }}>
+          DO NOT CLOSE THIS WINDOW · VERIFICATION IN PROGRESS
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─── Screen 5: Outcome ──────────────────────────────────────────────────
+
+function Step5Outcome({
+  paymentData,
+  solscanUrl,
   ticker,
   role,
   proofCount,
   token,
-  amountUi,
-  selectedPrice,
-  sign,
-  onRetry,
   onClose,
-  forceOutcome,
-  onToggleOutcome,
 }: {
-  isSuccess: boolean;
+  paymentData: Record<string, unknown> | null;
+  solscanUrl: string | null;
   ticker: string;
   role: string;
   proofCount: number;
   token: ProofTokenKey;
-  amountUi: string | null;
-  selectedPrice: number;
-  sign: { phase: SignPhase; failure: FailureReason | null; solscanUrl: string | null; signature: string | null };
-  onRetry: () => void;
   onClose: () => void;
-  forceOutcome: "ok" | "fail";
-  onToggleOutcome: () => void;
 }) {
-  const tokenInfo = PROOF_TOKENS.find((t) => t.key === token)!;
-
-  // In dev, allow toggling between success/fail outcomes
-  const showSuccess =
-    process.env.NODE_ENV !== "production"
-      ? forceOutcome === "ok"
-      : isSuccess;
-
-  const failureLabel = sign.failure
-    ? FAILURE_LABELS[sign.failure]
-    : "UNKNOWN ERROR";
-
-  const shortSig = sign.signature
-    ? `${sign.signature.slice(0, 4)}\u2026${sign.signature.slice(-4)}`
-    : null;
+  const txSig = (paymentData?.tx_signature as string) ?? "";
+  const url = solscanUrl ?? (txSig ? `https://solscan.io/tx/${txSig}` : null);
+  const shortSig = txSig.length > 12 ? `${txSig.slice(0, 4)}…${txSig.slice(-4)}` : txSig;
 
   return (
-    <>
-      {showSuccess ? (
-        <div className="mm-done-wrap">
-          <div className="mm-done-check">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          </div>
-          <div className="mm-eyebrow" style={{ color: "var(--mm-gold)" }}>
-            MINTED ON-CHAIN
-          </div>
-          <h2 className="mm-head">
-            <span className="mm-green">{ticker}</span> has been{" "}
-            <span className="mm-gold">Minted.</span>
-          </h2>
-          <p className="mm-sub">
-            Your work item is now permanently locked on-chain with a gold MINTED
-            badge. It will appear pinned at the top of your public profile.
-          </p>
+    <div className="mm-done-wrap">
+      <div className="mm-done-check">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </div>
+      <div className="mm-eyebrow" style={{ color: "var(--mm-gold)" }}>
+        MINTED ON-CHAIN
+      </div>
+      <h2 className="mm-head">
+        <span className="mm-green">{ticker}</span> has been{" "}
+        <span className="mm-gold">Minted.</span>
+      </h2>
+      <p className="mm-sub">
+        Your work item is now permanently locked on-chain with a gold MINTED
+        badge. It will appear pinned at the top of your public profile.
+      </p>
 
-          <div className="mm-summary">
-            <div className="mm-ps-row">
-              <span className="mm-ps-key">WORK ITEM</span>
-              <span className="mm-ps-val mm-green">
-                {ticker} &middot; {role}
-              </span>
-            </div>
-            <div className="mm-ps-row">
-              <span className="mm-ps-key">STATUS</span>
-              <span className="mm-ps-val mm-gold">MINTED &#10022;</span>
-            </div>
-            <div className="mm-ps-row">
-              <span className="mm-ps-key">PROOFS</span>
-              <span className="mm-ps-val mm-green">{proofCount} VERIFIED</span>
-            </div>
-            <div className="mm-ps-row">
-              <span className="mm-ps-key">PAID</span>
-              <span className="mm-ps-val">
-                {amountUi ? `${amountUi} ${tokenInfo.label}` : ""} (${selectedPrice.toFixed(2)})
-              </span>
-            </div>
-            {sign.solscanUrl && shortSig && (
-              <div className="mm-ps-row">
-                <span className="mm-ps-key">SOLSCAN</span>
-                <span className="mm-ps-val">
-                  <a href={sign.solscanUrl} target="_blank" rel="noreferrer">
-                    {shortSig} &#8599;
-                  </a>
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="mm-ok-actions">
-            <button
-              type="button"
-              className="mm-cta mm-ok-back"
-              onClick={onClose}
-            >
-              &gt; BACK TO UPDATE PROFILE
-            </button>
-          </div>
+      <div className="mm-summary">
+        <div className="mm-ps-row">
+          <span className="mm-ps-key">WORK ITEM</span>
+          <span className="mm-ps-val mm-green">{ticker} · {role}</span>
         </div>
-      ) : (
-        <div className="mm-done-wrap">
-          <div className="mm-done-check mm-fail">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </div>
-          <div className="mm-eyebrow" style={{ color: "var(--mm-red)" }}>
-            TRANSACTION FAILED
-          </div>
-          <h2 className="mm-head">
-            Mint did <span className="mm-red">not broadcast.</span>
-          </h2>
-          <p className="mm-sub">
-            Nothing was charged. The transaction either reverted on-chain or was
-            rejected by your wallet. You can retry below.
-          </p>
-
-          <div className="mm-summary">
-            <div className="mm-ps-row">
-              <span className="mm-ps-key">WORK ITEM</span>
-              <span className="mm-ps-val mm-green">
-                {ticker} &middot; {role}
-              </span>
-            </div>
-            <div className="mm-ps-row">
-              <span className="mm-ps-key">ERROR</span>
-              <span className="mm-ps-val" style={{ color: "var(--mm-red)" }}>
-                {failureLabel}
-              </span>
-            </div>
-            <div className="mm-ps-row">
-              <span className="mm-ps-key">CHARGED</span>
-              <span className="mm-ps-val mm-green">$0.00 &middot; NOTHING SENT</span>
-            </div>
-            {sign.solscanUrl && shortSig && (
-              <div className="mm-ps-row">
-                <span className="mm-ps-key">SOLSCAN</span>
-                <span className="mm-ps-val">
-                  <a href={sign.solscanUrl} target="_blank" rel="noreferrer">
-                    {shortSig} (failed) &#8599;
-                  </a>
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="mm-fail-actions">
-            <button
-              type="button"
-              className="mm-cta mm-fail-retry"
-              onClick={onRetry}
-            >
-              &gt; RETRY MINT
-            </button>
-            <button
-              type="button"
-              className="mm-cta mm-fail-close"
-              onClick={onClose}
-            >
-              &gt; BACK TO UPDATE PROFILE
-            </button>
-          </div>
+        <div className="mm-ps-row">
+          <span className="mm-ps-key">STATUS</span>
+          <span className="mm-ps-val mm-gold">MINTED ✦</span>
         </div>
-      )}
-
-      {/* Dev-only outcome toggle */}
-      {process.env.NODE_ENV !== "production" && (
-        <div className="mm-outcome-toggle">
-          <button type="button" onClick={onToggleOutcome}>
-            &#8635; TOGGLE OUTCOME (WIREFRAME)
-          </button>
+        <div className="mm-ps-row">
+          <span className="mm-ps-key">PROOFS</span>
+          <span className="mm-ps-val mm-green">{proofCount} VERIFIED</span>
         </div>
-      )}
-    </>
+        <div className="mm-ps-row">
+          <span className="mm-ps-key">TOKEN</span>
+          <span className="mm-ps-val">{token}</span>
+        </div>
+        {url && shortSig && (
+          <div className="mm-ps-row">
+            <span className="mm-ps-key">SOLSCAN</span>
+            <span className="mm-ps-val">
+              <a href={url} target="_blank" rel="noreferrer">{shortSig} ↗</a>
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="mm-ok-actions">
+        <button type="button" className="mm-cta mm-ok-back" onClick={onClose}>
+          &gt; BACK TO DASHBOARD
+        </button>
+      </div>
+    </div>
   );
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────
+
+function AnimatedDots() {
+  const [count, setCount] = useState(1);
+  useEffect(() => {
+    const t = setInterval(() => setCount((c) => (c % 3) + 1), 500);
+    return () => clearInterval(t);
+  }, []);
+  return <span style={{ display: "inline-block", width: "1.5em" }}>{".".repeat(count)}</span>;
+}
+
+function formatTokenAmount(amount: number, token: PaymentToken): string {
+  if (token === "USDT") return amount.toFixed(2);
+  if (token === "SOL") return amount.toFixed(6);
+  if (amount >= 100) return amount.toFixed(2);
+  if (amount >= 1) return amount.toFixed(4);
+  return amount.toFixed(6);
 }
