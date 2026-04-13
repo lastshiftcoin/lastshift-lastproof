@@ -8,7 +8,7 @@ import { supabaseService } from "@/lib/db/client";
 import { cryptomarkProfile } from "@/lib/mock/cryptomark-profile";
 import { shipfastProfile } from "@/lib/mock/shipfast-profile";
 import { newbuilderProfile } from "@/lib/mock/newbuilder-profile";
-import type { PublicProfileView, WorkItem } from "@/lib/public-profile-view";
+import type { PublicProfileView } from "@/lib/public-profile-view";
 
 import { ProfileHero } from "@/components/profile/ProfileHero";
 import { ProfileTopBar } from "@/components/profile/ProfileTopBar";
@@ -17,7 +17,7 @@ import { TrustTierBar } from "@/components/profile/TrustTierBar";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { StatStrip } from "@/components/profile/StatStrip";
 import { CategoryChips } from "@/components/profile/CategoryChips";
-import { WorkItemCard } from "@/components/profile/WorkItemCard";
+import { WorkItemList } from "@/components/profile/WorkItemList";
 import { ScreenshotGrid } from "@/components/profile/ScreenshotGrid";
 import { ProfileLinksList } from "@/components/profile/ProfileLinksList";
 import { ProofsTable } from "@/components/profile/ProofsTable";
@@ -125,9 +125,6 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
 
   const mintedItems = view.workItems.filter((w) => w.section === "minted");
   const recentItems = view.workItems.filter((w) => w.section === "recent");
-  const totalWorkItems = view.workItems.length;
-  const visibleItems = mintedItems.length + recentItems.length;
-  const pastProjectsCount = Math.max(0, totalWorkItems - visibleItems);
 
   return (
     <div className="pp-page pp-page-bg">
@@ -193,27 +190,19 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
             </span>
           </h2>
 
-          {mintedItems.length > 0 && (
-            <>
-              <div className="pp-pow-section-label">MINTED PROJECTS</div>
-              {mintedItems.map((w: WorkItem) => (
-                <WorkItemCard key={w.id} item={w} handle={view.handle} ownerWallet={view.ownerWallet} />
-              ))}
-            </>
-          )}
-
-          {recentItems.length > 0 && (
-            <>
-              <div className="pp-pow-section-label pp-recent">RECENT</div>
-              {recentItems.map((w: WorkItem) => (
-                <WorkItemCard key={w.id} item={w} handle={view.handle} ownerWallet={view.ownerWallet} />
-              ))}
-            </>
-          )}
-
-          {pastProjectsCount > 0 && (
-            <a className="pp-pow-archive">SEE {pastProjectsCount} PAST PROJECTS →</a>
-          )}
+          <WorkItemList
+            items={mintedItems}
+            handle={view.handle}
+            ownerWallet={view.ownerWallet}
+            sectionLabel="MINTED PROJECTS"
+          />
+          <WorkItemList
+            items={recentItems}
+            handle={view.handle}
+            ownerWallet={view.ownerWallet}
+            sectionLabel="RECENT"
+            sectionClass="pp-recent"
+          />
         </section>
 
         {/* ═══ SCREENSHOTS ═══ */}
