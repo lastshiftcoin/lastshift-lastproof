@@ -607,10 +607,7 @@
 /* Hide SHIFTBOT command strip on any profile page (public/5000/free) */
 .pp-page ~ .shiftbot,
 body:has(.pp-page) .shiftbot { display: none !important; }
-.pp-pow-card.pp-current {
-  border-color: rgba(167, 139, 250, 0.35);
-  background: linear-gradient(135deg, rgba(167, 139, 250, 0.04) 0%, var(--bg-secondary) 60%);
-}
+.pp-pow-card.pp-current {}
 .pp-pow-card:hover { border-color: var(--border-2); }
 
 .pp-pow-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 8px; flex-wrap: wrap; }
