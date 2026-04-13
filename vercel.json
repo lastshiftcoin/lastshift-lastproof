@@ -1,8 +1,5 @@
 {
   "framework": "nextjs",
-  "rewrites": [
-    { "source": "/((?!api|_next|maintenance\\.html|favicon\\.ico|robots\\.txt|sitemap\\.xml|tokens|avatars|.*\\.png|.*\\.jpg|.*\\.svg).*)", "destination": "/maintenance.html" }
-  ],
   "crons": [
     {
       "path": "/api/subscription/cron",
