@@ -195,18 +195,22 @@ export async function getPublicProfileView(
   const variant = deriveProfileVariant({ tier, isEarlyAdopter: profile.isEarlyAdopter });
 
   // ─── 10. Tier bar math ─────────────────────────────────────────────
-  // Progress bar fills from current tier threshold to next tier threshold.
-  // Tier 1 (NEW):         0 → 10   (next: VERIFIED)
-  // Tier 2 (VERIFIED):   10 → 25   (next: EXPERIENCED)
-  // Tier 3 (EXPERIENCED): 25 → 50  (next: LEGEND)
-  // Tier 4 (LEGEND):     50+       (bar stays full)
+  // Tick positions on the visual bar: 0%=NEW, 20%=VERIFIED, 50%=EXPERIENCED, 100%=LEGEND
+  // Fill must map within-tier progress onto the correct visual segment.
+  // Tier 1 (NEW):         0 → 10   → visual  0% to  20%
+  // Tier 2 (VERIFIED):   10 → 25   → visual 20% to  50%
+  // Tier 3 (EXPERIENCED): 25 → 50  → visual 50% to 100%
+  // Tier 4 (LEGEND):     50+       → bar stays full at 100%
   const currentThreshold = tier === 1 ? 0 : tier === 2 ? 10 : tier === 3 ? 25 : 50;
   const nextThreshold = tier === 1 ? 10 : tier === 2 ? 25 : tier === 3 ? 50 : 50;
   const segmentSize = nextThreshold - currentThreshold;
   const progressInSegment = proofsConfirmed - currentThreshold;
+  const segmentStart = tier === 1 ? 0 : tier === 2 ? 20 : tier === 3 ? 50 : 100;
+  const segmentEnd   = tier === 1 ? 20 : tier === 2 ? 50 : tier === 3 ? 100 : 100;
+  const segmentWidth = segmentEnd - segmentStart;
   const tierBarFillPct = tier === 4
     ? 100
-    : Math.min(100, Math.round((progressInSegment / segmentSize) * 100));
+    : Math.min(100, Math.round(segmentStart + (progressInSegment / segmentSize) * segmentWidth));
   const remaining = Math.max(0, nextThreshold - proofsConfirmed);
   const nextTier = Math.min(tier + 1, 4);
   const progressLabel: Record<number, string> = {
