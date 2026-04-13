@@ -43,7 +43,7 @@ export default async function HomePage() {
         <div className="section-label">BROWSE BY OPERATOR TYPE</div>
         <div className="cats">
           {OPERATOR_CATEGORIES.map((c) => (
-            <Link key={c} className="chip" href="/manage">
+            <Link key={c} className="chip" href="/grid">
               {c}
             </Link>
           ))}
@@ -55,7 +55,7 @@ export default async function HomePage() {
           <div className="section-label" style={{ margin: 0 }}>
             LASTPROOF GRID — OVER 100K+ PROFILES
           </div>
-          <div className="reshuffle">RESHUFFLE</div>
+          <Link className="reshuffle" href="/grid">RESHUFFLE</Link>
         </div>
         <div className="wall">
           {HOMEPAGE_CARDS.map((card) => (
