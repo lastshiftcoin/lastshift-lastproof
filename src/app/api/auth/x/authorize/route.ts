@@ -67,6 +67,6 @@ export async function GET() {
   });
 
   return NextResponse.redirect(
-    `https://twitter.com/i/oauth2/authorize?${params.toString()}`
+    `https://x.com/i/oauth2/authorize?${params.toString()}`
   );
 }

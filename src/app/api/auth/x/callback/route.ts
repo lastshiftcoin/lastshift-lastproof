@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
   const clientSecret = process.env.X_CLIENT_SECRET!.trim();
   const redirectUri = process.env.X_REDIRECT_URI!.trim();
 
-  const tokenRes = await fetch("https://api.twitter.com/2/oauth2/token", {
+  const tokenRes = await fetch("https://api.x.com/2/oauth2/token", {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
   const tokenData = (await tokenRes.json()) as { access_token: string };
 
   // Fetch the real username from Twitter
-  const userRes = await fetch("https://api.twitter.com/2/users/me", {
+  const userRes = await fetch("https://api.x.com/2/users/me", {
     headers: { Authorization: `Bearer ${tokenData.access_token}` },
   });
 
