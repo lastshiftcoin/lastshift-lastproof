@@ -15,8 +15,10 @@
  */
 
 import { NextResponse, type NextRequest } from "next/server";
+import { headers } from "next/headers";
 import crypto from "node:crypto";
 import { resolveProfileFromSession } from "@/lib/auth/resolve-profile";
+import { logTgAuthEvent, newTgAuthSessionId } from "@/lib/tg-auth-debug";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -78,18 +80,50 @@ function verifyTelegramHash(
 }
 
 export async function POST(request: NextRequest) {
+  const hdrs = await headers();
+  const userAgent = hdrs.get("user-agent");
+  const debugSessionId = newTgAuthSessionId();
+
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
   } catch {
+    void logTgAuthEvent({
+      event: "invalid_json",
+      sessionId: debugSessionId,
+      userAgent,
+    });
     return NextResponse.json(
       { ok: false, error: "invalid_json" },
       { status: 400 },
     );
   }
 
+  void logTgAuthEvent({
+    event: "callback_entry",
+    sessionId: debugSessionId,
+    userAgent,
+    payload: {
+      has_hash: !!body.hash,
+      has_id: !!body.id,
+      has_auth_date: !!body.auth_date,
+      has_username: !!body.username,
+      tg_id: typeof body.id === "number" || typeof body.id === "string" ? String(body.id) : null,
+    },
+  });
+
   // Basic presence checks
   if (!body.hash || !body.id || !body.auth_date) {
+    void logTgAuthEvent({
+      event: "missing_params",
+      sessionId: debugSessionId,
+      userAgent,
+      payload: {
+        has_hash: !!body.hash,
+        has_id: !!body.id,
+        has_auth_date: !!body.auth_date,
+      },
+    });
     return NextResponse.json(
       { ok: false, error: "missing_params" },
       { status: 400 },
@@ -100,6 +134,11 @@ export async function POST(request: NextRequest) {
   const botToken = (process.env.TG_BOT_TOKEN ?? "").trim();
   if (!botToken) {
     console.error("[telegram/callback] TG_BOT_TOKEN not set");
+    void logTgAuthEvent({
+      event: "not_configured",
+      sessionId: debugSessionId,
+      userAgent,
+    });
     return NextResponse.json(
       { ok: false, error: "not_configured" },
       { status: 500 },
@@ -108,6 +147,15 @@ export async function POST(request: NextRequest) {
 
   if (!verifyTelegramHash(body, botToken)) {
     console.error("[telegram/callback] HMAC verification failed");
+    void logTgAuthEvent({
+      event: "hash_mismatch",
+      sessionId: debugSessionId,
+      userAgent,
+      payload: {
+        tg_id: typeof body.id === "number" || typeof body.id === "string" ? String(body.id) : null,
+        auth_date: typeof body.auth_date === "string" || typeof body.auth_date === "number" ? String(body.auth_date) : null,
+      },
+    });
     return NextResponse.json(
       { ok: false, error: "hash_mismatch" },
       { status: 401 },
@@ -120,6 +168,16 @@ export async function POST(request: NextRequest) {
     Number.isNaN(authDate) ||
     Math.abs(Date.now() / 1000 - authDate) > MAX_AUTH_AGE_S
   ) {
+    void logTgAuthEvent({
+      event: "expired_auth",
+      sessionId: debugSessionId,
+      userAgent,
+      payload: {
+        auth_date: authDate,
+        now_s: Math.floor(Date.now() / 1000),
+        age_s: Math.floor(Date.now() / 1000 - authDate),
+      },
+    });
     return NextResponse.json(
       { ok: false, error: "expired_auth" },
       { status: 401 },
@@ -132,6 +190,14 @@ export async function POST(request: NextRequest) {
       ? body.username.toLowerCase().trim()
       : null;
   if (!username) {
+    void logTgAuthEvent({
+      event: "no_username",
+      sessionId: debugSessionId,
+      userAgent,
+      payload: {
+        tg_id: typeof body.id === "number" || typeof body.id === "string" ? String(body.id) : null,
+      },
+    });
     return NextResponse.json(
       {
         ok: false,
@@ -146,13 +212,19 @@ export async function POST(request: NextRequest) {
   // Resolve the current user's profile from session cookie
   const resolved = await resolveProfileFromSession();
   if (!resolved) {
+    void logTgAuthEvent({
+      event: "no_session",
+      sessionId: debugSessionId,
+      userAgent,
+      payload: { username },
+    });
     return NextResponse.json(
       { ok: false, error: "no_session" },
       { status: 401 },
     );
   }
 
-  const { profile, sb } = resolved;
+  const { profile, sb, walletAddress } = resolved;
 
   // Duplicate guard: check if another profile already has this Telegram handle
   const { data: existing } = await sb
@@ -164,6 +236,13 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (existing) {
+    void logTgAuthEvent({
+      event: "handle_taken",
+      sessionId: debugSessionId,
+      userAgent,
+      walletAddress,
+      payload: { username, taken_by_profile_id: existing.id },
+    });
     return NextResponse.json(
       { ok: false, error: "handle_taken" },
       { status: 409 },
@@ -178,11 +257,26 @@ export async function POST(request: NextRequest) {
 
   if (updateErr) {
     console.error("[telegram/callback] update error:", updateErr.message);
+    void logTgAuthEvent({
+      event: "db_update_failed",
+      sessionId: debugSessionId,
+      userAgent,
+      walletAddress,
+      payload: { username, db_error: updateErr.message },
+    });
     return NextResponse.json(
       { ok: false, error: "db_error" },
       { status: 500 },
     );
   }
+
+  void logTgAuthEvent({
+    event: "success",
+    sessionId: debugSessionId,
+    userAgent,
+    walletAddress,
+    payload: { username },
+  });
 
   return NextResponse.json({ ok: true, handle: username });
 }
