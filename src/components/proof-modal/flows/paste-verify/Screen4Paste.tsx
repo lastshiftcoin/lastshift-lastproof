@@ -133,7 +133,7 @@ export function Screen4Paste({
           <a
             className="pm-cta-ghost"
             style={{ display: "block", textAlign: "center", textDecoration: "none", padding: "8px 12px", fontSize: 11 }}
-            href={`mailto:reportclaims@lastproof.app?subject=Proof%20Verification%20Failed%20—%20${encodeURIComponent(failureCheck ?? "unknown")}&body=${encodeURIComponent(`Check: ${failureCheck}\nDetail: ${failureDetail}\nAttempts: ${failureAttempt}`)}`}
+            href={`mailto:reportclaims@lastshift.ai?subject=Proof%20Verification%20Failed%20—%20${encodeURIComponent(failureCheck ?? "unknown")}&body=${encodeURIComponent(`Check: ${failureCheck}\nDetail: ${failureDetail}\nAttempts: ${failureAttempt}`)}`}
           >
             &gt; OPEN SUPPORT TICKET
           </a>

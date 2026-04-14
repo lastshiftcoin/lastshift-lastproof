@@ -685,7 +685,7 @@ function HcStep5Paste({ onSubmit, failureCheck, failureDetail, failureAttempt }:
       {hasFailure && failureAttempt >= 3 && (
         <div style={{ marginTop: 12, textAlign: "center" }}>
           <a className="hc-btn-back" style={{ display: "inline-block", textDecoration: "none", padding: "8px 12px", fontSize: 11 }}
-            href={`mailto:reportclaims@lastproof.app?subject=Handle%20Change%20Failed&body=${encodeURIComponent(`Check: ${failureCheck}\nDetail: ${failureDetail}`)}`}>
+            href={`mailto:reportclaims@lastshift.ai?subject=Handle%20Change%20Failed&body=${encodeURIComponent(`Check: ${failureCheck}\nDetail: ${failureDetail}`)}`}>
             &gt; OPEN SUPPORT TICKET
           </a>
         </div>

@@ -589,7 +589,7 @@ function PayStepPaste({
           <a
             className="pay-cta-ghost"
             style={{ display: "block", textAlign: "center", textDecoration: "none", padding: "8px 12px", fontSize: 11 }}
-            href={`mailto:reportclaims@lastproof.app?subject=Payment%20Verification%20Failed%20\u2014%20${encodeURIComponent(failureCheck ?? "unknown")}&body=${encodeURIComponent(`Check: ${failureCheck}\nDetail: ${failureDetail}\nAttempts: ${failureAttempt}`)}`}
+            href={`mailto:reportclaims@lastshift.ai?subject=Payment%20Verification%20Failed%20\u2014%20${encodeURIComponent(failureCheck ?? "unknown")}&body=${encodeURIComponent(`Check: ${failureCheck}\nDetail: ${failureDetail}\nAttempts: ${failureAttempt}`)}`}
           >
             &gt; OPEN SUPPORT TICKET
           </a>

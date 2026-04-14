@@ -718,7 +718,7 @@ function Step3Paste({
           <a
             className="mm-btn-back"
             style={{ display: "inline-block", textDecoration: "none", padding: "8px 12px", fontSize: 11 }}
-            href={`mailto:reportclaims@lastproof.app?subject=Mint%20Verification%20Failed&body=${encodeURIComponent(`Check: ${failureCheck}\nDetail: ${failureDetail}\nAttempts: ${failureAttempt}`)}`}
+            href={`mailto:reportclaims@lastshift.ai?subject=Mint%20Verification%20Failed&body=${encodeURIComponent(`Check: ${failureCheck}\nDetail: ${failureDetail}\nAttempts: ${failureAttempt}`)}`}
           >
             &gt; OPEN SUPPORT TICKET
           </a>
