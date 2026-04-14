@@ -187,8 +187,8 @@ export function AboutCard({ profile, onProfileUpdate, previousHandles = [] }: Ab
         rows={5}
         placeholder="Based in Europe. Started in gaming guilds, fell into crypto in 2022..."
       />
-      <div className="field-help">
-        background, interests, anything that makes you human
+      <div className="field-help field-help-bright">
+        Where you&apos;re based, how you got into web3, what you&apos;re into outside the screen — show projects the human behind the proofs.
       </div>
 
       {botError && (

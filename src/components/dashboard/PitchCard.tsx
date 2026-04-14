@@ -175,8 +175,8 @@ export function PitchCard({ profile, onProfileUpdate }: PitchCardProps) {
         rows={6}
         placeholder="I run launch operations for memecoin projects on Solana..."
       />
-      <div className="field-help">
-        your full pitch — what you do, who you do it for, what makes you different
+      <div className="field-help field-help-bright">
+        Tell devs and projects why they should hire you over others — what you do, who you&apos;ve worked with, what makes you the right pick.
       </div>
 
       {botError && (
