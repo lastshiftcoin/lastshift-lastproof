@@ -1,20 +1,17 @@
 "use client";
 
 /**
- * Mobile Telegram OAuth callback handler.
+ * Telegram Login Widget callback page on lastproof.app.
  *
- * Used when the bridge on lastshift.ai can't use postMessage — typically
- * on mobile after Telegram's auth flow hands off to the Telegram app and
- * returns in a fresh browser context (no window.opener).
- *
- * The bridge falls back to redirecting here with a hash fragment:
- *   /auth/telegram/callback#tgAuthResult=BASE64_JSON
+ * The widget's data-auth-url points here. Telegram redirects with the
+ * signed user data as query parameters:
+ *   /auth/telegram/callback?id=...&first_name=...&username=...&auth_date=...&hash=...
  *
  * This page:
- *   1. Reads the #tgAuthResult fragment (never sent to server)
- *   2. Decodes the base64 JSON payload (Telegram user data)
- *   3. POSTs to /api/auth/telegram/callback for HMAC verification
- *   4. Redirects to /manage/profile with success/error state
+ *   1. Reads the query params
+ *   2. POSTs them to /api/auth/telegram/callback for HMAC verification
+ *   3. On success, redirects to /manage/profile?verified=tg
+ *   4. On failure, redirects with verify_error
  */
 
 import { useEffect, useState } from "react";
@@ -23,26 +20,18 @@ export default function TelegramCallbackPage() {
   const [message, setMessage] = useState("VERIFYING TELEGRAM...");
 
   useEffect(() => {
-    const hash = window.location.hash;
-    const match = hash.match(/^#tgAuthResult=(.+)$/);
+    const params = new URLSearchParams(window.location.search);
+    const data: Record<string, string> = {};
+    for (const [key, value] of params.entries()) {
+      data[key] = value;
+    }
 
-    if (!match) {
+    if (!data.id || !data.hash || !data.auth_date) {
       window.location.href =
         "/manage/profile?verify_error=tg&reason=missing_params";
       return;
     }
 
-    let data: Record<string, unknown>;
-    try {
-      const decoded = atob(match[1]);
-      data = JSON.parse(decoded) as Record<string, unknown>;
-    } catch {
-      window.location.href =
-        "/manage/profile?verify_error=tg&reason=decode_error";
-      return;
-    }
-
-    // POST to the real callback for HMAC verify + DB write
     fetch("/api/auth/telegram/callback", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

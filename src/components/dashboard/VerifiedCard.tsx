@@ -30,7 +30,7 @@ interface VerifiedCardProps {
   onProfileUpdate?: (profile: ProfileRow) => void;
 }
 
-const BRIDGE_URL = "https://lastshift.ai/auth/telegram-bridge";
+const TELEGRAM_AUTH_URL = "/auth/telegram";
 
 export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
   const [xHandle, setXHandle] = useState(profile.xHandle ?? "");
@@ -184,42 +184,13 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
     return () => window.removeEventListener("message", onMessage);
   }, [handleTelegramAuth]);
 
-  // Open bridge for Telegram auth.
-  // Desktop: popup + postMessage handoff.
-  // Mobile: full-page redirect — the popup context is destroyed when
-  // Telegram's auth flow hands off to the Telegram app and returns in
-  // its in-app browser. Bridge falls back to hash-redirect there.
+  // Open Telegram auth on same origin — BotFather domain is lastproof.app,
+  // so the widget is hosted directly on our own domain. No bridge, no popup,
+  // no cross-origin postMessage. Full-page nav works on both mobile and
+  // desktop because the return URL lands back on lastproof.app where the
+  // session cookie is already valid.
   function openTelegramBridge() {
-    const origin = window.location.origin;
-    const url = `${BRIDGE_URL}?origin=${encodeURIComponent(origin)}`;
-
-    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(
-      navigator.userAgent,
-    );
-
-    if (isMobile) {
-      window.location.href = url;
-      return;
-    }
-
-    const w = 450;
-    const h = 500;
-    const left = window.screenX + (window.outerWidth - w) / 2;
-    const top = window.screenY + (window.outerHeight - h) / 2;
-
-    popupRef.current = window.open(
-      url,
-      "telegram-bridge",
-      `width=${w},height=${h},left=${left},top=${top},popup=yes`,
-    );
-
-    // Poll for popup close (user cancelled)
-    const check = setInterval(() => {
-      if (popupRef.current?.closed) {
-        clearInterval(check);
-        popupRef.current = null;
-      }
-    }, 500);
+    window.location.href = TELEGRAM_AUTH_URL;
   }
 
   async function unlinkPlatform(platform: "x" | "tg") {
