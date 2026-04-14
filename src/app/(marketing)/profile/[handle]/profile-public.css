@@ -382,6 +382,16 @@
 }
 .pp-verified-check svg { width: 13px; height: 13px; stroke-width: 3.5; }
 
+.pp-share-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px;
+  background: transparent; border: none; padding: 0;
+  color: var(--text-2); cursor: pointer;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+.pp-share-icon-btn:hover { color: var(--accent); transform: translateY(-1px); }
+.pp-share-icon-btn svg { width: 16px; height: 16px; }
+
 .pp-status-pill {
   display: inline-flex; align-items: center; gap: 6px;
   font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.2px;

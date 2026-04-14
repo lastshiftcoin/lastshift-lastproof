@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ProfileVariant, PublicProfileView } from "@/lib/public-profile-view";
+import { ShareIconButton } from "./ShareIconButton";
 
 const CHECK_ICON = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
@@ -91,6 +92,7 @@ export function ProfileHero(props: Props) {
               {CHECK_ICON}
             </span>
           )}
+          <ShareIconButton handle={props.handle} />
         </div>
 
         <div className="pp-id-handle-row">
