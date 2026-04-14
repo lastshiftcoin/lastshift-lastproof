@@ -57,9 +57,9 @@ export async function GET(request: NextRequest) {
   }
 
   // Exchange authorization code for access token
-  const clientId = process.env.X_CLIENT_ID!;
-  const clientSecret = process.env.X_CLIENT_SECRET!;
-  const redirectUri = process.env.X_REDIRECT_URI!;
+  const clientId = process.env.X_CLIENT_ID!.trim();
+  const clientSecret = process.env.X_CLIENT_SECRET!.trim();
+  const redirectUri = process.env.X_REDIRECT_URI!.trim();
 
   const tokenRes = await fetch("https://api.twitter.com/2/oauth2/token", {
     method: "POST",

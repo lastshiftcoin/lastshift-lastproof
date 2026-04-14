@@ -24,8 +24,8 @@ export async function GET() {
     return NextResponse.redirect(new URL("/manage", process.env.NEXT_PUBLIC_SITE_URL || "https://lastproof.app"));
   }
 
-  const clientId = process.env.X_CLIENT_ID;
-  const redirectUri = process.env.X_REDIRECT_URI;
+  const clientId = process.env.X_CLIENT_ID?.trim();
+  const redirectUri = process.env.X_REDIRECT_URI?.trim();
   if (!clientId || !redirectUri) {
     console.error("[x/authorize] X_CLIENT_ID or X_REDIRECT_URI not set");
     return NextResponse.json({ error: "oauth_not_configured" }, { status: 500 });
