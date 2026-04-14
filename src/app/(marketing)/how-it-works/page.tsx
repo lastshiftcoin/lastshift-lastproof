@@ -77,7 +77,7 @@ export default function HowItWorksPage() {
         {/* WHAT LASTPROOF SOLVES */}
         <div className="section-title">WHAT LASTPROOF SOLVES</div>
         <h2 className="section-h2">
-          You&rsquo;re one bad hire away from a rugged launch.
+          You&rsquo;re one bad hire away from rugged work.
         </h2>
 
         <div className="solve">
