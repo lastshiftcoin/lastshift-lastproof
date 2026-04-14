@@ -4,7 +4,7 @@ import { AmbassadorCounter } from "../lastproof/[slug]/AmbassadorCounter";
 import "../lastproof/[slug]/affiliate.css";
 
 /**
- * /official — Company-owned general marketing landing page.
+ * /earlyaccess — Company-owned general marketing landing page.
  *
  * Renders the same content as ambassador campaign pages but does NOT
  * write any referral attribution (no ?ref= param on the manage link).
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function OfficialLandingPage() {
+export default function EarlyAccessLandingPage() {
   const manageUrl = "/manage";
 
   return (
