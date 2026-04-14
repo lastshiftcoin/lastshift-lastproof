@@ -11,7 +11,8 @@ import "./how-it-works.css";
  * The topbar, footer, and SHIFTBOT strip come from the (marketing) layout.
  */
 export default function HowItWorksPage() {
-  const [mode, setMode] = useState<"dev" | "op">("dev");
+  const [mode, setMode] = useState<"dev" | "op" | "verify">("dev");
+  const [showFlowDetails, setShowFlowDetails] = useState(false);
 
   return (
     <>
@@ -53,9 +54,18 @@ export default function HowItWorksPage() {
           >
             &gt; FOR OPERATORS
           </button>
+          <button
+            id="btn-verify"
+            role="tab"
+            aria-pressed={mode === "verify"}
+            className={mode === "verify" ? "verify" : undefined}
+            onClick={() => setMode("verify")}
+          >
+            &gt; VERIFY THIS WORK
+          </button>
         </div>
       </div>
-      <div className="toggle-sub">SAME PLATFORM&nbsp;&nbsp;//&nbsp;&nbsp;TWO DOORS</div>
+      <div className="toggle-sub">SAME PLATFORM&nbsp;&nbsp;//&nbsp;&nbsp;THREE DOORS</div>
 
       {/* ═══════════════════════════════════════════════════
           DEVS & TEAMS PANE
@@ -1056,12 +1066,356 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
+      {/* ═══════════════════════════════════════════════════
+          VERIFY THIS WORK PANE
+          ═══════════════════════════════════════════════════ */}
+      <section
+        id="pane-verify"
+        className={`pane${mode === "verify" ? " active" : ""}`}
+        data-mode="verify"
+      >
+        {/* HERO INTRO */}
+        <div className="section-title">VERIFY THIS WORK</div>
+        <h2 className="section-h2">
+          No login. No wallet connect.{" "}
+          <span className="purple">No LASTPROOF profile required.</span>
+        </h2>
+        <p className="section-lede">
+          Anyone with a Solana wallet can verify a proof — you don&rsquo;t need
+          an account, you don&rsquo;t need to be an operator, you just need to
+          have worked with one. The receipt lives on Solana forever, and the
+          operator can never edit it.
+        </p>
+
+        {/* WHERE TO FIND IT */}
+        <div className="section-title" style={{ marginTop: 60 }}>
+          WHERE TO FIND IT
+        </div>
+        <h2 className="section-h2">
+          One button. <span className="purple">On every work item.</span>
+        </h2>
+
+        <div className="vw-find">
+          <div className="vw-find-copy">
+            <p>
+              Open any operator&rsquo;s public profile (the{" "}
+              <code>lastproof.app/@handle</code> link they paste in DMs). Scroll
+              to their <strong>PROOF OF WORK</strong> section — every job has a
+              green <strong>VERIFY THIS WORK</strong> button at the bottom of
+              the card.
+            </p>
+            <p>
+              No sign-up screen. No &ldquo;create account&rdquo; wall.
+              Click&nbsp;&rarr;&nbsp;modal opens&nbsp;&rarr;&nbsp;start
+              verifying.
+            </p>
+          </div>
+          <div className="vw-find-mock">
+            <div className="vw-mock-card">
+              <div className="vw-mock-row">
+                <span className="vw-mock-ticker">$ACME</span>
+                <span className="vw-mock-current">CURRENT</span>
+              </div>
+              <div className="vw-mock-role">Marketing Lead</div>
+              <div className="vw-mock-org">Acme Protocol</div>
+              <div className="vw-mock-date">Mar 2025 — Present</div>
+              <div className="vw-mock-desc">
+                Built community from 0 to 12k. Ran the launch campaign, managed
+                4 KOL deals, owned the X strategy through the first 90 days
+                post-mint.
+              </div>
+              <button type="button" className="vw-mock-btn" disabled>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                VERIFY THIS WORK
+              </button>
+            </div>
+            <div className="vw-mock-cap">
+              // every work item · every profile · same button
+            </div>
+          </div>
+        </div>
+
+        {/* WHY IT BUILDS TRUST */}
+        <div className="section-title" style={{ marginTop: 60 }}>
+          WHY IT BUILDS TRUST
+        </div>
+        <h2 className="section-h2">
+          A claim becomes a fact when{" "}
+          <span className="purple">someone else pays to confirm it.</span>
+        </h2>
+
+        <div className="solve">
+          <div className="solve-card">
+            <div className="x">// 01 — RECEIPTS BEAT RESUMES</div>
+            <h4>An outside wallet, a paid Solana TX.</h4>
+            <p>
+              What operators can&rsquo;t fake is{" "}
+              <strong>an outside wallet</strong> sending a paid Solana
+              transaction that says &ldquo;yes, this happened.&rdquo;
+            </p>
+          </div>
+          <div className="solve-card">
+            <div className="x">// 02 — SKIN IN THE GAME</div>
+            <h4>Verification costs money. That&rsquo;s the point.</h4>
+            <p>
+              Verifying isn&rsquo;t free — that&rsquo;s what makes it signal.
+              Every <strong>$LASTSHFT spent on a proof gets burned</strong>.
+            </p>
+          </div>
+          <div className="solve-card">
+            <div className="x">// 03 — PERMANENT AND PUBLIC</div>
+            <h4>Once signed, it&rsquo;s a Solscan link forever.</h4>
+            <p>
+              The operator can&rsquo;t delete it. The verifier can&rsquo;t take
+              it back. <strong>We can&rsquo;t delete it.</strong>
+            </p>
+          </div>
+        </div>
+
+        {/* COLLAB vs DEV */}
+        <div className="section-title" style={{ marginTop: 60 }}>
+          COLLABORATOR vs DEV
+        </div>
+        <h2 className="section-h2">
+          Same flow. <span className="purple">Two levels of weight.</span>
+        </h2>
+
+        <div className="vw-paths">
+          <div className="vw-path vw-collab">
+            <div className="vw-path-head">
+              <div className="vw-path-label">COLLABORATOR PROOF</div>
+            </div>
+            <div className="vw-path-price">
+              $1
+              <span className="vw-path-discount">$0.60 in $LASTSHFT</span>
+            </div>
+            <p className="vw-path-desc">
+              Open to anyone with a Solana wallet. You worked with them — back
+              the claim.
+            </p>
+          </div>
+
+          <div className="vw-path vw-dev">
+            <div className="vw-path-head">
+              <div className="vw-path-label">
+                DEV PROOF
+                <span className="vw-dev-badge">DEV</span>
+              </div>
+            </div>
+            <div className="vw-path-price">
+              $5
+              <span className="vw-path-discount">$3 in $LASTSHFT</span>
+            </div>
+            <p className="vw-path-desc">
+              Reserved for the wallet that <strong>deployed the token.</strong>
+            </p>
+            <div className="vw-qual-label">QUALIFIES IF:</div>
+            <ul className="vw-qual-list">
+              <li>
+                <span className="vw-qual-mark">◆</span>Holds mint authority,{" "}
+                <em>OR</em>
+              </li>
+              <li>
+                <span className="vw-qual-mark">◆</span>Signed the original mint
+                TX, <em>OR</em>
+              </li>
+              <li>
+                <span className="vw-qual-mark">◆</span>Is a signer on the
+                founder multisig.
+              </li>
+            </ul>
+            <div className="vw-qual-foot">
+              Checked on-chain, post-payment. Fails the check &rarr; downgrades
+              to a collaborator-tier proof. <strong>No refund.</strong>
+            </div>
+          </div>
+        </div>
+
+        <div className="vw-paths-foot">
+          Pay $5 only if you know your deploy wallet qualifies. Not anyone with
+          a token in their bio is a dev.
+        </div>
+
+        {/* THE FLOW */}
+        <div className="section-title" style={{ marginTop: 60 }}>
+          THE FLOW
+        </div>
+        <h2 className="section-h2">
+          Six screens. Under a minute.{" "}
+          <span className="purple">No wallet connect.</span>
+        </h2>
+
+        <div className="vw-flow">
+          <div className="vw-step">
+            <div className="vw-step-num">1</div>
+            <div className="vw-step-body">
+              <h5>Pick path</h5>
+              <p>Collaborator ($1) or Dev ($5).</p>
+            </div>
+          </div>
+          <div className="vw-step">
+            <div className="vw-step-num">2</div>
+            <div className="vw-step-body">
+              <h5>Pick token</h5>
+              <p>$LASTSHFT (40% off), SOL, or USDT.</p>
+            </div>
+          </div>
+          <div className="vw-step">
+            <div className="vw-step-num">3</div>
+            <div className="vw-step-body">
+              <h5>Send the payment</h5>
+              <p>
+                Copy the treasury address and exact amount, send from{" "}
+                <strong>any Solana wallet you control</strong> — Phantom,
+                Solflare, Backpack, hardware wallet, even an exchange
+                withdrawal.{" "}
+                <em>
+                  The wallet you send from becomes your verifier identity on the
+                  proof.
+                </em>
+              </p>
+            </div>
+          </div>
+          <div className="vw-step">
+            <div className="vw-step-num">4</div>
+            <div className="vw-step-body">
+              <h5>Paste the signature</h5>
+              <p>
+                Paste the transaction signature, add an optional comment (140
+                chars). The signature is your proof of payment.
+              </p>
+            </div>
+          </div>
+          <div className="vw-step vw-step-verify">
+            <div className="vw-step-num">5</div>
+            <div className="vw-step-body">
+              <h5>We verify and finalize</h5>
+              <p>
+                Helius detects your transaction within seconds. The backend
+                extracts the sender wallet from the on-chain data, runs the
+                safety checks, and writes the proof permanently. If anything
+                fails, you see why.
+              </p>
+              <button
+                type="button"
+                className="vw-step-toggle"
+                aria-expanded={showFlowDetails}
+                onClick={() => setShowFlowDetails((v) => !v)}
+              >
+                {showFlowDetails ? "▾" : "▸"} See the checks we run
+              </button>
+              {showFlowDetails && (
+                <ul className="vw-checks">
+                  <li>
+                    <span className="vw-check-mark">✓</span>
+                    <div>
+                      <strong>REAL-TIME DETECTION</strong>
+                      <span>
+                        Helius webhook · 1–5 sec. Cron fallback · 60 sec.
+                      </span>
+                    </div>
+                  </li>
+                  <li>
+                    <span className="vw-check-mark">✓</span>
+                    <div>
+                      <strong>SENDER EXTRACTION</strong>
+                      <span>
+                        Verifier identity pulled from on-chain{" "}
+                        <code>accountKeys[0]</code> — not from anything you
+                        typed.
+                      </span>
+                    </div>
+                  </li>
+                  <li>
+                    <span className="vw-check-mark">✓</span>
+                    <div>
+                      <strong>ANTI-REPLAY</strong>
+                      <span>
+                        TX timestamp must be after the modal opened. Old
+                        signatures rejected silently.
+                      </span>
+                    </div>
+                  </li>
+                  <li>
+                    <span className="vw-check-mark">✓</span>
+                    <div>
+                      <strong>SELF-PROOF GUARD</strong>
+                      <span>
+                        Sender wallet ≠ profile owner. Operators can&rsquo;t pay
+                        themselves.
+                      </span>
+                    </div>
+                  </li>
+                  <li>
+                    <span className="vw-check-mark">✓</span>
+                    <div>
+                      <strong>UNIQUENESS</strong>
+                      <span>
+                        One wallet · one verification per work item.
+                      </span>
+                    </div>
+                  </li>
+                  <li>
+                    <span className="vw-check-mark">✓</span>
+                    <div>
+                      <strong>DEV QUALIFICATION</strong>
+                      <span>
+                        Dev path only — <code>token-dev-verify</code> runs
+                        against extracted sender. Fail = collaborator-tier
+                        proof.
+                      </span>
+                    </div>
+                  </li>
+                </ul>
+              )}
+            </div>
+          </div>
+          <div className="vw-step">
+            <div className="vw-step-num">6</div>
+            <div className="vw-step-body">
+              <h5>Permanent receipt</h5>
+              <p>
+                Proof writes to the database, profile reloads, Solscan link goes
+                live. <strong>Once it&rsquo;s there, it&rsquo;s there.</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* CALLOUT */}
+        <div className="callout" style={{ marginTop: 40 }}>
+          <div className="callout-text">
+            Web3 hiring runs on private DMs. Vouches don&rsquo;t survive the
+            next launch.{" "}
+            <strong>
+              Proofs do — and every $LASTSHFT spent verifying gets burned.
+            </strong>
+          </div>
+          <div className="callout-ctas">
+            <Link className="btn btn-ghost btn-sm" href="/grid">
+              &gt; BROWSE OPERATORS
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ═══ CTA STRIP ═══ */}
       <div className="cta-strip">
         <div className="cta-eyebrow">
           {mode === "dev"
             ? "HIRE WITH PROOF  //  NO MORE DM ROULETTE"
-            : "BUILD PROOF  //  ON-CHAIN. PERMANENT. YOURS."}
+            : mode === "op"
+            ? "BUILD PROOF  //  ON-CHAIN. PERMANENT. YOURS."
+            : "VERIFY THIS WORK  //  PERMANENT. PUBLIC. YOURS."}
         </div>
         <h3>
           {mode === "dev" ? (
@@ -1069,10 +1423,15 @@ export default function HowItWorksPage() {
               Stop paying strangers.{" "}
               <span className="green">Start hiring history.</span>
             </>
-          ) : (
+          ) : mode === "op" ? (
             <>
               Stop shilling yourself.{" "}
               <span className="orange">Start stacking on-chain proof.</span>
+            </>
+          ) : (
+            <>
+              Worked with someone good?{" "}
+              <span className="purple">Put it on-chain.</span>
             </>
           )}
         </h3>
@@ -1082,7 +1441,7 @@ export default function HowItWorksPage() {
               Browse every verified operator on the Grid, filter by tier, proof
               count, and DEV badges — or let SHIFTBOT do it for you.
             </>
-          ) : (
+          ) : mode === "op" ? (
             <>
               Claim{" "}
               <span
@@ -1097,6 +1456,12 @@ export default function HowItWorksPage() {
               and collaborators. Let SHIFTBOT surface you to projects hiring
               right now.
             </>
+          ) : (
+            <>
+              No login. No wallet connect. Open the operator&rsquo;s profile,
+              click <strong>VERIFY THIS WORK</strong> on any job, and back the
+              claim with a paid Solana TX. Permanent. Public. Yours forever.
+            </>
           )}
         </p>
         <div className="hero-ctas">
@@ -1109,13 +1474,19 @@ export default function HowItWorksPage() {
                 &gt; BUILD YOUR PROFILE
               </Link>
             </>
-          ) : (
+          ) : mode === "op" ? (
             <>
               <Link className="btn btn-primary" href="/manage">
                 &gt; BUILD YOUR PROFILE
               </Link>
               <Link className="btn btn-ghost" href="/grid">
                 &gt; SCAN GRID
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link className="btn btn-primary purple" href="/grid">
+                &gt; BROWSE OPERATORS
               </Link>
             </>
           )}
