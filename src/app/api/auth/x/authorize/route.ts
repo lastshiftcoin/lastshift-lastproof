@@ -8,9 +8,10 @@
  */
 
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import crypto from "node:crypto";
 import { readSession } from "@/lib/session";
+import { logXAuthEvent, newXAuthSessionId } from "@/lib/x-auth-debug";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,8 +20,17 @@ const COOKIE_NAME = "lp_x_oauth";
 const COOKIE_TTL = 600; // 10 minutes
 
 export async function GET() {
+  const hdrs = await headers();
+  const userAgent = hdrs.get("user-agent");
+
   const session = await readSession();
   if (!session) {
+    void logXAuthEvent({
+      event: "authorize_start",
+      sessionId: newXAuthSessionId(),
+      userAgent,
+      payload: { aborted: "no_session" },
+    });
     return NextResponse.redirect(new URL("/manage", process.env.NEXT_PUBLIC_SITE_URL || "https://lastproof.app"));
   }
 
@@ -39,11 +49,25 @@ export async function GET() {
     .update(codeVerifier)
     .digest("base64url");
 
+  // Correlation ID for linking authorize → callback rows in debug_events.
+  const debugSessionId = newXAuthSessionId();
+
   // Store state + verifier in short-lived HttpOnly cookie
   const cookiePayload = JSON.stringify({
     state,
     codeVerifier,
     walletAddress: session.walletAddress,
+    debugSessionId,
+  });
+
+  void logXAuthEvent({
+    event: "authorize_start",
+    sessionId: debugSessionId,
+    userAgent,
+    walletAddress: session.walletAddress,
+    payload: {
+      redirect_uri: redirectUri,
+    },
   });
 
   const jar = await cookies();
