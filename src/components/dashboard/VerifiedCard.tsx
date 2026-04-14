@@ -184,10 +184,23 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
     return () => window.removeEventListener("message", onMessage);
   }, [handleTelegramAuth]);
 
-  // Open bridge popup for Telegram auth
+  // Open bridge for Telegram auth.
+  // Desktop: popup + postMessage handoff.
+  // Mobile: full-page redirect — the popup context is destroyed when
+  // Telegram's auth flow hands off to the Telegram app and returns in
+  // its in-app browser. Bridge falls back to hash-redirect there.
   function openTelegramBridge() {
     const origin = window.location.origin;
     const url = `${BRIDGE_URL}?origin=${encodeURIComponent(origin)}`;
+
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(
+      navigator.userAgent,
+    );
+
+    if (isMobile) {
+      window.location.href = url;
+      return;
+    }
 
     const w = 450;
     const h = 500;

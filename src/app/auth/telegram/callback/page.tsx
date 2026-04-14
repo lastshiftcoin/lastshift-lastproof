@@ -1,51 +1,72 @@
 "use client";
 
 /**
- * Client-side Telegram OAuth callback handler.
+ * Mobile Telegram OAuth callback handler.
  *
- * Telegram's oauth.telegram.org/auth returns data as a URL hash fragment:
- *   /auth/telegram/callback#tgAuthResult=BASE64_ENCODED_JSON
+ * Used when the bridge on lastshift.ai can't use postMessage — typically
+ * on mobile after Telegram's auth flow hands off to the Telegram app and
+ * returns in a fresh browser context (no window.opener).
  *
- * Hash fragments never reach the server, so this client page:
- * 1. Reads the #tgAuthResult fragment
- * 2. Decodes the base64 JSON payload (contains id, first_name, username, hash, auth_date, etc.)
- * 3. Redirects to the real server callback with the data as query parameters
+ * The bridge falls back to redirecting here with a hash fragment:
+ *   /auth/telegram/callback#tgAuthResult=BASE64_JSON
  *
- * The server callback at /api/auth/telegram/callback then validates the HMAC
- * hash and writes the verified handle to the DB.
+ * This page:
+ *   1. Reads the #tgAuthResult fragment (never sent to server)
+ *   2. Decodes the base64 JSON payload (Telegram user data)
+ *   3. POSTs to /api/auth/telegram/callback for HMAC verification
+ *   4. Redirects to /manage/profile with success/error state
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function TelegramCallbackPage() {
+  const [message, setMessage] = useState("VERIFYING TELEGRAM...");
+
   useEffect(() => {
     const hash = window.location.hash;
-
-    // Telegram appends #tgAuthResult=BASE64 to the return_to URL
     const match = hash.match(/^#tgAuthResult=(.+)$/);
 
     if (!match) {
-      // No tgAuthResult — redirect to dashboard with error
-      window.location.href = "/manage/profile?verify_error=tg&reason=missing_params";
+      window.location.href =
+        "/manage/profile?verify_error=tg&reason=missing_params";
       return;
     }
 
+    let data: Record<string, unknown>;
     try {
-      // Decode base64 payload → JSON with Telegram user data
       const decoded = atob(match[1]);
-      const data = JSON.parse(decoded) as Record<string, string | number>;
-
-      // Build query string with all Telegram params (id, first_name, username, hash, auth_date, etc.)
-      const params = new URLSearchParams();
-      for (const [key, value] of Object.entries(data)) {
-        params.set(key, String(value));
-      }
-
-      // Forward to the real server callback as query params
-      window.location.href = `/api/auth/telegram/callback?${params.toString()}`;
+      data = JSON.parse(decoded) as Record<string, unknown>;
     } catch {
-      window.location.href = "/manage/profile?verify_error=tg&reason=decode_error";
+      window.location.href =
+        "/manage/profile?verify_error=tg&reason=decode_error";
+      return;
     }
+
+    // POST to the real callback for HMAC verify + DB write
+    fetch("/api/auth/telegram/callback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    })
+      .then(async (r) => {
+        const res = (await r.json().catch(() => ({}))) as {
+          ok?: boolean;
+          error?: string;
+        };
+        if (r.ok && res.ok) {
+          window.location.href = "/manage/profile?verified=tg";
+        } else {
+          const reason = res.error ?? "unknown";
+          window.location.href = `/manage/profile?verify_error=tg&reason=${encodeURIComponent(reason)}`;
+        }
+      })
+      .catch(() => {
+        setMessage("NETWORK ERROR");
+        setTimeout(() => {
+          window.location.href =
+            "/manage/profile?verify_error=tg&reason=network_error";
+        }, 1500);
+      });
   }, []);
 
   return (
@@ -62,7 +83,7 @@ export default function TelegramCallbackPage() {
         letterSpacing: 1,
       }}
     >
-      VERIFYING TELEGRAM...
+      {message}
     </div>
   );
 }
