@@ -77,8 +77,26 @@ export async function GET(request: NextRequest) {
 
   if (!tokenRes.ok) {
     const text = await tokenRes.text();
-    console.error("[x/callback] token exchange failed:", tokenRes.status, text);
-    return dashboardRedirect("verify_error=x&reason=token_exchange");
+    let parsed: { error?: string; error_description?: string } = {};
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      // non-JSON response
+    }
+    console.error("[x/callback] token exchange failed", {
+      http_status: tokenRes.status,
+      x_error: parsed.error ?? null,
+      x_error_description: parsed.error_description ?? null,
+      raw_body: text.substring(0, 500),
+      redirect_uri_sent: redirectUri,
+      redirect_uri_length: redirectUri.length,
+      client_id_length: clientId.length,
+      client_secret_length: clientSecret.length,
+    });
+    const reason = parsed.error
+      ? `token_exchange_${parsed.error}`
+      : "token_exchange";
+    return dashboardRedirect(`verify_error=x&reason=${encodeURIComponent(reason)}`);
   }
 
   const tokenData = (await tokenRes.json()) as { access_token: string };
@@ -89,7 +107,11 @@ export async function GET(request: NextRequest) {
   });
 
   if (!userRes.ok) {
-    console.error("[x/callback] user fetch failed:", userRes.status);
+    const userErrText = await userRes.text().catch(() => "");
+    console.error("[x/callback] user fetch failed", {
+      http_status: userRes.status,
+      raw_body: userErrText.substring(0, 500),
+    });
     return dashboardRedirect("verify_error=x&reason=user_fetch");
   }
 
