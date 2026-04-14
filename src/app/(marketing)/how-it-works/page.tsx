@@ -58,7 +58,6 @@ export default function HowItWorksPage() {
             id="btn-verify"
             role="tab"
             aria-pressed={mode === "verify"}
-            className={mode === "verify" ? "verify" : undefined}
             onClick={() => setMode("verify")}
           >
             &gt; VERIFY THIS WORK
@@ -1078,7 +1077,7 @@ export default function HowItWorksPage() {
         <div className="section-title">VERIFY THIS WORK</div>
         <h2 className="section-h2">
           No login. No wallet connect.{" "}
-          <span className="gold">No LASTPROOF profile required.</span>
+          <span className="orange">No LASTPROOF profile required.</span>
         </h2>
         <p className="section-lede">
           Anyone with a Solana wallet can verify a proof — you don&rsquo;t need
@@ -1092,7 +1091,7 @@ export default function HowItWorksPage() {
           WHERE TO FIND IT
         </div>
         <h2 className="section-h2">
-          One button. <span className="gold">On every work item.</span>
+          One button. <span className="orange">On every work item.</span>
         </h2>
 
         <div className="vw-find">
@@ -1150,7 +1149,7 @@ export default function HowItWorksPage() {
         </div>
         <h2 className="section-h2">
           A claim becomes a fact when{" "}
-          <span className="gold">someone else pays to confirm it.</span>
+          <span className="orange">someone else pays to confirm it.</span>
         </h2>
 
         <div className="solve">
@@ -1186,7 +1185,7 @@ export default function HowItWorksPage() {
           COLLABORATOR vs DEV
         </div>
         <h2 className="section-h2">
-          Same flow. <span className="gold">Two levels of weight.</span>
+          Same flow. <span className="orange">Two levels of weight.</span>
         </h2>
 
         <div className="vw-paths">
@@ -1251,7 +1250,7 @@ export default function HowItWorksPage() {
         </div>
         <h2 className="section-h2">
           Six screens. Under a minute.{" "}
-          <span className="gold">No wallet connect.</span>
+          <span className="orange">No wallet connect.</span>
         </h2>
 
         <div className="vw-flow">
@@ -1431,7 +1430,7 @@ export default function HowItWorksPage() {
           ) : (
             <>
               Worked with someone good?{" "}
-              <span className="gold">Put it on-chain.</span>
+              <span className="orange">Put it on-chain.</span>
             </>
           )}
         </h3>
@@ -1485,7 +1484,7 @@ export default function HowItWorksPage() {
             </>
           ) : (
             <>
-              <Link className="btn btn-primary gold" href="/grid">
+              <Link className="btn btn-primary" href="/grid">
                 &gt; BROWSE OPERATORS
               </Link>
             </>
