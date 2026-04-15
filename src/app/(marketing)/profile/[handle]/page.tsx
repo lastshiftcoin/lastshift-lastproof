@@ -133,6 +133,14 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
     if (amb) campaignSlug = amb.campaign_slug;
   }
 
+  // Founder override: @lastshiftfounder's footer CTA points at the
+  // general marketing landing page (/earlyaccess), not /manage. This
+  // is the company-owned URL with no referral tracking — the founder
+  // isn't an ambassador of themselves.
+  if (view.handle === "lastshiftfounder") {
+    campaignSlug = "earlyaccess";
+  }
+
   // ─── FREE variant: stripped layout (hero + CTA only) ──────────
   if (view.variant === "free") {
     return (
