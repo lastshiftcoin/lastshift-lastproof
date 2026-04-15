@@ -43,7 +43,7 @@ export function Screen3Send({ path, token }: Screen3SendProps) {
   }, [path, token]);
 
   const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(TREASURY_WALLET).then(() => {
+    navigator.clipboard.writeText(TREASURY_WALLET.trim()).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }).catch(() => {});
@@ -85,7 +85,7 @@ export function Screen3Send({ path, token }: Screen3SendProps) {
             <button
               type="button"
               className="pm-cta-ghost"
-              style={{ marginLeft: 8, padding: "2px 8px", fontSize: 9 }}
+              style={{ marginLeft: 8, padding: "2px 8px", fontSize: 9, userSelect: "none" }}
               onClick={handleCopy}
             >
               {copied ? "COPIED ✓" : "COPY"}
