@@ -43,7 +43,7 @@ export default async function DashboardPage() {
   let workItems: Array<{
     id: string; ticker: string | null; role: string; description: string | null;
     startedAt: string | null; endedAt: string | null; minted: boolean;
-    proofCount: number; hasDevProof: boolean; position: number;
+    proofCount: number; hasDevProof: boolean;
   }> = [];
   let screenshots: Array<{
     id: string; imageUrl: string; linkedUrl: string | null; position: number;
@@ -73,11 +73,12 @@ export default async function DashboardPage() {
       additionalCategories = (cats ?? []).slice(1).map((c: { category_slug: string }) => c.category_slug);
 
       // Fetch work items with proof counts
+      // Order by started_at desc; client-side sorts Current (no end date) first.
       const { data: rawItems } = await sb
         .from("work_items")
-        .select("id, ticker, role, description, started_at, ended_at, minted, position")
+        .select("id, ticker, role, description, started_at, ended_at, minted")
         .eq("profile_id", profile.id)
-        .order("position", { ascending: true });
+        .order("started_at", { ascending: false, nullsFirst: false });
 
       if (rawItems) {
         // Batch-fetch proof counts for all work items
@@ -105,7 +106,6 @@ export default async function DashboardPage() {
           minted: (wi.minted as boolean) ?? false,
           proofCount: countMap.get(wi.id as string)?.total ?? 0,
           hasDevProof: countMap.get(wi.id as string)?.hasDev ?? false,
-          position: wi.position as number,
         }));
       }
 

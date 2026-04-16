@@ -38,7 +38,6 @@ interface WorkItemData {
   minted: boolean;
   proofCount: number;
   hasDevProof: boolean;
-  position: number;
 }
 
 interface ScreenshotData {

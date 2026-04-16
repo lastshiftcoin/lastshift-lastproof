@@ -23,7 +23,6 @@ export interface DbWorkItem {
   ended_at: string | null;
   minted: boolean;
   is_dev: boolean;
-  position: number;
 }
 
 // ─── App shape ─────────────────────────────────────────────────────────────
@@ -38,7 +37,6 @@ export interface WorkItemRow {
   endedAt: string | null;
   minted: boolean;
   isDev: boolean;
-  position: number;
 }
 
 // ─── Converters ────────────────────────────────────────────────────────────
@@ -54,7 +52,6 @@ function rowFromDb(r: DbWorkItem): WorkItemRow {
     endedAt: r.ended_at,
     minted: r.minted ?? false,
     isDev: r.is_dev ?? false,
-    position: r.position,
   };
 }
 
@@ -69,7 +66,6 @@ function rowToDb(row: WorkItemRow): Record<string, unknown> {
     ended_at: row.endedAt,
     minted: row.minted,
     is_dev: row.isDev,
-    position: row.position,
   };
 }
 
@@ -102,7 +98,7 @@ export async function listWorkItemsByProfile(profileId: string): Promise<WorkIte
     .from(TABLE)
     .select("*")
     .eq("profile_id", profileId)
-    .order("position", { ascending: true })
+    .order("started_at", { ascending: false, nullsFirst: false })
     .returns<DbWorkItem[]>();
   if (error) throw new Error(`[work-items-adapter] listByProfile: ${error.message}`);
   return (data ?? []).map(rowFromDb);

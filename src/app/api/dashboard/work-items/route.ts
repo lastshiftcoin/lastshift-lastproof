@@ -34,16 +34,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "missing_role" }, { status: 400 });
   }
 
-  // Get next position
-  const { data: existing } = await sb
-    .from("work_items")
-    .select("position")
-    .eq("profile_id", profile.id)
-    .order("position", { ascending: false })
-    .limit(1);
-
-  const nextPos = (existing?.[0]?.position ?? -1) + 1;
-
   const { data, error } = await sb
     .from("work_items")
     .insert({
@@ -53,7 +43,6 @@ export async function POST(request: Request) {
       description: description || null,
       started_at: startedAt || null,
       ended_at: endedAt || null,
-      position: nextPos,
     })
     .select()
     .single();
@@ -74,7 +63,6 @@ export async function POST(request: Request) {
       minted: data.minted ?? false,
       proofCount: 0,
       hasDevProof: false,
-      position: data.position,
     },
   });
 }
@@ -145,7 +133,6 @@ export async function PATCH(request: Request) {
       minted: data.minted ?? false,
       proofCount: count ?? 0,
       hasDevProof,
-      position: data.position,
     },
   });
 }

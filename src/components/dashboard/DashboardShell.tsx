@@ -26,7 +26,7 @@ interface DashboardShellProps {
   workItems: Array<{
     id: string; ticker: string | null; role: string; description: string | null;
     startedAt: string | null; endedAt: string | null; minted: boolean;
-    proofCount: number; hasDevProof: boolean; position: number;
+    proofCount: number; hasDevProof: boolean;
   }>;
   screenshots: Array<{
     id: string; imageUrl: string; linkedUrl: string | null; position: number;

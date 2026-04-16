@@ -16,7 +16,7 @@
  * Talks to /api/dashboard/work-items for CRUD.
  */
 
-import { useState, useRef, useCallback } from "react";
+import { useState } from "react";
 import { MintModal } from "@/components/mint-modal/MintModal";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -26,12 +26,11 @@ interface WorkItem {
   ticker: string | null;
   role: string;
   description: string | null;
-  startedAt: string | null; // "YYYY-MM" or null
-  endedAt: string | null;   // "YYYY-MM" or null (null = "Present")
+  startedAt: string | null; // "YYYY-MM-DD" or null
+  endedAt: string | null;   // "YYYY-MM-DD" or null (null = "Present")
   minted: boolean;
   proofCount: number;
   hasDevProof: boolean;
-  position: number;
 }
 
 interface ProofOfWorkCardProps {
@@ -47,8 +46,6 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
   const [items, setItems] = useState<WorkItem[]>(initialItems);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── Add form state ─────────────────────────────────────────────────────
   const [formTicker, setFormTicker] = useState("");
@@ -60,13 +57,20 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
   const [formEndYear, setFormEndYear] = useState("");
   const [formPresent, setFormPresent] = useState(false);
 
-  // ─── Drag-and-drop state ────────────────────────────────────────────────
-  const dragItem = useRef<string | null>(null);
-  const dragOverItem = useRef<string | null>(null);
-  const [dragId, setDragId] = useState<string | null>(null);
+  // Sort: Current (no end date) first, then newest started_at first.
+  // Same logic as src/lib/projector/public-profile.ts so dashboard and
+  // public profile stay consistent.
+  const sortByDate = (a: WorkItem, b: WorkItem) => {
+    const aCurrent = !a.endedAt;
+    const bCurrent = !b.endedAt;
+    if (aCurrent !== bCurrent) return aCurrent ? -1 : 1;
+    const aTime = a.startedAt ? new Date(a.startedAt).getTime() : 0;
+    const bTime = b.startedAt ? new Date(b.startedAt).getTime() : 0;
+    return bTime - aTime;
+  };
 
-  const mintedItems = items.filter((i) => i.minted).sort((a, b) => a.position - b.position);
-  const regularItems = items.filter((i) => !i.minted).sort((a, b) => a.position - b.position);
+  const mintedItems = items.filter((i) => i.minted).sort(sortByDate);
+  const regularItems = items.filter((i) => !i.minted).sort(sortByDate);
 
   function isLocked(item: WorkItem): boolean {
     return item.proofCount > 0;
@@ -225,86 +229,15 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
     }
   }
 
-  // ─── Drag handlers ──────────────────────────────────────────────────────
-  const handleDragStart = useCallback((id: string) => {
-    dragItem.current = id;
-    setDragId(id);
-  }, []);
-
-  const handleDragEnter = useCallback((id: string) => {
-    dragOverItem.current = id;
-  }, []);
-
-  const handleDragEnd = useCallback(() => {
-    if (!dragItem.current || !dragOverItem.current || dragItem.current === dragOverItem.current) {
-      setDragId(null);
-      return;
-    }
-
-    setItems((prev) => {
-      const arr = [...prev];
-      const fromIdx = arr.findIndex((i) => i.id === dragItem.current);
-      const toIdx = arr.findIndex((i) => i.id === dragOverItem.current);
-      if (fromIdx === -1 || toIdx === -1) return prev;
-
-      const [moved] = arr.splice(fromIdx, 1);
-      arr.splice(toIdx, 0, moved);
-      // Reassign positions
-      return arr.map((item, i) => ({ ...item, position: i }));
-    });
-
-    dragItem.current = null;
-    dragOverItem.current = null;
-    setDragId(null);
-  }, []);
-
-  // ─── Save order ─────────────────────────────────────────────────────────
-  async function handleSaveOrder() {
-    setSaving(true);
-    setSaved(false);
-    if (savedTimer.current) clearTimeout(savedTimer.current);
-
-    try {
-      const ids = [...mintedItems, ...regularItems].map((item) => item.id);
-
-      const res = await fetch("/api/dashboard/work-items/reorder", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        alert(data.error || "Reorder failed");
-        return;
-      }
-
-      setSaved(true);
-      savedTimer.current = setTimeout(() => setSaved(false), 3000);
-    } catch {
-      alert("Save failed.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
   // ─── Render ─────────────────────────────────────────────────────────────
   return (
     <div className="edit-card" id="powCard">
       <div className="edit-head">
         <div className="edit-title">PROOF OF WORK</div>
-        <button
-          type="button"
-          className={`edit-action${saved ? " saved" : ""}`}
-          onClick={handleSaveOrder}
-          disabled={saving}
-        >
-          {saving ? "SAVING..." : saved ? "SAVED ✓" : "SAVE →"}
-        </button>
       </div>
 
       <div className="field-help" style={{ margin: "0 0 12px" }}>
-        List as many projects as you want. Only your last 5 show on your public profile — visitors can hit <strong>SEE MORE</strong> to expand the rest. Drag to reorder.
+        List as many projects as you want. Only your last 5 show on your public profile — visitors can hit <strong>SEE MORE</strong> to expand the rest. Items are sorted by date, with current roles first.
       </div>
 
       {/* Callout boxes */}
@@ -342,14 +275,13 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
             {mintedItems.length} / 4
           </span>
         </div>
-        <span className="status-note" style={{ color: "var(--text-dim)" }}>DRAG TO REORDER · MAX 4</span>
+        <span className="status-note" style={{ color: "var(--text-dim)" }}>MAX 4</span>
       </div>
 
       {mintedItems.length > 0 ? (
         <div className="pow-list">
           {mintedItems.map((item) => (
-            <PowRow key={item.id} item={item} locked onEdit={handleEdit} onDelete={handleDelete} onMint={handleMint} formatDate={formatDateRange}
-              isDragging={dragId === item.id} onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} />
+            <PowRow key={item.id} item={item} locked onEdit={handleEdit} onDelete={handleDelete} onMint={handleMint} formatDate={formatDateRange} />
           ))}
         </div>
       ) : (
@@ -362,7 +294,7 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
       {/* Regular PoW subsection */}
       <div className="minted-head" style={{ borderTop: "1px solid var(--border)" }}>
         <div className="minted-title" style={{ color: "var(--accent)" }}>Proof of Work</div>
-        <span className="status-note" style={{ color: "var(--text-dim)" }}>DRAG TO REORDER</span>
+        <span className="status-note" style={{ color: "var(--text-dim)" }}>SORTED BY DATE</span>
       </div>
 
       {regularItems.length > 0 ? (
@@ -376,10 +308,6 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
               onDelete={handleDelete}
               onMint={handleMint}
               formatDate={formatDateRange}
-              isDragging={dragId === item.id}
-              onDragStart={handleDragStart}
-              onDragEnter={handleDragEnter}
-              onDragEnd={handleDragEnd}
             />
           ))}
         </div>
@@ -529,10 +457,6 @@ function PowRow({
   onDelete,
   onMint,
   formatDate,
-  isDragging,
-  onDragStart,
-  onDragEnter,
-  onDragEnd,
 }: {
   item: WorkItem;
   locked: boolean;
@@ -543,10 +467,6 @@ function PowRow({
   onDelete: (id: string) => void;
   onMint: (id: string) => void;
   formatDate: (item: WorkItem) => string;
-  isDragging: boolean;
-  onDragStart: (id: string) => void;
-  onDragEnter: (id: string) => void;
-  onDragEnd: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
@@ -684,17 +604,8 @@ function PowRow({
 
   // ─── View mode ──────────────────────────────────────────────────────────
   return (
-    <div
-      className={`pow-row${item.minted ? " minted" : ""}`}
-      draggable
-      onDragStart={() => onDragStart(item.id)}
-      onDragEnter={() => onDragEnter(item.id)}
-      onDragEnd={onDragEnd}
-      onDragOver={(e) => e.preventDefault()}
-      style={{ opacity: isDragging ? 0.4 : 1, cursor: "grab" }}
-    >
+    <div className={`pow-row${item.minted ? " minted" : ""}`}>
       <div className="pow-top">
-        <span className="pow-grip" style={{ cursor: "grab" }}>{"\u22EE\u22EE"}</span>
         <span className="pow-tick">{item.ticker || "—"}</span>
         <div className="pow-meta">
           <div className="pow-title">

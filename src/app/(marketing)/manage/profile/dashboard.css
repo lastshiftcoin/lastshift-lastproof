@@ -316,12 +316,9 @@ textarea.field-input{font-family:var(--sans);font-size:13px;resize:vertical;min-
 .pow-trash{padding:7px 9px}
 
 .pow-list{display:flex;flex-direction:column;gap:12px}
-.pow-row{padding:14px 16px;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;cursor:grab}
+.pow-row{padding:14px 16px;background:var(--bg-input);border:1px solid var(--border);border-radius:6px}
 .pow-row.minted{border-color:rgba(255,215,0,.45);background:linear-gradient(135deg,rgba(255,215,0,.05),rgba(255,215,0,.02));box-shadow:0 0 0 1px rgba(255,215,0,.1),0 0 24px rgba(255,215,0,.06)}
-.pow-row.dragging{opacity:.4}
-.pow-row.drag-over{border-color:var(--accent);background:rgba(255,145,0,.06)}
-.pow-top{display:grid;grid-template-columns:auto auto 1fr auto auto;gap:14px;align-items:start}
-.pow-grip{font-family:var(--mono);color:var(--text-dim);font-size:14px;line-height:1;cursor:grab;user-select:none;padding-top:2px}
+.pow-top{display:grid;grid-template-columns:auto 1fr auto auto;gap:14px;align-items:start}
 .pow-tick{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.5px;min-width:62px;padding-top:1px}
 .pow-row.minted .pow-tick{color:var(--gold)}
 .pow-meta{min-width:0}
