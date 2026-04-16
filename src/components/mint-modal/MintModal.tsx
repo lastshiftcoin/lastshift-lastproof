@@ -138,12 +138,14 @@ export function MintModal({
       .then((data: { ok: boolean; session_id?: string; opened_at?: string }) => {
         if (data.ok && data.session_id) {
           setSessionId(data.session_id);
+          debug.log("proof_flow", "mint_session_start_ok", { session_id: data.session_id });
           try {
             localStorage.setItem(storageKey, JSON.stringify({ session_id: data.session_id, opened_at: data.opened_at }));
           } catch { /* storage full */ }
         }
       })
-      .catch(() => {});
+      .catch((err) => { debug.log("error", "mint_session_start_failed", { error: String(err) }); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, workItemId, storageKey]);
 
   // ESC to close
@@ -213,14 +215,15 @@ export function MintModal({
         setVerificationId(data.verification_id!);
         setShowFailure(false);
         setStep(4);
-      } catch {
+      } catch (err) {
+        debug.log("error", "mint_submit_network_error", { error: String(err), attempt: failureAttempt + 1 });
         setFailureAttempt((a) => a + 1);
         setFailureCheck("network");
         setFailureDetail("Failed to reach the server.");
         setShowFailure(true);
       }
     },
-    [token, workItemId, sessionId, failureAttempt, storageKey],
+    [token, workItemId, sessionId, failureAttempt, storageKey, debug],
   );
 
   const handleVerified = useCallback(

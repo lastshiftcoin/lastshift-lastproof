@@ -215,11 +215,13 @@ export function HandleChangeModal({
       .then((data: { ok: boolean; session_id?: string; opened_at?: string }) => {
         if (data.ok && data.session_id) {
           setSessionId(data.session_id);
+          debug.log("proof_flow", "handle_change_session_start_ok", { session_id: data.session_id });
           try { localStorage.setItem(key, JSON.stringify({ session_id: data.session_id, opened_at: data.opened_at })); } catch {}
           setStep(4);
         }
       })
-      .catch(() => {});
+      .catch((err) => { debug.log("error", "handle_change_session_start_failed", { error: String(err) }); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [newHandle]);
 
   // ─── Submit TX ────────────────────────────────────────────────────
@@ -263,14 +265,15 @@ export function HandleChangeModal({
         setVerificationId(data.verification_id!);
         setShowFailure(false);
         setStep(6);
-      } catch {
+      } catch (err) {
+        debug.log("error", "handle_change_submit_network_error", { error: String(err), attempt: failureAttempt + 1 });
         setFailureAttempt((a) => a + 1);
         setFailureCheck("network");
         setFailureDetail("Failed to reach the server.");
         setShowFailure(true);
       }
     },
-    [token, newHandle, sessionId, failureAttempt],
+    [token, newHandle, sessionId, failureAttempt, debug],
   );
 
   const handleVerified = useCallback(

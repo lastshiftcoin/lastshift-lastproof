@@ -95,6 +95,7 @@ export function PasteVerifyFlow({
       .then((data: { ok: boolean; session_id?: string; opened_at?: string }) => {
         if (data.ok && data.session_id) {
           setSessionId(data.session_id);
+          debug.log("proof_flow", "session_start_ok", { session_id: data.session_id });
           try {
             localStorage.setItem(
               storageKey,
@@ -103,7 +104,8 @@ export function PasteVerifyFlow({
           } catch { /* storage full — continue without persistence */ }
         }
       })
-      .catch(() => { /* session creation failed — submit will fail gracefully */ });
+      .catch((err) => { debug.log("error", "session_start_failed", { error: String(err) }); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workItemId, storageKey]);
 
   const handlePathPick = useCallback((p: ProofPath) => {
@@ -178,14 +180,15 @@ export function PasteVerifyFlow({
         setVerificationId(data.verification_id!);
         setShowFailure(false);
         setScreen(5);
-      } catch {
+      } catch (err) {
+        debug.log("error", "submit_network_error", { error: String(err), attempt: failureAttempt + 1 });
         setFailureAttempt((a) => a + 1);
         setFailureCheck("network");
         setFailureDetail("Failed to reach the server. Check your connection.");
         setShowFailure(true);
       }
     },
-    [path, token, workItemId, sessionId, comment, failureAttempt, storageKey],
+    [path, token, workItemId, sessionId, comment, failureAttempt, storageKey, debug],
   );
 
   const handleVerified = useCallback(
@@ -196,7 +199,7 @@ export function PasteVerifyFlow({
       setSolscanUrl(sUrl);
       setScreen(6);
     },
-    [storageKey],
+    [storageKey, debug],
   );
 
   const handleTerminalFailed = useCallback(
@@ -208,7 +211,7 @@ export function PasteVerifyFlow({
       setShowFailure(true);
       setScreen(4);
     },
-    [],
+    [debug],
   );
 
   const handleTryAgain = useCallback(() => {
@@ -271,6 +274,7 @@ export function PasteVerifyFlow({
             handle={handle}
             onVerified={handleVerified}
             onFailed={handleTerminalFailed}
+            debug={debug}
           />
         )}
         {screen === 6 && proofData && (

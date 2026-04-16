@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
+import type { DebugCategory } from "@/lib/debug/useDebugLog";
 
 /** Preloaded denial messages — factual, no detail leakage. */
 const DENIAL_MESSAGES: Record<string, string> = {
@@ -40,6 +41,8 @@ export interface Screen5TerminalProps {
   handle: string;
   onVerified: (proofData: Record<string, unknown>, solscanUrl: string | null) => void;
   onFailed: (check: string, detail: string, attempt: number) => void;
+  /** Optional debug logger from useDebugLog — fire-and-forget, never blocks. */
+  debug?: { log: (category: DebugCategory, event: string, payload?: Record<string, unknown>) => void };
 }
 
 // Verification check lines to cascade
@@ -67,6 +70,7 @@ export function Screen5Terminal({
   handle,
   onVerified,
   onFailed,
+  debug,
 }: Screen5TerminalProps) {
   const [lines, setLines] = useState<TerminalLine[]>([
     { text: "INITIATING PROOF VERIFICATION...", status: "info" },
@@ -111,16 +115,27 @@ export function Screen5Terminal({
     [],
   );
 
+  const pollCountRef = useRef(0);
+
   const poll = useCallback(async () => {
     if (doneRef.current) return;
+    pollCountRef.current += 1;
     try {
       const res = await fetch(`/api/proof/verify-tx/status?id=${verificationId}`);
-      if (!res.ok) return;
+      if (!res.ok) {
+        debug?.log("error", "proof_poll_network_error", { status: res.status, pollCount: pollCountRef.current });
+        return;
+      }
       const data = (await res.json()) as StatusResponse;
+
+      if (data.status !== "verified" && data.status !== "failed") {
+        debug?.log("proof_flow", "proof_poll_status", { status: data.status, pollCount: pollCountRef.current, queuePosition: data.queue_position });
+      }
 
       if (data.status === "verified" && data.proof_data) {
         doneRef.current = true;
         if (pollRef.current) clearInterval(pollRef.current);
+        debug?.log("proof_flow", "proof_poll_verified", { proof_id: data.proof_data.proof_id, pollCount: pollCountRef.current });
         proofDataRef.current = data.proof_data;
         solscanRef.current = data.solscan_url ?? null;
 
@@ -146,6 +161,7 @@ export function Screen5Terminal({
         if (pollRef.current) clearInterval(pollRef.current);
         const failCheck = data.failure_check ?? "unknown";
         const failDetail = data.failure_detail ?? "Verification failed.";
+        debug?.log("error", "proof_poll_failed", { check: failCheck, detail: failDetail, attempt: data.attempt_number ?? 1, pollCount: pollCountRef.current });
         const denialMsg = DENIAL_MESSAGES[failCheck] ?? failDetail;
 
         setLines((prev) => [
@@ -158,12 +174,13 @@ export function Screen5Terminal({
           1500,
         );
       }
-    } catch {
-      // Silently retry on next poll
+    } catch (err) {
+      debug?.log("error", "proof_poll_network_error", { error: String(err), pollCount: pollCountRef.current });
     }
-  }, [verificationId, handle, onFailed, cascadeLines]);
+  }, [verificationId, handle, onFailed, cascadeLines, debug]);
 
   useEffect(() => {
+    debug?.log("proof_flow", "proof_poll_start", { verificationId });
     poll();
     pollRef.current = setInterval(poll, 2500);
     return () => {
@@ -171,6 +188,7 @@ export function Screen5Terminal({
       cascadeTimersRef.current.forEach((t) => clearInterval(t));
       cascadeTimersRef.current = [];
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poll]);
 
   const handleConfirm = useCallback(() => {
