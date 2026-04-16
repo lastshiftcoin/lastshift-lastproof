@@ -12,6 +12,7 @@
 
 import { useState, useRef } from "react";
 import type { ProfileRow } from "@/lib/profiles-store";
+import { useDebugLog } from "@/lib/debug/useDebugLog";
 
 const CATEGORIES = [
   { slug: "community-manager", label: "Community Manager" },
@@ -45,6 +46,7 @@ export function CategoriesCard({ profile, primaryCategory, initialAdditional }: 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debug = useDebugLog();
 
   const primaryLabel = primaryCategory
     ? CATEGORIES.find((c) => c.slug === primaryCategory)?.label ?? primaryCategory
@@ -70,24 +72,27 @@ export function CategoriesCard({ profile, primaryCategory, initialAdditional }: 
     setSaved(false);
     if (savedTimer.current) clearTimeout(savedTimer.current);
 
+    const additional = Array.from(selected);
+    debug.log("proof_flow", "dashboard_categories_save", { count: additional.length });
     try {
       const res = await fetch("/api/dashboard/categories", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          additional: Array.from(selected),
-        }),
+        body: JSON.stringify({ additional }),
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        debug.log("error", "dashboard_categories_save_failed", { status: res.status, error: data.error });
         alert(data.error || "Save failed");
         return;
       }
 
+      debug.log("proof_flow", "dashboard_categories_save_ok", { count: additional.length });
       setSaved(true);
       savedTimer.current = setTimeout(() => setSaved(false), 3000);
-    } catch {
+    } catch (err) {
+      debug.log("error", "dashboard_categories_save_network_error", { error: String(err) });
       alert("Save failed — please try again.");
     } finally {
       setSaving(false);

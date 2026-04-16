@@ -14,6 +14,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import type { ProfileRow } from "@/lib/profiles-store";
+import { useDebugLog } from "@/lib/debug/useDebugLog";
 
 interface PitchCardProps {
   profile: ProfileRow;
@@ -25,6 +26,7 @@ export function PitchCard({ profile, onProfileUpdate }: PitchCardProps) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debug = useDebugLog();
 
   // SHIFTBOT state
   const [botLoading, setBotLoading] = useState(false);
@@ -38,6 +40,7 @@ export function PitchCard({ profile, onProfileUpdate }: PitchCardProps) {
     setSaved(false);
     if (savedTimer.current) clearTimeout(savedTimer.current);
 
+    debug.log("proof_flow", "dashboard_pitch_save", { length: pitch.trim().length });
     try {
       const res = await fetch("/api/dashboard/profile", {
         method: "PATCH",
@@ -49,6 +52,7 @@ export function PitchCard({ profile, onProfileUpdate }: PitchCardProps) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        debug.log("error", "dashboard_pitch_save_failed", { status: res.status, error: data.error });
         alert(data.error || "Save failed");
         return;
       }
@@ -56,10 +60,12 @@ export function PitchCard({ profile, onProfileUpdate }: PitchCardProps) {
       const { profile: updated } = await res.json();
       if (updated) onProfileUpdate(updated);
 
+      debug.log("proof_flow", "dashboard_pitch_save_ok", { length: pitch.trim().length });
       setSaved(true);
       setOriginalText(null); // clear undo after save
       savedTimer.current = setTimeout(() => setSaved(false), 3000);
-    } catch {
+    } catch (err) {
+      debug.log("error", "dashboard_pitch_save_network_error", { error: String(err) });
       alert("Save failed — please try again.");
     } finally {
       setSaving(false);

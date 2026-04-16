@@ -14,6 +14,7 @@
  */
 
 import { useState, useRef } from "react";
+import { useDebugLog } from "@/lib/debug/useDebugLog";
 
 interface Screenshot {
   id: string;
@@ -33,6 +34,7 @@ export function ScreenshotsCard({ initialShots }: ScreenshotsCardProps) {
   const [uploading, setUploading] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const debug = useDebugLog();
 
   // ─── Upload handler ─────────────────────────────────────────────────────
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -53,6 +55,7 @@ export function ScreenshotsCard({ initialShots }: ScreenshotsCardProps) {
     formData.append("file", file);
     formData.append("position", String(shots.length));
 
+    debug.log("proof_flow", "dashboard_screenshot_upload", { fileType: file.type, fileSizeKb: Math.round(file.size / 1024), position: shots.length });
     try {
       const res = await fetch("/api/dashboard/screenshots", {
         method: "POST",
@@ -61,13 +64,16 @@ export function ScreenshotsCard({ initialShots }: ScreenshotsCardProps) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        debug.log("error", "dashboard_screenshot_upload_failed", { status: res.status, error: data.error });
         alert(data.error || "Upload failed");
         return;
       }
 
       const { screenshot } = await res.json();
+      debug.log("proof_flow", "dashboard_screenshot_upload_ok", { id: screenshot?.id });
       setShots((prev) => [...prev, screenshot]);
-    } catch {
+    } catch (err) {
+      debug.log("error", "dashboard_screenshot_upload_network_error", { error: String(err) });
       alert("Upload failed — please try again.");
     } finally {
       setUploading(false);
@@ -80,12 +86,18 @@ export function ScreenshotsCard({ initialShots }: ScreenshotsCardProps) {
   async function handleDelete(id: string) {
     if (!confirm("Delete this screenshot?")) return;
 
+    debug.log("proof_flow", "dashboard_screenshot_delete", { id });
     try {
       const res = await fetch(`/api/dashboard/screenshots?id=${id}`, { method: "DELETE" });
       if (res.ok) {
+        debug.log("proof_flow", "dashboard_screenshot_delete_ok", { id });
         setShots((prev) => prev.filter((s) => s.id !== id));
+      } else {
+        const data = await res.json().catch(() => ({}));
+        debug.log("error", "dashboard_screenshot_delete_failed", { status: res.status, error: data.error, id });
       }
-    } catch {
+    } catch (err) {
+      debug.log("error", "dashboard_screenshot_delete_network_error", { error: String(err), id });
       alert("Delete failed.");
     }
   }
@@ -140,6 +152,7 @@ export function ScreenshotsCard({ initialShots }: ScreenshotsCardProps) {
                   setShots((s) => s.map((x) =>
                     x.id === shot.id ? { ...x, linkedUrl: url || null } : x
                   ));
+                  debug.log("proof_flow", "dashboard_screenshot_url_update", { id: shot.id, hasUrl: !!url });
                   try {
                     const res = await fetch("/api/dashboard/screenshots", {
                       method: "PATCH",
@@ -147,11 +160,16 @@ export function ScreenshotsCard({ initialShots }: ScreenshotsCardProps) {
                       body: JSON.stringify({ id: shot.id, linkedUrl: url || null }),
                     });
                     if (!res.ok) {
+                      const data = await res.json().catch(() => ({}));
+                      debug.log("error", "dashboard_screenshot_url_failed", { status: res.status, error: data.error, id: shot.id });
                       setShots((s) => s.map((x) =>
                         x.id === shot.id ? { ...x, linkedUrl: prev } : x
                       ));
+                    } else {
+                      debug.log("proof_flow", "dashboard_screenshot_url_ok", { id: shot.id });
                     }
-                  } catch {
+                  } catch (err) {
+                    debug.log("error", "dashboard_screenshot_url_network_error", { error: String(err), id: shot.id });
                     setShots((s) => s.map((x) =>
                       x.id === shot.id ? { ...x, linkedUrl: prev } : x
                     ));

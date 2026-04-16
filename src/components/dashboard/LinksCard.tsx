@@ -17,6 +17,7 @@
  */
 
 import { useState } from "react";
+import { useDebugLog } from "@/lib/debug/useDebugLog";
 
 interface ProfileLink {
   id: string;
@@ -59,6 +60,7 @@ export function LinksCard({ initialLinks }: LinksCardProps) {
   const [addLabel, setAddLabel] = useState("");
   const [addUrl, setAddUrl] = useState("");
   const [adding, setAdding] = useState(false);
+  const debug = useDebugLog();
 
   // Bulk paste
   const [showBulk, setShowBulk] = useState(false);
@@ -88,6 +90,8 @@ export function LinksCard({ initialLinks }: LinksCardProps) {
     if (!addLabel.trim() || !addUrl.trim()) return;
     setAdding(true);
 
+    const platform = detectPlatform(addUrl.trim());
+    debug.log("proof_flow", "dashboard_link_add", { platform });
     try {
       const res = await fetch("/api/dashboard/links", {
         method: "POST",
@@ -95,22 +99,25 @@ export function LinksCard({ initialLinks }: LinksCardProps) {
         body: JSON.stringify({
           label: addLabel.trim(),
           url: addUrl.trim(),
-          platform: detectPlatform(addUrl.trim()),
+          platform,
         }),
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        debug.log("error", "dashboard_link_add_failed", { status: res.status, error: data.error });
         alert(data.error || "Failed to add");
         return;
       }
 
       const { link } = await res.json();
+      debug.log("proof_flow", "dashboard_link_add_ok", { id: link?.id, platform });
       setLinks((prev) => [...prev, link]);
       setAddLabel("");
       setAddUrl("");
       setShowAdd(false);
-    } catch {
+    } catch (err) {
+      debug.log("error", "dashboard_link_add_network_error", { error: String(err) });
       alert("Failed to add — please try again.");
     } finally {
       setAdding(false);
@@ -119,12 +126,18 @@ export function LinksCard({ initialLinks }: LinksCardProps) {
 
   // ─── Delete handler ─────────────────────────────────────────────────────
   async function handleDelete(id: string) {
+    debug.log("proof_flow", "dashboard_link_delete", { id });
     try {
       const res = await fetch(`/api/dashboard/links?id=${id}`, { method: "DELETE" });
       if (res.ok) {
+        debug.log("proof_flow", "dashboard_link_delete_ok", { id });
         setLinks((prev) => prev.filter((l) => l.id !== id));
+      } else {
+        const data = await res.json().catch(() => ({}));
+        debug.log("error", "dashboard_link_delete_failed", { status: res.status, error: data.error, id });
       }
-    } catch {
+    } catch (err) {
+      debug.log("error", "dashboard_link_delete_network_error", { error: String(err), id });
       alert("Delete failed.");
     }
   }
@@ -138,8 +151,10 @@ export function LinksCard({ initialLinks }: LinksCardProps) {
 
     if (lines.length === 0) return;
     setBulkAdding(true);
+    debug.log("proof_flow", "dashboard_link_bulk_add", { lineCount: lines.length });
 
     const added: ProfileLink[] = [];
+    let failedCount = 0;
     for (const line of lines) {
       // Parse: "Label — URL" or "Label - URL" or just "URL"
       let label = "";
@@ -174,12 +189,15 @@ export function LinksCard({ initialLinks }: LinksCardProps) {
         if (res.ok) {
           const { link } = await res.json();
           added.push(link);
+        } else {
+          failedCount++;
         }
       } catch {
-        // skip failed
+        failedCount++;
       }
     }
 
+    debug.log("proof_flow", "dashboard_link_bulk_add_done", { added: added.length, failed: failedCount });
     if (added.length > 0) {
       setLinks((prev) => [...prev, ...added]);
     }
@@ -201,6 +219,7 @@ export function LinksCard({ initialLinks }: LinksCardProps) {
     setLinks((prev) => prev.map((l) =>
       l.id === id ? { ...l, pinned: newPinned } : l
     ));
+    debug.log("proof_flow", "dashboard_link_pin_toggle", { id, newPinned });
 
     try {
       const res = await fetch("/api/dashboard/links", {
@@ -209,14 +228,18 @@ export function LinksCard({ initialLinks }: LinksCardProps) {
         body: JSON.stringify({ id, pinned: newPinned }),
       });
       if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        debug.log("error", "dashboard_link_pin_failed", { status: res.status, error: data.error, id });
         setLinks((prev) => prev.map((l) =>
           l.id === id ? { ...l, pinned: !newPinned } : l
         ));
       } else {
+        debug.log("proof_flow", "dashboard_link_pin_ok", { id, newPinned });
         setPinSaved(true);
         setTimeout(() => setPinSaved(false), 1500);
       }
-    } catch {
+    } catch (err) {
+      debug.log("error", "dashboard_link_pin_network_error", { error: String(err), id });
       setLinks((prev) => prev.map((l) =>
         l.id === id ? { ...l, pinned: !newPinned } : l
       ));

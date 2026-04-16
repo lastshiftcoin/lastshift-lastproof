@@ -18,6 +18,7 @@
 
 import { useState } from "react";
 import { MintModal } from "@/components/mint-modal/MintModal";
+import { useDebugLog } from "@/lib/debug/useDebugLog";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -46,6 +47,7 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
   const [items, setItems] = useState<WorkItem[]>(initialItems);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const debug = useDebugLog();
 
   // ─── Add form state ─────────────────────────────────────────────────────
   const [formTicker, setFormTicker] = useState("");
@@ -98,6 +100,7 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
         ? `${formEndYear}-${String(MONTHS.indexOf(formEndMonth) + 1).padStart(2, "0")}-01`
         : null;
 
+    debug.log("proof_flow", "dashboard_pow_add", { hasTicker: !!formTicker.trim(), hasStartDate: !!startedAt, hasEndDate: !!endedAt, present: formPresent });
     try {
       const res = await fetch("/api/dashboard/work-items", {
         method: "POST",
@@ -113,15 +116,18 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        debug.log("error", "dashboard_pow_add_failed", { status: res.status, error: data.error });
         alert(data.error || "Failed to add");
         return;
       }
 
       const { item } = await res.json();
+      debug.log("proof_flow", "dashboard_pow_add_ok", { id: item?.id });
       setItems((prev) => [...prev, item]);
       resetForm();
       setShowForm(false);
-    } catch {
+    } catch (err) {
+      debug.log("error", "dashboard_pow_add_network_error", { error: String(err) });
       alert("Failed to add — please try again.");
     } finally {
       setSaving(false);
@@ -144,6 +150,7 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
     ticker: string | null; role: string; description: string | null;
     startedAt: string | null; endedAt: string | null;
   }): Promise<boolean> {
+    debug.log("proof_flow", "dashboard_pow_edit", { id, hasStartDate: !!fields.startedAt, hasEndDate: !!fields.endedAt });
     try {
       const res = await fetch("/api/dashboard/work-items", {
         method: "PATCH",
@@ -153,6 +160,7 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        debug.log("error", "dashboard_pow_edit_failed", { status: res.status, error: data.error, id });
         if (data.error === "locked_has_proofs") {
           alert("This work item has proofs and can no longer be edited.");
         } else {
@@ -162,9 +170,11 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
       }
 
       const { item } = await res.json();
+      debug.log("proof_flow", "dashboard_pow_edit_ok", { id });
       setItems((prev) => prev.map((i) => i.id === id ? { ...i, ...item } : i));
       return true;
-    } catch {
+    } catch (err) {
+      debug.log("error", "dashboard_pow_edit_network_error", { error: String(err), id });
       alert("Edit failed — please try again.");
       return false;
     }
@@ -174,19 +184,23 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
   async function handleDelete(id: string) {
     if (!confirm("Delete this work item?")) return;
 
+    debug.log("proof_flow", "dashboard_pow_delete", { id });
     try {
       const res = await fetch(`/api/dashboard/work-items?id=${id}`, { method: "DELETE" });
       if (res.ok) {
+        debug.log("proof_flow", "dashboard_pow_delete_ok", { id });
         setItems((prev) => prev.filter((i) => i.id !== id));
       } else {
         const data = await res.json().catch(() => ({}));
+        debug.log("error", "dashboard_pow_delete_failed", { status: res.status, error: data.error, id });
         if (data.error === "locked_has_proofs") {
           alert("This work item has proofs and can no longer be deleted.");
         } else {
           alert(data.error || "Delete failed");
         }
       }
-    } catch {
+    } catch (err) {
+      debug.log("error", "dashboard_pow_delete_network_error", { error: String(err), id });
       alert("Delete failed.");
     }
   }
@@ -199,6 +213,7 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
     const item = items.find((i) => i.id === id);
     if (!item || item.minted) return;
 
+    debug.log("proof_flow", "dashboard_pow_mint_validate", { id });
     // Validate via the validate-only endpoint
     try {
       const res = await fetch("/api/dashboard/work-items/mint", {
@@ -209,6 +224,7 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        debug.log("error", "dashboard_pow_mint_validate_failed", { status: res.status, error: data.error, id });
         if (data.error === "no_proofs") {
           alert("This work item needs at least 1 proof before it can be minted.");
         } else if (data.error === "max_minted") {
@@ -221,10 +237,12 @@ export function ProofOfWorkCard({ initialItems }: ProofOfWorkCardProps) {
         return;
       }
 
+      debug.log("proof_flow", "dashboard_pow_mint_validate_ok", { id });
       // Validation passed — open payment modal
       setMintingId(id);
       setShowMintPayment(true);
-    } catch {
+    } catch (err) {
+      debug.log("error", "dashboard_pow_mint_network_error", { error: String(err), id });
       alert("Mint validation failed — please try again.");
     }
   }

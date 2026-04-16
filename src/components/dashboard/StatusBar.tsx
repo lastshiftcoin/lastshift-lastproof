@@ -15,6 +15,7 @@
 import { useState, useEffect } from "react";
 import type { ProfileRow } from "@/lib/profiles-store";
 import { PaymentModal } from "@/components/payment-modal/PaymentModal";
+import { useDebugLog } from "@/lib/debug/useDebugLog";
 
 interface StatusBarProps {
   profile: ProfileRow;
@@ -56,6 +57,7 @@ export function StatusBar({ profile, campaignSoldOut = false, campaignActive = f
   const [countdown, setCountdown] = useState<string>("--");
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [claiming, setClaiming] = useState(false);
+  const debug = useDebugLog();
   const [claimed, setClaimed] = useState(false);
 
   const status = deriveStatus(profile);
@@ -79,6 +81,7 @@ export function StatusBar({ profile, campaignSoldOut = false, campaignActive = f
       const urlRef = typeof window !== "undefined"
         ? new URLSearchParams(window.location.search).get("ref") ?? undefined
         : undefined;
+      debug.log("proof_flow", "dashboard_campaign_claim", { hasRef: !!urlRef });
       const res = await fetch("/api/campaign/claim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -86,6 +89,7 @@ export function StatusBar({ profile, campaignSoldOut = false, campaignActive = f
       });
       const data = await res.json();
       if (data.ok) {
+        debug.log("proof_flow", "dashboard_campaign_claim_ok", { eaNumber: data.eaNumber, hasExpiresAt: !!data.subscriptionExpiresAt });
         setClaimed(true);
         // Update profile in parent to reflect paid status
         onProfileUpdate?.({
@@ -97,12 +101,15 @@ export function StatusBar({ profile, campaignSoldOut = false, campaignActive = f
           subscriptionExpiresAt: data.subscriptionExpiresAt ?? null,
         });
       } else if (data.reason === "sold_out") {
+        debug.log("error", "dashboard_campaign_claim_sold_out", {});
         // Campaign sold out while user was looking — fall through to paid upgrade
         setShowUpgrade(true);
       } else {
+        debug.log("error", "dashboard_campaign_claim_failed", { status: res.status, reason: data.reason, message: data.message });
         alert(data.message || "Claim failed — please try again.");
       }
-    } catch {
+    } catch (err) {
+      debug.log("error", "dashboard_campaign_claim_network_error", { error: String(err) });
       alert("Claim failed — please try again.");
     } finally {
       setClaiming(false);

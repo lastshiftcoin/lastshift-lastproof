@@ -14,6 +14,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import type { ProfileRow } from "@/lib/profiles-store";
+import { useDebugLog } from "@/lib/debug/useDebugLog";
 
 interface AboutCardProps {
   profile: ProfileRow;
@@ -29,6 +30,7 @@ export function AboutCard({ profile, onProfileUpdate, previousHandles = [] }: Ab
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debug = useDebugLog();
 
   // SHIFTBOT state
   const [botLoading, setBotLoading] = useState(false);
@@ -42,6 +44,7 @@ export function AboutCard({ profile, onProfileUpdate, previousHandles = [] }: Ab
     setSaved(false);
     if (savedTimer.current) clearTimeout(savedTimer.current);
 
+    debug.log("proof_flow", "dashboard_about_save", { aboutLength: about.trim().length, aliasCount: aliases.length });
     try {
       const [profileRes, aliasRes] = await Promise.all([
         fetch("/api/dashboard/profile", {
@@ -60,20 +63,27 @@ export function AboutCard({ profile, onProfileUpdate, previousHandles = [] }: Ab
 
       if (!profileRes.ok) {
         const data = await profileRes.json().catch(() => ({}));
+        debug.log("error", "dashboard_about_save_failed", { status: profileRes.status, error: data.error });
         alert(data.error || "Save failed");
         return;
       }
       if (!aliasRes.ok) {
+        const aliasData = await aliasRes.json().catch(() => ({}));
+        debug.log("error", "dashboard_about_aliases_failed", { status: aliasRes.status, error: aliasData.error, aliasCount: aliases.length });
         console.error("[about] aliases save failed");
+      } else {
+        debug.log("proof_flow", "dashboard_about_aliases_ok", { aliasCount: aliases.length });
       }
 
       const { profile: updated } = await profileRes.json();
       if (updated) onProfileUpdate(updated);
 
+      debug.log("proof_flow", "dashboard_about_save_ok", { aboutLength: about.trim().length });
       setSaved(true);
       setOriginalText(null);
       savedTimer.current = setTimeout(() => setSaved(false), 3000);
-    } catch {
+    } catch (err) {
+      debug.log("error", "dashboard_about_save_network_error", { error: String(err) });
       alert("Save failed — please try again.");
     } finally {
       setSaving(false);

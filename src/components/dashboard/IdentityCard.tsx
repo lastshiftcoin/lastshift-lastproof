@@ -22,6 +22,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { ProfileRow } from "@/lib/profiles-store";
 import { HandleChangeModal } from "@/components/handle-change-modal/HandleChangeModal";
+import { useDebugLog } from "@/lib/debug/useDebugLog";
 
 // ─── Option lists ────────────────────────────────────────────────────────────
 
@@ -113,6 +114,7 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate, handle
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debug = useDebugLog();
 
   // ─── Handle change modal state ──────────────────────────────────────────
   const [showHandleModal, setShowHandleModal] = useState(false);
@@ -180,6 +182,8 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate, handle
     setSaved(false);
     if (savedTimer.current) clearTimeout(savedTimer.current);
 
+    const fieldKeys = ["displayName", "timezone", "feeRange", "language", "secondaryLanguage", "website", "bioStatement"];
+    debug.log("proof_flow", "dashboard_identity_save", { fields: fieldKeys, categoryChanged: category !== primaryCategory });
     try {
       const res = await fetch("/api/dashboard/profile", {
         method: "PATCH",
@@ -199,6 +203,7 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate, handle
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        debug.log("error", "dashboard_identity_save_failed", { status: res.status, error: data.error });
         alert(data.error || "Save failed");
         return;
       }
@@ -208,16 +213,24 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate, handle
 
       // Also update primary category if changed
       if (category !== primaryCategory) {
-        await fetch("/api/dashboard/category", {
+        const catRes = await fetch("/api/dashboard/category", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ category }),
         });
+        if (!catRes.ok) {
+          const catData = await catRes.json().catch(() => ({}));
+          debug.log("error", "dashboard_identity_category_failed", { status: catRes.status, error: catData.error, category });
+        } else {
+          debug.log("proof_flow", "dashboard_identity_category_ok", { category });
+        }
       }
 
+      debug.log("proof_flow", "dashboard_identity_save_ok", { fields: fieldKeys });
       setSaved(true);
       savedTimer.current = setTimeout(() => setSaved(false), 3000);
-    } catch {
+    } catch (err) {
+      debug.log("error", "dashboard_identity_save_network_error", { error: String(err) });
       alert("Save failed — please try again.");
     } finally {
       setSaving(false);
