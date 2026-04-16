@@ -599,11 +599,11 @@ function PowRow({
     setEditSaving(true);
 
     const startedAt = eStartMonth && eStartYear
-      ? `${eStartYear}-${String(MONTHS.indexOf(eStartMonth) + 1).padStart(2, "0")}`
+      ? `${eStartYear}-${String(MONTHS.indexOf(eStartMonth) + 1).padStart(2, "0")}-01`
       : null;
     const endedAt = ePresent ? null
       : eEndMonth && eEndYear
-        ? `${eEndYear}-${String(MONTHS.indexOf(eEndMonth) + 1).padStart(2, "0")}`
+        ? `${eEndYear}-${String(MONTHS.indexOf(eEndMonth) + 1).padStart(2, "0")}-01`
         : null;
 
     const ok = await onEdit(item.id, {
