@@ -4,7 +4,7 @@
  * Internal admin endpoint — bearer token gated.
  * Returns the LASTPROOF treasury wallet balances: SOL, USDT, LASTSHFT.
  *
- * Auth: `Authorization: Bearer ${ADMIN_API_SECRET}` (env var, set in Vercel)
+ * Auth: `Authorization: Bearer ${LASTPROOF_ADMIN_API_TOKEN}` (env var, set in Vercel)
  *
  * All balance fetches go through src/lib/token-balance.ts which has a 60s
  * in-memory cache per (wallet, mint), so repeated dashboard refreshes are cheap.
@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 function authorized(request: Request): boolean {
-  const expected = process.env.ADMIN_API_SECRET;
+  const expected = process.env.LASTPROOF_ADMIN_API_TOKEN;
   if (!expected) return false;
   const header = request.headers.get("authorization") ?? "";
   return header === `Bearer ${expected}`;

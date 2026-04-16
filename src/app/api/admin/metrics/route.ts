@@ -7,7 +7,7 @@
  *   - By-range (Today, Last 7d, Last 30d, MTD, YTD): new profiles, new proofs,
  *     new dev proofs, new mints, revenue USD
  *
- * Auth: `Authorization: Bearer ${ADMIN_API_SECRET}` (env var, set in Vercel)
+ * Auth: `Authorization: Bearer ${LASTPROOF_ADMIN_API_TOKEN}` (env var, set in Vercel)
  *
  * Read-only — never mutates anything.
  */
@@ -41,7 +41,7 @@ interface MetricsResponse {
 }
 
 function authorized(request: Request): boolean {
-  const expected = process.env.ADMIN_API_SECRET;
+  const expected = process.env.LASTPROOF_ADMIN_API_TOKEN;
   if (!expected) return false;
   const header = request.headers.get("authorization") ?? "";
   return header === `Bearer ${expected}`;
