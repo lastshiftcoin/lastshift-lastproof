@@ -166,11 +166,10 @@ export async function getPublicProfileView(
     isPrimary: i === 0,
   }));
 
-  // ─── 7. Transform recent proofs (last 5) ───────────────────────────
+  // ─── 7. Transform confirmed proofs (all, client paginates) ─────────
   const confirmedProofs = (proofRows as StoreProofRow[])
     .filter((p) => p.txSignature)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5);
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   // For proof rows we need to join back to work items for the ticker
   const workItemMap = new Map(workItemRows.map((wi) => [wi.id, wi]));
