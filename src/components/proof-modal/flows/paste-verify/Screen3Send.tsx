@@ -134,6 +134,20 @@ export function Screen3Send({ path, token }: Screen3SendProps) {
         <div>• Save your Solscan link or TX signature</div>
         <div>• Come back here when you&apos;re done</div>
       </div>
+
+      {path === "dev" && (
+        <div style={{
+          marginTop: 12,
+          padding: "10px 12px",
+          fontSize: 11,
+          lineHeight: 1.5,
+          color: "#ff9100",
+          borderLeft: "2px solid #ff9100",
+          background: "rgba(255,145,0,0.05)",
+        }}>
+          ⚠ Send from the wallet you verified above. A different wallet will fail.
+        </div>
+      )}
     </>
   );
 }

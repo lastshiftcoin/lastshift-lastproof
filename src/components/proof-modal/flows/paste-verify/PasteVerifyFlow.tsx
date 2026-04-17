@@ -26,13 +26,14 @@ import type { ProofPath } from "../../types";
 import type { ProofTokenKey } from "@/lib/proof-tokens";
 
 import { Screen1Path } from "./Screen1Path";
+import { Screen1DevCheck } from "./Screen1DevCheck";
 import { Screen2Token } from "./Screen2Token";
 import { Screen3Send } from "./Screen3Send";
 import { Screen4Paste } from "./Screen4Paste";
 import { Screen5Terminal } from "./Screen5Terminal";
 import { Screen6Receipt } from "./Screen6Receipt";
 
-type PvScreen = 1 | 2 | 3 | 4 | 5 | 6;
+type PvScreen = 1 | 1.5 | 2 | 3 | 4 | 5 | 6;
 
 const SESSION_STORAGE_PREFIX = "lp_session_";
 
@@ -60,6 +61,7 @@ export function PasteVerifyFlow({
   const [failureCheck, setFailureCheck] = useState<string | null>(null);
   const [failureDetail, setFailureDetail] = useState<string | null>(null);
   const [showFailure, setShowFailure] = useState(false);
+  const [devWallet, setDevWallet] = useState<string | null>(null);
 
   const debug = useDebugLog();
 
@@ -111,6 +113,12 @@ export function PasteVerifyFlow({
   const handlePathPick = useCallback((p: ProofPath) => {
     debug.log("proof_flow", "path_selected", { path: p });
     setPath(p);
+    setScreen(p === "dev" ? 1.5 : 2);
+  }, [debug]);
+
+  const handleDevQualified = useCallback((w: string) => {
+    debug.log("proof_flow", "dev_wallet_qualified", { wallet: w });
+    setDevWallet(w);
     setScreen(2);
   }, [debug]);
 
@@ -222,13 +230,19 @@ export function PasteVerifyFlow({
 
   // Back navigation
   const handleBack = useCallback(() => {
-    if (screen === 2) setScreen(1);
+    if (screen === 1.5) setScreen(1);
+    else if (screen === 2) setScreen(path === "dev" ? 1.5 : 1);
     else if (screen === 3) setScreen(2);
     else if (screen === 4) setScreen(3);
-  }, [screen]);
+  }, [screen, path]);
 
   // Screen number for progress bar
-  const totalSteps = 6;
+  const isDev = path === "dev";
+  const totalSteps = isDev ? 7 : 6;
+  // Map screen numbers to progress step (dev path inserts 1.5 as step 2)
+  const progressStep = isDev
+    ? (screen === 1 ? 1 : screen === 1.5 ? 2 : screen === 2 ? 3 : screen === 3 ? 4 : screen === 4 ? 5 : screen === 5 ? 6 : 7)
+    : (screen === 1.5 ? 1 : screen as number);
 
   return (
     <>
@@ -237,7 +251,7 @@ export function PasteVerifyFlow({
         <div className="pm-bar-track">
           <div
             className="pm-bar-fill"
-            style={{ width: `${(screen / totalSteps) * 100}%` }}
+            style={{ width: `${(progressStep / totalSteps) * 100}%` }}
           />
         </div>
       </div>
@@ -249,6 +263,13 @@ export function PasteVerifyFlow({
             onPick={handlePathPick}
             ticker={ticker}
             handle={handle}
+          />
+        )}
+        {screen === 1.5 && path === "dev" && (
+          <Screen1DevCheck
+            ticker={ticker}
+            workItemId={workItemId}
+            onQualified={handleDevQualified}
           />
         )}
         {screen === 2 && path && (
@@ -290,8 +311,8 @@ export function PasteVerifyFlow({
         )}
       </div>
 
-      {/* Navigation bar for screens 2-4 */}
-      {(screen === 2 || screen === 3 || screen === 4) && (
+      {/* Navigation bar for screens 1.5-4 */}
+      {(screen === 1.5 || screen === 2 || screen === 3 || screen === 4) && (
         <div className="pm-cta-bar" style={{ display: "flex", justifyContent: "space-between" }}>
           <button
             type="button"

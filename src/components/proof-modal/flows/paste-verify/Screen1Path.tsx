@@ -40,8 +40,8 @@ export function Screen1Path({ path, onPick, ticker, handle }: Screen1PathProps) 
           <span className="pm-path-lim">1 DEV PROOF / PROJECT</span>
           <div className="pm-path-title">DEV</div>
           <div className="pm-path-desc">
-            You deployed or co-founded {ticker}. Wallet verified against mint
-            authority + first-5 holders.
+            You deployed or co-founded {ticker}. You must pay from the wallet
+            that deployed the token or holds mint authority.
           </div>
         </button>
       </div>
