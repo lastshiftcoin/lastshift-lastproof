@@ -29,6 +29,7 @@ import { supabaseService } from "@/lib/db/client";
 import { GRID_LAUNCH_DATE, EA_FREE_WINDOW_DAYS } from "@/lib/constants";
 import { cookies } from "next/headers";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
+import { logReferralEvent } from "@/lib/referral-events";
 
 const claimLimiter = createRateLimiter({ window: 60_000, max: 3 });
 
@@ -184,6 +185,22 @@ export async function POST(req: NextRequest) {
   if (validatedSlug) {
     console.log(`[campaign/claim] referral attributed — profile=${profile.id} slug=${validatedSlug} source=${attributionSource}`);
   }
+
+  logReferralEvent({
+    type: "campaign_claim",
+    walletAddress: session.walletAddress,
+    operatorId: operator.id,
+    campaignSlug: validatedSlug,
+    source: attributionSource ?? "none",
+    outcome: validatedSlug ? "stamped" : "no_ref",
+    metadata: {
+      profileId: profile.id,
+      eaNumber,
+      // Tracks whether the fallback paths ever fire in prod. If these
+      // stay at 0 long-term, we can rip out the legacy cookie read.
+      fallbackUsed: attributionSource === "body" || attributionSource === "cookie",
+    },
+  });
 
   return NextResponse.json({
     ok: true,

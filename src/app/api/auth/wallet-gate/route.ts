@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateTerminalId } from "@/lib/terminal-client";
 import { writeSession, readSession } from "@/lib/session";
+import { logReferralEvent } from "@/lib/referral-events";
 
 /**
  * POST /api/auth/wallet-gate
@@ -66,14 +67,45 @@ export async function POST(req: NextRequest) {
   // visitor arrived via a valid ambassador URL, stamp it now. Wallet-gate
   // is called on every wallet connect, so this catches returning users who
   // first authenticated before this fix shipped.
-  if (rawRef && !operator.referred_by) {
+  if (!rawRef) {
+    // Returning user (or direct /manage visit) with no ref in the URL.
+    // Not an error — just means no attribution signal to capture here.
+    logReferralEvent({
+      type: "wallet_gate",
+      walletAddress,
+      operatorId: operator.id,
+      campaignSlug: operator.referred_by ?? null,
+      source: operator.referred_by ? "operator" : "none",
+      outcome: operator.referred_by ? "already_stamped" : "no_ref",
+    });
+  } else if (operator.referred_by) {
+    // Ref present but operator already attributed — first-touch wins.
+    logReferralEvent({
+      type: "wallet_gate",
+      walletAddress,
+      operatorId: operator.id,
+      campaignSlug: operator.referred_by,
+      source: "operator",
+      outcome: "already_stamped",
+      metadata: { incomingRef: rawRef },
+    });
+  } else {
     const { data: amb } = await sb
       .from("ambassadors")
       .select("campaign_slug")
       .eq("campaign_slug", rawRef)
       .eq("is_active", true)
       .maybeSingle();
-    if (amb) {
+    if (!amb) {
+      logReferralEvent({
+        type: "wallet_gate",
+        walletAddress,
+        operatorId: operator.id,
+        campaignSlug: rawRef,
+        source: "body",
+        outcome: "invalid_slug",
+      });
+    } else {
       const { error: stampErr } = await sb
         .from("operators")
         .update({ referred_by: amb.campaign_slug })
@@ -81,8 +113,25 @@ export async function POST(req: NextRequest) {
         .is("referred_by", null); // double-guard against races
       if (stampErr) {
         console.error("[wallet-gate] referral stamp failed:", stampErr.message);
+        logReferralEvent({
+          type: "wallet_gate",
+          walletAddress,
+          operatorId: operator.id,
+          campaignSlug: amb.campaign_slug,
+          source: "body",
+          outcome: "error",
+          metadata: { error: stampErr.message },
+        });
       } else {
         console.log(`[wallet-gate] referral attributed — operator=${operator.id} slug=${amb.campaign_slug}`);
+        logReferralEvent({
+          type: "wallet_gate",
+          walletAddress,
+          operatorId: operator.id,
+          campaignSlug: amb.campaign_slug,
+          source: "body",
+          outcome: "stamped",
+        });
       }
     }
   }

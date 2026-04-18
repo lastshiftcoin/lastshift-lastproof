@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { supabaseService } from "@/lib/db/client";
+import { logReferralEvent } from "@/lib/referral-events";
 import { AmbassadorCounter } from "../lastproof/[slug]/AmbassadorCounter";
 import "../lastproof/[slug]/affiliate.css";
 
@@ -51,7 +53,30 @@ export default async function CampaignLandingPage({ params }: PageProps) {
     .eq("is_active", true)
     .maybeSingle();
 
-  if (!ambassador) notFound();
+  if (!ambassador) {
+    // Log the miss so we can see slug typos / stale links / probe traffic
+    logReferralEvent({
+      type: "landing_visit",
+      campaignSlug,
+      outcome: "invalid_slug",
+      metadata: { path: `/${campaignSlug}` },
+    });
+    notFound();
+  }
+
+  // Log a valid landing visit. Visit is anonymous at this point — no wallet
+  // yet — but captures the top of the funnel so we can compute conversion
+  // down to wallet_gate / register_tid / campaign_claim events.
+  const hdrs = await headers();
+  logReferralEvent({
+    type: "landing_visit",
+    campaignSlug,
+    outcome: "no_ref",
+    metadata: {
+      ua: hdrs.get("user-agent") ?? null,
+      referer: hdrs.get("referer") ?? null,
+    },
+  });
 
   const manageUrl = `/manage?ref=${campaignSlug}`;
 

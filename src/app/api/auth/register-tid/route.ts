@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateTerminalId } from "@/lib/terminal-client";
 import { writeSession } from "@/lib/session";
+import { logReferralEvent } from "@/lib/referral-events";
 
 /**
  * POST /api/auth/register-tid
@@ -61,6 +62,7 @@ export async function POST(req: NextRequest) {
   // Validate ref against ambassadors table (first-touch wins downstream).
   // Only server-validated slugs are persisted.
   let validatedRef: string | null = null;
+  let refOutcome: "no_ref" | "invalid_slug" | "valid" = "no_ref";
   if (rawRef) {
     const { data: amb } = await sb
       .from("ambassadors")
@@ -68,7 +70,12 @@ export async function POST(req: NextRequest) {
       .eq("campaign_slug", rawRef)
       .eq("is_active", true)
       .maybeSingle();
-    if (amb) validatedRef = amb.campaign_slug;
+    if (amb) {
+      validatedRef = amb.campaign_slug;
+      refOutcome = "valid";
+    } else {
+      refOutcome = "invalid_slug";
+    }
   }
 
   // Check if operator row exists for this wallet
@@ -96,12 +103,41 @@ export async function POST(req: NextRequest) {
 
     if (updateErr) {
       console.error("[register-tid] operator update failed:", updateErr.message);
+      logReferralEvent({
+        type: "register_tid",
+        walletAddress,
+        operatorId: existing.id,
+        campaignSlug: validatedRef ?? rawRef,
+        source: rawRef ? "body" : "none",
+        outcome: "error",
+        metadata: { error: updateErr.message, path: "update" },
+      });
       return NextResponse.json(
         { ok: false, reason: "server_error", message: "Could not update operator" },
         { status: 500 },
       );
     }
     operatorId = existing.id;
+    // Log attribution outcome for this existing-operator update path
+    logReferralEvent({
+      type: "register_tid",
+      walletAddress,
+      operatorId,
+      campaignSlug: existing.referred_by ?? (shouldStampRef ? validatedRef : null),
+      source: shouldStampRef
+        ? "body"
+        : existing.referred_by
+          ? "operator"
+          : "none",
+      outcome: shouldStampRef
+        ? "stamped"
+        : existing.referred_by
+          ? "already_stamped"
+          : refOutcome === "invalid_slug"
+            ? "invalid_slug"
+            : "no_ref",
+      metadata: { path: "update", isNew: false, incomingRef: rawRef },
+    });
   } else {
     // Insert new operator row — attribution stamped here for the first time
     const { data: inserted, error: insertErr } = await sb
@@ -118,6 +154,14 @@ export async function POST(req: NextRequest) {
 
     if (insertErr || !inserted) {
       console.error("[register-tid] operator insert failed:", insertErr?.message);
+      logReferralEvent({
+        type: "register_tid",
+        walletAddress,
+        campaignSlug: validatedRef ?? rawRef,
+        source: rawRef ? "body" : "none",
+        outcome: "error",
+        metadata: { error: insertErr?.message ?? "unknown", path: "insert" },
+      });
       return NextResponse.json(
         { ok: false, reason: "server_error", message: "Could not create operator" },
         { status: 500 },
@@ -127,6 +171,19 @@ export async function POST(req: NextRequest) {
     if (validatedRef) {
       console.log(`[register-tid] referral attributed — operator=${operatorId} slug=${validatedRef}`);
     }
+    logReferralEvent({
+      type: "register_tid",
+      walletAddress,
+      operatorId,
+      campaignSlug: validatedRef,
+      source: validatedRef ? "body" : "none",
+      outcome: validatedRef
+        ? "stamped"
+        : refOutcome === "invalid_slug"
+          ? "invalid_slug"
+          : "no_ref",
+      metadata: { path: "insert", isNew: true, incomingRef: rawRef },
+    });
   }
 
   // Write session cookie
