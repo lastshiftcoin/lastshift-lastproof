@@ -18,7 +18,7 @@ import { writeSession } from "@/lib/session";
  * This is the ONLY place operators rows are created/updated with new TIDs.
  */
 export async function POST(req: NextRequest) {
-  let body: { walletAddress?: string; terminalId?: string };
+  let body: { walletAddress?: string; terminalId?: string; ref?: string };
   try {
     body = await req.json();
   } catch {
@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
 
   const walletAddress = (body.walletAddress || "").trim();
   const terminalId = (body.terminalId || "").trim().toUpperCase();
+  const rawRef = (body.ref || "").trim() || null;
 
   if (!walletAddress) {
     return NextResponse.json({ ok: false, reason: "wallet_required" }, { status: 400 });
@@ -57,23 +58,39 @@ export async function POST(req: NextRequest) {
   const { supabaseService } = await import("@/lib/db/client");
   const sb = supabaseService();
 
+  // Validate ref against ambassadors table (first-touch wins downstream).
+  // Only server-validated slugs are persisted.
+  let validatedRef: string | null = null;
+  if (rawRef) {
+    const { data: amb } = await sb
+      .from("ambassadors")
+      .select("campaign_slug")
+      .eq("campaign_slug", rawRef)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (amb) validatedRef = amb.campaign_slug;
+  }
+
   // Check if operator row exists for this wallet
   const { data: existing } = await sb
     .from("operators")
-    .select("id, terminal_id")
+    .select("id, terminal_id, referred_by")
     .eq("terminal_wallet", walletAddress)
     .maybeSingle();
 
   let operatorId: string;
 
   if (existing) {
-    // Update existing row with new TID (TID regeneration case)
+    // Update existing row with new TID (TID regeneration case).
+    // First-touch wins: only stamp referred_by if it's currently null.
+    const shouldStampRef = validatedRef && !existing.referred_by;
     const { error: updateErr } = await sb
       .from("operators")
       .update({
         terminal_id: terminalId,
         first_five_thousand: result.firstFiveThousand,
         last_validated_at: new Date().toISOString(),
+        ...(shouldStampRef ? { referred_by: validatedRef } : {}),
       })
       .eq("id", existing.id);
 
@@ -86,7 +103,7 @@ export async function POST(req: NextRequest) {
     }
     operatorId = existing.id;
   } else {
-    // Insert new operator row
+    // Insert new operator row — attribution stamped here for the first time
     const { data: inserted, error: insertErr } = await sb
       .from("operators")
       .insert({
@@ -94,6 +111,7 @@ export async function POST(req: NextRequest) {
         terminal_id: terminalId,
         first_five_thousand: result.firstFiveThousand,
         last_validated_at: new Date().toISOString(),
+        ...(validatedRef ? { referred_by: validatedRef } : {}),
       })
       .select("id")
       .single();
@@ -106,6 +124,9 @@ export async function POST(req: NextRequest) {
       );
     }
     operatorId = inserted.id;
+    if (validatedRef) {
+      console.log(`[register-tid] referral attributed — operator=${operatorId} slug=${validatedRef}`);
+    }
   }
 
   // Write session cookie

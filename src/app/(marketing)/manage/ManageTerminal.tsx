@@ -183,10 +183,15 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
       // No existing session — look up wallet → operator → Terminal ID.
       // The wallet-gate endpoint queries Supabase for the operator's TID,
       // then validates it via the Terminal API in one round-trip.
+      //
+      // Attribution: forward ref_slug so first-touch ambassador referral
+      // gets stamped on the operators row here, not later at claim time
+      // where ?ref= may have been lost. URL is still /manage?ref=<slug>
+      // at this exact moment — no navigation has happened.
       const lookupRes = await fetch("/api/auth/wallet-gate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress }),
+        body: JSON.stringify({ walletAddress, ref: ref_slug ?? undefined }),
       });
 
       const body = await lookupRes.json();
@@ -275,7 +280,8 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
       const res = await fetch("/api/auth/register-tid", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress: walletAddr, terminalId: tid }),
+        // Forward ref_slug for first-touch ambassador attribution on operator insert.
+        body: JSON.stringify({ walletAddress: walletAddr, terminalId: tid, ref: ref_slug ?? undefined }),
       });
       const body = await res.json();
 

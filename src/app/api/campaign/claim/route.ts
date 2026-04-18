@@ -12,10 +12,15 @@
  *   - At grid launch: 30-day countdown begins for all free-claimed profiles
  *   - Idempotent: re-claiming when already claimed is a no-op success
  *
- * Referral attribution (dual-track):
- *   Path A: reads `ref` from POST body (URL param carried through onboarding)
- *   Path B: reads `lp_ref` cookie (backup for return visits)
- *   Either source → validates against ambassadors table → writes profiles.referred_by
+ * Referral attribution (server-side primary + legacy fallbacks):
+ *   Primary: reads `operators.referred_by` stamped at wallet-gate/register-tid
+ *            time, when the URL was still /manage?ref=<slug>. This is the
+ *            reliable path — immune to client-side URL drops.
+ *   Fallback A: reads `ref` from POST body (URL param still in client URL)
+ *   Fallback B: reads `lp_ref` cookie (broken under Next 16 Server Component
+ *               set() but kept as a harmless read for any legacy cookie)
+ *   Any source → validates against ambassadors table → writes profiles.referred_by
+ *   First-touch wins: never overwrites an existing non-null referred_by.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -46,7 +51,7 @@ export async function POST(req: NextRequest) {
   // Look up operator by wallet, then profile by operator ID
   const { data: operator } = await sb
     .from("operators")
-    .select("id")
+    .select("id, referred_by")
     .eq("terminal_wallet", session.walletAddress)
     .maybeSingle();
 
@@ -93,33 +98,47 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, reason: "sold_out" });
   }
 
-  // ─── Referral attribution (dual-track) ────────────────────────────
-  // Path A: POST body (primary — URL param carried through onboarding)
-  const body = await req.json().catch(() => ({}));
-  const bodyRef = (body as { ref?: string }).ref ?? null;
+  // ─── Referral attribution ──────────────────────────────────────────
+  // Primary: operators.referred_by, stamped server-side at wallet-gate /
+  // register-tid time. This is the canonical source.
+  let validatedSlug: string | null = operator.referred_by ?? null;
+  let attributionSource: "operator" | "body" | "cookie" | null =
+    validatedSlug ? "operator" : null;
 
-  // Path B: cookie (backup — set in /manage server component)
-  const cookieStore = await cookies();
-  const cookieRef = cookieStore.get("lp_ref")?.value ?? null;
+  // Fallback: if operator wasn't stamped (e.g. pre-fix account), try the
+  // legacy URL/cookie paths one last time. Validate against ambassadors.
+  if (!validatedSlug) {
+    const body = await req.json().catch(() => ({}));
+    const bodyRef = (body as { ref?: string }).ref ?? null;
 
-  // Either source counts
-  const rawSlug = bodyRef || cookieRef;
-  let validatedSlug: string | null = null;
+    const cookieStore = await cookies();
+    const cookieRef = cookieStore.get("lp_ref")?.value ?? null;
 
-  if (rawSlug) {
-    const { data: ambassador } = await sb
-      .from("ambassadors")
-      .select("campaign_slug")
-      .eq("campaign_slug", rawSlug)
-      .eq("is_active", true)
-      .maybeSingle();
+    const rawSlug = bodyRef || cookieRef;
 
-    if (ambassador) {
-      validatedSlug = ambassador.campaign_slug;
+    if (rawSlug) {
+      const { data: ambassador } = await sb
+        .from("ambassadors")
+        .select("campaign_slug")
+        .eq("campaign_slug", rawSlug)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (ambassador) {
+        validatedSlug = ambassador.campaign_slug;
+        attributionSource = bodyRef ? "body" : "cookie";
+
+        // Backfill operator row so subsequent calls stay consistent.
+        await sb
+          .from("operators")
+          .update({ referred_by: validatedSlug })
+          .eq("id", operator.id)
+          .is("referred_by", null);
+      }
+
+      // Consume the cookie regardless (one-time capture)
+      cookieStore.delete("lp_ref");
     }
-
-    // Consume the cookie regardless (one-time capture)
-    cookieStore.delete("lp_ref");
   }
 
   // Compute subscription expiry
@@ -163,7 +182,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (validatedSlug) {
-    console.log(`[campaign/claim] referral attributed — profile=${profile.id} slug=${validatedSlug} source=${bodyRef ? "body" : "cookie"}`);
+    console.log(`[campaign/claim] referral attributed — profile=${profile.id} slug=${validatedSlug} source=${attributionSource}`);
   }
 
   return NextResponse.json({

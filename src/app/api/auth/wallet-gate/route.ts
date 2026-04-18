@@ -19,7 +19,7 @@ import { writeSession, readSession } from "@/lib/session";
  *   { ok: false, reason: "...", message: "..." } — other failure
  */
 export async function POST(req: NextRequest) {
-  let body: { walletAddress?: string };
+  let body: { walletAddress?: string; ref?: string };
   try {
     body = await req.json();
   } catch {
@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
   }
 
   const walletAddress = (body.walletAddress || "").trim();
+  const rawRef = (body.ref || "").trim() || null;
   if (!walletAddress) {
     return NextResponse.json({ error: "wallet_required" }, { status: 400 });
   }
@@ -39,9 +40,10 @@ export async function POST(req: NextRequest) {
 
   // 2. Look up terminal_id from operators table
   const { supabaseService } = await import("@/lib/db/client");
-  const { data: operator, error } = await supabaseService()
+  const sb = supabaseService();
+  const { data: operator, error } = await sb
     .from("operators")
-    .select("terminal_id")
+    .select("id, terminal_id, referred_by")
     .eq("terminal_wallet", walletAddress)
     .maybeSingle();
 
@@ -58,6 +60,31 @@ export async function POST(req: NextRequest) {
       { ok: false, reason: "no_terminal", message: "No terminal ID bound to this wallet" },
       { status: 404 },
     );
+  }
+
+  // First-touch attribution: if operator has no referred_by yet and the
+  // visitor arrived via a valid ambassador URL, stamp it now. Wallet-gate
+  // is called on every wallet connect, so this catches returning users who
+  // first authenticated before this fix shipped.
+  if (rawRef && !operator.referred_by) {
+    const { data: amb } = await sb
+      .from("ambassadors")
+      .select("campaign_slug")
+      .eq("campaign_slug", rawRef)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (amb) {
+      const { error: stampErr } = await sb
+        .from("operators")
+        .update({ referred_by: amb.campaign_slug })
+        .eq("id", operator.id)
+        .is("referred_by", null); // double-guard against races
+      if (stampErr) {
+        console.error("[wallet-gate] referral stamp failed:", stampErr.message);
+      } else {
+        console.log(`[wallet-gate] referral attributed — operator=${operator.id} slug=${amb.campaign_slug}`);
+      }
+    }
   }
 
   // 3. Validate via Terminal
