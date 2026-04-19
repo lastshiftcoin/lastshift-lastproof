@@ -57,6 +57,18 @@ export async function POST(req: NextRequest) {
   }
 
   if (!operator || !operator.terminal_id) {
+    // Log new-wallet attempts so we still see the funnel entry even when no
+    // operators row exists yet. Without this, unknown wallets would arrive
+    // silently and we'd only see them later at register_tid. Outcome=no_ref
+    // is informational here — attribution (if any) happens at register_tid.
+    logReferralEvent({
+      type: "wallet_gate",
+      walletAddress,
+      campaignSlug: rawRef,
+      source: rawRef ? "body" : "none",
+      outcome: "no_ref",
+      metadata: { newWallet: true, hasIncomingRef: !!rawRef },
+    });
     return NextResponse.json(
       { ok: false, reason: "no_terminal", message: "No terminal ID bound to this wallet" },
       { status: 404 },

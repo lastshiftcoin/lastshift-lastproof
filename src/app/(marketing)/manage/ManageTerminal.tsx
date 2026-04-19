@@ -71,6 +71,23 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
   const [tidError, setTidError] = useState("");
   const [walletAddr, setWalletAddr] = useState("");
 
+  // Stash the ref slug in localStorage on every fresh URL visit so it
+  // survives the mobile-wallet-return roundtrip. Phantom/Solflare opening
+  // the wallet app and returning to the dapp often strips the query string
+  // on return — that's how @coreops lost attribution on 2026-04-18.
+  //
+  // localStorage is NOT a cookie: never auto-sent to the server, client
+  // controlled, origin-scoped. Acts only as a memory cell across the
+  // wallet deep-link hop. Read back inline before each auth POST.
+  useEffect(() => {
+    if (!ref_slug) return;
+    try {
+      window.localStorage.setItem("lp_ref_slug", ref_slug);
+    } catch {
+      // Private mode / storage disabled — degrade silently.
+    }
+  }, [ref_slug]);
+
   const validatingRef = useRef(false);
 
   // ─── Isolation: disconnect wallet when leaving /manage ──────────────────────
@@ -188,10 +205,18 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
       // gets stamped on the operators row here, not later at claim time
       // where ?ref= may have been lost. URL is still /manage?ref=<slug>
       // at this exact moment — no navigation has happened.
+      // Pull freshest effective ref: prefer the prop, fall back to localStorage.
+      // Read directly here (not via closure) so the mobile-wallet-return case
+      // where the page re-rendered with ref_slug=null still captures the
+      // localStorage-stashed value.
+      let refForPost: string | null = ref_slug ?? null;
+      if (!refForPost) {
+        try { refForPost = window.localStorage.getItem("lp_ref_slug"); } catch { /* noop */ }
+      }
       const lookupRes = await fetch("/api/auth/wallet-gate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress, ref: ref_slug ?? undefined }),
+        body: JSON.stringify({ walletAddress, ref: refForPost ?? undefined }),
       });
 
       const body = await lookupRes.json();
@@ -277,11 +302,16 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
     addLine("Authenticating terminal ID...", "accent");
 
     try {
+      // Pull freshest effective ref: prop → localStorage fallback (see validateTerminal)
+      let refForPost: string | null = ref_slug ?? null;
+      if (!refForPost) {
+        try { refForPost = window.localStorage.getItem("lp_ref_slug"); } catch { /* noop */ }
+      }
       const res = await fetch("/api/auth/register-tid", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // Forward ref_slug for first-touch ambassador attribution on operator insert.
-        body: JSON.stringify({ walletAddress: walletAddr, terminalId: tid, ref: ref_slug ?? undefined }),
+        // Forward ref for first-touch ambassador attribution on operator insert.
+        body: JSON.stringify({ walletAddress: walletAddr, terminalId: tid, ref: refForPost ?? undefined }),
       });
       const body = await res.json();
 
