@@ -20,6 +20,115 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-21 00:58 MST — Status page wireframes + 42-entry Updates backfill proposal
+
+**Device:** Tallada's MacBook Air (`Talladas-MacBook-Air.local`, macOS 26.4.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-7 (1M context)
+**Role:** status-page (task-specific, per CLAUDE.md § Task-specific sessions)
+**Commits:** `a65bfde` (three wireframes + backfill md)
+**Migrations run in prod Supabase:** none
+**Impacts:** coordinator session on this same machine picks up next — wires `VERSION` (at `0.6.2`) and `data/updates.json` (seeded from the backfill md) per CLAUDE.md § Updates feed convention that coordinator committed in `cf84b96`. No Terminal impact.
+**Status:** ✅ shipped, handoff to coordinator queued
+
+### Did
+
+- Onboarded per protocol. Pulled to `2e82741`, read top 3 WORKLOG entries,
+  read CLAUDE.md § Session protocol including the three sub-sections
+  ("Broken git state", "iCloud duplicates", "Task-specific sessions").
+  Self-declared role `status-page` per task-specific convention.
+- **Hit broken git state at session start** — `git pull` flagged two
+  files as iCloud-dragged stale reverts (WORKLOG.md dropping the
+  2026-04-20 23:02 help-page entry; `how-it-works-CONTENT.md`
+  reverting the `/how-it-works` collision lock). Also found 6
+  `.git/objects/* 2` directories + stale `.git/packed-refs`. Per
+  protocol, halted + ran `git fsck --full` + object-resolution
+  audit before any recovery. Verified all orphan objects resolved
+  via packs (redundant loose copies), approved cleanup path with
+  user, removed stale duplicates. Working tree came clean at
+  `e2a47ca`.
+- **Design conversation with user** to scope the `/status` page:
+  - Framed the page as changelog-first (iOS App Store style),
+    with a thin "all systems operational" badge on top, not the
+    inverse
+  - Locked version scheme `MAJOR.MINOR.PATCH`, three categories
+    (`fixed` / `added` / `improved`), Groq paraphrasing via GHA
+    for future commits
+  - Agreed with coordinator (via user relay) on `0.x` pre-launch,
+    `V1.0.0` reserved for 2026-05-08 Grid launch, major-bump
+    reservation rule baked into convention
+- **Renumbered** `wireframes/updates-backfill.md` from my first-pass
+  `V1.x` scheme to `V0.x`. V0.0.0 = Apr 10 launch, V0.6.2 = Apr 18
+  mobile-wallet-return (current head). 42 entries clustered from
+  281 commits.
+- **Built** `wireframes/status.html` — hero + system-status bar
+  (green/orange/red variants baked in for manual toggle) + latest-
+  update hero card + 10 recent entries feed + Telegram subscribe
+  strip + footer. All entries aligned with the renumbered backfill.
+- **Built** `wireframes/status-archive.html` — breadcrumb to
+  `/status`, stats strip (42 updates · V0.6.2 current · V1.0.0
+  reserved for Grid), month-group `<details>` pattern with April
+  2026 expanded by default, all 42 entries in reverse chronological
+  order. A commented-out May 2026 block left in source as a
+  template for future month groups.
+- **Hit `.git/packed-refs` staleness mid-session** when coordinator
+  pushed `cf84b96` (§ Updates feed convention) during my work. Fetch
+  failed with `cannot lock ref 'refs/remotes/origin/main'` — stale
+  packed-refs at `d8b234e` blocking the loose-ref update. Per
+  protocol, halted + diagnosed (packed-refs held only 3 lines, all
+  entries duplicated by newer loose refs, zero unique content).
+  Reported + got approval. Fix was `rm .git/packed-refs`; git
+  re-derived refs from the loose files cleanly. Coordinator's
+  commit pulled in, no conflicts.
+- **Committed + pushed** `a65bfde` with `git pull --rebase` before
+  push per multi-session protocol. Rebased cleanly onto coordinator's
+  `cf84b96` + help-page's `1255fbb`.
+
+### Current state
+
+- Three new wireframe files live on origin/main at `a65bfde`.
+- `wireframes/updates-backfill.md` is the voice-reference and
+  seed-data source for the Updates feed. Renumbered and ready.
+- CLAUDE.md § Updates feed convention (coordinator's `cf84b96`)
+  is live; these wireframes match its schema and voice rules.
+- `VERSION` and `data/updates.json` do NOT exist yet — coordinator
+  creates them next per the agreed division of labor.
+- Status-page wireframes are preview-only — no Next.js routes exist
+  for `/status` or `/status/all` yet. Real implementation queued
+  pending user go-ahead.
+
+### Open / next
+
+- **Coordinator:** seed `VERSION` at `0.6.2` (matches the top entry
+  of the renumbered backfill md) + transform the 42 entries into
+  `data/updates.json` per the schema locked in CLAUDE.md § Updates
+  feed, commit as single `[update: added]` commit ("First public
+  updates feed entries").
+- **Next status-page session (or this one if user re-engages):**
+  real Next.js `/status` + `/status/all` routes, reading from
+  `data/updates.json`. Wait for user green-light + coordinator's
+  VERSION + updates.json commit before starting.
+- **Pre-existing pre-existing `@solana/*` tsc errors** still hang
+  off three files per the 2026-04-20 22:39 MST entry. Not touched
+  this session; still open.
+
+### Gotchas for next session
+
+- **`VERSION` and `data/updates.json` do NOT exist yet** at push
+  time of this entry — if you're a session that needs to bump
+  VERSION per CLAUDE.md § Updates feed convention, confirm
+  coordinator's seed commit landed before running the convention.
+- **packed-refs can go stale again** — this session hit it once,
+  the Apr 20 23:02 session hit it before. If `git fetch` fails
+  with `cannot lock ref`, don't improvise: the fix is usually
+  `rm .git/packed-refs` after verifying every entry is duplicated
+  by a newer loose ref. Follow the § Broken git state protocol.
+- **Three parallel sessions pushed today** (help-page, coordinator,
+  status-page) and all landed cleanly via `git pull --rebase`.
+  The discipline holds. Don't skip the rebase.
+
+---
+
 ## 2026-04-21 01:02 MST — Terminal ID format corrected: no SHIFT- prefix
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1, account `tallada2023`)
