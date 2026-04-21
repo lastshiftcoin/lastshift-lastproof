@@ -20,6 +20,50 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-21 02:04 MST — /help hero: trim eyebrow, remove CTAs + microcopy
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1, account `tallada2023`)
+**Platform:** Claude Desktop
+**Model:** claude-opus-4-6
+**Role:** help-page
+**Commits:** this entry
+**Migrations run in prod Supabase:** none
+**Impacts:** none — wireframe-only
+**Status:** ✅ shipped, preview verified HTTP 200
+
+### Did
+
+- Hero eyebrow trimmed: `HELP CENTER · GET UNSTUCK` → `HELP CENTER`.
+- Removed the `.hero-ctas` block (LAUNCH TERMINAL + GO TO /MANAGE
+  buttons). Users will reach those via the topbar's `HOW IT WORKS` /
+  `MANAGE PROFILE` links + the contextual CTAs inside each tab
+  (Contact tab keeps the closing CTA pair; Profile Creation tab
+  keeps the Step 01 LAUNCH TERMINAL inline button).
+- Removed the `No email, no password — just your wallet.` microcopy
+  line — it's repeated in Topic 1 Step 01 copy where it's more
+  contextual anyway.
+- Dropped the now-unused `.hero-ctas` and `.hero .microcopy` CSS
+  rules. Adjusted `.hero` bottom padding from 36px → 28px and
+  `.body-text` bottom margin from 26px → 0 so the hero doesn't leave
+  an awkward empty stripe where the CTAs used to sit.
+- Responsive verified across 3 breakpoints (desktop, ≤900px, ≤540px):
+  h1 scales 46px → 34px → 28px, padding shrinks correctly, no
+  orphan whitespace, Quick Answers block sits cleanly below the
+  slimmer hero.
+
+### Current state
+
+- `wireframes/help.html` — 2,137 lines (down from 2,144). HTTP 200,
+  132,995 bytes.
+
+### Open / next
+
+- Everything from prior entries still open (frontend builder
+  productionization, link /help from Terminal-ID prompts,
+  validate-tid regex bug).
+
+---
+
 ## 2026-04-21 01:42 MST — /help wireframe: 24 placeholder shots → coded mini-renders
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1, account `tallada2023`)
