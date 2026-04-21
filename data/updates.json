@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.7.0",
+  "latest_version": "0.8.0",
   "entries": [
+    {
+      "version": "0.8.0",
+      "date": "2026-04-21",
+      "category": "added",
+      "headline": "Stuck? The new /help page walks you through it.",
+      "copy": "Profile creation, submitting proofs, updating your profile, and what each profile status means — all laid out with step-by-step walkthroughs, a searchable FAQ, and clear answers to the most common blockers. One place for anything you'd otherwise DM us about.",
+      "source_commits": []
+    },
     {
       "version": "0.7.0",
       "date": "2026-04-21",

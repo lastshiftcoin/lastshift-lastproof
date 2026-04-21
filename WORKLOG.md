@@ -20,6 +20,89 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-21 10:24 MST — /help shipped to production route
+
+**Device:** Kellen's Mac mini
+**Platform:** Claude Desktop
+**Model:** claude-opus-4-6
+**Role:** help-page
+**Commits:** this entry
+**Migrations run in prod Supabase:** none
+**Impacts:** none — new route, no Terminal changes, no contract changes
+**Status:** ✅ shipped to main, pending review before production deploy
+
+### Did
+
+- Ported `wireframes/help.html` + `wireframes/help-CONTENT.md` into a
+  production React route at `src/app/(marketing)/help/`.
+  - `layout.tsx` — server component exporting Next.js `metadata`
+    (title, description, OpenGraph, Twitter card)
+  - `page.tsx` — `"use client"` component, ~1,500 lines. State: tab
+    switcher (6 tabs) + FAQ substring search. Hash sync via
+    `history.replaceState` + `hashchange` listener. Keyboard arrow-key
+    tab navigation. ARIA: `role="tablist"` + `aria-selected` +
+    `aria-controls` + `aria-labelledby`. FAQ JSON-LD for SEO.
+  - `help.css` — scoped `.help-*` class prefix (matches
+    `how-it-works.css` convention — classes already in `globals.css`
+    are not duplicated). Full responsive at 3 breakpoints (900/640/540).
+- Stripped duplicated chrome from the wireframe — Topbar, Footer,
+  ShiftbotStrip come from the `(marketing)/layout.tsx`.
+- Converted all vanilla-JS interactivity to React: tab switcher →
+  `useState<TabId>` + `activate()`; FAQ search → controlled input +
+  `useMemo` filter; cross-tab jumps → `<button>` + `activate()` calls.
+  FAQ entries kept as `<details>` so the accordion still works without
+  JS.
+- Extracted FAQ data into a `FAQS: FaqEntry[]` array (34 entries) for
+  cleaner filter + render. Each entry has question, `searchText`
+  keywords, ReactNode answer, optional `defaultOpen` flag.
+- Added `/help` to `src/app/sitemap.ts` at priority 0.6.
+- Bumped `VERSION` 0.7.0 → 0.8.0 + added `data/updates.json` entry per
+  the Updates feed convention (headline: "Stuck? The new /help page
+  walks you through it.").
+
+### What's intentionally NOT in this commit
+
+- Screenshot capture — all `<Shot>` renders are styled browser-chrome
+  placeholders referencing the source wireframes. Real image capture
+  (Playwright against the wireframes) is a separate commit. Page
+  ships + reviews fine without them.
+- `/faq` alias → `/help` redirect — separate commit (next.config).
+- Link integration across the platform per the Entry Points table in
+  `help-CONTENT.md` — separate cross-file sweep.
+- Local `tsc --noEmit` couldn't run (node_modules TypeScript install
+  error — pre-existing, flagged in earlier entries). Relying on
+  Vercel's build pipeline to catch type issues.
+
+### Current state
+
+- 5 files changed: 3 new in `src/app/(marketing)/help/` + sitemap +
+  VERSION + updates.json.
+- No migrations, no Terminal contract changes, no touching other
+  pages or routes.
+- Route `/help` renders standalone; ready for Kellen's review via
+  `pnpm dev` or Vercel preview.
+
+### Open / next
+
+- Kellen reviews rendered /help. Iterate on any copy / layout tweaks.
+- Follow-up commits for screenshot capture + link integration + /faq
+  alias (separate narrow-scope tasks).
+
+### Gotchas for next session
+
+- **`.help-*` prefix is load-bearing.** Everything page-specific is
+  scoped to `.help-page` ancestor. Don't add unprefixed classes like
+  `.hero` or `.step` inside this page — they'll collide with global
+  CSS.
+- **FAQ entries are data** in `page.tsx` — edit the `FAQS` array to
+  add/remove. Update `searchText` (space-delimited keywords) so search
+  finds the entry.
+- **Tab hash sync** uses a ref guard (`didInitialHashSync`) to avoid
+  double-firing under Strict Mode. If you refactor the effect,
+  preserve that behavior.
+
+---
+
 ## 2026-04-21 09:47 MST — validate-tid: dual-accept regex (match register-tid)
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)

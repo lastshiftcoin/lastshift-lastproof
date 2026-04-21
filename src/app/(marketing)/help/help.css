@@ -1,0 +1,575 @@
+/* ================================================================
+   /help — page-specific styles. All classes prefixed `.help-*`
+   to avoid collision with global chrome (topbar, footer, shiftbot,
+   buttons). Classes already in globals.css are NOT duplicated here.
+   ================================================================ */
+
+/* ─── UTILITIES ─── */
+.help-page .mono { font-family: var(--mono); }
+.help-page .help-orange { color: var(--orange); }
+.help-page .help-green { color: var(--green); }
+.help-page .help-red { color: var(--red); }
+.help-page .help-gold { color: var(--gold); }
+.help-page .help-dim { color: var(--text-secondary); }
+.help-page .help-chk { color: var(--green); font-family: var(--mono); font-weight: 700; flex-shrink: 0; }
+.help-page .help-prefix { font-family: var(--mono); color: var(--orange); margin-right: 6px; font-weight: 700; }
+
+/* Help-scoped "linklike" button (text that acts like an inline link but is a <button>) */
+.help-page .help-linklike {
+  background: none; border: 0; padding: 0; margin: 0;
+  color: var(--orange); font-family: inherit; font-size: inherit; cursor: pointer;
+  border-bottom: 1px dotted var(--orange);
+}
+.help-page .help-linklike:hover { color: #ffb347; border-bottom-color: #ffb347; }
+
+/* ─── HERO ─── */
+.help-page .help-hero { padding: 64px 0 28px; text-align: center; }
+.help-page .help-hero-eyebrow {
+  font-family: var(--mono); font-size: 10px; color: var(--orange);
+  letter-spacing: 3px; text-transform: uppercase; margin-bottom: 20px;
+}
+.help-page .help-hero h1 {
+  font-family: var(--sans); font-size: 46px; line-height: 1.08;
+  margin: 0 auto 18px; font-weight: 700; letter-spacing: -1px; max-width: 800px;
+}
+.help-page .help-body-text {
+  font-size: 16px; color: var(--text-secondary); max-width: 620px;
+  margin: 0 auto; line-height: 1.65;
+}
+
+/* ─── QUICK ANSWERS ─── */
+.help-page .help-quick-answers {
+  margin: 32px 0 44px; padding: 24px;
+  border: 1px solid var(--orange); border-radius: var(--r-card);
+  background: linear-gradient(180deg, var(--orange-dim), transparent);
+}
+.help-page .help-quick-answers h2 {
+  font-family: var(--mono); font-size: 12px; letter-spacing: 2px;
+  color: var(--orange); text-transform: uppercase;
+  margin: 0 0 16px; display: flex; align-items: center; gap: 8px;
+}
+.help-page .help-quick-answers h2::before { content: "//"; color: var(--orange); }
+.help-page .help-qa-list { display: flex; flex-direction: column; gap: 14px; }
+.help-page .help-qa-item {
+  display: flex; flex-direction: column; gap: 4px;
+  padding-left: 14px; border-left: 2px solid var(--orange);
+}
+.help-page .help-qa-q { font-weight: 600; font-size: 14px; color: var(--text-primary); }
+.help-page .help-qa-a { color: var(--text-secondary); font-size: 13.5px; line-height: 1.55; }
+.help-page .help-qa-a a {
+  color: var(--orange); border-bottom: 1px dotted var(--orange);
+  text-decoration: none;
+}
+
+/* ─── TAB BAR ─── */
+.help-page .help-tab-bar {
+  position: sticky; top: 0; z-index: 40;
+  display: flex; gap: 0; padding: 0; margin: 0 -8px;
+  background: rgba(10, 11, 15, 0.94); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto; scrollbar-width: none;
+}
+.help-page .help-tab-bar::-webkit-scrollbar { display: none; }
+.help-page .help-tab {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 18px 20px; border: 0; border-bottom: 2px solid transparent;
+  background: transparent; color: var(--text-secondary);
+  font-family: var(--mono); font-size: 11px; letter-spacing: 1.5px;
+  text-transform: uppercase; white-space: nowrap;
+  transition: all 0.15s; position: relative; cursor: pointer;
+}
+.help-page .help-tab:hover { color: var(--text-primary); background: rgba(255, 145, 0, 0.04); }
+.help-page .help-tab-num {
+  font-family: var(--mono); font-size: 10px;
+  color: var(--text-dim); font-weight: 500;
+}
+.help-page .help-tab-lbl { font-weight: 500; }
+.help-page .help-tab.is-active {
+  color: var(--orange); border-bottom-color: var(--orange); background: transparent;
+}
+.help-page .help-tab.is-active .help-tab-num { color: var(--orange); }
+.help-page .help-tab.is-active .help-tab-lbl { font-weight: 600; }
+.help-page .help-tab:focus-visible { outline: 2px solid var(--orange); outline-offset: -2px; }
+
+/* ─── TAB PANELS ─── */
+.help-page .help-tab-panel { padding: 36px 0 20px; }
+.help-page .help-tab-panel[hidden] { display: none; }
+.help-page .help-panel-head { margin-bottom: 20px; }
+.help-page .help-panel-eyebrow {
+  font-family: var(--mono); font-size: 10px; color: var(--orange);
+  letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px;
+}
+.help-page .help-panel-title { font-size: 30px; letter-spacing: -0.5px; margin-bottom: 10px; }
+.help-page .help-panel-intro {
+  color: var(--text-secondary); font-size: 15px; line-height: 1.6; max-width: 680px;
+}
+
+/* Section sub-label (mono label inside a panel, "// UPPERCASE TITLE") */
+.help-page .help-sec-label {
+  font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+  letter-spacing: 2.5px; text-transform: uppercase;
+  margin: 40px 0 14px; display: flex; align-items: center; gap: 10px;
+}
+.help-page .help-sec-label::before { content: "//"; color: var(--orange); }
+
+/* ─── STEP CARDS ─── */
+.help-page .help-step {
+  display: grid; grid-template-columns: 340px 1fr; gap: 22px;
+  padding: 20px; border: 1px solid var(--border); border-radius: var(--r-card);
+  background: var(--bg-card); margin-bottom: 14px; transition: border-color 0.15s;
+}
+.help-page .help-step:hover { border-color: var(--border-2); }
+.help-page .help-step-num {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 2px;
+  color: var(--orange); text-transform: uppercase;
+  margin-bottom: 6px; display: flex; align-items: center; gap: 8px;
+}
+.help-page .help-step-num::before { content: "▶"; font-size: 9px; }
+.help-page .help-step-title { font-size: 17px; margin-bottom: 8px; font-weight: 600; }
+.help-page .help-step-copy { color: var(--text-secondary); font-size: 13.5px; line-height: 1.6; }
+.help-page .help-step-copy p { margin: 0 0 10px; }
+.help-page .help-step-copy ul,
+.help-page .help-step-copy ol { margin: 0 0 10px; padding-left: 18px; }
+.help-page .help-step-copy li { margin-bottom: 4px; }
+.help-page .help-step-tip,
+.help-page .help-step-warn,
+.help-page .help-step-note {
+  margin-top: 12px; font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.5px; line-height: 1.55;
+  padding: 10px 14px; border-radius: var(--r-sm);
+}
+.help-page .help-step-tip {
+  color: var(--green); background: var(--green-dim); border-left: 2px solid var(--green);
+}
+.help-page .help-step-warn {
+  color: var(--red); background: rgba(255, 82, 82, 0.1); border-left: 2px solid var(--red);
+}
+.help-page .help-step-note {
+  color: var(--orange); background: var(--orange-dim); border-left: 2px solid var(--orange);
+}
+.help-page .help-step-tip b,
+.help-page .help-step-warn b,
+.help-page .help-step-note b { font-family: var(--sans); font-weight: 700; }
+
+/* ─── SCREENSHOT PLACEHOLDER ─── */
+.help-page .help-shot {
+  position: relative; background: var(--bg-input);
+  border: 1px solid var(--border-2); border-radius: var(--r-sm);
+  aspect-ratio: 4 / 3;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; cursor: zoom-in; transition: all 0.18s;
+}
+.help-page .help-shot:hover {
+  border-color: var(--orange); box-shadow: 0 0 20px var(--orange-glow, rgba(255, 145, 0, 0.25));
+}
+.help-page .help-shot-inline { max-width: 300px; margin: 12px 0; }
+.help-page .help-browser-chrome {
+  position: absolute; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px; background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border); z-index: 2;
+}
+.help-page .help-browser-dots { display: flex; gap: 3px; }
+.help-page .help-browser-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--border-2);
+}
+.help-page .help-browser-url {
+  font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+  letter-spacing: 0.5px; padding-left: 6px; flex: 1; text-align: center;
+}
+.help-page .help-shot-placeholder {
+  width: 100%; height: 100%; padding-top: 24px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; text-align: center;
+}
+.help-page .help-shot-src {
+  font-family: var(--mono); font-size: 10px; color: var(--orange); letter-spacing: 1px;
+}
+.help-page .help-shot-icon { font-family: var(--mono); font-size: 26px; color: var(--text-dim); }
+.help-page .help-shot-caption {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 6px 10px; background: rgba(10, 11, 15, 0.9);
+  font-family: var(--mono); font-size: 10px; color: var(--text-secondary);
+  letter-spacing: 0.5px; text-align: center; line-height: 1.4;
+}
+
+/* ─── CALLOUTS ─── */
+.help-page .help-callout {
+  margin: 14px 0; padding: 14px 16px; border-radius: var(--r-sm);
+  font-size: 13.5px; line-height: 1.55;
+}
+.help-page .help-callout-orange { border: 1px solid var(--orange); background: var(--orange-dim); }
+.help-page .help-callout-green { border: 1px solid var(--green); background: var(--green-dim); }
+.help-page .help-callout-red { border: 1px solid var(--red); background: rgba(255, 82, 82, 0.1); }
+.help-page .help-callout-dim {
+  border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary);
+}
+.help-page .help-callout strong { color: var(--text-primary); }
+.help-page .help-callout-green .help-prefix { color: var(--green); }
+.help-page .help-callout-red .help-prefix { color: var(--red); }
+
+/* ─── STACK COMPARE GRID (Microsoft ↔ LASTSHIFT) ─── */
+.help-page .help-stack-compare {
+  margin: 18px 0; padding: 22px 24px;
+  border: 1px solid var(--border); border-radius: var(--r-card);
+  background: var(--bg-card); overflow: hidden;
+}
+.help-page .help-stack-heads {
+  display: grid; grid-template-columns: 1fr 48px 1fr; gap: 18px;
+  padding: 0 4px 14px; border-bottom: 1px solid var(--border);
+  margin-bottom: 6px; align-items: center;
+}
+.help-page .help-stack-col-head {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--text-dim); padding: 0 14px;
+}
+.help-page .help-stack-col-head-ls { color: var(--orange); }
+.help-page .help-stack-row {
+  display: grid; grid-template-columns: 1fr 48px 1fr; gap: 18px;
+  align-items: stretch; padding: 12px 0;
+  border-bottom: 1px solid var(--border); position: relative;
+}
+.help-page .help-stack-row:last-child { border-bottom: none; padding-bottom: 4px; }
+.help-page .help-stack-tier {
+  position: absolute; left: 0; top: 14px;
+  font-family: var(--mono); font-size: 8.5px; letter-spacing: 2px;
+  color: var(--text-dim); text-transform: uppercase;
+  pointer-events: none; opacity: 0; transition: opacity 0.15s;
+}
+.help-page .help-stack-row:hover .help-stack-tier { opacity: 1; }
+.help-page .help-stack-side {
+  padding: 14px 16px; border-radius: var(--r-sm);
+  display: flex; flex-direction: column; justify-content: center;
+  transition: all 0.18s; min-width: 0;
+}
+.help-page .help-stack-ms {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04); opacity: 0.78;
+}
+.help-page .help-stack-ms:hover { opacity: 1; background: rgba(255, 255, 255, 0.04); }
+.help-page .help-stack-ls {
+  background: linear-gradient(180deg, var(--orange-dim), rgba(255, 145, 0, 0.02));
+  border: 1px solid rgba(255, 145, 0, 0.3);
+}
+.help-page .help-stack-ls:hover {
+  border-color: var(--orange); box-shadow: 0 0 18px rgba(255, 145, 0, 0.12);
+}
+.help-page .help-stack-name {
+  font-family: var(--mono); font-size: 14.5px; font-weight: 700;
+  letter-spacing: 0.5px; color: var(--text-primary);
+  line-height: 1.1; margin-bottom: 4px; overflow-wrap: break-word;
+}
+.help-page .help-stack-ls .help-stack-name { color: var(--orange); }
+.help-page .help-stack-desc {
+  font-family: var(--sans); font-size: 12px;
+  color: var(--text-secondary); line-height: 1.4;
+}
+.help-page .help-stack-arrow {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--orange-dim); border: 1px solid var(--orange);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--orange); font-size: 16px; font-weight: 700;
+  flex-shrink: 0; justify-self: center; align-self: center;
+  transition: transform 0.3s;
+}
+.help-page .help-stack-row:hover .help-stack-arrow {
+  transform: scale(1.08); box-shadow: 0 0 14px var(--orange-glow, rgba(255, 145, 0, 0.25));
+}
+
+.help-page .help-stack-quick {
+  margin: 14px 0 0; padding: 14px 18px;
+  background: var(--bg-input); border: 1px solid var(--border);
+  border-left: 3px solid var(--orange); border-radius: var(--r-sm);
+  font-family: var(--mono); font-size: 13px; line-height: 1.7;
+}
+
+/* ─── ECOSYSTEM / TACTICS MINI-CARD GRID ─── */
+.help-page .help-card-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0;
+}
+.help-page .help-mini-card {
+  padding: 22px; border: 1px solid var(--border);
+  border-radius: var(--r-card); background: var(--bg-card);
+}
+.help-page .help-mini-card .help-card-eyebrow {
+  font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+  letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px;
+}
+.help-page .help-mini-card h4 {
+  font-size: 18px; margin-bottom: 4px; letter-spacing: -0.3px;
+}
+.help-page .help-mini-card p {
+  color: var(--text-secondary); font-size: 13px; line-height: 1.6; margin-bottom: 12px;
+}
+
+/* ─── TERMINAL ID KEY DISPLAY ─── */
+.help-page .help-tid-display {
+  margin: 20px 0; padding: 28px;
+  border: 1px solid var(--orange); border-radius: var(--r-card);
+  background: var(--orange-dim); text-align: center;
+  font-family: var(--mono); font-size: 26px; letter-spacing: 4px;
+  color: var(--orange); font-weight: 700;
+  text-shadow: 0 0 12px var(--orange-glow, rgba(255, 145, 0, 0.25));
+}
+.help-page .help-tid-bullets { list-style: none; padding: 0; margin: 14px 0 22px; }
+.help-page .help-tid-bullets li {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 0; color: var(--text-secondary); font-size: 14px;
+}
+
+/* ─── STATUS AT A GLANCE (Topic 4) ─── */
+.help-page .help-state-glance {
+  margin: 16px 0; padding: 20px;
+  border: 1px solid var(--border); border-radius: var(--r-card);
+  background: var(--bg-card); overflow-x: auto;
+}
+.help-page .help-state-glance pre {
+  margin: 0; font-family: var(--mono); font-size: 12px;
+  color: var(--text-primary); line-height: 1.85; white-space: pre;
+}
+.help-page .help-state-glance .help-c-green { color: var(--green); }
+.help-page .help-state-glance .help-c-gold { color: var(--gold); }
+.help-page .help-state-glance .help-c-silver { color: var(--silver, #9ca3af); }
+.help-page .help-state-glance .help-c-red { color: var(--red); }
+
+/* ─── STATE DETAIL CARDS ─── */
+.help-page .help-state-card {
+  margin: 16px 0; padding: 24px;
+  border: 1px solid var(--border); border-radius: var(--r-card);
+  background: var(--bg-card);
+}
+.help-page .help-state-active-paid { border-left: 4px solid var(--green); }
+.help-page .help-state-ea { border-left: 4px solid var(--gold); }
+.help-page .help-state-free { border-left: 4px solid var(--silver, #9ca3af); }
+.help-page .help-state-defunct { border-left: 4px solid var(--red); }
+.help-page .help-state-card h3 {
+  font-size: 22px; margin-bottom: 4px; letter-spacing: -0.3px;
+}
+.help-page .help-state-badge {
+  display: inline-block; padding: 3px 10px; border-radius: var(--r-pill);
+  font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px;
+  text-transform: uppercase; margin-bottom: 10px; font-weight: 700;
+}
+.help-page .help-state-badge-active-paid {
+  background: var(--green-dim); color: var(--green); border: 1px solid var(--green);
+}
+.help-page .help-state-badge-ea {
+  background: rgba(255, 215, 0, 0.1); color: var(--gold); border: 1px solid var(--gold);
+}
+.help-page .help-state-badge-free {
+  background: rgba(156, 163, 175, 0.12); color: var(--silver, #9ca3af);
+  border: 1px solid var(--silver, #9ca3af);
+}
+.help-page .help-state-badge-defunct {
+  background: rgba(255, 82, 82, 0.1); color: var(--red); border: 1px solid var(--red);
+}
+.help-page .help-what-means {
+  color: var(--text-secondary); margin-bottom: 14px; font-size: 14.5px;
+}
+.help-page .help-state-grid {
+  display: grid; grid-template-columns: 340px 1fr; gap: 22px; margin-top: 10px;
+}
+.help-page .help-state-details h5 {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px;
+  color: var(--orange); text-transform: uppercase; margin: 14px 0 6px;
+}
+.help-page .help-state-details ul {
+  padding-left: 18px; color: var(--text-secondary);
+  font-size: 13px; line-height: 1.6;
+}
+
+/* ─── TRANSITION DIAGRAM ─── */
+.help-page .help-transition-diagram {
+  margin: 18px 0; padding: 20px;
+  border: 1px solid var(--border); border-radius: var(--r-card);
+  background: var(--bg-card); overflow-x: auto;
+}
+.help-page .help-transition-diagram pre {
+  margin: 0; font-family: var(--mono); font-size: 11.5px;
+  color: var(--text-primary); line-height: 1.7; white-space: pre;
+}
+
+/* ─── COST MATRIX ─── */
+.help-page .help-cost-table-wrap { width: 100%; overflow-x: auto; }
+.help-page .help-cost-table {
+  width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13px;
+}
+.help-page .help-cost-table th,
+.help-page .help-cost-table td {
+  padding: 10px 12px; border-bottom: 1px solid var(--border);
+  text-align: left; vertical-align: top;
+}
+.help-page .help-cost-table th {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px;
+  color: var(--text-dim); text-transform: uppercase;
+  font-weight: 600; background: var(--bg-card);
+}
+.help-page .help-cost-table td { color: var(--text-secondary); }
+.help-page .help-cost-table td:first-child {
+  color: var(--text-primary); font-weight: 600;
+  font-family: var(--mono); font-size: 12px; letter-spacing: 1px;
+}
+
+/* ─── TIER LADDER ─── */
+.help-page .help-tier-ladder {
+  margin: 14px 0; padding: 18px 22px;
+  border: 1px solid var(--border); border-radius: var(--r-card);
+  background: var(--bg-card); overflow-x: auto;
+}
+.help-page .help-tier-ladder pre {
+  margin: 0; font-family: var(--mono); font-size: 13px;
+  line-height: 1.9; white-space: pre; color: var(--text-primary);
+}
+.help-page .help-tier-ladder .help-t1 { color: var(--silver, #9ca3af); }
+.help-page .help-tier-ladder .help-t2 { color: var(--bronze, #cd7f32); }
+.help-page .help-tier-ladder .help-t3 { color: var(--gold); }
+.help-page .help-tier-ladder .help-t4 { color: var(--purple, #a78bfa); }
+
+/* ─── SUB-TOPIC CARDS (Topic 3) ─── */
+.help-page .help-sub-topic {
+  margin: 14px 0; padding: 22px;
+  border: 1px solid var(--border); border-radius: var(--r-card);
+  background: var(--bg-card);
+}
+.help-page .help-sub-topic h4 {
+  font-size: 17px; margin-bottom: 8px; font-weight: 600;
+  color: var(--text-primary);
+  display: flex; align-items: center; gap: 10px;
+}
+.help-page .help-sub-num {
+  font-family: var(--mono); font-size: 12px; color: var(--orange);
+  letter-spacing: 1.5px; background: var(--orange-dim);
+  padding: 2px 8px; border-radius: var(--r-pill);
+}
+.help-page .help-sub-topic-grid {
+  display: grid; grid-template-columns: 260px 1fr; gap: 18px;
+}
+.help-page .help-sub-topic-copy {
+  color: var(--text-secondary); font-size: 13.5px; line-height: 1.6;
+}
+.help-page .help-sub-topic-copy p { margin: 0 0 10px; }
+.help-page .help-sub-topic-copy ul,
+.help-page .help-sub-topic-copy ol { padding-left: 18px; margin: 0 0 10px; }
+.help-page .help-sub-topic-copy strong { color: var(--text-primary); }
+
+/* ─── FAQ ─── */
+.help-page .help-faq-search { margin: 14px 0 18px; }
+.help-page .help-faq-search input {
+  width: 100%; padding: 14px 16px;
+  border: 1px solid var(--border-2); border-radius: var(--r-btn);
+  background: var(--bg-input); color: var(--text-primary);
+  font-family: var(--sans); font-size: 14px; transition: border-color 0.15s;
+}
+.help-page .help-faq-search input:focus {
+  outline: none; border-color: var(--orange);
+}
+.help-page .help-faq-search input::placeholder { color: var(--text-dim); }
+
+.help-page .help-faq-list {
+  margin: 18px 0; display: flex; flex-direction: column; gap: 8px;
+}
+.help-page .help-faq {
+  padding: 0; border: 1px solid var(--border);
+  border-radius: var(--r-card); background: var(--bg-card); overflow: hidden;
+}
+.help-page .help-faq summary {
+  list-style: none; padding: 16px 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; font-weight: 600; color: var(--text-primary);
+  font-size: 14px; line-height: 1.4;
+}
+.help-page .help-faq summary::-webkit-details-marker { display: none; }
+.help-page .help-faq summary::after {
+  content: "+"; font-family: var(--mono); font-size: 20px;
+  color: var(--orange); flex-shrink: 0; transition: transform 0.2s; line-height: 1;
+}
+.help-page .help-faq[open] summary::after { content: "−"; }
+.help-page .help-faq[open] summary {
+  border-bottom: 1px solid var(--border); background: var(--bg-card-hover);
+}
+.help-page .help-faq-body {
+  padding: 16px 18px 20px; color: var(--text-secondary);
+  font-size: 13.5px; line-height: 1.65;
+}
+.help-page .help-faq-body p { margin: 0 0 10px; }
+.help-page .help-faq-body ul,
+.help-page .help-faq-body ol { padding-left: 18px; margin: 0 0 10px; }
+.help-page .help-faq-body strong { color: var(--text-primary); }
+
+.help-page .help-faq-empty {
+  padding: 24px; text-align: center;
+  color: var(--text-secondary); font-size: 14px;
+  border: 1px dashed var(--border-2); border-radius: var(--r-card);
+}
+
+/* ─── CONTACT TAB ─── */
+.help-page .help-contact-hero {
+  padding: 32px; border: 1px solid var(--border);
+  border-radius: var(--r-card); background: var(--bg-card);
+  text-align: center; margin-bottom: 22px;
+}
+.help-page .help-big-tg {
+  font-family: var(--mono); font-size: 22px; color: var(--orange);
+  letter-spacing: 1px; margin: 16px 0; font-weight: 700;
+}
+.help-page .help-contact-hero p {
+  color: var(--text-secondary); max-width: 520px;
+  margin: 0 auto 12px;
+}
+.help-page .help-contact-info-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 22px;
+}
+.help-page .help-info-card {
+  padding: 20px; border: 1px solid var(--border);
+  border-radius: var(--r-card); background: var(--bg-card);
+}
+.help-page .help-info-card h4 {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 2px;
+  color: var(--orange); text-transform: uppercase; margin-bottom: 10px;
+}
+.help-page .help-info-card p,
+.help-page .help-info-card ul {
+  color: var(--text-secondary); font-size: 13px; line-height: 1.6;
+}
+.help-page .help-info-card ul { padding-left: 18px; margin: 0; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 900px) {
+  .help-page .help-hero { padding: 44px 0 24px; }
+  .help-page .help-hero h1 { font-size: 34px; }
+  .help-page .help-tab-bar { top: 0; margin: 0 -16px; }
+  .help-page .help-tab { padding: 14px 14px; }
+  .help-page .help-panel-title { font-size: 24px; }
+  .help-page .help-step,
+  .help-page .help-sub-topic-grid,
+  .help-page .help-state-grid { grid-template-columns: 1fr; }
+  .help-page .help-step .help-shot,
+  .help-page .help-sub-topic .help-shot { max-width: 420px; }
+  .help-page .help-card-grid,
+  .help-page .help-contact-info-grid { grid-template-columns: 1fr; }
+  .help-page .help-tid-display { font-size: 18px; letter-spacing: 2px; padding: 22px 14px; }
+}
+
+@media (max-width: 640px) {
+  .help-page .help-stack-compare { padding: 18px 14px; }
+  .help-page .help-stack-heads { display: none; }
+  .help-page .help-stack-row {
+    grid-template-columns: 1fr; gap: 8px; padding: 16px 0;
+  }
+  .help-page .help-stack-tier {
+    position: relative; left: 0; top: 0; opacity: 1; margin-bottom: 2px;
+  }
+  .help-page .help-stack-arrow {
+    transform: rotate(90deg); margin: -2px auto;
+    width: 28px; height: 28px; font-size: 14px;
+  }
+  .help-page .help-stack-row:hover .help-stack-arrow {
+    transform: rotate(90deg) scale(1.08);
+  }
+}
+
+@media (max-width: 540px) {
+  .help-page .help-hero h1 { font-size: 28px; }
+  .help-page .help-tab-num { display: none; }
+  .help-page .help-tab { padding: 12px 12px; font-size: 10px; }
+}
