@@ -3,7 +3,9 @@
 **Purpose:** single destination that resolves new-user confusion on lastproof.app — especially the "I don't have a Terminal ID" gap. Linked from every Terminal-ID prompt across the platform.
 
 **Primary route:** `lastproof.app/help`
-**Also reachable via:** `lastproof.app/how-it-works`, `lastproof.app/faq` (both redirect to `/help`)
+**Also reachable via:** `lastproof.app/faq` (redirects to `/help`)
+**Not conflicting with:** `lastproof.app/how-it-works` — that route already exists as a marketing explainer (Dev/Operator/Verify toggle page at `src/app/(marketing)/how-it-works/page.tsx`) and stays as-is.
+**Wireframe file:** `wireframes/help.html` (NOT `how-it-works.html` — that file is the existing marketing explainer wireframe, do not overwrite).
 
 **Audience:** new operators who landed on lastproof without visiting the Terminal first, plus returning operators who got stuck.
 

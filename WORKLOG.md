@@ -20,6 +20,124 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-20 23:34 MST — /help page wireframe built
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1, account `tallada2023`)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`, `__CFBundleIdentifier=com.anthropic.claudefordesktop`)
+**Model:** claude-opus-4-6
+**Role:** help-page
+**Commits:** this entry
+**Migrations run in prod Supabase:** none
+**Impacts:** none — wireframe + content doc only, no code changes, no Terminal touches
+**Status:** ✅ shipped, wireframe `wireframes/help.html` ready for frontend builder
+
+### Did
+
+- Built the HTML wireframe at `wireframes/help.html` (1,633 lines,
+  self-contained HTML+CSS, no JS dependencies beyond `<details>` for
+  accessible accordion). Terminal-chrome layout matching /manage:
+  system bar, titlebar (`help — lastproof — 80x24`), CRT
+  scanlines + vignette, bottom bar.
+- Structure implements the content doc 1:1:
+  - Hero + "Quick Answers" (top-3 blockers above the fold)
+  - Topic hub: 4 clickable cards with SVG icons, scroll-jumps to
+    anchor targets
+  - Sticky anchor nav (becomes fixed on scroll past topic hub)
+  - TOPIC 01 Profile Creation — 5 visual step cards with
+    browser-chrome screenshot placeholders referencing existing
+    wireframes
+  - TOPIC 02 Verify This Work — 6-step proof flow + 4-tactic
+    collect-proofs grid
+  - TOPIC 03 Updating My Profile — 8 sub-topic cards (bio, work
+    items, screenshots, links, handle change, X/TG verify, upgrade,
+    mint)
+  - TOPIC 04 Profile Status — glance table, 4 state detail cards
+    (ACTIVE PAID / EA / FREE / DEFUNCT) with color-coded
+    left-border, state-transition ASCII diagram, cost matrix table
+    with $LASTSHFT 40%-off callout, tier × state interaction block
+  - FAQ accordion (33 questions, first 3 open by default, `<details>`
+    for JS-free behavior)
+  - Reference block: stack analogy, 4 ecosystem cards, Terminal ID
+    key display, two-wallet explainer
+  - Final CTAs (primary: LAUNCH TERMINAL, secondary: GO TO /MANAGE)
+  - Contact (Telegram: @lastshiftcoinbreakroom)
+  - Last-updated timestamp
+  - Footer with burn tag
+  - FAQ JSON-LD schema for SEO (6 top questions)
+- **Did NOT touch `wireframes/how-it-works.html`** — that's an
+  existing production wireframe for the `/how-it-works` marketing
+  page (rendered by `src/app/(marketing)/how-it-works/page.tsx`).
+  Created new file at `wireframes/help.html` to avoid collision.
+  Updated content doc header to document the naming and route
+  distinction.
+- All screenshots are styled placeholders with browser-chrome frame
+  + source-wireframe reference + caption. Frontend builder will
+  replace each with actual captured screenshots per the Visual
+  Assets Inventory in the content doc (capture protocol documented
+  there: Playwright at 1440×900, WebP+PNG, 2x retina, lazy-load
+  below the fold, lightbox on click).
+- Mobile-responsive: all grids collapse to single column at ≤768px,
+  anchor nav shifts top position, TID display shrinks, titlebar
+  right info hides.
+- Accessibility: FAQ works without JS via `<details>`/`<summary>`,
+  all anchor targets have explicit IDs, SVG icons in topic cards
+  are `aria-hidden`, anchor nav has `aria-label="Help topics"`.
+
+### Current state
+
+- Wireframe at `wireframes/help.html` — complete, self-contained,
+  openable in any browser. Screenshots are placeholders (as
+  expected for wireframe stage).
+- Content doc `wireframes/how-it-works-CONTENT.md` serves as the
+  canonical copy source. Updated header to route the primary URL
+  to `/help` (not `/how-it-works`, which is already taken by the
+  existing marketing page).
+- No code changes; no migrations; no Terminal impact.
+- Frontend builder has everything needed: wireframe for visual
+  layout + content doc for final copy + Visual Assets Inventory
+  for screenshot capture protocol.
+
+### Open / next
+
+- **Frontend builder task** — productionize at route
+  `src/app/(marketing)/help/page.tsx`. Capture real screenshots
+  per protocol in content doc §Visual Assets Inventory. Decide
+  whether "Last updated" uses git commit date or dashboard
+  timestamp pattern (if one exists).
+- **Link /help from every Terminal-ID prompt** across lastproof
+  per content doc Entry Points table — `/manage`, onboarding
+  screens, proof modal "What am I paying for?" link, public profile
+  footer, homepage, 404 page.
+- **`/faq` redirect** — content doc says `/faq` redirects to
+  `/help`. Needs routing config when the help page ships.
+- **Topic 3 sub-topic verification** — some sub-topic affordances
+  (e.g. handle change modal trigger, mint card state) reference
+  dashboard sections that Kellen confirmed exist. Frontend builder
+  should still sanity-check each sub-topic's affordance before
+  linking — the wireframe assumes everything described in Topic 3
+  is present.
+
+### Gotchas for next session
+
+- **Two wireframes with similar names**: `wireframes/how-it-works.html`
+  = existing marketing explainer (Operator/Dev/Verify toggle,
+  production at `/how-it-works`). `wireframes/help.html` = new
+  help center for `/help` route. Don't confuse them.
+- **FAQ source of truth is the content doc, not the wireframe.**
+  If copy diverges later, update the content doc first, then
+  propagate to wireframe. The content doc has the full FAQ; the
+  wireframe trimmed a few minor edge-case FAQs to keep the page
+  scannable.
+- **Contact Telegram handle**: `@lastshiftcoinbreakroom`. Don't
+  create a new support channel — use the existing one.
+- **Handle change cost is $100 SOL/USDT or $60 $LASTSHFT** — locked
+  today in prior commit `e2a47ca`. $LASTSHFT 40% off is the
+  platform-wide discount across every paid action (subscription,
+  handle change, mint, proof). Don't split the discount rate per
+  action.
+
+---
+
 ## 2026-04-20 23:02 MST — /help page content brief: 10 open questions resolved, final-copy locked
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1, account `tallada2023`)
