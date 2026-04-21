@@ -20,6 +20,115 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-20 22:39 MST — Multi-session onboarding + protocol codification
+
+**Device:** Tallada's MacBook Air (`Talladas-MacBook-Air.local`, macOS 26.4.1 arm64)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** coordinator (sole author on this machine; onboarded peers on the mac mini)
+**Commits:** `7927313` (protocol codification)
+**Migrations run in prod Supabase:** none
+**Impacts:** none — purely protocol / cross-machine hygiene, no code behavior changed
+**Status:** ✅ shipped, four active sessions aligned across two machines
+
+### Did
+
+- Onboarded the three active LASTPROOF sessions on the mac mini
+  (`Kellens-Mac-mini.local`, macOS 15.3.1, account `tallada2023`) to
+  the session protocol introduced earlier today: **backend**,
+  **frontend**, **fullstack**. Each session ran steps 1–6 of the
+  protocol at session start — pulled latest main, read top 3 WORKLOG
+  entries, read CLAUDE.md § Session protocol, ran git log / git status
+  / remote-v, ran the iCloud duplicate hunt, and reported back SHAs.
+  All three confirmed clean against `7927313`.
+- **Backend session on mac mini hit a corrupt local git state** during
+  onboarding: HEAD pointed at `d04e9e9` but the object was missing from
+  `.git/objects/` (iCloud dropped the file mid-sync), plus `.git/index 2`
+  and `.git/index 3` duplicates, plus a week-old dangling stash
+  (`cf2986`, WIP from pre-Proof-Flow-V3 Apr 15). Session correctly
+  halted before any recovery, ran `git fsck --full` + pack listing +
+  duplicate enumeration, reported verbatim. Recovery path executed
+  cleanly: removed iCloud-duplicated index files, ran `git fetch
+  origin main` + `git reset --hard origin/main`, expired the dangling
+  stash via `git reflog expire --expire=now --all && git gc --prune=now`.
+  Final `git fsck --full` → zero dangling, zero missing.
+- **Mac mini iCloud duplicate cleanup** (by backend session, with
+  approval at each diff-safety-check step): 84 duplicate files + 11
+  duplicate directories removed. All but **two** byte-identical to
+  canonical. The two outliers were stale pre-observability snapshots
+  of `HandleChangeModal 2.tsx` (Apr 14) and
+  `(landing)/[campaignSlug] 2/page.tsx` (Apr 13) — same stale-revert
+  pattern as the prior entry. Both confirmed zero-rescue-value,
+  deleted.
+- **MacBook Air iCloud duplicate cleanup** (this session): 7 files +
+  `phantom 2/` empty dir + `.git/index 3` stale file. Same diff-safety
+  check first — all six content files byte-identical. Cleaned.
+- **Codified two protocol rules in CLAUDE.md § Session protocol**
+  (commit `7927313`) based on the incidents above:
+  1. "Broken git state — stop, don't improvise" — mandates `git fsck
+     --full` + pack + duplicate-file diagnostic before proposing any
+     recovery; forbids blind `git gc`, `git reset --hard`, object
+     deletion, or `git reflog expire` without inspecting dangling
+     content first.
+  2. "iCloud duplicates: hunt both files AND directories" — spells
+     out the two find patterns (`* 2.*` dotted for files, `* 2*`
+     un-dotted for directories), keeps the diff-against-canonical
+     safety check for every duplicate before deletion.
+- Closed the `terminal-build` stale-worktree mystery: the
+  `/Users/tallada2023/…/worktrees/sharp-hypatia` ghost reference
+  tracked back to the same mac mini (macOS account name is
+  `tallada2023`, not a different user). Kellen confirmed: one person,
+  two machines.
+
+### Current state
+
+- Four sessions onboarded and idle-but-ready:
+  - MacBook Air: this session (coordinator) + the LASTPROOF
+    drift-triage session from earlier today
+  - Mac mini: backend, frontend, fullstack
+- Both machines have zero iCloud duplicates in the working tree, zero
+  stray `.git/index N` files, zero dangling commits.
+- Protocol is battle-tested — one real broken-git incident was caught
+  and resolved without loss. Two new rules codified as a result.
+- HEAD on both machines: `7927313` on `origin/main`.
+- No code behavior changed in this entry's commits.
+
+### Open / next
+
+- **48h ambassador attribution watch window** still running
+  (continues from the 2026-04-20 19:19 MST entry). No action expected
+  unless real traffic reveals a new failure mode the observability
+  layer catches.
+- **Pre-existing `@solana/*` tsc errors** continue to hang off
+  `build-solana-tx.ts`, `token-dev-verify.ts`, `wallet/provider.tsx`.
+  Not blocking deploys. Pick up in a quiet session with `rm -rf
+  node_modules && npm install` + either pin the `@solana/spl-token`
+  version that exports `getAssociatedTokenAddress` or update the two
+  callsites; install the missing `@solana/wallet-adapter-phantom` +
+  `@solana/wallet-adapter-solflare` (or remove dead imports).
+
+### Gotchas for next session
+
+- **Multi-session rebase discipline** — three active sessions on the
+  mac mini share this repo. Always `git pull --rebase origin main`
+  before `git push`. If rebase hits conflicts, stop and ask the user
+  rather than auto-resolving.
+- **Two new protocol sub-sections** in `CLAUDE.md § Session protocol`
+  are mandatory reading: "Broken git state — stop, don't improvise"
+  and "iCloud duplicates: hunt both files AND directories". They
+  codify today's lessons; don't skip them because they look like
+  they're only relevant "when things go wrong" — they're written to
+  prevent things going *worse* when they do.
+- **Cross-machine commit author drift** — commits from the MacBook
+  Air come out as `Tallada <tallada@…>`, commits from the mac mini
+  will come out as `Kellen <kellen@…>` (or `tallada2023`), same
+  person. Not fixed yet. Consider running
+  `git config --global user.name "Kellen"` + `user.email "..."` on
+  each machine to unify attribution before too many more commits
+  land with split author metadata.
+
+---
+
 ## 2026-04-20 21:09 MST — iCloud drift triage: restored 10 stale files, rescued 1 content brief
 
 **Device:** Tallada's MacBook Air (`Talladas-MacBook-Air.local`, macOS 26.4.1 arm64)
