@@ -20,6 +20,102 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-20 21:09 MST — iCloud drift triage: restored 10 stale files, rescued 1 content brief
+
+**Device:** Tallada's MacBook Air (`Talladas-MacBook-Air.local`, macOS 26.4.1 arm64)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`, `__CFBundleIdentifier=com.anthropic.claudefordesktop`)
+**Model:** claude-opus-4-6
+**Commits:** `ceb8091` (wireframes content brief), plus this WORKLOG entry
+**Migrations run in prod Supabase:** none
+**Impacts:** none — purely working-tree hygiene, no Terminal implications
+**Status:** ✅ shipped, working tree clean, no code behavior changed
+
+### Did
+
+- Took over LASTPROOF per explicit handoff. Followed session protocol:
+  read WORKLOG top entry, read `CLAUDE.md § Session protocol`, ran
+  `git log --oneline -20` and `git status`.
+- Found 10 modified + 1 untracked file in the working tree, dragged in
+  via iCloud from a prior session on another machine (files exist on
+  disk but never reached GitHub).
+- Did a read-only `git diff HEAD --` pass across all 10. Every hunk
+  was an **older snapshot reverting already-shipped work** — no new
+  in-progress code to rescue. Key reverts the dirty tree contained:
+  - `ProofOfWorkCard.tsx` / `page.tsx` / `work-items/route.ts` —
+    re-added `position` column references and the deleted
+    `/api/dashboard/work-items/reorder` endpoint (would 500 at
+    runtime — migration 0016 dropped the column; the route dir
+    doesn't exist in HEAD).
+  - `ProofOfWorkCard.tsx` edit path — regressed `YYYY-MM-DD` back to
+    `YYYY-MM` (the Postgres date-format bug from `9255503`).
+  - `IdentityCard.tsx` — regressed the awaited-category-PATCH fix
+    from `985bd90` (category save failures would go silent again).
+  - `AboutCard.tsx`, `PitchCard.tsx`, `IdentityCard.tsx`,
+    `ProofOfWorkCard.tsx`, `HandleChangeModal.tsx`, `MintModal.tsx`,
+    `Screen5Terminal.tsx` — stripped all `useDebugLog` observability
+    from `5817616` / `febac6f` / `985bd90`.
+  - `dashboard.css` — re-added drag-reorder styles (cosmetic only).
+- Restored all 10 files to HEAD with `git checkout --`. No stash
+  needed — nothing preserved.
+- Untracked `wireframes/how-it-works-CONTENT.md` was a substantive
+  ~973-line content brief for a new `/help` page, aligning with the
+  recent how-it-works work (`3ce08a9`, `763dfe8`, `d0a99fd`).
+  Authorship unknown but clearly legit. Committed in isolation as
+  `ceb8091` with a message noting the drift-rescue origin so future
+  sessions can find it.
+- Post-restoration `npx tsc --noEmit` reports 4 pre-existing errors
+  in `src/lib/build-solana-tx.ts`, `src/lib/token-dev-verify.ts`,
+  `src/lib/wallet/provider.tsx` — all `@solana/*` module resolution.
+  These are **unrelated to the drift triage** (none of the affected
+  files were in the restored set). Vercel builds still ship green
+  (today's dev-check deploy `3fc41bb` shipped clean). Likely
+  introduced when a `rm -rf node_modules && npm install` run pulled
+  newer `@solana/spl-token` and missing wallet-adapter packages vs.
+  the lockfile. Flagging for a follow-up session — out of scope for
+  hygiene commit.
+
+### Current state
+
+- Working tree clean.
+- No code behavior changed — HEAD is unchanged for all 10 restored
+  files. Only new content: `wireframes/how-it-works-CONTENT.md`.
+- No deploys needed; no migrations needed; no env var changes.
+- The standing "watch next 48h of street-team traffic" order from
+  the prior entry is undisturbed.
+
+### Open / next
+
+- **Pre-existing tsc errors** in `@solana/*` dependency chain. Not
+  blocking deploys, but should be fixed: either pin the affected
+  packages in `package.json` to versions exporting
+  `getAssociatedTokenAddress`, or update the callsites in
+  `build-solana-tx.ts` and `token-dev-verify.ts` to the new API
+  shape. Also install the missing `@solana/wallet-adapter-phantom`
+  and `@solana/wallet-adapter-solflare` (or remove their imports if
+  dead code).
+- Standing watch on ambassador attribution from prior entry continues.
+
+### Gotchas for next session
+
+- **iCloud drift is real** — this machine (MacBook Air) shares files
+  with another via iCloud. Any session that edits source without
+  committing leaves files on disk that iCloud will sync. The next
+  session on a different machine will see them as "modifications"
+  even though HEAD is already ahead. Always `git diff HEAD --` before
+  assuming dirty files are yours. This entry is the second time in
+  this repo's history the pattern has bitten — first was the
+  `* 2.*` Finder duplicates caught earlier; now it's silent
+  same-name overwrites.
+- **Never blind-commit a dirty working tree across sessions.**
+  Always triage diff direction first. Reverts of your own shipped
+  work look identical to someone else's unreviewed new code at
+  `git status` level.
+- **If you run `rm -rf node_modules && npm install`**, expect the
+  `@solana/*` type errors to reappear. Revisit the lockfile pin
+  plan above.
+
+---
+
 ## 2026-04-20 19:19 MST — Ambassador referral attribution: fix, observability, mobile fix
 
 **Device:** Tallada's MacBook Air (`Talladas-MacBook-Air.local`, macOS 26.4.1 arm64)
