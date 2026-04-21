@@ -193,6 +193,18 @@
   letter-spacing: 0.5px; text-align: center; line-height: 1.4;
 }
 
+/* ─── REAL SCREENSHOT IMAGE ─── */
+/* Applied when Shot receives an `image` prop — real <Image fill> inside the chrome frame. */
+.help-page .help-shot-real { cursor: default; }
+.help-page .help-shot-real .help-shot-img {
+  object-fit: cover;
+  /* Show the top of the screenshot, not a cropped mid-section */
+  object-position: top center;
+  /* Slide down below the ~32px browser-chrome bar so the chrome doesn't cover content */
+  top: 32px !important;
+  height: calc(100% - 32px) !important;
+}
+
 /* ─── CALLOUTS ─── */
 .help-page .help-callout {
   margin: 14px 0; padding: 14px 16px; border-radius: var(--r-sm);

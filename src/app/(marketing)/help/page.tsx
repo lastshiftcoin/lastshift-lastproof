@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import "./help.css";
 
@@ -591,7 +592,10 @@ const FAQ_JSONLD = {
   ],
 };
 
-// ─── Shot placeholder (screenshot stand-in) ──────────────────────────────────
+// ─── Shot component ───────────────────────────────────────────────────────────
+// When `image` + `alt` are supplied, renders a real Next.js <Image> inside the
+// browser-chrome frame. Falls back to the styled placeholder when they're not —
+// so partial capture completion ships cleanly at any point.
 function Shot({
   url,
   src,
@@ -599,6 +603,9 @@ function Shot({
   note,
   caption,
   className,
+  image,
+  alt,
+  priority,
 }: {
   url: string;
   src: string;
@@ -606,7 +613,39 @@ function Shot({
   note?: string;
   caption: string;
   className?: string;
+  /** Path to a /public/help/*.webp asset. When present, renders a real image. */
+  image?: string;
+  /** Required (and meaningful) whenever `image` is set. */
+  alt?: string;
+  /** true for above-the-fold shots — disables lazy loading for those. */
+  priority?: boolean;
 }) {
+  // Real image branch — used once captures land in /public/help/
+  if (image) {
+    return (
+      <div className={`help-shot help-shot-real ${className ?? ""}`}>
+        <div className="help-browser-chrome">
+          <div className="help-browser-dots">
+            <span className="help-browser-dot" />
+            <span className="help-browser-dot" />
+            <span className="help-browser-dot" />
+          </div>
+          <div className="help-browser-url">{url}</div>
+        </div>
+        <Image
+          src={image}
+          alt={alt ?? ""}
+          fill
+          priority={priority}
+          sizes="(max-width: 900px) 100vw, 340px"
+          className="help-shot-img"
+        />
+        <div className="help-shot-caption">{caption}</div>
+      </div>
+    );
+  }
+
+  // Placeholder branch — unchanged from original
   return (
     <div className={`help-shot ${className ?? ""}`}>
       <div className="help-browser-chrome">
