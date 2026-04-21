@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ProfileVariant, PublicProfileView } from "@/lib/public-profile-view";
+import { prettyWebsiteLabel } from "@/lib/url-utils";
 import { ShareIconButton } from "./ShareIconButton";
 
 const CHECK_ICON = (
@@ -139,8 +140,12 @@ export function ProfileHero(props: Props) {
             </a>
           )}
           {props.website && (
-            <a className="pp-id-link-chip" href={`https://${props.website}`} target="_blank" rel="noreferrer">
-              {props.website}
+            // props.website is already canonical `https://...` from the
+            // projector (see src/lib/url-utils.ts). Never prepend the
+            // protocol again — doing so produced `https://https://...`
+            // before the 2026-04-21 normalization fix.
+            <a className="pp-id-link-chip" href={props.website} target="_blank" rel="noreferrer">
+              {prettyWebsiteLabel(props.website)}
             </a>
           )}
         </div>

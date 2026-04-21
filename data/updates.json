@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.8.2",
+  "latest_version": "0.8.3",
   "entries": [
+    {
+      "version": "0.8.3",
+      "date": "2026-04-21",
+      "category": "fixed",
+      "headline": "Website links on your profile now open correctly.",
+      "copy": "If you added your website with or without https:// in front, the link chip on your profile could end up broken (https://https://yoursite.com) and refuse to open. Fixed by cleaning up the URL once behind the scenes — paste it any way you like, we handle the rest.",
+      "source_commits": []
+    },
     {
       "version": "0.8.2",
       "date": "2026-04-21",

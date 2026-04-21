@@ -38,6 +38,7 @@ import { listProfileLinksByProfile } from "../db/profile-links-adapter";
 import { listCategoriesByProfile } from "../db/profile-categories-adapter";
 import { listProofsByProfile } from "../db/proofs-adapter";
 import { supabaseService } from "../db/client";
+import { normalizeWebsiteUrl } from "../url-utils";
 import type { ProofRow as StoreProofRow } from "../proofs-store";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -263,7 +264,9 @@ export async function getPublicProfileView(
     xVerified: profile.xVerified,
     tgHandle: profile.tgHandle,
     tgVerified: profile.tgVerified,
-    website: profile.website,
+    // Canonicalize to `https://...` exactly once; strips any protocol
+    // the operator pasted so we don't double-stack. See src/lib/url-utils.ts.
+    website: normalizeWebsiteUrl(profile.website),
     hireTelegramHandle: profile.hireTelegramHandle
       ?? (profile.tgVerified ? profile.tgHandle : null),
     isVerified: profile.xVerified && profile.tgVerified,

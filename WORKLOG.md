@@ -20,6 +20,83 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-21 10:25 MST — website URL: normalize once, stop double-stacking `https://`
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** backend
+**Commits:** this commit (see git log)
+**Migrations run in prod Supabase:** none
+**Impacts:** none
+**Status:** ✅ shipped
+
+### Did
+
+- Caught while verifying the new per-profile JSON-LD: `@lastshiftfounder`'s
+  website link on the public profile rendered `href="https://https://lastshift.ai"`.
+  Clicking it did nothing.
+- Root cause: `src/components/profile/ProfileHero.tsx` line 142 was
+  doing `href={`https://${props.website}`}` unconditionally, assuming
+  operators stored the bare domain. When `@lastshiftfounder` stored
+  the URL with the protocol already included (`https://lastshift.ai`),
+  the render path double-stacked it.
+- **Fix applied at the projector, not the edit boundary** — so it
+  handles all existing data AND any future input shape regardless of
+  how the operator pastes it:
+  - New `src/lib/url-utils.ts` with `normalizeWebsiteUrl()` (canonical
+    `https://...` output) and `prettyWebsiteLabel()` (strips protocol
+    + leading `www.` + trailing `/` for display).
+  - `src/lib/projector/public-profile.ts` now calls
+    `normalizeWebsiteUrl(profile.website)` when building the view,
+    so `view.website` is **always** a canonical absolute URL or null.
+  - `ProfileHero.tsx` now uses `props.website` directly as `href`
+    (no concatenation) and `prettyWebsiteLabel(props.website)` for
+    the chip text.
+- JSON-LD `sameAs` emission (from 2026-04-21 10:17 MST entry) was
+  already using `view.website` directly, so it's automatically fixed
+  by the projector normalization — no code change needed there.
+- Updates feed convention applied:
+  - VERSION 0.8.2 → 0.8.3 (patch bump, category=fixed)
+  - `data/updates.json` entry appended at top, `latest_version` bumped
+  - `[update: fixed]` prefix on the commit subject
+
+### Current state
+
+- All 14 paid profiles render correct `https://...` website chips on
+  next deploy. One was visibly broken before (`@lastshiftfounder`);
+  the rest were fine only because they happened to have stored the
+  bare domain. The code now tolerates either input shape.
+- JSON-LD `sameAs` emits canonical URL form automatically.
+- Zero special-case code for any handle — fix is fully general even
+  though only `@lastshiftfounder` was visibly broken.
+
+### Open / next
+
+- **Input-side normalization at the edit boundary** (dashboard save
+  handler for `website`) is still unnormalized. If an operator saves
+  `http://foo.com` today, the DB keeps it as `http://foo.com`; the
+  projector will canonicalize on read. Storing non-canonical values
+  works but isn't ideal — defense in depth says also normalize at
+  write. Flagged for a future backend cleanup; not urgent because
+  read-side handles all shapes.
+- **Other URL-like fields** (profile_links.url, screenshot linked_url)
+  weren't audited here. If they have the same "user pastes whatever"
+  contract and any render code prepends protocol, they'll have the
+  same bug class. Worth a sweep when someone's in the neighborhood.
+
+### Gotchas for next session
+
+- **When you see `https://${foo}` in render code, ask: what shape is
+  `foo`?** If `foo` is operator-submitted, the chance it already
+  contains a protocol is high. Either normalize the stored value, or
+  normalize at render — but don't unconditionally prepend.
+- **Projector-side normalization is the cleanest place** for
+  shape-tolerance: one call, all consumers trust the output. Avoid
+  sprinkling `.replace(/https?/, ...)` through render code.
+
+---
+
 ## 2026-04-21 10:17 MST — profile pages: per-profile `ProfilePage`/`Person` JSON-LD
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
