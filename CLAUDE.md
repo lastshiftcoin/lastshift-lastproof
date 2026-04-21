@@ -155,6 +155,61 @@ for this repo; iCloud is incidental filesystem sync.
 answered a question, nothing shipped or changed state), do not write an
 entry. Only log work that another session needs to know about.
 
+### Broken git state — stop, don't improvise
+
+If git itself is in a degraded state — `fatal:` on basic commands, a ref
+pointing at a missing object, staged changes you did not make, `.git/index N`
+iCloud duplicate files, or unexplained dangling commits — **stop and
+report before any recovery attempt**. The "never blind-commit" rule
+extends into the `.git/` directory itself.
+
+Minimum safe diagnostic pass before proposing any fix:
+
+```
+git fsck --full 2>&1
+ls -la .git/objects/pack/
+ls .git/ | grep -E "^(index|HEAD|FETCH_HEAD|ORIG_HEAD)"
+```
+
+Report the output verbatim, then propose a fix path (fetch + reset,
+re-clone, cherry-pick, etc.) and wait for approval. **Never run**
+`git gc`, `git reset --hard`, object deletion, or `git reflog expire`
+without inspecting dangling-commit content first — a dangling commit
+may be unpushed work from a prior session, and hard-resetting will
+destroy it silently.
+
+The first time this protocol handled a corrupt local repo (mac mini,
+2026-04-20, commit object for `d04e9e9` lost mid-iCloud-sync), the
+session correctly halted, ran diagnostics, identified that the
+"dangling commit" was a week-old abandoned stash with no rescue value,
+and only then executed the fix. That's the pattern.
+
+### iCloud duplicates: hunt both files AND directories
+
+iCloud creates conflict copies in two shapes, and one find pattern
+catches only one of them:
+
+- **Files** → `foo 2.ts`, `README 2.md` — caught by `-name '* 2.*'`
+- **Directories** → `some-route 2/`, `components 2/` — caught by
+  `-name '* 2*'` (no dot)
+
+Hunt with both:
+
+```
+find . -path ./node_modules -prune -o -path ./.next -prune \
+     -o -name '* 2*' -print 2>/dev/null   # catches dirs + files
+find . -path ./node_modules -prune -o -path ./.next -prune \
+     -o -name '* 3*' -print 2>/dev/null   # 3rd-generation conflicts
+```
+
+For every duplicate found, diff against its canonical counterpart
+before deletion. 99% of the time they're byte-identical iCloud garbage.
+When they differ, the " 2" copy is usually a stale pre-refactor snapshot
+(same mechanism as the 2026-04-20 drift triage) — but occasionally it
+holds unique work that iCloud couldn't merge. Inspect. Then delete the
+stale side and preserve the canonical. **Never blanket-rm without the
+diff pass.**
+
 ---
 
 ## Priorities
