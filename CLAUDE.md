@@ -89,8 +89,18 @@ layer, just the adapter.
   `scripts/terminal-bridge-smoke.ts` (10/10 green against both).
 - S2S auth: `Authorization: Bearer ${INTER_TOOL_API_SECRET}` +
   `X-LastShift-Key-Id: v1`.
+- **Terminal ID format** (production, confirmed with Terminal builder 2026-04-21):
+  `XXXX-XXXX-XXXX-XXXX-XXXX` — 5 groups of 4 alphanumeric chars (A-Z, 0-9),
+  no fixed prefix. The `SHIFT-` prefix seen in older docs/wireframes was an
+  artifact that never shipped in the production `generateTerminalId()`.
+  Validation in `/api/auth/register-tid` and `ManageTerminal.tsx` accepts
+  both the real format and the legacy `SHIFT-XXXX-XXXX-XXXX-XXXX` shape for
+  backward-compat with existing seed/test fixtures.
+  **Known mismatch (flagged, not yet fixed):** `/api/auth/validate-tid`
+  regex still only accepts the legacy SHIFT-prefix format.
 - Seed row for testing: wallet `TEST1111111111111111111111111111111111111111`,
-  TID `SHIFT-TEST-0001-0001-0001`.
+  TID `SHIFT-TEST-0001-0001-0001` (legacy test string — still accepted by the
+  dual-regex; don't use this shape for new fixtures, use `XXXX-XXXX-XXXX-XXXX-XXXX`).
 
 ---
 

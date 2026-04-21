@@ -20,6 +20,100 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-21 01:02 MST — Terminal ID format corrected: no SHIFT- prefix
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1, account `tallada2023`)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`, `__CFBundleIdentifier=com.anthropic.claudefordesktop`)
+**Model:** claude-opus-4-6
+**Role:** help-page
+**Commits:** this entry
+**Migrations run in prod Supabase:** none
+**Impacts:** Terminal session reciprocally updated `terminal-build/CLAUDE.md`
++ confirmed canonical format via their `generateTerminalId()` — cross-session
+format alignment complete. Notes at end of this entry.
+**Status:** ✅ shipped, 2 files changed, larger scope flagged (not fixed)
+
+### Did
+
+- Kellen caught me using `SHIFT-XXXX-XXXX-XXXX-XXXX` as the Terminal ID
+  format across the `/help` wireframe. Cited it against my training source.
+  I'd picked it up from `terminal-build/CLAUDE.md` + this repo's
+  `CLAUDE.md` test-seed note.
+- Relayed a cross-session message through Kellen to the Terminal builder.
+  They confirmed: production `generateTerminalId()` outputs
+  **`XXXX-XXXX-XXXX-XXXX-XXXX`** — 5 groups of 4 alphanumeric chars, no
+  fixed prefix. `SHIFT-` was a wireframe/doc artifact that never shipped.
+  Terminal builder updated their `CLAUDE.md` on their side.
+- Per Kellen's explicit narrow-scope instruction ("fix the place you got
+  the understanding... then update your wireframe. thats it."), made
+  exactly two targeted changes:
+  1. `CLAUDE.md` — replaced the bare "TID `SHIFT-TEST-0001-0001-0001`"
+     seed note with a full Terminal-ID-format section that documents the
+     real production format, marks `SHIFT-` as a legacy artifact, explains
+     the dual-accept regex in `/api/auth/register-tid`, and flags the
+     `/api/auth/validate-tid` regex-mismatch bug (not fixed — see below).
+  2. `wireframes/help.html` — replaced all 5 occurrences of
+     `SHIFT-XXXX-XXXX-XXXX-XXXX` with `XXXX-XXXX-XXXX-XXXX-XXXX`
+     (hero TID display, step-02 caption, step-02 copy, FAQ "What's a
+     Terminal ID?" answer, and the JSON-LD schema answer text).
+- Nothing else touched. Preview-verified: http://127.0.0.1:8765/help.html
+  HTTP 200, 100,224 bytes.
+- No grep matches remain for `SHIFT-` in `wireframes/help.html`.
+
+### Production bug flagged, NOT fixed
+
+During the investigation I found a real production mismatch and
+explicitly left it alone per Kellen's scope narrow:
+
+- `src/app/api/auth/validate-tid/route.ts:29` uses ONLY the legacy
+  `^SHIFT-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$` regex.
+- `src/app/api/auth/register-tid/route.ts:39-40` uses a dual-accept
+  regex (both real and legacy formats).
+- `src/app/(marketing)/manage/ManageTerminal.tsx:287-288` uses the same
+  dual-accept as register-tid.
+
+**The result:** any real Terminal TID hitting `/api/auth/validate-tid`
+will 400-reject with `tid_malformed`. It's silently blocking production
+auth flows that go through that endpoint. I drafted a regex fix during
+the session (dual-accept matching register-tid's pattern) but reverted
+it per scope narrow. Flagged here so another session picks it up.
+
+### Current state
+
+- 2 files modified: `CLAUDE.md`, `wireframes/help.html`.
+- `validate-tid/route.ts` reverted to unchanged.
+- `wireframes/help-CONTENT.md`, `wireframes/manage-wallet-auth-flow.html`,
+  `wireframes/manage-profile-dashboard-entry.html`, `docs/TERMINAL-*.md`,
+  and `memory/project_lastproof_terminal_ecosystem.md` still carry
+  `SHIFT-XXXX-XXXX-XXXX-XXXX` references — **intentionally not touched**
+  per Kellen's narrow-scope instruction. Future session can sweep these
+  if desired.
+- Test fixtures, seed SQL, mock terminal, soak/smoke scripts all retain
+  legacy `SHIFT-TEST-*` strings — valid under the dual-accept regex.
+
+### Open / next
+
+- **validate-tid regex bug fix** (see above) — not fixed, flagged here.
+  Fix is a 4-line dual-accept pattern matching register-tid. Needs a
+  fullstack/backend session to execute + test.
+- Remaining `SHIFT-` cleanup across other wireframes + docs + memory —
+  not requested.
+- The original `/help` wireframe productionization still pending from
+  prior entries.
+
+### Gotchas for next session
+
+- **Terminal ID format is `XXXX-XXXX-XXXX-XXXX-XXXX`** (5 groups of 4
+  alphanum, no prefix). Confirmed by Terminal builder 2026-04-21. Don't
+  reintroduce the `SHIFT-` prefix in new wireframes, code, or docs.
+- **`SHIFT-` in existing test fixtures is fine** — the dual-accept regex
+  covers them for backward-compat with seed data.
+- **`/api/auth/validate-tid` regex mismatch** is a real bug; don't
+  assume auth flows through that endpoint work in production until
+  the regex is fixed.
+
+---
+
 ## 2026-04-21 00:28 MST — /help: global topbar match + scrub "how it works" framing
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1, account `tallada2023`)
