@@ -137,6 +137,12 @@ architecture, or resolved an open item from a prior entry:**
 8. Commit and push before signing off. Never leave uncommitted changes on
    disk — iCloud will sync them to other machines but git won't, creating
    exactly the divergence this protocol prevents.
+9. If any commit in your work block changes user-visible behavior
+   (dashboard, public profile, proof flow, payment flow, onboarding,
+   copy, pricing, notifications users receive), follow **§ Updates feed
+   — commit convention** below. That section governs commit subject
+   prefix, `VERSION` bump, and `data/updates.json` entry. Non-user-facing
+   work (protocol, WORKLOG, observability, internal refactors) is exempt.
 
 The sibling log lives at `lastshiftcoin/lastshift-terminal` → `WORKLOG.md`.
 When a Terminal change impacts this repo, the other session records it on
@@ -235,6 +241,195 @@ When they differ, the " 2" copy is usually a stale pre-refactor snapshot
 holds unique work that iCloud couldn't merge. Inspect. Then delete the
 stale side and preserve the canonical. **Never blanket-rm without the
 diff pass.**
+
+---
+
+## Updates feed — commit convention
+
+LASTPROOF publishes a user-facing updates feed at `/status` (and the
+full archive at `/status/all`). The feed is sourced from
+`data/updates.json`, versioned against the `VERSION` file at the repo
+root, and governed by the commit convention below.
+
+The feed is the *only* place the public hears what changed. If a
+session ships user-visible behavior without following this convention,
+the change doesn't land on the feed and users don't see it. Treat the
+convention as non-negotiable for commits that touch the user
+experience.
+
+### When the convention applies
+
+Any commit that changes what a user *sees, clicks, pays, or
+experiences* on lastproof.app — dashboard, public profile, proof
+flow, payment flow, onboarding, landing pages, copy, layout,
+responsiveness, pricing, error messages, email / bot notifications
+users receive. If a non-technical user would notice the difference
+when you ship the commit, the convention applies.
+
+### When it does NOT apply
+
+- WORKLOG entries
+- CLAUDE.md / protocol edits
+- Observability / logging / metrics internals users don't see
+- Internal refactors, renames, typed-cleanup, test changes
+- Migrations users don't feel (schema changes that don't surface
+  new UI or break existing UI)
+- Deployment config, CI tweaks, env var additions
+- iCloud / git-hygiene cleanup
+- Reverting same-session work that never shipped
+
+Rule of thumb: if you couldn't write a non-jargon sentence
+describing what changed from a user's seat, the convention doesn't
+apply.
+
+### What the convention requires
+
+Every qualifying commit MUST do three things in the same commit:
+
+**1. Prefix the commit subject** with one of:
+
+```
+[update: fixed]    <subject>
+[update: added]    <subject>
+[update: improved] <subject>
+```
+
+The category reflects the user-facing nature of the change:
+
+- `fixed` — something was broken, now it works (bug fix, regression)
+- `added` — a new capability, surface, or action exists
+- `improved` — something that worked now works better (clarity,
+  speed, reliability, visual polish)
+
+**2. Bump `VERSION`** per category:
+
+- `fixed` → patch bump (0.6.1 → 0.6.2)
+- `improved` → patch bump (0.6.2 → 0.6.3)
+- `added` → minor bump (0.6.3 → 0.7.0)
+
+Major bumps (1.0.0, 2.0.0, …) are **reserved for externally-
+communicable milestones** — e.g. Grid launch at 2026-05-08 will
+trigger the 0.x → 1.0.0 transition. Regular commits NEVER bump
+major; they only bump minor or patch per the rules above. The jump
+to a new major is a deliberate coordinator decision, not a side
+effect of any single commit.
+
+**3. Append an entry to `data/updates.json`** (newest first), and
+update the top-level `latest_version` field to match your new
+`VERSION`.
+
+### Schema
+
+`data/updates.json` has a fixed shape:
+
+```json
+{
+  "latest_version": "0.6.2",
+  "entries": [
+    {
+      "version": "0.6.2",
+      "date": "2026-04-18",
+      "category": "improved",
+      "headline": "Mobile wallet returns now resume where you left off.",
+      "copy": "Switching to your wallet app during a payment or proof no longer loses your spot. When you come back to LASTPROOF, you'll pick up exactly where you were — no restart, no re-entering details.",
+      "source_commits": ["d04e9e9"]
+    }
+  ]
+}
+```
+
+Field rules:
+
+- `version` — must match the `VERSION` file at commit time
+- `date` — `YYYY-MM-DD`, no time component
+- `category` — exactly one of `fixed` | `added` | `improved`
+- `headline` — one sentence, no trailing period on the headline
+  itself unless it's a natural sentence end (shorter headlines
+  often end without). First-person language is fine.
+- `copy` — 1–3 sentences. Bullets allowed when shipping something
+  big enough to need structured enumeration (rare). Voice rules
+  below are binding.
+- `source_commits` — array of short-SHAs (7 chars) tied to this
+  entry. Usually one; occasionally a small cluster when related
+  commits land together.
+
+`latest_version` at the top is redundant with `entries[0].version` —
+it exists so the /status hero card can read one field without
+parsing the array. **Always update both in the same commit.** If
+you touch one and forget the other, the page lies to users about
+what version they're on.
+
+`entries` array is **newest-first**. Never reorder. Append to the
+top, never the bottom.
+
+### Voice rules for the `copy` field
+
+The feed is read by marketers, operators, and casual visitors —
+not engineers. The voice is App Store changelog tone: warm, direct,
+specific about the user outcome.
+
+**Banned words** (if one appears in your `copy`, rewrite):
+
+```
+schema         API            endpoint
+migration      backfill       commit
+SHA            route          handler
+```
+
+**Banned patterns**:
+
+- "We updated the X to Y" — instead say what the user now
+  experiences
+- "Improved performance of X" — instead, what does the user feel?
+- Naming internal systems or libraries by their code name
+
+**Encouraged patterns**:
+
+- Lead with the user outcome: "Profile page loads instantly now"
+- Short. One sentence is often enough.
+- Specificity over vagueness: "within 200ms" beats "fast"
+- Second-person when natural: "you'll pick up exactly where you
+  were" beats "users are returned to their previous state"
+
+**Calibration corpus**: when in doubt, read the top 5 entries of
+`data/updates.json`. If yours doesn't feel like it belongs next to
+them, rewrite. The existing entries are the tone reference.
+
+### Multi-commit changes
+
+When a user-facing change lands across multiple commits (e.g. a
+feature requires three commits: route, component, style), only the
+*last* commit that completes the user-facing change gets the
+`[update: X]` prefix and triggers the VERSION bump + entry. Earlier
+commits in the chain stay un-prefixed and don't touch VERSION.
+Reference all relevant SHAs in the entry's `source_commits` array.
+
+Rationale: the feed reflects *shippable user state*, not development
+milestones. An entry should never point to a commit that leaves the
+app in a broken state.
+
+### What about reverts?
+
+If you ship an `[update: added]` entry, then the next day have to
+revert it because of a bug, that's a `[update: fixed]` entry ("We
+temporarily rolled back X while we investigate reports of Y.")
+followed later by a new `[update: added]` when the feature returns.
+Don't edit the original entry. The feed is append-only history, not
+a patched document. Users saw the first entry; pretending it never
+happened is dishonest.
+
+### Enforcement
+
+No automated check blocks a non-conforming commit today. The
+protocol relies on each session remembering the convention at
+commit time. If a coordinator review (weekly or ad-hoc) catches a
+user-visible commit that skipped the convention, the fix is an
+immediate follow-up commit that backfills VERSION + the entry with
+a reference to the original SHA.
+
+Future improvement: a commit-msg hook that validates the prefix +
+VERSION diff + `data/updates.json` diff before allowing the commit.
+Not built today; flagged for a quiet session.
 
 ---
 
