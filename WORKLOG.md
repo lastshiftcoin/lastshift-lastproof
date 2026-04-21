@@ -20,6 +20,125 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-21 00:08 MST — /help wireframe v2: standard page chrome + real tabs
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1, account `tallada2023`)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`, `__CFBundleIdentifier=com.anthropic.claudefordesktop`)
+**Model:** claude-opus-4-6
+**Role:** help-page
+**Commits:** this entry
+**Migrations run in prod Supabase:** none
+**Impacts:** none — wireframe-only, no code changes, no Terminal touches
+**Status:** ✅ shipped, preview verified at http://127.0.0.1:8765/help.html (HTTP 200)
+
+### Did
+
+- Rewrote `wireframes/help.html` per Kellen's feedback on the first
+  version. Three structural changes:
+  1. **Dropped terminal chrome entirely.** No more system-bar,
+     titlebar (`help — lastproof — 80x24`), CRT scanlines,
+     vignette, or bottom-bar. Now matches the site-standard page
+     treatment (profile, dashboard, homepage, how-it-works):
+     sticky topbar + grid-pattern body background + orange radial
+     glow + standard `max-width:1100px` content column.
+  2. **Anchor-nav → real tabs.** Sticky tab bar under the Quick
+     Answers block with 6 tabs: `01 Profile Creation ·
+     02 Verify Work · 03 Updating Profile · 04 Profile Status ·
+     05 FAQ · 06 Contact`. Orange underline + accent on active tab,
+     subtle hover state, horizontal scroll on mobile, keyboard
+     navigation (arrow keys), `role="tablist"` + `aria-selected`
+     for a11y.
+  3. **Tab click isolates content.** Only the active tab's panel
+     renders (`.tab-panel.active { display:block }`, others hidden
+     via CSS + `hidden` attribute). Same UX pattern as the existing
+     `/how-it-works` page (`useState("dev" | "op" | "verify")`).
+     Hash sync (`#profile-creation`, `#faq`, etc.) so users can
+     deep-link to a specific tab. Initial load with hash activates
+     the right tab without a scroll-jump.
+- **Topbar** now matches other pages: logo tile + LASTPROOF
+  two-tone brand + HELP · GETTING STARTED sub + $LASTSHFT ticker
+  in the center + nav links on the right (HOME / GRID / HOW IT
+  WORKS / HELP (active) / /MANAGE →). Sticky, backdrop-blurred.
+- **Hero** is site-standard: centered eyebrow + H1 + lead + two
+  CTAs (LAUNCH TERMINAL primary / GO TO /MANAGE ghost) + microcopy.
+  No more terminal-chrome-hero treatment.
+- **Quick Answers** block sits above the tabs and stays always
+  visible — top-3 blockers with inline jump-to-FAQ link (uses
+  `data-jump-tab="faq"` to activate the FAQ tab in-place).
+- **Reference material** (stack analogy, Terminal ID explainer,
+  two-wallet explainer) folded into the most relevant tabs rather
+  than living as always-visible footer content. Stack + Terminal
+  ID inside Profile Creation ("WHY THE TERMINAL FIRST?" section);
+  two-wallet explainer inside Updating Profile ("TWO WALLETS?
+  HERE'S WHY" section at the bottom). Fits the "tab isolates
+  content" rule — no always-visible reference section between
+  tabs and footer.
+- **Contact tab** gets its own first-class treatment — big
+  Telegram handle, "What to include / Never share" two-column
+  info-cards, scam-alert red callout, and a closing CTA pair
+  (LAUNCH TERMINAL / GO TO /MANAGE).
+- **FAQ tab** now has a live search input — typing filters the
+  accordion list by substring match on question + answer text,
+  auto-opens matches, restores default open state when cleared.
+  Still works without JS (graceful degradation: all FAQs visible,
+  first three open by default).
+- **Mobile responsive** tuned for the new layout — ticker hides
+  <900px, tab bar stays sticky with horizontal scroll, tab numbers
+  hide <540px for tighter space, panel titles shrink to 24px,
+  multi-column grids collapse to single column.
+- Preview-tested via the local static server already running at
+  `127.0.0.1:8765` (from prior task). 99,648 bytes, HTTP 200.
+
+### Current state
+
+- `wireframes/help.html` — rewritten, 1,595 lines, self-contained.
+  Standard page chrome, 6 isolated tabs with click-to-switch, FAQ
+  search, hash-sync for deep links, mobile-responsive, accessible.
+- Content is identical in coverage to the prior version (all 4
+  topics, 33 FAQs, reference material) — only the framing and
+  interaction changed.
+- Preview server still running: `b3pu52zas` at
+  http://127.0.0.1:8765/help.html. Kill when done.
+- No code changes, no migrations, no Terminal impact.
+
+### Open / next
+
+- **Screenshot capture protocol still pending** — the wireframe
+  uses browser-chrome-framed placeholders with source-wireframe
+  references and captions. Real screenshot capture (Playwright at
+  1440×900 → WebP+PNG, 2x retina, lazy-load, lightbox) to be done
+  when frontend builder productionizes at
+  `src/app/(marketing)/help/page.tsx`.
+- **Link /help from every Terminal-ID prompt** per content doc
+  Entry Points table — /manage auth screen, onboarding screens,
+  proof modal "What am I paying for?" link, public profile footer,
+  homepage hero, 404 page.
+- **`/faq` redirect config** when help page ships — content doc
+  says `/faq` should redirect to `/help`.
+- **Frontend builder TODO** — probably worth rendering each panel
+  as a React sub-component (`ProfileCreationPanel`, etc.) keyed by
+  `useState` rather than re-implementing the vanilla JS tab
+  switcher. Mirrors the existing `/how-it-works` page pattern.
+
+### Gotchas for next session
+
+- **Preview server port 8765** is running in a background shell
+  (ID `b3pu52zas`). If another session needs the port, kill it
+  via `Bash` → `kill $(lsof -t -i:8765)` or restart cleanly.
+- **Tab activation silently falls through** if the URL hash is
+  invalid — the JS validates against `VALID_TABS` whitelist. If
+  you add a tab, update that array.
+- **`data-jump-tab` attribute** is the cross-tab link mechanism
+  (used in Quick Answers and the FAQ "didn't find your answer?"
+  pointer). Use it from anywhere on the page to activate a tab
+  in-place.
+- **FAQ search opens every matching FAQ** on each keystroke and
+  restores their default state when cleared. If a builder refactor
+  moves from `<details>` to headless-UI disclosure, preserve the
+  open/close behavior on search match/clear.
+
+---
+
 ## 2026-04-20 23:34 MST — /help page wireframe built
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1, account `tallada2023`)

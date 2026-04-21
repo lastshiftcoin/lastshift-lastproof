@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>LASTPROOF — Help / How It Works</title>
+<title>LASTPROOF — Help</title>
 <meta name="description" content="LASTPROOF help center — profile creation, submitting proofs, updating your profile, and profile states (Active Paid, First 5,000, Free, Defunct).">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,6 +26,8 @@
     --orange:#ff9100;
     --orange-dim:rgba(255,145,0,.12);
     --orange-glow:rgba(255,145,0,.25);
+    --accent:#ff9100;
+    --accent-glow:rgba(255,145,0,.15);
     --red:#ff5252;
     --red-dim:rgba(255,82,82,.10);
     --gold:#ffd700;
@@ -42,52 +44,106 @@
   }
 
   *{box-sizing:border-box}
-  html,body{margin:0;padding:0;background:var(--bg-primary);color:var(--text-primary);font-family:var(--sans);font-size:14px;line-height:1.6;min-height:100dvh;overflow-x:hidden}
+  html,body{margin:0;padding:0;background:var(--bg-primary);color:var(--text-primary);font-family:var(--sans);font-size:14px;line-height:1.55;min-height:100dvh}
   a{color:inherit;text-decoration:none}
   h1,h2,h3,h4{margin:0;font-weight:600;line-height:1.25}
   p{margin:0 0 12px}
   ul,ol{margin:0 0 12px;padding-left:20px}
+  button{font-family:inherit;cursor:pointer;background:none;border:none;color:inherit;padding:0}
 
-  /* ═══════════════  CRT OVERLAYS  ═══════════════ */
-  .crt-scanlines{position:fixed;inset:0;pointer-events:none;z-index:1000;background:repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.06) 2px, rgba(0,0,0,.06) 4px);mix-blend-mode:multiply}
-  .crt-vignette{position:fixed;inset:0;pointer-events:none;z-index:1001;background:radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.45) 100%)}
+  /* ─── Page-background atmospherics (matches homepage / how-it-works) ─── */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:
+      linear-gradient(rgba(30,32,48,.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30,32,48,.3) 1px, transparent 1px);
+    background-size:60px 60px;
+  }
+  body::after{
+    content:"";position:fixed;top:-200px;right:-200px;width:700px;height:700px;
+    pointer-events:none;z-index:0;
+    background:radial-gradient(circle,var(--accent-glow) 0%,transparent 60%);
+  }
 
-  /* ═══════════════  TERMINAL FRAME (like /manage, /onboard)  ═══════════════ */
-  body{display:flex;flex-direction:column;min-height:100vh}
+  .wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 24px 90px}
 
-  .system-bar{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:8px 18px;border-bottom:1px solid var(--border);background:var(--bg-secondary);font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--text-secondary);text-transform:uppercase}
-  .system-bar-left{display:flex;align-items:center;gap:10px}
-  .system-bar-logo{width:18px;height:18px;background:linear-gradient(135deg,var(--orange),#ff5722);border-radius:3px;display:inline-block}
-  .system-bar-title{color:var(--text-primary)}
-  .system-bar-title .proof{color:var(--orange)}
-  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
-  .system-bar-clock{color:var(--text-secondary)}
+  /* ═══════════════  TOPBAR  ═══════════════ */
+  .topbar{position:sticky;top:0;z-index:50;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:14px 24px;border-bottom:1px solid var(--border);background:rgba(18,19,26,.92);backdrop-filter:blur(8px)}
+  .topbar-left{display:flex;align-items:center;gap:12px;justify-self:start}
+  .topbar-logo{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--orange),#ff5722);display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
+  .topbar-brand{font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:2px;display:flex;flex-direction:column;gap:2px}
+  .topbar-brand .brand-name .last{color:var(--text-primary)}
+  .topbar-brand .brand-name .proof{color:var(--orange)}
+  .topbar-sub{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:2px}
 
-  .terminal-frame{flex:1;display:flex;flex-direction:column;margin:14px;border:1px solid var(--border);border-radius:8px;background:var(--bg-primary);overflow:hidden;min-height:calc(100vh - 100px)}
+  .ticker{justify-self:center;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;letter-spacing:1px}
+  .ticker .sym{color:var(--orange);font-weight:700}
+  .ticker .price{color:var(--text-primary);font-weight:500}
+  .ticker .chg{color:var(--green);font-size:11px}
 
-  .titlebar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--bg-secondary)}
-  .tl-dots{display:flex;gap:6px}
-  .tl-dot{width:11px;height:11px;border-radius:50%}
-  .tl-dot.red{background:#ff5f56}
-  .tl-dot.yellow{background:#ffbd2e}
-  .tl-dot.green{background:#27c93f}
-  .titlebar-title{font-family:var(--mono);font-size:11px;letter-spacing:1px;color:var(--text-secondary)}
-  .titlebar-right{font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--text-dim)}
+  .topbar-right{display:flex;align-items:center;gap:18px;justify-self:end;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--text-secondary);text-transform:uppercase}
+  .topbar-right a{transition:color .15s}
+  .topbar-right a:hover{color:var(--orange)}
+  .topbar-right a.active{color:var(--orange)}
 
-  .content-body{flex:1;padding:0;overflow-y:auto}
-  .inner{max-width:960px;margin:0 auto;padding:40px 28px 80px}
+  /* ═══════════════  BUTTONS  ═══════════════ */
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;font-family:var(--mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border:1px solid transparent;font-weight:600;border-radius:var(--r-btn);transition:all .15s}
+  .btn-sm{padding:8px 16px;font-size:10px;letter-spacing:1px}
+  .btn-primary{border-color:var(--orange);color:var(--orange);background:var(--orange-dim)}
+  .btn-primary:hover{background:var(--orange);color:var(--bg-primary);box-shadow:0 0 20px var(--accent-glow)}
+  .btn-secondary{border-color:var(--green);color:var(--green);background:var(--green-dim)}
+  .btn-secondary:hover{background:var(--green);color:var(--bg-primary);box-shadow:0 0 20px var(--green-glow)}
+  .btn-ghost{border-color:var(--border-2);color:var(--text-secondary);background:var(--bg-card)}
+  .btn-ghost:hover{border-color:var(--orange);color:var(--orange)}
+  .inline-cta{display:inline-flex;align-items:center;gap:6px;color:var(--orange);font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid transparent;padding-bottom:2px;transition:border-color .15s}
+  .inline-cta:hover{border-bottom-color:var(--orange)}
 
-  .bottom-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 18px;border-top:1px solid var(--border);background:var(--bg-secondary);font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--text-dim);text-transform:uppercase}
+  /* ═══════════════  HERO  ═══════════════ */
+  .hero{padding:64px 0 36px;text-align:center}
+  .hero-eyebrow{font-family:var(--mono);font-size:10px;color:var(--orange);letter-spacing:3px;text-transform:uppercase;margin-bottom:20px}
+  .hero h1{font-family:var(--sans);font-size:46px;line-height:1.08;margin:0 auto 18px;font-weight:700;letter-spacing:-1px;max-width:800px}
+  .hero h1 .orange{color:var(--orange)}
+  .hero .body-text{font-size:16px;color:var(--text-secondary);max-width:620px;margin:0 auto 26px;line-height:1.65}
+  .hero-ctas{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .hero .microcopy{display:block;margin-top:16px;font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1px}
 
-  /* ═══════════════  TYPOGRAPHY PRIMITIVES  ═══════════════ */
-  .eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--orange);text-transform:uppercase;margin-bottom:12px}
-  .eyebrow-dim{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:12px}
-  h1.page-title{font-size:34px;line-height:1.1;margin-bottom:18px;letter-spacing:-.5px}
-  h2.section-title{font-family:var(--mono);font-size:13px;letter-spacing:2px;color:var(--text-primary);text-transform:uppercase;margin:56px 0 18px;padding-bottom:10px;border-bottom:1px solid var(--border)}
-  h3.sub-title{font-size:20px;margin-bottom:8px;letter-spacing:-.3px}
-  h4.card-title{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--orange);text-transform:uppercase;margin-bottom:8px}
-  .lead{font-size:16px;color:var(--text-secondary);line-height:1.55;margin-bottom:18px}
+  /* ═══════════════  QUICK ANSWERS  ═══════════════ */
+  .quick-answers{margin:32px 0 44px;padding:24px;border:1px solid var(--orange);border-radius:var(--r-card);background:linear-gradient(180deg,var(--orange-dim),transparent)}
+  .quick-answers h2{font-family:var(--mono);font-size:12px;letter-spacing:2px;color:var(--orange);text-transform:uppercase;margin:0 0 16px;display:flex;align-items:center;gap:8px}
+  .quick-answers h2::before{content:"//";color:var(--orange)}
+  .qa-list{display:flex;flex-direction:column;gap:14px}
+  .qa-item{display:flex;flex-direction:column;gap:4px;padding-left:14px;border-left:2px solid var(--orange)}
+  .qa-q{font-weight:600;font-size:14px}
+  .qa-a{color:var(--text-secondary);font-size:13.5px;line-height:1.55}
+  .qa-a a{color:var(--orange);border-bottom:1px dotted var(--orange)}
+
+  /* ═══════════════  TAB BAR  ═══════════════ */
+  .tab-bar{position:sticky;top:60px;z-index:40;display:flex;gap:0;padding:0;margin:0 -8px 0;background:var(--bg-primary);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+  .tab-bar::-webkit-scrollbar{display:none}
+  .tab{display:inline-flex;align-items:center;gap:10px;padding:18px 20px;border-bottom:2px solid transparent;background:transparent;color:var(--text-secondary);font-family:var(--mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;transition:all .15s;position:relative}
+  .tab:hover{color:var(--text-primary);background:rgba(255,145,0,.04)}
+  .tab .num{font-family:var(--mono);font-size:10px;color:var(--text-dim);font-weight:500}
+  .tab .lbl{font-weight:500}
+  .tab.active{color:var(--orange);border-bottom-color:var(--orange);background:transparent}
+  .tab.active .num{color:var(--orange)}
+  .tab.active .lbl{font-weight:600}
+
+  /* ═══════════════  TAB PANELS (isolated content)  ═══════════════ */
+  .tab-panel{display:none;padding:36px 0 20px}
+  .tab-panel.active{display:block;animation:fadeIn .18s ease-out}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+  /* Panel header */
+  .panel-head{margin-bottom:20px}
+  .panel-eyebrow{font-family:var(--mono);font-size:10px;color:var(--orange);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+  .panel-title{font-size:30px;letter-spacing:-.5px;margin-bottom:10px}
+  .panel-intro{color:var(--text-secondary);font-size:15px;line-height:1.6;max-width:680px}
+
+  /* Section sub-heading inside a panel */
+  .sec-label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:2.5px;text-transform:uppercase;margin:40px 0 14px;display:flex;align-items:center;gap:10px}
+  .sec-label::before{content:"//";color:var(--orange)}
+
+  /* ═══════════════  PRIMITIVE CLASSES  ═══════════════ */
   .dim{color:var(--text-secondary)}
   .mono{font-family:var(--mono)}
   .orange{color:var(--orange)}
@@ -97,111 +153,67 @@
   .two-tone .last{color:var(--text-primary)}
   .two-tone .proof{color:var(--orange)}
 
-  /* ═══════════════  BUTTONS / LINKS  ═══════════════ */
-  .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;font-family:var(--mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border:1px solid transparent;font-weight:600;border-radius:var(--r-btn);transition:all .15s}
-  .btn-primary{border-color:var(--orange);color:var(--orange);background:var(--orange-dim)}
-  .btn-primary:hover{background:var(--orange);color:var(--bg-primary);box-shadow:0 0 20px var(--orange-glow)}
-  .btn-secondary{border-color:var(--green);color:var(--green);background:var(--green-dim)}
-  .btn-secondary:hover{background:var(--green);color:var(--bg-primary);box-shadow:0 0 20px var(--green-glow)}
-  .btn-ghost{border-color:var(--border-2);color:var(--text-secondary);background:var(--bg-card)}
-  .btn-ghost:hover{border-color:var(--text-secondary);color:var(--text-primary)}
-  .btn-sm{padding:8px 14px;font-size:10px}
-  .inline-cta{display:inline-flex;align-items:center;gap:6px;color:var(--orange);font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid transparent;padding-bottom:2px;transition:border-color .15s}
-  .inline-cta:hover{border-bottom-color:var(--orange)}
-
-  /* ═══════════════  HERO  ═══════════════ */
-  .hero{padding:16px 0 32px}
-  .hero-sub{max-width:640px}
-
-  /* ═══════════════  QUICK ANSWERS (above the fold)  ═══════════════ */
-  .quick-answers{margin:18px 0 32px;padding:22px;border:1px solid var(--orange);border-radius:var(--r-card);background:linear-gradient(180deg,var(--orange-dim),transparent)}
-  .quick-answers h2{font-family:var(--mono);font-size:12px;letter-spacing:2px;color:var(--orange);text-transform:uppercase;margin:0 0 14px}
-  .qa-list{display:flex;flex-direction:column;gap:12px}
-  .qa-item{display:flex;flex-direction:column;gap:4px;padding-left:14px;border-left:2px solid var(--orange)}
-  .qa-q{font-weight:600;font-size:14px}
-  .qa-a{color:var(--text-secondary);font-size:13px}
-  .qa-a a{color:var(--orange);border-bottom:1px dotted var(--orange)}
-
-  /* ═══════════════  TOPIC HUB (4 CARDS)  ═══════════════ */
-  .topic-hub{margin:36px 0 24px}
-  .topic-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
-  .topic-card{display:flex;flex-direction:column;gap:10px;padding:22px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card);cursor:pointer;transition:all .18s;position:relative}
-  .topic-card:hover{border-color:var(--orange);background:var(--bg-card-hover);transform:translateY(-2px);box-shadow:0 8px 24px rgba(255,145,0,.08)}
-  .topic-card .icon{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--orange);border-radius:8px;color:var(--orange);margin-bottom:6px}
-  .topic-card h3{font-family:var(--mono);font-size:13px;letter-spacing:2px;color:var(--text-primary);text-transform:uppercase}
-  .topic-card p{color:var(--text-secondary);font-size:13px;margin:0}
-  .topic-card .meta{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--text-dim);text-transform:uppercase;margin-top:6px}
-  .topic-card .arrow{font-family:var(--mono);font-size:11px;color:var(--orange);margin-top:10px;letter-spacing:1.5px;text-transform:uppercase}
-  .topic-hub-note{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:14px;letter-spacing:1px}
-
-  /* ═══════════════  STICKY ANCHOR NAV  ═══════════════ */
-  .anchor-nav{position:sticky;top:34px;z-index:60;margin:32px -28px 0;padding:10px 28px;background:rgba(18,19,26,.92);backdrop-filter:blur(6px);border-top:1px solid var(--border);border-bottom:1px solid var(--border);display:flex;gap:18px;overflow-x:auto;scrollbar-width:none;font-family:var(--mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase}
-  .anchor-nav::-webkit-scrollbar{display:none}
-  .anchor-nav a{color:var(--text-secondary);white-space:nowrap;padding:4px 0;border-bottom:1px solid transparent}
-  .anchor-nav a:hover{color:var(--orange);border-bottom-color:var(--orange)}
-
-  /* ═══════════════  SECTION / TOPIC BANNERS  ═══════════════ */
-  .topic-banner{margin:56px 0 22px;padding:16px 20px;border:1px solid var(--orange);border-left-width:4px;border-radius:var(--r-card);background:var(--orange-dim);display:flex;align-items:center;gap:14px}
-  .topic-banner .topic-number{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--orange);text-transform:uppercase}
-  .topic-banner .topic-label{font-family:var(--mono);font-size:16px;letter-spacing:2px;color:var(--text-primary);text-transform:uppercase;font-weight:600}
-  .topic-intro{color:var(--text-secondary);font-size:15px;max-width:640px;margin-bottom:20px}
-
-  /* ═══════════════  STEP CARDS (image + copy)  ═══════════════ */
-  .step{display:grid;grid-template-columns:340px 1fr;gap:22px;padding:20px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card);margin-bottom:16px}
+  /* ═══════════════  STEP CARDS  ═══════════════ */
+  .step{display:grid;grid-template-columns:340px 1fr;gap:22px;padding:20px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card);margin-bottom:14px;transition:border-color .15s}
   .step:hover{border-color:var(--border-2)}
-  .step-num{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--orange);text-transform:uppercase;margin-bottom:6px}
-  .step-title{font-size:16px;margin-bottom:8px}
-  .step-copy{color:var(--text-secondary);font-size:13.5px}
+  .step-num{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--orange);text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .step-num::before{content:"▶";font-size:9px}
+  .step-title{font-size:17px;margin-bottom:8px;font-weight:600}
+  .step-copy{color:var(--text-secondary);font-size:13.5px;line-height:1.6}
   .step-copy p{margin:0 0 10px}
-  .step-copy ul{margin:0 0 10px;padding-left:18px}
+  .step-copy ul,.step-copy ol{margin:0 0 10px;padding-left:18px}
   .step-copy li{margin-bottom:4px}
-  .step-tip{margin-top:10px;font-family:var(--mono);font-size:11px;letter-spacing:1px;color:var(--green);background:var(--green-dim);padding:8px 12px;border-radius:var(--r-sm);border-left:2px solid var(--green)}
-  .step-warn{margin-top:10px;font-family:var(--mono);font-size:11px;letter-spacing:1px;color:var(--red);background:var(--red-dim);padding:8px 12px;border-radius:var(--r-sm);border-left:2px solid var(--red)}
-  .step-note-orange{margin-top:10px;font-family:var(--mono);font-size:11px;letter-spacing:1px;color:var(--orange);background:var(--orange-dim);padding:8px 12px;border-radius:var(--r-sm);border-left:2px solid var(--orange)}
+  .step-tip,.step-warn,.step-note{margin-top:12px;font-family:var(--mono);font-size:11px;letter-spacing:.5px;line-height:1.55;padding:10px 14px;border-radius:var(--r-sm)}
+  .step-tip{color:var(--green);background:var(--green-dim);border-left:2px solid var(--green)}
+  .step-warn{color:var(--red);background:var(--red-dim);border-left:2px solid var(--red)}
+  .step-note{color:var(--orange);background:var(--orange-dim);border-left:2px solid var(--orange)}
+  .step-tip b,.step-warn b,.step-note b{font-family:var(--sans);font-weight:700}
 
   /* ═══════════════  SCREENSHOT PLACEHOLDERS  ═══════════════ */
   .shot{position:relative;background:var(--bg-input);border:1px solid var(--border-2);border-radius:var(--r-sm);aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:zoom-in;transition:all .18s}
   .shot:hover{border-color:var(--orange);box-shadow:0 0 20px var(--orange-glow)}
-  .shot .browser-chrome{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--bg-secondary);border-bottom:1px solid var(--border)}
+  .shot .browser-chrome{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--bg-secondary);border-bottom:1px solid var(--border);z-index:2}
   .shot .browser-dots{display:flex;gap:3px}
   .shot .browser-dot{width:8px;height:8px;border-radius:50%;background:var(--border-2)}
   .shot .browser-url{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.5px;padding-left:6px;flex:1;text-align:center}
   .shot .shot-placeholder{width:100%;height:100%;padding-top:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center}
   .shot .shot-src{font-family:var(--mono);font-size:10px;color:var(--orange);letter-spacing:1px}
-  .shot .shot-caption{position:absolute;bottom:0;left:0;right:0;padding:6px 10px;background:rgba(10,11,15,.85);font-family:var(--mono);font-size:10px;color:var(--text-secondary);letter-spacing:1px;text-align:center}
-  .shot .shot-icon{font-family:var(--mono);font-size:24px;color:var(--text-dim)}
+  .shot .shot-icon{font-family:var(--mono);font-size:26px;color:var(--text-dim)}
+  .shot .shot-caption{position:absolute;bottom:0;left:0;right:0;padding:6px 10px;background:rgba(10,11,15,.9);font-family:var(--mono);font-size:10px;color:var(--text-secondary);letter-spacing:.5px;text-align:center;line-height:1.4}
 
   /* ═══════════════  CALLOUTS  ═══════════════ */
-  .callout{margin:14px 0;padding:14px 16px;border-radius:var(--r-sm);font-size:13.5px}
-  .callout-orange{border:1px solid var(--orange);background:var(--orange-dim);color:var(--text-primary)}
-  .callout-green{border:1px solid var(--green);background:var(--green-dim);color:var(--text-primary)}
-  .callout-red{border:1px solid var(--red);background:var(--red-dim);color:var(--text-primary)}
+  .callout{margin:14px 0;padding:14px 16px;border-radius:var(--r-sm);font-size:13.5px;line-height:1.55}
+  .callout-orange{border:1px solid var(--orange);background:var(--orange-dim)}
+  .callout-green{border:1px solid var(--green);background:var(--green-dim)}
+  .callout-red{border:1px solid var(--red);background:var(--red-dim)}
   .callout-dim{border:1px solid var(--border);background:var(--bg-card);color:var(--text-secondary)}
-  .callout .prefix{font-family:var(--mono);color:var(--orange);margin-right:6px}
+  .callout .prefix{font-family:var(--mono);color:var(--orange);margin-right:6px;font-weight:700}
   .callout-green .prefix{color:var(--green)}
   .callout-red .prefix{color:var(--red)}
+  .callout strong{color:var(--text-primary)}
 
-  /* ═══════════════  STACK ANALOGY VISUAL  ═══════════════ */
-  .stack-compare{margin:22px 0;padding:24px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card);font-family:var(--mono);font-size:13px;line-height:1.9;white-space:pre;overflow-x:auto}
+  /* ═══════════════  STACK COMPARE VISUAL  ═══════════════ */
+  .stack-compare{margin:18px 0;padding:24px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card);font-family:var(--mono);font-size:13px;line-height:1.9;white-space:pre;overflow-x:auto}
   .stack-compare .lbl{color:var(--text-dim)}
   .stack-compare .co{color:var(--text-primary);font-weight:700}
   .stack-compare .arrow-mono{color:var(--orange)}
-  .stack-quick{margin:12px 0 0;padding:12px 16px;background:var(--bg-input);border-left:2px solid var(--orange);font-family:var(--mono);font-size:13px}
+  .stack-quick{margin:12px 0 0;padding:12px 16px;background:var(--bg-input);border-left:2px solid var(--orange);font-family:var(--mono);font-size:13px;line-height:1.7}
 
-  /* ═══════════════  ECOSYSTEM CARDS (4)  ═══════════════ */
-  .eco-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:16px 0 8px}
-  .eco-card{padding:22px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card)}
-  .eco-card h4{margin-bottom:4px}
-  .eco-url{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-bottom:10px}
-  .eco-body{color:var(--text-secondary);font-size:13px;margin-bottom:12px}
+  /* ═══════════════  ECOSYSTEM / TERMINAL ID / TACTICS GRIDS  ═══════════════ */
+  .card-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+  .mini-card{padding:22px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card)}
+  .mini-card .card-eyebrow{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+  .mini-card h4{font-size:18px;margin-bottom:4px;letter-spacing:-.3px}
+  .mini-card .card-url{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-bottom:10px}
+  .mini-card p{color:var(--text-secondary);font-size:13px;line-height:1.6;margin-bottom:12px}
 
-  /* ═══════════════  TERMINAL ID KEY DISPLAY  ═══════════════ */
-  .tid-display{margin:22px 0;padding:28px;border:1px solid var(--orange);border-radius:var(--r-card);background:var(--orange-dim);text-align:center;font-family:var(--mono);font-size:24px;letter-spacing:4px;color:var(--orange);font-weight:700;text-shadow:0 0 12px var(--orange-glow)}
-  .tid-bullets{list-style:none;padding:0;margin:14px 0}
-  .tid-bullets li{display:flex;align-items:center;gap:10px;padding:8px 0;color:var(--text-secondary)}
-  .tid-bullets .chk{color:var(--green);font-family:var(--mono);font-weight:700}
+  /* Terminal ID key display */
+  .tid-display{margin:20px 0;padding:28px;border:1px solid var(--orange);border-radius:var(--r-card);background:var(--orange-dim);text-align:center;font-family:var(--mono);font-size:26px;letter-spacing:4px;color:var(--orange);font-weight:700;text-shadow:0 0 12px var(--orange-glow)}
+  .tid-bullets{list-style:none;padding:0;margin:14px 0 22px}
+  .tid-bullets li{display:flex;align-items:center;gap:10px;padding:6px 0;color:var(--text-secondary);font-size:14px}
+  .tid-bullets .chk{color:var(--green);font-family:var(--mono);font-weight:700;flex-shrink:0}
 
-  /* ═══════════════  STATE TABLE / STATUS AT-A-GLANCE  ═══════════════ */
+  /* ═══════════════  STATUS AT A GLANCE (Topic 4)  ═══════════════ */
   .state-glance{margin:16px 0;padding:20px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card);overflow-x:auto}
   .state-glance pre{margin:0;font-family:var(--mono);font-size:12px;color:var(--text-primary);line-height:1.85;white-space:pre}
   .state-glance .c-green{color:var(--green)}
@@ -209,893 +221,840 @@
   .state-glance .c-silver{color:var(--silver)}
   .state-glance .c-red{color:var(--red)}
 
-  /* ═══════════════  STATE DETAIL CARDS  ═══════════════ */
-  .state-card{margin:16px 0;padding:22px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card)}
+  /* State detail cards */
+  .state-card{margin:16px 0;padding:24px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card)}
   .state-card.active-paid{border-left:4px solid var(--green)}
   .state-card.ea{border-left:4px solid var(--gold)}
   .state-card.free{border-left:4px solid var(--silver)}
   .state-card.defunct{border-left:4px solid var(--red)}
-  .state-card h3{margin-bottom:4px}
-  .state-badge{display:inline-block;padding:3px 8px;border-radius:var(--r-pill);font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px}
+  .state-card h3{font-size:22px;margin-bottom:4px;letter-spacing:-.3px}
+  .state-badge{display:inline-block;padding:3px 10px;border-radius:var(--r-pill);font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;font-weight:700}
   .state-badge.active-paid{background:var(--green-dim);color:var(--green);border:1px solid var(--green)}
   .state-badge.ea{background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold)}
   .state-badge.free{background:rgba(156,163,175,.12);color:var(--silver);border:1px solid var(--silver)}
   .state-badge.defunct{background:var(--red-dim);color:var(--red);border:1px solid var(--red)}
-  .state-card .what-means{color:var(--text-secondary);margin-bottom:12px}
+  .state-card .what-means{color:var(--text-secondary);margin-bottom:14px;font-size:14.5px}
   .state-card .state-grid{display:grid;grid-template-columns:340px 1fr;gap:22px;margin-top:10px}
-  .state-card .details h5{font-family:var(--mono);font-size:11px;letter-spacing:1.5px;color:var(--orange);text-transform:uppercase;margin:14px 0 6px}
+  .state-card .details h5{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--orange);text-transform:uppercase;margin:14px 0 6px}
   .state-card .details ul{padding-left:18px;color:var(--text-secondary);font-size:13px;line-height:1.6}
 
-  /* ═══════════════  TRANSITION DIAGRAM  ═══════════════ */
-  .transition-diagram{margin:20px 0;padding:20px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card);overflow-x:auto}
+  /* Transition diagram */
+  .transition-diagram{margin:18px 0;padding:20px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card);overflow-x:auto}
   .transition-diagram pre{margin:0;font-family:var(--mono);font-size:11.5px;color:var(--text-primary);line-height:1.7;white-space:pre}
 
-  /* ═══════════════  COST MATRIX  ═══════════════ */
+  /* Cost matrix */
   .cost-table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13px}
   .cost-table th,.cost-table td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
   .cost-table th{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--text-dim);text-transform:uppercase;font-weight:600;background:var(--bg-card)}
   .cost-table td{color:var(--text-secondary)}
   .cost-table td:first-child{color:var(--text-primary);font-weight:600;font-family:var(--mono);font-size:12px;letter-spacing:1px}
 
-  /* ═══════════════  TIER LADDER  ═══════════════ */
-  .tier-ladder{margin:16px 0;padding:18px 22px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card);font-family:var(--mono);font-size:13px;line-height:1.9;color:var(--text-primary);white-space:pre;overflow-x:auto}
+  /* Tier ladder */
+  .tier-ladder{margin:14px 0;padding:18px 22px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card);font-family:var(--mono);font-size:13px;line-height:1.9;white-space:pre;overflow-x:auto}
   .tier-ladder .t1{color:var(--silver)}
   .tier-ladder .t2{color:var(--bronze)}
   .tier-ladder .t3{color:var(--gold)}
   .tier-ladder .t4{color:var(--purple)}
 
   /* ═══════════════  SUB-TOPIC CARDS (Topic 3)  ═══════════════ */
-  .sub-topic{margin:16px 0;padding:20px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card)}
-  .sub-topic h4{font-size:16px;margin-bottom:8px;font-weight:600;color:var(--text-primary)}
-  .sub-topic h4 .num{font-family:var(--mono);font-size:12px;color:var(--orange);margin-right:8px;letter-spacing:1.5px}
+  .sub-topic{margin:14px 0;padding:22px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card)}
+  .sub-topic h4{font-size:17px;margin-bottom:8px;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:10px}
+  .sub-topic h4 .num{font-family:var(--mono);font-size:12px;color:var(--orange);letter-spacing:1.5px;background:var(--orange-dim);padding:2px 8px;border-radius:var(--r-pill)}
   .sub-topic-grid{display:grid;grid-template-columns:260px 1fr;gap:18px}
-  .sub-topic-copy{color:var(--text-secondary);font-size:13.5px}
+  .sub-topic-copy{color:var(--text-secondary);font-size:13.5px;line-height:1.6}
   .sub-topic-copy p{margin:0 0 10px}
-  .sub-topic-copy ul{padding-left:18px;margin:0 0 10px}
+  .sub-topic-copy ul,.sub-topic-copy ol{padding-left:18px;margin:0 0 10px}
+  .sub-topic-copy strong{color:var(--text-primary)}
 
-  /* ═══════════════  FAQ ACCORDION  ═══════════════ */
-  .faq-list{margin:16px 0;display:flex;flex-direction:column;gap:8px}
+  /* ═══════════════  FAQ  ═══════════════ */
+  .faq-list{margin:18px 0;display:flex;flex-direction:column;gap:8px}
   .faq{padding:0;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card);overflow:hidden}
-  .faq summary{list-style:none;padding:16px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:14px;font-weight:600;color:var(--text-primary);font-size:14px}
+  .faq summary{list-style:none;padding:16px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:14px;font-weight:600;color:var(--text-primary);font-size:14px;line-height:1.4}
   .faq summary::-webkit-details-marker{display:none}
-  .faq summary::after{content:"+";font-family:var(--mono);font-size:18px;color:var(--orange);flex-shrink:0;transition:transform .2s}
+  .faq summary::after{content:"+";font-family:var(--mono);font-size:20px;color:var(--orange);flex-shrink:0;transition:transform .2s;line-height:1}
   .faq[open] summary::after{content:"−"}
   .faq[open] summary{border-bottom:1px solid var(--border);background:var(--bg-card-hover)}
-  .faq-body{padding:14px 18px 18px;color:var(--text-secondary);font-size:13.5px}
+  .faq-body{padding:16px 18px 20px;color:var(--text-secondary);font-size:13.5px;line-height:1.65}
   .faq-body p{margin:0 0 10px}
   .faq-body ul,.faq-body ol{padding-left:18px;margin:0 0 10px}
   .faq-body strong{color:var(--text-primary)}
-  .faq-body .shot{max-width:260px;margin:10px 0}
+  .faq-body .shot{max-width:300px;margin:12px 0}
 
-  /* ═══════════════  FINAL CTAs  ═══════════════ */
-  .final-ctas{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:26px 0}
-  .final-cta{padding:24px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card)}
-  .final-cta.primary{border-color:var(--orange);background:linear-gradient(180deg,var(--orange-dim),var(--bg-card))}
-  .final-cta.secondary{border-color:var(--green);background:linear-gradient(180deg,var(--green-dim),var(--bg-card))}
-  .final-cta h3{font-family:var(--mono);font-size:13px;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
-  .final-cta p{color:var(--text-secondary);font-size:13px;margin-bottom:14px}
-  .final-cta.primary h3{color:var(--orange)}
-  .final-cta.secondary h3{color:var(--green)}
+  /* FAQ search */
+  .faq-search{margin:14px 0 18px}
+  .faq-search input{width:100%;padding:14px 16px;border:1px solid var(--border-2);border-radius:var(--r-btn);background:var(--bg-input);color:var(--text-primary);font-family:var(--sans);font-size:14px;transition:border-color .15s}
+  .faq-search input:focus{outline:none;border-color:var(--orange)}
+  .faq-search input::placeholder{color:var(--text-dim)}
 
-  /* ═══════════════  REFERENCE BANNER  ═══════════════ */
-  .ref-banner{margin:56px 0 22px;padding:14px 20px;border:1px dashed var(--border-2);border-radius:var(--r-card);background:transparent;display:flex;align-items:center;gap:14px}
-  .ref-banner .ref-label{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase}
+  /* ═══════════════  CONTACT TAB  ═══════════════ */
+  .contact-hero{padding:32px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card);text-align:center;margin-bottom:22px}
+  .contact-hero .big-tg{font-family:var(--mono);font-size:22px;color:var(--orange);letter-spacing:1px;margin:16px 0;font-weight:700}
+  .contact-hero p{color:var(--text-secondary);max-width:520px;margin:0 auto 12px}
+  .contact-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
+  .info-card{padding:20px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card)}
+  .info-card h4{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--orange);text-transform:uppercase;margin-bottom:10px}
+  .info-card p,.info-card ul{color:var(--text-secondary);font-size:13px;line-height:1.6}
+  .info-card ul{padding-left:18px;margin:0}
 
-  /* ═══════════════  CONTACT / FOOTER  ═══════════════ */
-  .contact-block{margin:44px 0 22px;padding:22px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card);text-align:center}
-  .contact-block h3{font-family:var(--mono);font-size:13px;letter-spacing:2px;color:var(--orange);text-transform:uppercase;margin-bottom:10px}
-  .contact-block .tg{font-family:var(--mono);font-size:14px;color:var(--text-primary);letter-spacing:1px;margin-bottom:10px}
-
-  .last-updated{text-align:center;margin:22px 0 10px;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--text-dim);text-transform:uppercase}
-
-  .page-footer{margin-top:44px;padding-top:22px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:1px}
+  /* ═══════════════  PAGE FOOTER  ═══════════════ */
+  .page-footer{margin-top:60px;padding-top:28px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:1px;gap:16px;flex-wrap:wrap}
   .page-footer a{color:var(--text-secondary)}
   .page-footer a:hover{color:var(--orange)}
   .page-footer .burn-tag{color:var(--orange)}
+  .last-updated{margin-top:12px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--text-dim);text-transform:uppercase}
 
   /* ═══════════════  RESPONSIVE  ═══════════════ */
-  @media (max-width:768px){
-    .inner{padding:28px 16px 60px}
-    h1.page-title{font-size:26px}
-    .topic-grid,.eco-grid{grid-template-columns:1fr}
+  @media (max-width:900px){
+    .wrap{padding:0 16px 60px}
+    .hero{padding:44px 0 24px}
+    .hero h1{font-size:34px}
+    .topbar{grid-template-columns:1fr auto;padding:12px 16px}
+    .ticker{display:none}
+    .topbar-right{font-size:9px;gap:14px}
+    .tab-bar{top:54px;margin:0 -16px}
+    .tab{padding:14px 14px}
+    .panel-title{font-size:24px}
     .step,.sub-topic-grid,.state-card .state-grid{grid-template-columns:1fr}
     .step .shot,.sub-topic .shot{max-width:420px}
-    .final-ctas{grid-template-columns:1fr}
-    .anchor-nav{top:38px;margin:20px -16px 0;padding:10px 16px}
-    .tid-display{font-size:18px;letter-spacing:2px;padding:22px 16px}
-    .titlebar{padding:6px 10px}
-    .titlebar-right{display:none}
+    .card-grid,.contact-info-grid{grid-template-columns:1fr}
+    .tid-display{font-size:18px;letter-spacing:2px;padding:22px 14px}
+  }
+  @media (max-width:540px){
+    .hero h1{font-size:28px}
+    .tab .num{display:none}
+    .tab{padding:12px 12px;font-size:10px}
   }
 </style>
 </head>
 <body>
 
-<div class="crt-scanlines"></div>
-<div class="crt-vignette"></div>
-
-<!-- ═══ SYSTEM BAR (top) ═══ -->
-<div class="system-bar">
-  <div class="system-bar-left">
-    <span class="system-bar-logo"></span>
-    <span class="system-bar-title">LAST<span class="proof">PROOF</span> // HELP</span>
-    <span class="status-dot"></span>
-  </div>
-  <div class="system-bar-clock">16:43:02</div>
-</div>
-
-<!-- ═══ TERMINAL FRAME ═══ -->
-<div class="terminal-frame">
-
-  <!-- ═══ TITLEBAR ═══ -->
-  <div class="titlebar">
-    <div class="tl-dots">
-      <span class="tl-dot red"></span>
-      <span class="tl-dot yellow"></span>
-      <span class="tl-dot green"></span>
+<!-- ═══════════════ TOPBAR ═══════════════ -->
+<header class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-logo">L</span>
+    <div class="topbar-brand">
+      <span class="brand-name"><span class="last">LAST</span><span class="proof">PROOF</span></span>
+      <span class="topbar-sub">HELP · GETTING STARTED</span>
     </div>
-    <div class="titlebar-title">help — lastproof — 80x24</div>
-    <div class="titlebar-right">PID 1</div>
   </div>
+  <div class="ticker">
+    <span class="sym">$LASTSHFT</span>
+    <span class="price">$0.00342</span>
+    <span class="chg">+12.4%</span>
+  </div>
+  <nav class="topbar-right">
+    <a href="/">HOME</a>
+    <a href="/grid">GRID</a>
+    <a href="/how-it-works">HOW IT WORKS</a>
+    <a href="/help" class="active">HELP</a>
+    <a href="/manage" class="inline-cta">/MANAGE →</a>
+  </nav>
+</header>
 
-  <!-- ═══ CONTENT BODY ═══ -->
-  <div class="content-body">
-    <div class="inner">
+<main class="wrap">
 
-      <!-- ═══════════════ SECTION 1 — HERO ═══════════════ -->
-      <section class="hero">
-        <div class="eyebrow">&gt; HELP / HOW IT WORKS</div>
-        <h1 class="page-title">Getting unstuck on LAST<span class="orange">PROOF</span>.</h1>
-        <p class="lead hero-sub">Profile creation, proofs, editing, and profile states — what's going on and how to move forward. Pick a topic or use quick answers below.</p>
-      </section>
+  <!-- ═══════════════ HERO ═══════════════ -->
+  <section class="hero">
+    <div class="hero-eyebrow">HELP · HOW IT WORKS</div>
+    <h1>Getting unstuck on LAST<span class="orange">PROOF</span>.</h1>
+    <p class="body-text">Profile creation, proofs, editing, and profile states — pick a topic below to see exactly what to do.</p>
+    <div class="hero-ctas">
+      <a href="https://lastshift.app" target="_blank" rel="noopener" class="btn btn-primary">LAUNCH TERMINAL →</a>
+      <a href="/manage" class="btn btn-ghost">GO TO /MANAGE</a>
+    </div>
+    <span class="microcopy">No email, no password — just your wallet.</span>
+  </section>
 
-      <!-- ═══════════════ SECTION 2 — QUICK ANSWERS ═══════════════ -->
-      <section class="quick-answers">
-        <h2>&gt; QUICK ANSWERS — TOP 3 BLOCKERS</h2>
-        <div class="qa-list">
-          <div class="qa-item">
-            <div class="qa-q">I don't have a Terminal ID.</div>
-            <div class="qa-a">Go to <a href="https://lastshift.app" target="_blank" rel="noopener">lastshift.app</a>, connect your wallet, and the Terminal issues one in ~30 seconds. Then come back here.</div>
-          </div>
-          <div class="qa-item">
-            <div class="qa-q">My wallet connected, but the page says "Operator not found."</div>
-            <div class="qa-a">That wallet hasn't been registered with a Terminal ID yet. Get one from the Terminal (same link above), then paste it on /manage.</div>
-          </div>
-          <div class="qa-item">
-            <div class="qa-q">I sent a payment but nothing happened.</div>
-            <div class="qa-a">See <a href="#faq-payment-stuck">the payment-stuck FAQ</a> — common causes: wrong amount (must be exact), wrong token (no USDC), TX sent before modal opened.</div>
+  <!-- ═══════════════ QUICK ANSWERS ═══════════════ -->
+  <section class="quick-answers">
+    <h2>QUICK ANSWERS — TOP 3 BLOCKERS</h2>
+    <div class="qa-list">
+      <div class="qa-item">
+        <div class="qa-q">I don't have a Terminal ID.</div>
+        <div class="qa-a">Go to <a href="https://lastshift.app" target="_blank" rel="noopener">lastshift.app</a>, connect your wallet, and the Terminal issues one in ~30 seconds. Then come back here.</div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q">My wallet connected, but the page says "Operator not found."</div>
+        <div class="qa-a">That wallet hasn't been registered with a Terminal ID yet. Get one from the Terminal (same link above), then paste it on /manage.</div>
+      </div>
+      <div class="qa-item">
+        <div class="qa-q">I sent a payment but nothing happened.</div>
+        <div class="qa-a">See the <a href="#" data-jump-tab="faq">FAQ tab</a> (payment-stuck section) — common causes: wrong amount (must be exact), wrong token (no USDC), TX sent before modal opened.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ TAB BAR ═══════════════ -->
+  <nav class="tab-bar" role="tablist" aria-label="Help topics">
+    <button class="tab active" role="tab" aria-selected="true" aria-controls="tab-profile-creation" data-tab="profile-creation">
+      <span class="num">01</span><span class="lbl">Profile Creation</span>
+    </button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="tab-verify-work" data-tab="verify-work">
+      <span class="num">02</span><span class="lbl">Verify Work</span>
+    </button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="tab-updating-profile" data-tab="updating-profile">
+      <span class="num">03</span><span class="lbl">Updating Profile</span>
+    </button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="tab-profile-status" data-tab="profile-status">
+      <span class="num">04</span><span class="lbl">Profile Status</span>
+    </button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="tab-faq" data-tab="faq">
+      <span class="num">05</span><span class="lbl">FAQ</span>
+    </button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="tab-contact" data-tab="contact">
+      <span class="num">06</span><span class="lbl">Contact</span>
+    </button>
+  </nav>
+
+  <!-- ═══════════════ TAB: PROFILE CREATION ═══════════════ -->
+  <section id="tab-profile-creation" class="tab-panel active" role="tabpanel" aria-labelledby="profile-creation">
+    <div class="panel-head">
+      <div class="panel-eyebrow">TOPIC 01 · 5 STEPS · ~5 MINUTES</div>
+      <h2 class="panel-title">Profile Creation</h2>
+      <p class="panel-intro">The full flow for a brand-new operator — from zero to a live @handle profile. No email, no password, just a wallet. Every step has a screenshot so you know exactly what to expect.</p>
+    </div>
+
+    <!-- Stack analogy (why Terminal first) -->
+    <div class="sec-label">WHY THE TERMINAL FIRST?</div>
+    <p class="dim">If you've used Microsoft products, you already understand this.</p>
+    <div class="stack-compare"><span class="lbl">MICROSOFT STACK                  LASTSHIFT STACK
+───────────────                  ───────────────</span>
+<span class="co">Microsoft</span>            <span class="arrow-mono">→</span>           <span class="co">LASTSHIFT.AI</span>
+<span class="lbl">  (the company)</span>                    <span class="lbl">  (the company / ecosystem)</span>
+
+<span class="co">Office 365</span>           <span class="arrow-mono">→</span>           <span class="co">LASTSHIFT TERMINAL</span>
+<span class="lbl">  (the product suite)</span>              <span class="lbl">  (the product suite)</span>
+
+<span class="co">Word</span>                 <span class="arrow-mono">→</span>           <span class="co">LASTPROOF</span>
+<span class="lbl">  (one tool in the suite)</span>          <span class="lbl">  (one tool in the suite)</span>
+
+<span class="co">USD</span>                  <span class="arrow-mono">→</span>           <span class="co">$LASTSHFT</span>
+<span class="lbl">  (how you pay)</span>                    <span class="lbl">  (how you pay — 40% off)</span></div>
+    <div class="stack-quick">
+      <span class="orange">LASTSHIFT.AI → LASTSHIFT TERMINAL → LASTPROOF</span><br>
+      <span class="dim">Same pattern as Microsoft → Office 365 → Word. The Terminal issues your license key (Terminal ID) — every tool uses the same key.</span>
+    </div>
+
+    <!-- Terminal ID explainer -->
+    <div class="sec-label">YOUR TERMINAL ID — THE KEY TO EVERYTHING</div>
+    <div class="tid-display">SHIFT-XXXX-XXXX-XXXX-XXXX</div>
+    <p>Your Terminal ID is a license key issued by the Terminal at <span class="mono orange">lastshift.app</span>. It looks like a Windows product key. One key. Every tool.</p>
+    <ul class="tid-bullets">
+      <li><span class="chk">✓</span> Issued once — free, wallet-only, takes 30 seconds</li>
+      <li><span class="chk">✓</span> Works across every tool in the suite (LASTPROOF, and more coming)</li>
+      <li><span class="chk">✓</span> Regenerate anytime from the Terminal — old key instantly revoked</li>
+    </ul>
+
+    <!-- 5 steps -->
+    <div class="sec-label">STEP-BY-STEP — 2 MINUTES</div>
+
+    <article class="step">
+      <div class="shot">
+        <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastshift.app</div></div>
+        <div class="shot-placeholder"><div class="shot-icon">▦</div><div class="shot-src">wireframes/screen1-launch-terminal.html</div><div class="dim mono" style="font-size:10px">cold-boot · CONNECT WALLET</div></div>
+        <div class="shot-caption">lastshift.app — click CONNECT WALLET</div>
+      </div>
+      <div>
+        <div class="step-num">STEP 01</div>
+        <h3 class="step-title">Open the Terminal</h3>
+        <div class="step-copy">
+          <p>Go to <strong>lastshift.app</strong>. That's the suite. Click CONNECT WALLET. Phantom, Solflare, Backpack — any Solana wallet.</p>
+          <a href="https://lastshift.app" target="_blank" rel="noopener" class="btn btn-primary btn-sm">LAUNCH TERMINAL →</a>
+        </div>
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="shot">
+        <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastshift.app/keygen</div></div>
+        <div class="shot-placeholder"><div class="shot-icon">⌨</div><div class="shot-src">wireframes/screen2-key-generation.html</div><div class="dim mono" style="font-size:10px">SHIFT-XXXX-XXXX-XXXX-XXXX</div></div>
+        <div class="shot-caption">Your Terminal ID. One key. Every tool.</div>
+      </div>
+      <div>
+        <div class="step-num">STEP 02</div>
+        <h3 class="step-title">Receive your Terminal ID</h3>
+        <div class="step-copy">
+          <p>The Terminal generates a unique <span class="mono orange">SHIFT-XXXX-XXXX-XXXX-XXXX</span> key. Save it — this is your license for every tool.</p>
+          <div class="step-tip"><b>TIP:</b> Write it down, store it in a password manager, or keep it in a note. You'll need it once per tool, then it's automatic.</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="shot">
+        <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastshift.app/dashboard</div></div>
+        <div class="shot-placeholder"><div class="shot-icon">▥</div><div class="shot-src">wireframes/screen3-dashboard.html</div><div class="dim mono" style="font-size:10px">LAUNCH LASTPROOF highlighted</div></div>
+        <div class="shot-caption">Terminal dashboard — click LAUNCH LASTPROOF in the sidebar.</div>
+      </div>
+      <div>
+        <div class="step-num">STEP 03</div>
+        <h3 class="step-title">Launch LASTPROOF from the Terminal</h3>
+        <div class="step-copy">
+          <p>From the Terminal dashboard, click <strong>LAUNCH LASTPROOF</strong>. It opens lastproof.app in a new tab.</p>
+          <div class="step-note"><b>NOTE:</b> The Terminal stays alive in its own tab — don't close it. Each tool has its own tab and its own session.</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="shot">
+        <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/manage</div></div>
+        <div class="shot-placeholder"><div class="shot-icon">▤</div><div class="shot-src">wireframes/lastproof-onboarding.html + lastproof-dashboard-fresh.html</div><div class="dim mono" style="font-size:10px">paste TID → claim @handle</div></div>
+        <div class="shot-caption">Paste your Terminal ID → claim your @handle.</div>
+      </div>
+      <div>
+        <div class="step-num">STEP 04</div>
+        <h3 class="step-title">Register your profile on LASTPROOF</h3>
+        <div class="step-copy">
+          <p>On lastproof.app, paste your Terminal ID to authenticate. Pick your <strong>@handle</strong> (becomes your public URL: <span class="mono orange">lastproof.app/@you</span>). Add your bio, categories, and work history.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="shot">
+        <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/@cryptomark</div></div>
+        <div class="shot-placeholder"><div class="shot-icon">◉</div><div class="shot-src">wireframes/lastproof-profile-public.html</div><div class="dim mono" style="font-size:10px">public profile · shareable</div></div>
+        <div class="shot-caption">lastproof.app/@you — your on-chain resume. Drop it in any DM.</div>
+      </div>
+      <div>
+        <div class="step-num">STEP 05</div>
+        <h3 class="step-title">Share your link and collect proofs</h3>
+        <div class="step-copy">
+          <p>Drop <span class="mono orange">lastproof.app/@you</span> in DMs, bios, proposals. Teammates and devs pay $1 ($5 for DEV) to verify your work on-chain. Your tier grows. Projects find you on the Grid.</p>
+          <div class="step-note"><b>&gt;</b> Proofs are submitted BY SOMEONE ELSE for your work — you can't proof yourself. Share your link; they click VERIFY THIS WORK on a specific project. See the <strong>Verify Work</strong> tab for the full proof flow.</div>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ═══════════════ TAB: VERIFY WORK ═══════════════ -->
+  <section id="tab-verify-work" class="tab-panel" role="tabpanel" aria-labelledby="verify-work" hidden>
+    <div class="panel-head">
+      <div class="panel-eyebrow">TOPIC 02 · 6 STEPS · ~2 MIN PER PROOF</div>
+      <h2 class="panel-title">Verify This Work (Proofs)</h2>
+      <p class="panel-intro">Proofs are the heart of LASTPROOF. This covers both sides: how to submit a proof on someone else's work, and how to get proofs on your own profile.</p>
+    </div>
+
+    <div class="callout callout-dim">
+      Proofs are paid on-chain transactions on Solana. When you submit one, you're publicly saying "this person actually did this work" — and the $1 ($5 for dev) fee makes the signal meaningful. Your proof gets linked to Solscan permanently. Fake proofs cost real money, so the system self-filters.
+    </div>
+
+    <div class="sec-label">HOW TO SUBMIT A PROOF — 6 STEPS</div>
+
+    <article class="step">
+      <div class="shot">
+        <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/@handle</div></div>
+        <div class="shot-placeholder"><div class="shot-icon">◑</div><div class="shot-src">wireframes/lastproof-profile-public.html</div><div class="dim mono" style="font-size:10px">Proof of Work · VERIFY THIS WORK</div></div>
+        <div class="shot-caption">VERIFY THIS WORK — click the project you're vouching for.</div>
+      </div>
+      <div>
+        <div class="step-num">STEP 01</div>
+        <h3 class="step-title">Find the work you want to vouch for</h3>
+        <div class="step-copy"><p>Visit the operator's profile (<span class="mono orange">lastproof.app/@handle</span>). Scroll to Proof of Work. Find the project or campaign you worked on with them. Click <strong>VERIFY THIS WORK</strong> on that project card.</p></div>
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="shot">
+        <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">proof modal · screen 1</div></div>
+        <div class="shot-placeholder"><div class="shot-icon">▦</div><div class="shot-src">wireframes/lastproof-proof-modal-v2.html</div><div class="dim mono" style="font-size:10px">Collaborator · Dev</div></div>
+        <div class="shot-caption">Two paths — Collaborator ($1) or Dev ($5).</div>
+      </div>
+      <div>
+        <div class="step-num">STEP 02</div>
+        <h3 class="step-title">Pick your path: Collaborator or Dev</h3>
+        <div class="step-copy">
+          <ul>
+            <li><strong>Collaborator — $1</strong> — teammates, community, anyone who can vouch for the work.</li>
+            <li><strong>Dev — $5</strong> — reserved for project deployer wallets. Earns the operator a DEV badge.</li>
+          </ul>
+          <div class="step-warn"><b>WARNING:</b> The Dev path is verified against the project's actual deployer wallet on-chain. Picking Dev without being the real deployer = you lose the payment, no proof awarded. The system checks.</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="shot">
+        <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">proof modal · screen 2</div></div>
+        <div class="shot-placeholder"><div class="shot-icon">◈</div><div class="shot-src">wireframes/lastproof-proof-modal-v2.html</div><div class="dim mono" style="font-size:10px">$LASTSHFT · SOL · USDT</div></div>
+        <div class="shot-caption">Pay with $LASTSHFT (40% off), SOL, or USDT. USDC not accepted.</div>
+      </div>
+      <div>
+        <div class="step-num">STEP 03</div>
+        <h3 class="step-title">Pick your token</h3>
+        <div class="step-copy">
+          <ul>
+            <li><strong class="orange">$LASTSHFT</strong> — 40% off. Cheapest path. Contributes to the 25% burn.</li>
+            <li><strong>SOL</strong> — full price.</li>
+            <li><strong>USDT</strong> — full price.</li>
+          </ul>
+          <div class="step-note"><b>NOTE:</b> USDC is not supported. Check your wallet has one of the 3 tokens before starting.</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="shot">
+        <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">proof modal · screen 3</div></div>
+        <div class="shot-placeholder"><div class="shot-icon">⎘</div><div class="shot-src">wireframes/lastproof-proof-modal-v2.html</div><div class="dim mono" style="font-size:10px">copy address · copy amount</div></div>
+        <div class="shot-caption">Copy address. Copy exact amount. Send from your wallet.</div>
+      </div>
+      <div>
+        <div class="step-num">STEP 04</div>
+        <h3 class="step-title">Copy the address + exact amount, then send</h3>
+        <div class="step-copy">
+          <p>The modal shows the destination address (copy button), the exact amount in your chosen token (copy button), and instructions to open your wallet and send that exact amount to that address.</p>
+          <div class="step-note"><b>IMPORTANT:</b> Amount must be EXACT. $1.00 not $1.01. The webhook matches on the cent. Wrong amount = not credited.</div>
+          <div class="step-tip"><b>ANTI-SCAM:</b> Transaction must happen AFTER you open this modal. Old transactions don't count — prevents scammers from reusing a paid TX for multiple proofs.</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="shot">
+        <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">proof modal · screen 4</div></div>
+        <div class="shot-placeholder"><div class="shot-icon">▣</div><div class="shot-src">wireframes/lastproof-proof-modal-v2.html</div><div class="dim mono" style="font-size:10px">paste TX · 140-char comment</div></div>
+        <div class="shot-caption">Paste your TX signature. Add an optional 140-char comment.</div>
+      </div>
+      <div>
+        <div class="step-num">STEP 05</div>
+        <h3 class="step-title">Paste the TX signature + add a comment</h3>
+        <div class="step-copy">
+          <ol>
+            <li>Copy the transaction signature from your wallet.</li>
+            <li>Paste it into the modal.</li>
+            <li>Add a short comment (optional, up to 140 chars) — e.g. "@kellen ran our Tier 1 raid team for 6 months. Real one."</li>
+          </ol>
+          <div class="step-tip"><b>TIP:</b> Comments build social proof. Proofs with personalized comments hit harder than blank ones.</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="step">
+      <div class="shot">
+        <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">proof modal · screen 5</div></div>
+        <div class="shot-placeholder"><div class="shot-icon">✓</div><div class="shot-src">wireframes/lastproof-proof-modal-v2.html</div><div class="dim mono" style="font-size:10px">cascade · receipt · solscan</div></div>
+        <div class="shot-caption">1–5 second verification via Helius. Then the receipt.</div>
+      </div>
+      <div>
+        <div class="step-num">STEP 06</div>
+        <h3 class="step-title">Watch it verify + see the receipt</h3>
+        <div class="step-copy">
+          <p>Backend verifies in <strong class="green">1–5 seconds</strong> via the Helius webhook. You'll see a terminal-style cascade of checks, then a receipt screen with a Solscan link. Reload the profile page — your proof is now permanent.</p>
+          <div class="step-tip"><b>FALLBACK:</b> If the Helius webhook is slow or fails, a cron job picks it up within 60 seconds. No refresh loop — the modal handles it.</div>
+        </div>
+      </div>
+    </article>
+
+    <!-- COLLECTING PROOFS -->
+    <div class="sec-label">HOW TO GET PROOFS ON YOUR OWN PROFILE</div>
+    <p class="dim">You can't proof yourself. Here's how to actually collect them.</p>
+    <div class="card-grid">
+      <div class="mini-card">
+        <div class="card-eyebrow">TACTIC 1</div>
+        <h4>Share after every project</h4>
+        <p>When a project wraps, send the project lead your <span class="mono orange">lastproof.app/@you</span> link with: "Would mean a lot if you dropped a proof on my @handle for the [project] work." Most devs say yes if you ask.</p>
+      </div>
+      <div class="mini-card">
+        <div class="card-eyebrow">TACTIC 2</div>
+        <h4>Target Dev Proofs ($5)</h4>
+        <p>DEV Proofs come from the project's actual deployer wallet — the strongest trust signal. One DEV Proof is worth 10 regular proofs in credibility. It's also the only way to earn the DEV badge.</p>
+      </div>
+      <div class="mini-card">
+        <div class="card-eyebrow">TACTIC 3</div>
+        <h4>Batch the ask</h4>
+        <p>Hit 5–10 past collaborators in one week, not spread out. Profile goes 0 → 5 proofs fast, which pushes you past TIER 1 to TIER 2 in momentum. Profiles with momentum convert teams better.</p>
+      </div>
+      <div class="mini-card">
+        <div class="card-eyebrow">TACTIC 4</div>
+        <h4>Be specific about which project</h4>
+        <p>Don't send "hey proof me." Send: "Can you drop a proof on the $BONK raid campaign from Aug 2024? <span class="mono orange">lastproof.app/@you</span>, scroll to Proof of Work, the card says $BONK Raid Commander." Lower the friction.</p>
+      </div>
+    </div>
+
+    <div class="callout callout-green">
+      <span class="prefix">&gt;</span>Proofs are social capital. The cost to the other person ($1–$5) is the feature, not a bug — it proves they actually mean it.
+    </div>
+  </section>
+
+  <!-- ═══════════════ TAB: UPDATING PROFILE ═══════════════ -->
+  <section id="tab-updating-profile" class="tab-panel" role="tabpanel" aria-labelledby="updating-profile" hidden>
+    <div class="panel-head">
+      <div class="panel-eyebrow">TOPIC 03 · 8 SUB-TOPICS</div>
+      <h2 class="panel-title">Updating My Profile</h2>
+      <p class="panel-intro">Everything you can change about your profile after it's live — bio, work items, screenshots, handle, verification, plan tier, and minted projects.</p>
+    </div>
+
+    <div class="callout callout-orange">
+      <span class="prefix">&gt;</span>All profile editing happens on <span class="mono orange">lastproof.app/manage</span>. Log in with your Terminal ID first — then use the sections in the manage dashboard.
+    </div>
+
+    <!-- 3.1 -->
+    <article class="sub-topic">
+      <div class="sub-topic-grid">
+        <div class="shot">
+          <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · bio</div></div>
+          <div class="shot-placeholder"><div class="shot-icon">✎</div><div class="shot-src">lastproof-dashboard.html</div><div class="dim mono" style="font-size:10px">inline edit</div></div>
+          <div class="shot-caption">Click EDIT on any section to open the inline editor.</div>
+        </div>
+        <div>
+          <h4><span class="num">3.1</span>Editing your bio, pitch, and categories</h4>
+          <div class="sub-topic-copy">
+            <p>Head to /manage. Your bio, pitch, and categories all live in the main profile panel. Click EDIT next to any field to open the inline editor. Changes save instantly — no separate "save" button.</p>
+            <ul>
+              <li><strong>Bio:</strong> 240 chars</li>
+              <li><strong>Pitch:</strong> 500 chars</li>
+              <li><strong>Categories:</strong> pick up to 3 from the preset list (X Growth, Raid Leading, Community Mgmt, Dev, Design, Content)</li>
+            </ul>
+            <div class="step-tip"><b>TIP:</b> Your pitch is what shows on your profile card on the Grid. Treat it like an elevator pitch — 2 sentences max, lead with the most impressive number.</div>
           </div>
         </div>
-      </section>
+      </div>
+    </article>
 
-      <!-- ═══════════════ SECTION 3 — TOPIC HUB ═══════════════ -->
-      <section class="topic-hub">
-        <div class="eyebrow-dim">&gt; WHAT DO YOU NEED HELP WITH?</div>
-        <h2 style="font-size:22px;letter-spacing:-.3px;margin-bottom:8px">Pick a topic.</h2>
-        <div class="topic-grid">
-
-          <a href="#topic-profile-creation" class="topic-card">
-            <span class="icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></span>
-            <h3>Profile Creation</h3>
-            <p>New here? Start from zero — Terminal ID, @handle, first profile.</p>
-            <span class="meta">5 steps · ~5 minutes</span>
-            <span class="arrow">&gt; go to profile creation</span>
-          </a>
-
-          <a href="#topic-verify-work" class="topic-card">
-            <span class="icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9,12 11,14 15,10"/></svg></span>
-            <h3>Verify This Work (Proofs)</h3>
-            <p>Submit a proof on someone else's work — or figure out how to collect proofs on your own.</p>
-            <span class="meta">6 steps · ~2 minutes per proof</span>
-            <span class="arrow">&gt; go to proof flow</span>
-          </a>
-
-          <a href="#topic-updating-profile" class="topic-card">
-            <span class="icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span>
-            <h3>Updating My Profile</h3>
-            <p>Change your bio, add work items, swap your handle, upgrade to paid, verify X/Telegram.</p>
-            <span class="meta">8 sub-topics</span>
-            <span class="arrow">&gt; go to profile editing</span>
-          </a>
-
-          <a href="#topic-profile-status" class="topic-card">
-            <span class="icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg></span>
-            <h3>Profile Status</h3>
-            <p>Active Paid, First 5,000, Free, or Defunct — what each state means, what shows publicly, and how to change state.</p>
-            <span class="meta">4 states · quick reference</span>
-            <span class="arrow">&gt; go to profile status</span>
-          </a>
-
+    <!-- 3.2 -->
+    <article class="sub-topic">
+      <div class="sub-topic-grid">
+        <div class="shot">
+          <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · work items</div></div>
+          <div class="shot-placeholder"><div class="shot-icon">▢</div><div class="shot-src">lastproof-dashboard.html</div><div class="dim mono" style="font-size:10px">+ ADD WORK ITEM</div></div>
+          <div class="shot-caption">Work items are the projects proofs attach to.</div>
         </div>
-        <div class="topic-hub-note">&gt; The Grid launches May 2026 — that's getting its own help section when it goes live.</div>
-      </section>
-
-      <!-- ═══ STICKY ANCHOR NAV ═══ -->
-      <nav class="anchor-nav" aria-label="Help topics">
-        <a href="#topic-profile-creation">&gt; profile creation</a>
-        <a href="#topic-verify-work">&gt; verify work</a>
-        <a href="#topic-updating-profile">&gt; updating profile</a>
-        <a href="#topic-profile-status">&gt; profile status</a>
-        <a href="#faq-global">&gt; faq</a>
-        <a href="#contact">&gt; contact</a>
-      </nav>
-
-      <!-- ═══════════════ TOPIC 1 — PROFILE CREATION ═══════════════ -->
-      <section id="topic-profile-creation">
-        <div class="topic-banner">
-          <span class="topic-number">TOPIC 01 ·</span>
-          <span class="topic-label">PROFILE CREATION</span>
-        </div>
-        <p class="topic-intro">The full flow for a brand-new operator — from zero to a live @handle profile. No email, no password, just a wallet. Every step has a screenshot so you know exactly what to expect.</p>
-
-        <!-- STEP 01 -->
-        <article class="step">
-          <div class="shot">
-            <div class="browser-chrome">
-              <div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div>
-              <div class="browser-url">lastshift.app</div>
-            </div>
-            <div class="shot-placeholder">
-              <div class="shot-icon">▦</div>
-              <div class="shot-src">wireframes/screen1-launch-terminal.html</div>
-              <div class="dim mono" style="font-size:10px">cold-boot wallet-connect</div>
-            </div>
-            <div class="shot-caption">lastshift.app — click CONNECT WALLET</div>
-          </div>
-          <div class="step-body">
-            <div class="step-num">STEP 01</div>
-            <h3 class="step-title">Open the Terminal</h3>
-            <div class="step-copy">
-              <p>Go to <strong>lastshift.app</strong>. That's the suite. Click CONNECT WALLET. Phantom, Solflare, Backpack — any Solana wallet.</p>
-              <a href="https://lastshift.app" target="_blank" rel="noopener" class="btn btn-primary btn-sm">LAUNCH TERMINAL →</a>
-            </div>
-          </div>
-        </article>
-
-        <!-- STEP 02 -->
-        <article class="step">
-          <div class="shot">
-            <div class="browser-chrome">
-              <div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div>
-              <div class="browser-url">lastshift.app/keygen</div>
-            </div>
-            <div class="shot-placeholder">
-              <div class="shot-icon">⌨</div>
-              <div class="shot-src">wireframes/screen2-key-generation.html</div>
-              <div class="dim mono" style="font-size:10px">SHIFT-XXXX-XXXX-XXXX-XXXX</div>
-            </div>
-            <div class="shot-caption">Your Terminal ID. One key. Every tool.</div>
-          </div>
-          <div class="step-body">
-            <div class="step-num">STEP 02</div>
-            <h3 class="step-title">Receive your Terminal ID</h3>
-            <div class="step-copy">
-              <p>The Terminal generates a unique <span class="mono orange">SHIFT-XXXX-XXXX-XXXX-XXXX</span> key. Save it — this is your license for every tool.</p>
-              <div class="step-tip">TIP: Write it down, store it in a password manager, or keep it in a note. You'll need it once per tool, then it's automatic.</div>
-            </div>
-          </div>
-        </article>
-
-        <!-- STEP 03 -->
-        <article class="step">
-          <div class="shot">
-            <div class="browser-chrome">
-              <div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div>
-              <div class="browser-url">lastshift.app/dashboard</div>
-            </div>
-            <div class="shot-placeholder">
-              <div class="shot-icon">▥</div>
-              <div class="shot-src">wireframes/screen3-dashboard.html</div>
-              <div class="dim mono" style="font-size:10px">LAUNCH LASTPROOF highlighted</div>
-            </div>
-            <div class="shot-caption">Terminal dashboard — click LAUNCH LASTPROOF in the sidebar.</div>
-          </div>
-          <div class="step-body">
-            <div class="step-num">STEP 03</div>
-            <h3 class="step-title">Launch LASTPROOF from the Terminal</h3>
-            <div class="step-copy">
-              <p>From the Terminal dashboard, click <strong>LAUNCH LASTPROOF</strong>. It opens lastproof.app in a new tab.</p>
-              <div class="step-note-orange">NOTE: The Terminal stays alive in its own tab — don't close it. Each tool has its own tab and its own session.</div>
-            </div>
-          </div>
-        </article>
-
-        <!-- STEP 04 -->
-        <article class="step">
-          <div class="shot">
-            <div class="browser-chrome">
-              <div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div>
-              <div class="browser-url">lastproof.app/manage</div>
-            </div>
-            <div class="shot-placeholder">
-              <div class="shot-icon">▤</div>
-              <div class="shot-src">wireframes/lastproof-onboarding.html + lastproof-dashboard-fresh.html</div>
-              <div class="dim mono" style="font-size:10px">paste TID → claim @handle</div>
-            </div>
-            <div class="shot-caption">Paste your Terminal ID → claim your @handle.</div>
-          </div>
-          <div class="step-body">
-            <div class="step-num">STEP 04</div>
-            <h3 class="step-title">Register your profile on LASTPROOF</h3>
-            <div class="step-copy">
-              <p>On lastproof.app, paste your Terminal ID to authenticate. Pick your <strong>@handle</strong> (becomes your public URL: <span class="mono orange">lastproof.app/@you</span>). Add your bio, categories, and work history.</p>
-            </div>
-          </div>
-        </article>
-
-        <!-- STEP 05 -->
-        <article class="step">
-          <div class="shot">
-            <div class="browser-chrome">
-              <div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div>
-              <div class="browser-url">lastproof.app/@cryptomark</div>
-            </div>
-            <div class="shot-placeholder">
-              <div class="shot-icon">◉</div>
-              <div class="shot-src">wireframes/lastproof-profile-public.html</div>
-              <div class="dim mono" style="font-size:10px">public profile / shareable artifact</div>
-            </div>
-            <div class="shot-caption">lastproof.app/@you — your on-chain resume. Drop it in any DM.</div>
-          </div>
-          <div class="step-body">
-            <div class="step-num">STEP 05</div>
-            <h3 class="step-title">Share your link and collect proofs</h3>
-            <div class="step-copy">
-              <p>Drop <span class="mono orange">lastproof.app/@you</span> in DMs, bios, proposals. Teammates and devs pay $1 ($5 for DEV) to verify your work on-chain. Your tier grows. Projects find you on the Grid.</p>
-              <div class="step-note-orange">&gt; Proofs are submitted BY SOMEONE ELSE for your work — you can't proof yourself. You share your link; they click VERIFY THIS WORK on a specific project. See the next topic for the full proof flow.</div>
-            </div>
-          </div>
-        </article>
-      </section>
-
-      <!-- ═══════════════ TOPIC 2 — VERIFY THIS WORK ═══════════════ -->
-      <section id="topic-verify-work">
-        <div class="topic-banner">
-          <span class="topic-number">TOPIC 02 ·</span>
-          <span class="topic-label">VERIFY THIS WORK</span>
-        </div>
-        <p class="topic-intro">Proofs are the heart of LASTPROOF. This topic covers both sides: how to submit a proof on someone else's work, and how to get proofs collected on your own profile.</p>
-
-        <h2 class="section-title">&gt; HOW PROOFS WORK — THE 6-STEP FLOW</h2>
-        <p class="dim" style="margin-bottom:18px">If a teammate or project you worked with has a LASTPROOF profile, you can vouch for their work on-chain. No wallet connect, no signing popups — just paste and verify.</p>
-
-        <div class="callout callout-dim">
-          Proofs are paid on-chain transactions on Solana. When you submit one, you're publicly saying "this person actually did this work" — and the $1 ($5 for dev) fee makes the signal meaningful. Your proof gets linked to Solscan permanently. Fake proofs cost real money, so the system self-filters.
-        </div>
-
-        <!-- Proof STEP 01 -->
-        <article class="step">
-          <div class="shot">
-            <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/@handle</div></div>
-            <div class="shot-placeholder">
-              <div class="shot-icon">◑</div>
-              <div class="shot-src">wireframes/lastproof-profile-public.html</div>
-              <div class="dim mono" style="font-size:10px">Proof of Work · VERIFY THIS WORK</div>
-            </div>
-            <div class="shot-caption">VERIFY THIS WORK button — click the project you're vouching for.</div>
-          </div>
-          <div class="step-body">
-            <div class="step-num">STEP 01</div>
-            <h3 class="step-title">Find the work you want to vouch for</h3>
-            <div class="step-copy"><p>Visit the operator's profile (<span class="mono orange">lastproof.app/@handle</span>). Scroll to Proof of Work. Find the specific project or campaign you worked on with them. Click <strong>VERIFY THIS WORK</strong> on that project card.</p></div>
-          </div>
-        </article>
-
-        <!-- Proof STEP 02 -->
-        <article class="step">
-          <div class="shot">
-            <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">proof modal · screen 1</div></div>
-            <div class="shot-placeholder">
-              <div class="shot-icon">▦</div>
-              <div class="shot-src">wireframes/lastproof-proof-modal-v2.html</div>
-              <div class="dim mono" style="font-size:10px">path: Collaborator / Dev</div>
-            </div>
-            <div class="shot-caption">Two paths — Collaborator ($1) or Dev ($5).</div>
-          </div>
-          <div class="step-body">
-            <div class="step-num">STEP 02</div>
-            <h3 class="step-title">Pick your path: Collaborator or Dev</h3>
-            <div class="step-copy">
-              <ul>
-                <li><strong>Collaborator — $1</strong> — teammates, community, anyone who can vouch for the work.</li>
-                <li><strong>Dev — $5</strong> — reserved for project deployer wallets. Earns the operator a DEV badge.</li>
-              </ul>
-              <div class="step-warn">WARNING: The Dev path is verified against the project's actual deployer wallet on-chain. Picking Dev without being the real deployer = you lose the payment, no proof awarded. The system checks.</div>
-            </div>
-          </div>
-        </article>
-
-        <!-- Proof STEP 03 -->
-        <article class="step">
-          <div class="shot">
-            <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">proof modal · screen 2</div></div>
-            <div class="shot-placeholder">
-              <div class="shot-icon">◈</div>
-              <div class="shot-src">wireframes/lastproof-proof-modal-v2.html</div>
-              <div class="dim mono" style="font-size:10px">$LASTSHFT · SOL · USDT</div>
-            </div>
-            <div class="shot-caption">Pay with $LASTSHFT (40% off), SOL, or USDT. USDC not accepted.</div>
-          </div>
-          <div class="step-body">
-            <div class="step-num">STEP 03</div>
-            <h3 class="step-title">Pick your token</h3>
-            <div class="step-copy">
-              <ul>
-                <li><strong class="orange">$LASTSHFT</strong> — 40% off. Cheapest path. Contributes to the 25% burn.</li>
-                <li><strong>SOL</strong> — full price.</li>
-                <li><strong>USDT</strong> — full price.</li>
-              </ul>
-              <div class="step-note-orange">NOTE: USDC is not supported. Check your wallet has one of the 3 tokens before starting.</div>
-            </div>
-          </div>
-        </article>
-
-        <!-- Proof STEP 04 -->
-        <article class="step">
-          <div class="shot">
-            <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">proof modal · screen 3</div></div>
-            <div class="shot-placeholder">
-              <div class="shot-icon">⎘</div>
-              <div class="shot-src">wireframes/lastproof-proof-modal-v2.html</div>
-              <div class="dim mono" style="font-size:10px">copy address / copy amount</div>
-            </div>
-            <div class="shot-caption">Copy address. Copy exact amount. Send from your wallet.</div>
-          </div>
-          <div class="step-body">
-            <div class="step-num">STEP 04</div>
-            <h3 class="step-title">Copy the address + exact amount, then send</h3>
-            <div class="step-copy">
-              <p>The modal shows the destination address (copy button), the exact amount in your chosen token (copy button), and instructions to open your Solana wallet and send that exact amount to that address.</p>
-              <div class="step-note-orange">IMPORTANT: Amount must be EXACT. $1.00 not $1.01. The webhook matches on the cent. Wrong amount = not credited.</div>
-              <div class="step-tip">ANTI-SCAM: The transaction must happen AFTER you open this modal. Old transactions don't count — prevents scammers from reusing a paid TX for multiple proofs.</div>
-            </div>
-          </div>
-        </article>
-
-        <!-- Proof STEP 05 -->
-        <article class="step">
-          <div class="shot">
-            <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">proof modal · screen 4</div></div>
-            <div class="shot-placeholder">
-              <div class="shot-icon">▣</div>
-              <div class="shot-src">wireframes/lastproof-proof-modal-v2.html</div>
-              <div class="dim mono" style="font-size:10px">paste TX · 140-char comment</div>
-            </div>
-            <div class="shot-caption">Paste your TX signature. Add an optional 140-char comment.</div>
-          </div>
-          <div class="step-body">
-            <div class="step-num">STEP 05</div>
-            <h3 class="step-title">Paste the TX signature + add a comment</h3>
-            <div class="step-copy">
-              <ol>
-                <li>Copy the transaction signature from your wallet (usually a "Signature" field after confirming).</li>
-                <li>Paste it into the modal.</li>
-                <li>Add a short comment (optional, up to 140 chars) — e.g. "@kellen ran our Tier 1 raid team for 6 months. Real one."</li>
-              </ol>
-              <div class="step-tip">TIP: Comments build social proof. Proofs with personalized comments hit harder than blank ones.</div>
-            </div>
-          </div>
-        </article>
-
-        <!-- Proof STEP 06 -->
-        <article class="step">
-          <div class="shot">
-            <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">proof modal · screen 5</div></div>
-            <div class="shot-placeholder">
-              <div class="shot-icon">✓</div>
-              <div class="shot-src">wireframes/lastproof-proof-modal-v2.html</div>
-              <div class="dim mono" style="font-size:10px">cascade · receipt · solscan</div>
-            </div>
-            <div class="shot-caption">1-5 second verification via Helius. Then the receipt.</div>
-          </div>
-          <div class="step-body">
-            <div class="step-num">STEP 06</div>
-            <h3 class="step-title">Watch it verify + see the receipt</h3>
-            <div class="step-copy">
-              <p>Backend verifies in <strong class="green">1-5 seconds</strong> via the Helius webhook. You'll see a terminal-style cascade of checks:</p>
-              <div class="callout callout-dim" style="font-family:var(--mono);font-size:12px">
-                <div class="green">&gt; Transaction found on-chain ✓</div>
-                <div class="green">&gt; Amount matches ✓</div>
-                <div class="green">&gt; Token matches ✓</div>
-                <div class="green">&gt; Not self-proof ✓</div>
-                <div class="green">&gt; Dev verification passed ✓ <span class="dim">(Dev path only)</span></div>
-                <div class="green">&gt; Proof recorded</div>
-              </div>
-              <p>Then a receipt screen with a Solscan link to the transaction. Reload the profile page — your proof is now on the operator's profile permanently.</p>
-              <div class="step-tip">FALLBACK: If the Helius webhook is slow or fails, a cron job picks it up within 60 seconds. No refresh loop — the modal handles it.</div>
-            </div>
-          </div>
-        </article>
-
-        <!-- COLLECTING PROOFS -->
-        <h2 class="section-title">&gt; HOW TO REQUEST PROOFS FOR YOUR OWN WORK</h2>
-        <p class="dim" style="margin-bottom:18px">You can't proof yourself. Here's how to actually collect them.</p>
-
-        <div class="topic-grid" style="grid-template-columns:1fr 1fr">
-          <div class="eco-card">
-            <h4 class="card-title">TACTIC 1</h4>
-            <h3 class="sub-title">Share your profile link after every project</h3>
-            <p class="eco-body">When a project wraps — raid ends, campaign ships, contract finishes — send the project lead your <span class="mono orange">lastproof.app/@you</span> link with a one-liner: "Would mean a lot if you dropped a proof on my @handle profile for the [project name] work." Most devs say yes if you ask.</p>
-          </div>
-          <div class="eco-card">
-            <h4 class="card-title">TACTIC 2</h4>
-            <h3 class="sub-title">Target Dev Proofs (the $5 ones)</h3>
-            <p class="eco-body">DEV Proofs are the most valuable — they come from the project's actual deployer wallet. Ask the founder or head dev specifically. One DEV Proof is worth 10 regular proofs in credibility signal. It's also the only way to earn the DEV badge.</p>
-          </div>
-          <div class="eco-card">
-            <h4 class="card-title">TACTIC 3</h4>
-            <h3 class="sub-title">Batch the ask</h3>
-            <p class="eco-body">Hit up 5-10 past collaborators in one week, not spread out. Your profile goes from 0 to 5 proofs fast, which pushes you past TIER 1 (0+) to TIER 2 (10+) → TIER 3 (25+) in momentum. Profiles with momentum convert teams better than profiles with one old proof.</p>
-          </div>
-          <div class="eco-card">
-            <h4 class="card-title">TACTIC 4</h4>
-            <h3 class="sub-title">Be specific about which project</h3>
-            <p class="eco-body">Don't send "hey proof me." Send "hey, can you drop a proof on the $BONK raid campaign card from Aug 2024? <span class="mono orange">lastproof.app/@you</span>, scroll to Proof of Work, the card says $BONK Raid Commander." Lower the friction.</p>
+        <div>
+          <h4><span class="num">3.2</span>Adding and editing work items</h4>
+          <div class="sub-topic-copy">
+            <p>Work items are individual projects or campaigns. Each gets its own card with title, role, period, description, and a VERIFY THIS WORK button that collaborators click to proof you.</p>
+            <ol>
+              <li>In /manage, scroll to "Proof of Work" and click <strong>+ ADD WORK ITEM</strong>.</li>
+              <li>Fill in: ticker/project name, role, start + end dates, description (280 chars).</li>
+              <li>Save.</li>
+              <li>Card appears on your public profile immediately, ready to collect proofs.</li>
+            </ol>
+            <div class="step-warn"><b>IMPORTANT:</b> Work items with at least one proof are LOCKED — you can't edit or delete them. This protects what proofers vouched for. Plan the title/role/description before the first proof lands.</div>
           </div>
         </div>
+      </div>
+    </article>
 
-        <div class="callout callout-green" style="margin-top:14px">
-          <span class="prefix">&gt;</span>Proofs are social capital. The cost to the other person ($1-$5) is the feature, not a bug — it proves they actually mean it.
+    <!-- 3.3 -->
+    <article class="sub-topic">
+      <div class="sub-topic-grid">
+        <div class="shot">
+          <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · screenshots</div></div>
+          <div class="shot-placeholder"><div class="shot-icon">⊞</div><div class="shot-src">lastproof-dashboard.html</div><div class="dim mono" style="font-size:10px">JPG/PNG · max 5MB</div></div>
+          <div class="shot-caption">Drop JPG/PNG. Max 5MB per file.</div>
         </div>
-      </section>
-
-      <!-- ═══════════════ TOPIC 3 — UPDATING MY PROFILE ═══════════════ -->
-      <section id="topic-updating-profile">
-        <div class="topic-banner">
-          <span class="topic-number">TOPIC 03 ·</span>
-          <span class="topic-label">UPDATING MY PROFILE</span>
+        <div>
+          <h4><span class="num">3.3</span>Uploading screenshots</h4>
+          <div class="sub-topic-copy">
+            <p>Screenshots are visual proof — analytics dashboards, raid results, campaign metrics. Upload from the "Screenshots" section of /manage.</p>
+            <ul>
+              <li>Up to 10 screenshots per profile</li>
+              <li>JPG or PNG, max 5MB each</li>
+              <li>Caption optional (120 chars)</li>
+            </ul>
+            <div class="step-warn"><b>TIP:</b> Anonymize sensitive data before uploading — redact wallet addresses, DMs, anything private. Screenshots are public.</div>
+          </div>
         </div>
-        <p class="topic-intro">Everything you can change about your profile after it's live — bio, work items, screenshots, handle, verification badges, plan tier, and minted projects.</p>
+      </div>
+    </article>
 
-        <div class="callout callout-orange">
-          <span class="prefix">&gt;</span>All profile editing happens on <span class="mono orange">lastproof.app/manage</span>. Log in with your Terminal ID first — then use the sections in the manage dashboard.
+    <!-- 3.4 -->
+    <article class="sub-topic">
+      <div class="sub-topic-grid">
+        <div class="shot">
+          <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · links</div></div>
+          <div class="shot-placeholder"><div class="shot-icon">⎔</div><div class="shot-src">lastproof-dashboard.html</div><div class="dim mono" style="font-size:10px">up to 5 links</div></div>
+          <div class="shot-caption">Add up to 5 links. X and Telegram can be verified.</div>
         </div>
-
-        <!-- 3.1 -->
-        <article class="sub-topic">
-          <div class="sub-topic-grid">
-            <div class="shot">
-              <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · bio</div></div>
-              <div class="shot-placeholder"><div class="shot-icon">✎</div><div class="shot-src">lastproof-dashboard.html</div><div class="dim mono" style="font-size:10px">inline edit</div></div>
-              <div class="shot-caption">Click EDIT on any section to open the inline editor.</div>
-            </div>
-            <div>
-              <h4><span class="num">3.1</span>Editing your bio, pitch, and categories</h4>
-              <div class="sub-topic-copy">
-                <p>Head to /manage. Your bio, pitch, and categories all live in the main profile panel. Click EDIT next to any field to open the inline editor. Changes save instantly — no separate "save" button.</p>
-                <ul>
-                  <li>Bio: 240 chars</li>
-                  <li>Pitch: 500 chars</li>
-                  <li>Categories: pick up to 3 from the preset list (X Growth, Raid Leading, Community Mgmt, Dev, Design, Content)</li>
-                </ul>
-                <div class="step-tip">TIP: Your pitch is what shows on your profile card on the Grid. Treat it like an elevator pitch — 2 sentences max, lead with the most impressive number.</div>
-              </div>
-            </div>
+        <div>
+          <h4><span class="num">3.4</span>Adding links (X, Telegram, LinkedIn, website)</h4>
+          <div class="sub-topic-copy">
+            <p>Links appear on your public profile as clickable icons. Add them from the "Links" section of /manage.</p>
+            <ul>
+              <li>X / Twitter (verifiable → adds badge)</li>
+              <li>Telegram (verifiable → adds badge)</li>
+              <li>LinkedIn</li>
+              <li>Personal website</li>
+              <li>GitHub</li>
+              <li>Additional link (custom label)</li>
+            </ul>
+            <p class="dim">Max: 5 links total.</p>
           </div>
-        </article>
-
-        <!-- 3.2 -->
-        <article class="sub-topic">
-          <div class="sub-topic-grid">
-            <div class="shot">
-              <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · work items</div></div>
-              <div class="shot-placeholder"><div class="shot-icon">▢</div><div class="shot-src">lastproof-dashboard.html</div><div class="dim mono" style="font-size:10px">+ ADD WORK ITEM</div></div>
-              <div class="shot-caption">Work items are the projects proofs attach to.</div>
-            </div>
-            <div>
-              <h4><span class="num">3.2</span>Adding and editing work items</h4>
-              <div class="sub-topic-copy">
-                <p>Work items are individual projects or campaigns. Each gets its own card with title, role, period, description, and a VERIFY THIS WORK button that collaborators click to proof you.</p>
-                <ol>
-                  <li>In /manage, scroll to "Proof of Work" and click <strong>+ ADD WORK ITEM</strong>.</li>
-                  <li>Fill in: ticker/project name, your role, start + end dates, description (280 chars).</li>
-                  <li>Save.</li>
-                  <li>Card appears on your public profile immediately, ready to collect proofs.</li>
-                </ol>
-                <div class="step-warn">IMPORTANT: Work items with at least one proof are LOCKED — you can't edit or delete them. This protects the integrity of what proofers vouched for. Plan the title/role/description carefully before the first proof lands.</div>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <!-- 3.3 -->
-        <article class="sub-topic">
-          <div class="sub-topic-grid">
-            <div class="shot">
-              <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · screenshots</div></div>
-              <div class="shot-placeholder"><div class="shot-icon">⊞</div><div class="shot-src">lastproof-dashboard.html</div><div class="dim mono" style="font-size:10px">JPG/PNG · max 5MB</div></div>
-              <div class="shot-caption">Drop JPG/PNG. Max 5MB per file.</div>
-            </div>
-            <div>
-              <h4><span class="num">3.3</span>Uploading screenshots</h4>
-              <div class="sub-topic-copy">
-                <p>Screenshots are visual proof — analytics dashboards, raid results, campaign metrics — attached to your profile. Upload from the "Screenshots" section of /manage.</p>
-                <ul>
-                  <li>Up to 10 screenshots per profile</li>
-                  <li>JPG or PNG, max 5MB each</li>
-                  <li>Caption optional (120 chars)</li>
-                </ul>
-                <div class="step-warn">TIP: Anonymize sensitive data before uploading — redact wallet addresses, DMs, anything private. Screenshots are public on your profile.</div>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <!-- 3.4 -->
-        <article class="sub-topic">
-          <div class="sub-topic-grid">
-            <div class="shot">
-              <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · links</div></div>
-              <div class="shot-placeholder"><div class="shot-icon">⎔</div><div class="shot-src">lastproof-dashboard.html</div><div class="dim mono" style="font-size:10px">up to 5 links</div></div>
-              <div class="shot-caption">Add up to 5 links. X and Telegram can be verified.</div>
-            </div>
-            <div>
-              <h4><span class="num">3.4</span>Adding links (X, Telegram, LinkedIn, website)</h4>
-              <div class="sub-topic-copy">
-                <p>Links appear on your public profile as clickable icons. Add them from the "Links" section of /manage.</p>
-                <ul>
-                  <li>X / Twitter (verifiable → adds badge)</li>
-                  <li>Telegram (verifiable → adds badge)</li>
-                  <li>LinkedIn</li>
-                  <li>Personal website</li>
-                  <li>GitHub</li>
-                  <li>Additional link (custom label)</li>
-                </ul>
-                <p class="dim">Max: 5 links total.</p>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <!-- 3.5 -->
-        <article class="sub-topic">
-          <div class="sub-topic-grid">
-            <div class="shot">
-              <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · handle change</div></div>
-              <div class="shot-placeholder"><div class="shot-icon">↻</div><div class="shot-src">lastproof-profile-public.html + handle-change-modal</div><div class="dim mono" style="font-size:10px">paid · paste-verify</div></div>
-              <div class="shot-caption">Your handle is your public URL. Changing it is a paid action.</div>
-            </div>
-            <div>
-              <h4><span class="num">3.5</span>Changing your @handle</h4>
-              <div class="sub-topic-copy">
-                <p>Your @handle is the permanent URL for your profile (<span class="mono orange">lastproof.app/@you</span>). Changing it is paid — to prevent squatting and keep old links meaningful for 30 days.</p>
-                <ol>
-                  <li>In /manage, go to Profile Settings → Change Handle.</li>
-                  <li>Check availability of the new handle.</li>
-                  <li>Pay via the same 3-token paste-verify flow ($LASTSHFT, SOL, or USDT).</li>
-                  <li>New handle activates immediately.</li>
-                </ol>
-                <div class="callout callout-orange" style="margin-top:10px">
-                  <strong>Cost:</strong> $100 in SOL or USDT, or <strong class="orange">$60 in $LASTSHFT</strong> (40% off — same discount applies across the whole platform).
-                </div>
-                <ul>
-                  <li>Old handle held in reserve for <strong>30 days</strong> (not claimable by anyone else).</li>
-                  <li>After 30 days, old handle released back to the pool.</li>
-                  <li>Anyone hitting your old URL gets redirected to the new one during the 30-day window.</li>
-                  <li>Proofs, tier, DEV badge carry over — only the URL changes.</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <!-- 3.6 -->
-        <article class="sub-topic">
-          <div class="sub-topic-grid">
-            <div class="shot">
-              <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · verify X + TG</div></div>
-              <div class="shot-placeholder"><div class="shot-icon">✓</div><div class="shot-src">lastproof-profile-public.html</div><div class="dim mono" style="font-size:10px">verification badge</div></div>
-              <div class="shot-caption">Green checkmark on your profile = verified identity.</div>
-            </div>
-            <div>
-              <h4><span class="num">3.6</span>Verifying X and Telegram (Verification Badge)</h4>
-              <div class="sub-topic-copy">
-                <p>Verifying your X and Telegram accounts earns you the Verification Badge — a green checkmark on your public profile. Optional but adds credibility.</p>
-                <p><strong>X flow:</strong> add X link in /manage → click VERIFY → post pre-formatted tweet (we provide the text with a one-time token) → return and click "I've posted it" — badge applies.</p>
-                <p><strong>Telegram flow:</strong> add TG handle → click VERIFY → DM <span class="mono orange">@LastShiftAuthBot</span> (sends one-time code) → paste back in /manage — badge applies.</p>
-                <div class="step-tip">NOTE: Both verifications required for the full Verification Badge. One of two = partial badge.</div>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <!-- 3.7 -->
-        <article class="sub-topic">
-          <div class="sub-topic-grid">
-            <div class="shot">
-              <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · upgrade modal</div></div>
-              <div class="shot-placeholder"><div class="shot-icon">↑</div><div class="shot-src">lastproof-upgrade-modal.html</div><div class="dim mono" style="font-size:10px">$10/mo · $6 $LASTSHFT</div></div>
-              <div class="shot-caption">Paid tier unlocks Grid visibility, tier progression, DEV badge.</div>
-            </div>
-            <div>
-              <h4><span class="num">3.7</span>Upgrading to paid / reactivating</h4>
-              <div class="sub-topic-copy">
-                <p>Free profiles are limited — not findable on the Grid, no tier, no DEV badge, no proofs visible publicly. Upgrade to paid ($10/mo or $6 in $LASTSHFT) to unlock the full profile.</p>
-                <ol>
-                  <li>In /manage, click UPGRADE.</li>
-                  <li>Pick a token ($LASTSHFT 40% off, SOL, or USDT).</li>
-                  <li>Same paste-verify flow as proofs — copy address, send exact amount, paste TX.</li>
-                  <li>Upgrade activates in 1-5 seconds via the Helius webhook.</li>
-                </ol>
-                <div class="callout callout-green">
-                  <strong>First 5,000 note:</strong> if you're in the EA campaign, your profile is free until 30 days after Grid launch (2026-06-07). No payment needed yet — warning + Telegram reminder 3 days before auto-conversion.
-                </div>
-                <p><strong>Reactivating (after a downgrade):</strong> same flow. Pay, features come back instantly.</p>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <!-- 3.8 -->
-        <article class="sub-topic">
-          <div class="sub-topic-grid">
-            <div class="shot">
-              <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · mint modal</div></div>
-              <div class="shot-placeholder"><div class="shot-icon">◈</div><div class="shot-src">lastproof-mint-modal.html</div><div class="dim mono" style="font-size:10px">$1 · MINTED badge</div></div>
-              <div class="shot-caption">Minted projects pin to the top of your profile.</div>
-            </div>
-            <div>
-              <h4><span class="num">3.8</span>Minting projects (paid — pin your best work)</h4>
-              <div class="sub-topic-copy">
-                <p>Minted projects are your portfolio's greatest hits. Pinned to the top of your Proof of Work section, separate from recent work. Marked with a gold MINTED badge.</p>
-                <p><strong>Cost:</strong> $1 per mint, same 3-token paste-verify flow.</p>
-                <ol>
-                  <li>In /manage → Proof of Work, find the work item.</li>
-                  <li>Click MINT on that card.</li>
-                  <li>Pay in the Mint modal — pick token, send, paste TX.</li>
-                  <li>Item gets the MINTED badge, pins to top.</li>
-                </ol>
-                <div class="step-tip">NOTE: Minting is additive — it doesn't change the underlying work item or its proofs. You can mint a work item with 0 or 50 proofs. The MINT badge is purely curatorial — "I'm proud of this one."</div>
-              </div>
-            </div>
-          </div>
-        </article>
-      </section>
-
-      <!-- ═══════════════ TOPIC 4 — PROFILE STATUS ═══════════════ -->
-      <section id="topic-profile-status">
-        <div class="topic-banner">
-          <span class="topic-number">TOPIC 04 ·</span>
-          <span class="topic-label">PROFILE STATUS</span>
         </div>
-        <p class="topic-intro">Your LASTPROOF profile lives in one of four states. Each has different rules — what shows publicly, what you can edit, what you pay, and how to get to the next state. Here's the full map.</p>
+      </div>
+    </article>
 
-        <!-- 4.0 at-a-glance -->
-        <h2 class="section-title">&gt; STATUS AT A GLANCE</h2>
-        <div class="state-glance">
+    <!-- 3.5 -->
+    <article class="sub-topic">
+      <div class="sub-topic-grid">
+        <div class="shot">
+          <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · handle change</div></div>
+          <div class="shot-placeholder"><div class="shot-icon">↻</div><div class="shot-src">handle-change-modal</div><div class="dim mono" style="font-size:10px">$100 or $60 $LASTSHFT</div></div>
+          <div class="shot-caption">Your handle is your public URL. Changing it is paid.</div>
+        </div>
+        <div>
+          <h4><span class="num">3.5</span>Changing your @handle</h4>
+          <div class="sub-topic-copy">
+            <p>Your @handle is the permanent URL for your profile (<span class="mono orange">lastproof.app/@you</span>). Changing it is paid — to prevent squatting and keep old links meaningful.</p>
+            <ol>
+              <li>In /manage, go to Profile Settings → Change Handle.</li>
+              <li>Check availability of the new handle.</li>
+              <li>Pay via the 3-token paste-verify flow.</li>
+              <li>New handle activates immediately.</li>
+            </ol>
+            <div class="callout callout-orange" style="margin-top:10px">
+              <strong>Cost:</strong> $100 in SOL or USDT, or <strong class="orange">$60 in $LASTSHFT</strong> (40% off — same discount applies across the whole platform).
+            </div>
+            <ul>
+              <li>Old handle held in reserve for <strong>30 days</strong>, then released back to the pool</li>
+              <li>Old URL redirects to the new one during that window</li>
+              <li>Proofs, tier, DEV badge carry over — only the URL changes</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- 3.6 -->
+    <article class="sub-topic">
+      <div class="sub-topic-grid">
+        <div class="shot">
+          <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · verify X + TG</div></div>
+          <div class="shot-placeholder"><div class="shot-icon">✓</div><div class="shot-src">lastproof-profile-public.html</div><div class="dim mono" style="font-size:10px">verification badge</div></div>
+          <div class="shot-caption">Green checkmark on your profile = verified identity.</div>
+        </div>
+        <div>
+          <h4><span class="num">3.6</span>Verifying X and Telegram</h4>
+          <div class="sub-topic-copy">
+            <p>Verifying your X and Telegram earns the Verification Badge — a green checkmark on your public profile. Optional but adds credibility.</p>
+            <p><strong>X:</strong> add X link in /manage → click VERIFY → post pre-formatted tweet (we provide text + one-time token) → click "I've posted it." Badge applies.</p>
+            <p><strong>Telegram:</strong> add TG handle → click VERIFY → DM <span class="mono orange">@LastShiftAuthBot</span> (sends code) → paste code back in /manage. Badge applies.</p>
+            <div class="step-tip"><b>NOTE:</b> Both verifications needed for the full badge. One of two = partial badge.</div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- 3.7 -->
+    <article class="sub-topic">
+      <div class="sub-topic-grid">
+        <div class="shot">
+          <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · upgrade</div></div>
+          <div class="shot-placeholder"><div class="shot-icon">↑</div><div class="shot-src">lastproof-upgrade-modal.html</div><div class="dim mono" style="font-size:10px">$10/mo · $6 $LASTSHFT</div></div>
+          <div class="shot-caption">Paid tier unlocks Grid visibility, tier progression, DEV badge.</div>
+        </div>
+        <div>
+          <h4><span class="num">3.7</span>Upgrading to paid / reactivating</h4>
+          <div class="sub-topic-copy">
+            <p>Free profiles are limited — not findable on the Grid, no tier, no DEV badge, no proofs visible publicly. Upgrade to paid ($10/mo or $6 in $LASTSHFT) to unlock the full profile.</p>
+            <ol>
+              <li>In /manage, click UPGRADE.</li>
+              <li>Pick a token ($LASTSHFT 40% off, SOL, or USDT).</li>
+              <li>Same paste-verify flow as proofs.</li>
+              <li>Upgrade activates in 1–5 seconds via the Helius webhook.</li>
+            </ol>
+            <div class="callout callout-green">
+              <strong>First 5,000 note:</strong> if you're in the EA campaign, your profile is free until 30 days after Grid launch (2026-06-07). Telegram reminder 3 days before auto-conversion.
+            </div>
+            <p><strong>Reactivating:</strong> same flow. Pay, features come back instantly.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- 3.8 -->
+    <article class="sub-topic">
+      <div class="sub-topic-grid">
+        <div class="shot">
+          <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · mint</div></div>
+          <div class="shot-placeholder"><div class="shot-icon">◈</div><div class="shot-src">lastproof-mint-modal.html</div><div class="dim mono" style="font-size:10px">$1 · MINTED badge</div></div>
+          <div class="shot-caption">Minted projects pin to the top of your profile.</div>
+        </div>
+        <div>
+          <h4><span class="num">3.8</span>Minting projects (paid — pin your best work)</h4>
+          <div class="sub-topic-copy">
+            <p>Minted projects are your portfolio's greatest hits. Pinned to the top of your Proof of Work section, separate from recent work. Marked with a gold MINTED badge.</p>
+            <p><strong>Cost:</strong> $1 per mint, same 3-token paste-verify flow.</p>
+            <ol>
+              <li>In /manage → Proof of Work, find the work item.</li>
+              <li>Click MINT on that card.</li>
+              <li>Pay in the Mint modal.</li>
+              <li>Item gets the MINTED badge, pins to top.</li>
+            </ol>
+            <div class="step-tip"><b>NOTE:</b> Minting is additive — doesn't change the underlying work item or its proofs. Pure curation — "I'm proud of this one."</div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Two wallets explainer (contextual here) -->
+    <div class="sec-label">TWO WALLETS? HERE'S WHY</div>
+    <p class="dim">When paying for any of the above, you can use a different wallet than your identity wallet.</p>
+    <div class="card-grid">
+      <div class="mini-card">
+        <div class="card-eyebrow">TERMINAL WALLET · YOUR IDENTITY</div>
+        <h4>The wallet you connect to lastshift.app</h4>
+        <p>One Terminal ID per wallet. Use the wallet you're comfortable being recognized by.</p>
+      </div>
+      <div class="mini-card">
+        <div class="card-eyebrow">TOOL WALLET · WHO PAYS</h4></div>
+        <h4>Any wallet you want to pay from</h4>
+        <p>When paying for subscriptions, mints, or handle changes, you can pay from ANY wallet. Burner, treasury, whatever. Tools care about: valid Terminal ID + any wallet sending a valid TX.</p>
+      </div>
+    </div>
+    <div class="callout callout-dim">
+      <span class="prefix">&gt;</span>The wallet gets you into the Terminal. The Terminal ID gets you into each tool. The tool wallet is just who's paying.
+    </div>
+  </section>
+
+  <!-- ═══════════════ TAB: PROFILE STATUS ═══════════════ -->
+  <section id="tab-profile-status" class="tab-panel" role="tabpanel" aria-labelledby="profile-status" hidden>
+    <div class="panel-head">
+      <div class="panel-eyebrow">TOPIC 04 · 4 STATES · QUICK REFERENCE</div>
+      <h2 class="panel-title">Profile Status</h2>
+      <p class="panel-intro">Your LASTPROOF profile lives in one of four states. Each has different rules — what shows publicly, what you can edit, what you pay, and how to move between states.</p>
+    </div>
+
+    <div class="sec-label">STATUS AT A GLANCE</div>
+    <div class="state-glance">
 <pre>STATE              COLOR        ON PROFILE CARD         PAYING?
 ─────────────      ────────     ───────────────         ────────
 <span class="c-green">ACTIVE PAID</span>        <span class="c-green">green</span>        "ACTIVE" pill           yes — $10/mo (or $6 in $LASTSHFT)
 <span class="c-gold">FIRST 5,000 (EA)</span>   <span class="c-gold">gold</span>         "EA" ribbon + pill      not yet — free until 30d post-Grid
 <span class="c-silver">FREE</span>               <span class="c-silver">silver</span>       "FREE" pill             no — profile is view-limited
 <span class="c-red">DEFUNCT</span>            <span class="c-red">red</span>          "DEFUNCT" pill          no — 90+ days no payment / activity</pre>
-        </div>
-        <p class="dim" style="margin-top:10px">ACTIVE PAID and FIRST 5,000 render the full profile. FREE and DEFUNCT render stripped-down versions. Upgrading brings everything back instantly — your data is never deleted.</p>
+    </div>
+    <p class="dim" style="margin-top:10px">ACTIVE PAID and FIRST 5,000 render the full profile. FREE and DEFUNCT render stripped-down versions. Upgrading brings everything back instantly — your data is never deleted.</p>
 
-        <!-- 4.1 ACTIVE PAID -->
-        <div class="state-card active-paid">
-          <span class="state-badge active-paid">ACTIVE PAID</span>
-          <div class="state-grid">
-            <div class="shot">
-              <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/@you</div></div>
-              <div class="shot-placeholder"><div class="shot-icon">◉</div><div class="shot-src">lastproof-profile-public.html</div><div class="dim mono" style="font-size:10px">full profile</div></div>
-              <div class="shot-caption">Everything on. This is what the Grid sees.</div>
-            </div>
-            <div class="details">
-              <p class="what-means"><strong class="green">What it means:</strong> You're on a paid subscription in good standing. $10/mo or $6 in $LASTSHFT. Full feature access.</p>
-              <h5>What shows publicly</h5>
-              <ul>
-                <li>Full profile: avatar, handle, bio, pitch, categories</li>
-                <li>Tier badge (TIER 1–4 based on proof count)</li>
-                <li>HIRE button (green) — sends DM to your Telegram</li>
-                <li>All work items + attached proofs, DEV badge (if any DEV Proofs)</li>
-                <li>Screenshots, links, verification badge (if X + TG verified)</li>
-                <li>Grid visibility post-launch (May 2026), searchable by devs and teams</li>
-              </ul>
-              <h5>What you can do</h5>
-              <ul>
-                <li>Edit everything in /manage</li>
-                <li>Receive proofs ($1 standard, $5 DEV)</li>
-                <li>Change your handle ($100 or $60 $LASTSHFT)</li>
-                <li>Mint projects ($1 each)</li>
-                <li>Verify X + Telegram</li>
-              </ul>
-              <p style="margin-top:12px"><strong>Get here:</strong> pay via /manage → UPGRADE PROFILE, OR get credited during First 5,000.</p>
-              <p><strong>Leave:</strong> stop paying (lapses to FREE at subscription expiry), or don't log in for 90+ days (drops to DEFUNCT).</p>
-            </div>
+    <!-- ACTIVE PAID -->
+    <div class="state-card active-paid">
+      <span class="state-badge active-paid">ACTIVE PAID</span>
+      <h3>Active Paid</h3>
+      <div class="state-grid">
+        <div class="shot">
+          <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/@you</div></div>
+          <div class="shot-placeholder"><div class="shot-icon">◉</div><div class="shot-src">lastproof-profile-public.html</div><div class="dim mono" style="font-size:10px">full profile</div></div>
+          <div class="shot-caption">Everything on. This is what the Grid sees.</div>
+        </div>
+        <div class="details">
+          <p class="what-means"><strong class="green">What it means:</strong> On a paid subscription in good standing. $10/mo or $6 in $LASTSHFT. Full feature access.</p>
+          <h5>What shows publicly</h5>
+          <ul>
+            <li>Full profile: avatar, handle, bio, pitch, categories</li>
+            <li>Tier badge (TIER 1–4 based on proof count)</li>
+            <li>HIRE button — sends DM to your Telegram</li>
+            <li>All work items + attached proofs, DEV badge if any</li>
+            <li>Screenshots, links, verification badge</li>
+            <li>Grid visibility post-launch (May 2026)</li>
+          </ul>
+          <h5>What you can do</h5>
+          <ul>
+            <li>Edit everything in /manage</li>
+            <li>Receive proofs ($1 standard, $5 DEV)</li>
+            <li>Change handle ($100 or $60 $LASTSHFT)</li>
+            <li>Mint projects ($1 each)</li>
+            <li>Verify X + Telegram</li>
+          </ul>
+          <p style="margin-top:12px"><strong>Get here:</strong> pay via /manage → UPGRADE PROFILE, or get credited during First 5,000.<br><strong>Leave:</strong> stop paying → lapses to FREE; 90+ days no login → drops to DEFUNCT.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FIRST 5,000 -->
+    <div class="state-card ea">
+      <span class="state-badge ea">FIRST 5,000 · EA</span>
+      <h3>First 5,000 (Early Access)</h3>
+      <div class="state-grid">
+        <div class="shot">
+          <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/@you</div></div>
+          <div class="shot-placeholder"><div class="shot-icon">★</div><div class="shot-src">lastproof-profile-5000.html</div><div class="dim mono" style="font-size:10px">gold ribbon + countdown</div></div>
+          <div class="shot-caption">Full profile + gold early-access ribbon + countdown.</div>
+        </div>
+        <div class="details">
+          <p class="what-means"><strong class="gold">What it means:</strong> You claimed a spot before the Grid launched. Full Active Paid features — free until 30 days after Grid launch (2026-06-07).</p>
+          <h5>What shows publicly</h5>
+          <ul>
+            <li>Everything ACTIVE PAID shows, plus:</li>
+            <li>Gold EA ribbon / badge</li>
+            <li>FOMO countdown timer (post Grid-launch) showing days until auto-conversion</li>
+          </ul>
+          <div class="callout callout-red" style="margin-top:10px">
+            <span class="prefix">&gt;</span><strong>Timing:</strong> the 30-day free window starts at <strong>GRID LAUNCH (2026-05-08)</strong>, not at claim time. If you claimed 2026-05-01, your window is "May 8 → June 7," not "May 1 → May 31." 30 days from launch day, always.
+          </div>
+          <div class="callout callout-orange">
+            <span class="prefix">&gt;</span>3 days before your EA window closes, we send a Telegram reminder via <span class="mono">@LastShiftAuthBot</span>. Add a Telegram handle so we can reach you.
+          </div>
+          <p><strong>Leave:</strong> don't pay by 2026-06-07 → drops to FREE. URL, handle, bio stay. Proofs + tier + DEV badge + Grid visibility go dark until you reactivate.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FREE -->
+    <div class="state-card free">
+      <span class="state-badge free">FREE</span>
+      <h3>Free</h3>
+      <div class="state-grid">
+        <div class="shot">
+          <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/@you</div></div>
+          <div class="shot-placeholder"><div class="shot-icon">◌</div><div class="shot-src">lastproof-profile-free.html</div><div class="dim mono" style="font-size:10px">stripped · identity only</div></div>
+          <div class="shot-caption">Identity only. No tier, no Hire button, no proofs visible.</div>
+        </div>
+        <div class="details">
+          <p class="what-means"><strong class="dim">What it means:</strong> Profile exists but isn't paying. Never upgraded, or subscription lapsed (not in the EA window). View-limited publicly.</p>
+          <h5>What shows publicly</h5>
+          <ul>
+            <li>Avatar, name, handle, bio, location/timezone, language</li>
+            <li><strong>Hidden:</strong> tier bar, HIRE button, proofs, DEV badge, screenshots, links, verification badge, Grid visibility</li>
+          </ul>
+          <h5>What you can do in /manage</h5>
+          <ul>
+            <li>Edit bio, pitch, categories (always)</li>
+            <li>GET VERIFIED is locked — no new proofs received</li>
+            <li>Cannot change handle, mint, or receive proofs</li>
+            <li>Can browse the Grid — just can't be found on it</li>
+          </ul>
+          <div class="callout callout-dim">
+            <strong>Why "GET VERIFIED" is locked:</strong> the proof system only runs on a paid profile. Upgrade to unlock the whole proof side.
+          </div>
+          <p><strong>Leave:</strong> /manage → UPGRADE PROFILE → pay. Hidden features return instantly.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEFUNCT -->
+    <div class="state-card defunct">
+      <span class="state-badge defunct">DEFUNCT</span>
+      <h3>Defunct</h3>
+      <div class="state-grid">
+        <div class="shot">
+          <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/manage</div></div>
+          <div class="shot-placeholder"><div class="shot-icon">◎</div><div class="shot-src">lastproof-dashboard.html · .status-pill.defunct</div><div class="dim mono" style="font-size:10px">red pill · 90+ days</div></div>
+          <div class="shot-caption">Red "DEFUNCT" pill. 90+ days no payment + no login.</div>
+        </div>
+        <div class="details">
+          <p class="what-means"><strong class="red">What it means:</strong> No paid subscription AND no account activity for 90+ days. Profile is dormant.</p>
+          <h5>What shows publicly</h5>
+          <ul>
+            <li>Same as FREE (identity only)</li>
+            <li>May display a dim "DEFUNCT" marker so visitors don't waste Hire DMs on abandoned accounts</li>
+          </ul>
+          <h5>How to leave</h5>
+          <ul>
+            <li><strong>Log in</strong> — any /manage access pulls you back to FREE automatically</li>
+            <li><strong>Pay</strong> — jumps to ACTIVE PAID</li>
+          </ul>
+          <div class="callout callout-orange">
+            <span class="prefix">&gt;</span>Defunct is a liveness signal, not a punishment. Profile, handle, bio, historic proofs — all intact. We never delete.
           </div>
         </div>
+      </div>
+    </div>
 
-        <!-- 4.2 FIRST 5,000 (EA) -->
-        <div class="state-card ea">
-          <span class="state-badge ea">FIRST 5,000 · EA</span>
-          <div class="state-grid">
-            <div class="shot">
-              <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/@you</div></div>
-              <div class="shot-placeholder"><div class="shot-icon">★</div><div class="shot-src">lastproof-profile-5000.html</div><div class="dim mono" style="font-size:10px">gold ribbon + countdown</div></div>
-              <div class="shot-caption">Full profile + gold early-access ribbon + countdown timer.</div>
-            </div>
-            <div class="details">
-              <p class="what-means"><strong class="gold">What it means:</strong> You claimed a spot in the First 5,000 campaign before the Grid launched. Full Active Paid profile — free until 30 days after Grid launch (2026-06-07).</p>
-              <h5>What shows publicly</h5>
-              <ul>
-                <li>Everything an ACTIVE PAID profile shows, plus:</li>
-                <li>Gold EA ribbon / badge marking you as early</li>
-                <li>FOMO countdown timer (post Grid-launch) showing days until auto-conversion</li>
-              </ul>
-              <div class="callout callout-red" style="margin-top:10px">
-                <span class="prefix">&gt;</span><strong>Timing:</strong> the 30-day free window starts at <strong>GRID LAUNCH (2026-05-08)</strong>, not at the time you claimed. If you claimed on 2026-05-01, your window is NOT "May 1 → May 31" — it's "May 8 → June 7." You get 30 days from launch day. Plan accordingly.
-              </div>
-              <div class="callout callout-orange">
-                <span class="prefix">&gt;</span>3 days before your EA window closes, we send a Telegram reminder via <span class="mono">@LastShiftAuthBot</span> + in-app banner. Add a real Telegram handle so we can reach you.
-              </div>
-              <p><strong>Leave:</strong> don't pay by 2026-06-07 → drops to FREE. URL, handle, bio, photo stay. Proofs + tier + DEV badge + Grid visibility go dark until you reactivate.</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- 4.3 FREE -->
-        <div class="state-card free">
-          <span class="state-badge free">FREE</span>
-          <div class="state-grid">
-            <div class="shot">
-              <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/@you</div></div>
-              <div class="shot-placeholder"><div class="shot-icon">◌</div><div class="shot-src">lastproof-profile-free.html</div><div class="dim mono" style="font-size:10px">stripped view · identity only</div></div>
-              <div class="shot-caption">Identity only. No tier, no Hire button, no proofs visible.</div>
-            </div>
-            <div class="details">
-              <p class="what-means"><strong class="dim">What it means:</strong> Profile exists but isn't paying. Never upgraded, or subscription lapsed and not in the EA window. View-limited publicly. Data never deleted.</p>
-              <h5>What shows publicly</h5>
-              <ul>
-                <li>Avatar, name, handle, bio, location/timezone, language</li>
-                <li><strong>Hidden:</strong> tier bar, HIRE button, proofs, DEV badge, screenshots, links, verification badge, Grid visibility</li>
-              </ul>
-              <h5>What you can do in /manage</h5>
-              <ul>
-                <li>Edit bio, pitch, categories (always)</li>
-                <li>View existing proofs internally — but the GET VERIFIED card is locked, no new proofs received</li>
-                <li>Cannot change handle, mint, or receive proofs</li>
-                <li>Can browse the Grid (when live) for free — just can't be found on it</li>
-              </ul>
-              <div class="callout callout-dim">
-                <strong>Why "GET VERIFIED" is locked:</strong> the proof system only runs on a paid profile. Free profiles can be seen but can't collect or show proofs publicly. Upgrade to unlock the whole proof side.
-              </div>
-              <p><strong>Get here:</strong> never upgraded past wallet-connect; EA window closed without paying; or subscription expired.</p>
-              <p><strong>Leave:</strong> /manage → UPGRADE PROFILE → pay. Subscription flips on instantly, hidden features return.</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- 4.4 DEFUNCT -->
-        <div class="state-card defunct">
-          <span class="state-badge defunct">DEFUNCT</span>
-          <div class="state-grid">
-            <div class="shot">
-              <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/manage</div></div>
-              <div class="shot-placeholder"><div class="shot-icon">◎</div><div class="shot-src">lastproof-dashboard.html · .status-pill.defunct</div><div class="dim mono" style="font-size:10px">red pill · 90+ days</div></div>
-              <div class="shot-caption">Red "DEFUNCT" pill. 90+ days no payment + no login.</div>
-            </div>
-            <div class="details">
-              <p class="what-means"><strong class="red">What it means:</strong> No paid subscription AND no account activity for 90+ days. Profile is dormant.</p>
-              <h5>What shows publicly</h5>
-              <ul>
-                <li>Same as FREE (identity only)</li>
-                <li>May display a dim "DEFUNCT" marker on the profile card — signals to visitors this operator isn't active. Keeps Hire DMs from going to abandoned accounts.</li>
-              </ul>
-              <h5>How to leave</h5>
-              <ul>
-                <li><strong>Log in</strong> — any /manage access pulls you back to FREE automatically</li>
-                <li><strong>Pay</strong> — jumps to ACTIVE PAID</li>
-              </ul>
-              <div class="callout callout-orange">
-                <span class="prefix">&gt;</span>Defunct is a liveness signal, not a punishment. Your profile, handle, bio, and historic proofs are ALL intact — we never delete. The state just tells visitors "this operator hasn't been around in a while" so they don't waste a Hire DM on someone who left the space.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 4.5 Transition diagram -->
-        <h2 class="section-title">&gt; STATE TRANSITIONS AT A GLANCE</h2>
-        <div class="transition-diagram">
+    <!-- Transition diagram -->
+    <div class="sec-label">STATE TRANSITIONS AT A GLANCE</div>
+    <div class="transition-diagram">
 <pre>              [ new wallet ]
                     │
          connects via Terminal (lastshift.app)
@@ -1117,461 +1076,482 @@
               ┌─────────────┐
               │   DEFUNCT   │ ──── log in ──► FREE
               └─────────────┘ ──── upgrade ──► ACTIVE PAID</pre>
-        </div>
+    </div>
 
-        <!-- 4.6 Cost matrix -->
-        <h2 class="section-title">&gt; WHAT EACH STATE COSTS</h2>
-        <table class="cost-table">
-          <thead>
-            <tr>
-              <th>State</th>
-              <th>Subscription</th>
-              <th>Handle change</th>
-              <th>Proofs (paid by verifier)</th>
-              <th>DEV proofs</th>
-              <th>Mint</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>ACTIVE PAID</td><td>$10/mo (SOL/USDT) or $6 $LASTSHFT</td><td>$100 or $60 $LASTSHFT</td><td>$1</td><td>$5</td><td>$1</td></tr>
-            <tr><td>FIRST 5,000</td><td>$0 until 2026-06-07, then $10/mo</td><td>$100 or $60 $LASTSHFT</td><td>$1</td><td>$5</td><td>$1</td></tr>
-            <tr><td>FREE</td><td>$0 (can't receive proofs)</td><td>locked</td><td>n/a</td><td>n/a</td><td>locked</td></tr>
-            <tr><td>DEFUNCT</td><td>$0 (reactivate to unlock)</td><td>locked</td><td>n/a</td><td>n/a</td><td>locked</td></tr>
-          </tbody>
-        </table>
-        <div class="callout callout-green">
-          <span class="prefix">&gt;</span>$LASTSHFT gets you 40% off every paid action on the platform — subscription, handle change, mint, proof. Same discount everywhere.
-        </div>
+    <!-- Cost matrix -->
+    <div class="sec-label">WHAT EACH STATE COSTS</div>
+    <table class="cost-table">
+      <thead>
+        <tr>
+          <th>State</th>
+          <th>Subscription</th>
+          <th>Handle change</th>
+          <th>Proofs (paid by verifier)</th>
+          <th>DEV proofs</th>
+          <th>Mint</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>ACTIVE PAID</td><td>$10/mo (SOL/USDT) or $6 $LASTSHFT</td><td>$100 or $60 $LASTSHFT</td><td>$1</td><td>$5</td><td>$1</td></tr>
+        <tr><td>FIRST 5,000</td><td>$0 until 2026-06-07, then $10/mo</td><td>$100 or $60 $LASTSHFT</td><td>$1</td><td>$5</td><td>$1</td></tr>
+        <tr><td>FREE</td><td>$0 (can't receive proofs)</td><td>locked</td><td>n/a</td><td>n/a</td><td>locked</td></tr>
+        <tr><td>DEFUNCT</td><td>$0 (reactivate to unlock)</td><td>locked</td><td>n/a</td><td>n/a</td><td>locked</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-green">
+      <span class="prefix">&gt;</span>$LASTSHFT gets you 40% off every paid action on the platform — subscription, handle change, mint, proof. Same discount everywhere.
+    </div>
 
-        <!-- 4.7 Tier × state -->
-        <h2 class="section-title">&gt; TIER × PROFILE STATE INTERACTION</h2>
-        <div class="callout callout-orange">
-          <span class="prefix">&gt;</span>Tier is a function of (paid state) × (proof count). A FREE profile with 100 proofs still has NO tier — it's hidden, not lost. Upgrade and it returns with the correct number based on current proof count.
-        </div>
-        <div class="tier-ladder">
+    <!-- Tier × state -->
+    <div class="sec-label">TIER × PROFILE STATE INTERACTION</div>
+    <div class="callout callout-orange">
+      <span class="prefix">&gt;</span>Tier is a function of (paid state) × (proof count). A FREE profile with 100 proofs still has NO tier — it's hidden, not lost. Upgrade and it returns with the correct number based on your current proof count.
+    </div>
+    <div class="tier-ladder">
 <span class="t1">TIER 1 · NEW          →  0+  proofs   silver</span>
 <span class="t2">TIER 2 · VERIFIED     →  10+ proofs   bronze</span>
 <span class="t3">TIER 3 · EXPERIENCED  →  25+ proofs   gold</span>
 <span class="t4">TIER 4 · LEGEND       →  50+ proofs   purple</span>
+    </div>
+    <p class="dim" style="margin-top:10px">Tier is never shown as a bare number — always "TIER N · NAME." Internally a Tier 5 sentinel means "off the ladder" (not paid / not published) — you'll never see it in UI.</p>
+  </section>
+
+  <!-- ═══════════════ TAB: FAQ ═══════════════ -->
+  <section id="tab-faq" class="tab-panel" role="tabpanel" aria-labelledby="faq" hidden>
+    <div class="panel-head">
+      <div class="panel-eyebrow">TOPIC 05 · 33 QUESTIONS</div>
+      <h2 class="panel-title">Frequently Asked Questions</h2>
+      <p class="panel-intro">Quick answers to the most common questions across all topics. Click any question to expand.</p>
+    </div>
+
+    <div class="faq-search">
+      <input type="search" placeholder="Search questions... (e.g. &quot;defunct&quot;, &quot;wrong amount&quot;, &quot;terminal id&quot;)" id="faq-search-input" aria-label="Search FAQ">
+    </div>
+
+    <div class="faq-list" id="faq-list">
+
+      <details class="faq" open>
+        <summary>I don't have a Terminal ID. How do I get one?</summary>
+        <div class="faq-body">
+          <p>Head to <strong>lastshift.app</strong> (the Terminal) and connect your Solana wallet. It auto-generates your Terminal ID in about 30 seconds — no email, no password, no KYC. Save the key, then come back here.</p>
+          <a href="https://lastshift.app" target="_blank" rel="noopener" class="btn btn-primary btn-sm">LAUNCH TERMINAL →</a>
         </div>
-        <p class="dim" style="margin-top:10px">Tier is never shown as a bare number — always "TIER N · NAME." Internally there's a Tier 5 sentinel meaning "off the ladder" (not paid / not published) — you'll never see it in UI.</p>
-      </section>
+      </details>
 
-      <!-- ═══════════════ FAQ ═══════════════ -->
-      <section id="faq-global">
-        <h2 class="section-title">&gt; FREQUENTLY ASKED QUESTIONS</h2>
-        <p class="dim" style="margin-bottom:18px">Quick answers to the most common questions across all topics. Click any question to expand.</p>
-
-        <div class="faq-list">
-
-          <details class="faq" open>
-            <summary>I don't have a Terminal ID. How do I get one?</summary>
-            <div class="faq-body">
-              <p>Head to <strong>lastshift.app</strong> (the Terminal) and connect your Solana wallet. It auto-generates your Terminal ID in about 30 seconds — no email, no password, no KYC. Save the key, then come back here.</p>
-              <a href="https://lastshift.app" target="_blank" rel="noopener" class="btn btn-primary btn-sm">LAUNCH TERMINAL →</a>
-            </div>
-          </details>
-
-          <details class="faq" open>
-            <summary>Why are there two websites? Why can't I just sign up on LASTPROOF?</summary>
-            <div class="faq-body">
-              <p>Because LASTPROOF is one tool in a bigger suite. Same reason you don't sign up for Microsoft Word directly — you sign into Microsoft's system (Office 365), which gives you access to Word, Excel, PowerPoint, etc. One identity, many tools. The Terminal is our Office 365. LASTPROOF is our Word.</p>
-            </div>
-          </details>
-
-          <details class="faq" open>
-            <summary>What's a Terminal ID, exactly?</summary>
-            <div class="faq-body">
-              <p>A license key formatted <span class="mono orange">SHIFT-XXXX-XXXX-XXXX-XXXX</span>. Think of it like a Windows product key. Paste it into each tool once to register, then it authenticates you automatically. One key works for every tool in the LASTSHIFT suite.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>Is it free?</summary>
-            <div class="faq-body">
-              <p>Getting your Terminal ID is <strong>free</strong>. LASTPROOF: during the First 5,000 early-access campaign, your profile is <strong>free until 30 days after the Grid launches</strong> (2026-06-07). After that it's $10/mo ($6 in $LASTSHFT). Proofs cost $1 (paid by the verifier), DEV proofs $5.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>I connected my wallet but the page says "Operator not found in local registry."</summary>
-            <div class="faq-body">
-              <div class="shot" style="max-width:300px">
-                <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/manage</div></div>
-                <div class="shot-placeholder"><div class="shot-icon">⚠</div><div class="shot-src">/manage error state</div><div class="dim mono" style="font-size:10px">[NO REGISTRY MATCH]</div></div>
-                <div class="shot-caption">The exact error you're looking at.</div>
-              </div>
-              <p>That means your wallet hasn't been registered with a Terminal ID yet.</p>
-              <ol>
-                <li>Go to <strong>lastshift.app</strong>, connect the same wallet, and get your Terminal ID.</li>
-                <li>Come back here and paste your Terminal ID.</li>
-              </ol>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>Can I use a different wallet to pay than the one I use to log in?</summary>
-            <div class="faq-body">
-              <p>Yes. Your Terminal wallet is your identity — it's how we know it's you. But when paying for subscriptions, proofs, or handle changes, you can pay from ANY wallet. Burner, treasury, whatever. Tools care about: valid Terminal ID + any wallet sending a valid transaction.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>I regenerated my Terminal ID in the Terminal. Now LASTPROOF rejects my old key.</summary>
-            <div class="faq-body">
-              <p>That's by design. Regenerating invalidates your old key <strong>instantly across all tools</strong> — it's how you revoke a compromised key. Paste the new Terminal ID on /manage to re-authenticate.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>I lost my Terminal ID. Can I recover it?</summary>
-            <div class="faq-body">
-              <p>Connect the same wallet at lastshift.app — the Terminal dashboard shows your current ID. If you've lost the wallet too, you can't recover — your wallet is your identity. This is standard web3 custody.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>What wallets are supported?</summary>
-            <div class="faq-body">
-              <p>Phantom, Solflare, and Backpack. More coming.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>What's the difference between a Proof and a DEV Proof?</summary>
-            <div class="faq-body">
-              <ul>
-                <li><strong>Proof ($1)</strong> — any collaborator, teammate, or community member vouches for your work on-chain.</li>
-                <li><strong>DEV Proof ($5)</strong> — a project's <strong>deployer wallet</strong> vouches for you. Cryptographically proven — the actual team verified your work. Earns the DEV badge, the strongest trust signal on the platform.</li>
-              </ul>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>Can I proof myself?</summary>
-            <div class="faq-body">
-              <p>No. Self-proofing is blocked — the system compares the paying wallet against the profile's Terminal wallet. If they match, you lose the payment and no proof is awarded. Proofs only have meaning because someone ELSE vouches for you.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>Do I need to connect my wallet to submit a proof?</summary>
-            <div class="faq-body">
-              <p><strong>No.</strong> As of V3 (shipped April 2026), proofs are wallet-free. You just open your Solana wallet (Phantom, Solflare, Backpack), send the exact amount to the address shown, paste the transaction signature into the modal, and you're done. No wallet connect popups, no signing prompts on lastproof.app itself. Works on any browser, any device.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>How long does proof verification take?</summary>
-            <div class="faq-body">
-              <p><strong class="green">1-5 seconds</strong> in the normal case. We run a Helius webhook that watches incoming transactions and credits them immediately. If the webhook is slow or misses, a cron fallback picks it up within 60 seconds. Either way — no refresh needed, the modal updates itself.</p>
-            </div>
-          </details>
-
-          <details class="faq" id="faq-payment-stuck">
-            <summary>I sent the payment but nothing happened. What went wrong?</summary>
-            <div class="faq-body">
-              <p>Most common causes:</p>
-              <ul>
-                <li><strong>Wrong amount.</strong> Must be exact to the cent. $1.00 not $1.01.</li>
-                <li><strong>Wrong token.</strong> Only $LASTSHFT, SOL, or USDT. USDC not supported.</li>
-                <li><strong>TX before modal opened.</strong> Anti-scam protection — transaction must be timestamped AFTER you opened the proof modal.</li>
-                <li><strong>Self-proof.</strong> You paid from the profile owner's own Terminal wallet — auto-rejected.</li>
-                <li><strong>Duplicate.</strong> You already proofed this specific work item with this wallet (1 wallet = 1 proof per work item).</li>
-              </ul>
-              <p>If none of those apply, DM us with the transaction signature and we'll investigate.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>I picked "Dev" but I'm not the deployer — what happens?</summary>
-            <div class="faq-body">
-              <p>You lose the payment. The post-payment check compares the sending wallet against the project's actual deployer wallet on-chain. No match = no proof, no refund. Only pick Dev if you're actually the deployer.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>I'm on Android and Phantom keeps opening LASTPROOF inside its in-app browser — I'm stuck.</summary>
-            <div class="faq-body">
-              <p>This is a known Phantom-on-Android issue. <strong>The V3 paste-verify flow is designed to work around it.</strong> You don't need to stay on lastproof.app while paying:</p>
-              <ol>
-                <li>In Phantom's browser, open the proof modal and copy the destination address + exact amount.</li>
-                <li>Switch back to the Phantom wallet view and send from there.</li>
-                <li>Copy the TX signature.</li>
-                <li>Return to the LASTPROOF tab and paste the signature. Done.</li>
-              </ol>
-              <p>No wallet connect, no deep-linking popup. Works even inside the Phantom IAB.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>I approved a payment in Phantom but it took a while and now it says "blockhash expired."</summary>
-            <div class="faq-body">
-              <p>Solana transactions have a ~60-90 second window before the blockhash expires. If you took too long to review and approve, the blockhash died and the broadcast failed. The <strong>transaction was never sent</strong> — you weren't charged.</p>
-              <p><strong>Fix:</strong> close the proof modal and start over. Be quick when approving — Phantom's review screen has all the info you need.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>Phantom says "This dApp could be malicious" when I try to pay. Should I panic?</summary>
-            <div class="faq-body">
-              <p>No. That's a cosmetic warning Phantom shows for any domain not yet on their verified-domain list. It doesn't mean anything is wrong — we haven't submitted for verification yet. You can safely proceed; the transaction is standard.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>I sent the wrong token or wrong amount. What now?</summary>
-            <div class="faq-body">
-              <ul>
-                <li><strong>Wrong amount:</strong> Must be exact to the cent. Mismatch = no proof credited. <strong>Funds aren't lost</strong> — they're in our treasury. DM support with the TX signature and we'll manually credit or refund.</li>
-                <li><strong>Wrong token:</strong> USDC isn't supported. Same deal — DM support. Don't resend a second TX hoping it'll work; open a ticket first.</li>
-              </ul>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>I don't see LASTPROOF as a tool in my Terminal dashboard — the "LAUNCH LASTPROOF" button is missing.</summary>
-            <div class="faq-body">
-              <p>Refresh once. If LASTPROOF is still missing from the sidebar at lastshift.app, your wallet may not have completed Terminal ID issuance. Disconnect and reconnect — triggers re-provisioning. Still missing? Contact support with your wallet address (first 4 + last 4).</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>My profile shows "DEFUNCT." What does that mean?</summary>
-            <div class="faq-body">
-              <p>You haven't paid AND you haven't logged in for 90+ days. It's a liveness flag — not a ban. Your data, handle, bio, and past proofs are all intact. Log into /manage (pulls you back to FREE), then upgrade to return to ACTIVE PAID.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>My First 5,000 profile just expired and dropped to FREE. Can I get my tier back?</summary>
-            <div class="faq-body">
-              <p>Yes. Pay the subscription ($10/mo or $6 in $LASTSHFT) from /manage and everything comes back instantly — tier, DEV badge, Grid visibility, proofs. Your proof count never resets, only its visibility.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>When exactly does my First 5,000 free window end?</summary>
-            <div class="faq-body">
-              <p><strong>2026-06-07</strong> — 30 days after the Grid launches on 2026-05-08. The clock starts at Grid launch, <strong>NOT</strong> at the time you claimed. Whether you claimed in February or the day before launch, you get 30 days from May 8. Plan accordingly.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>I got a Telegram message from @LastShiftAuthBot about my First 5,000 profile expiring. Is this real?</summary>
-            <div class="faq-body">
-              <p>Yes. 3 days before your EA free window closes, we send a reminder via <span class="mono">@LastShiftAuthBot</span>. If you have a Telegram handle on your profile, it goes to that. If not, we can only nudge via the in-app banner. <strong>Add a Telegram handle to your profile now if you want the reminder.</strong></p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>Why does my free profile look so empty compared to others?</summary>
-            <div class="faq-body">
-              <p>Free profiles are deliberately stripped-down to encourage upgrading. Only identity shows — no tier, no proofs, no HIRE button, no DEV badge, no Grid visibility. It's not a penalty; it's the free tier. Upgrade to unlock everything — your existing data renders fully again.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>I was on ACTIVE PAID but now I'm FREE. What happened?</summary>
-            <div class="faq-body">
-              <p>Your subscription expired. The system checks each day for lapsed subscriptions and flips them to FREE. You were NOT charged again — billing is manual (pay-to-extend, not auto-renew). Renew from /manage when you're ready; all features return.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>What's $LASTSHFT and do I need it?</summary>
-            <div class="faq-body">
-              <p>$LASTSHFT is the ecosystem's native token. You don't <em>need</em> it — SOL and USDT work too. But paying with $LASTSHFT gets you <strong class="orange">40% off</strong> everything. 25% of every transaction in $LASTSHFT, SOL, or USDT is permanently burned from the supply.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>Why don't you accept USDC?</summary>
-            <div class="faq-body">
-              <p>We support SOL, USDT, and $LASTSHFT. USDC is intentionally not supported at this time.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>Do you store my wallet's private keys? My email?</summary>
-            <div class="faq-body">
-              <p><strong>No.</strong> We never see your private keys — wallet signing happens in your wallet app, not on our servers. We don't collect email by default. Your handle and profile metadata are the only identifiers we store.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>What if I just want to browse profiles, not create one?</summary>
-            <div class="faq-body">
-              <p>You don't need a Terminal ID for that. The Grid (launching May 2026) is <strong>free to browse</strong>. Click through profiles, click Hire on anyone — no login, no account, no fees.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>How do I hire someone?</summary>
-            <div class="faq-body">
-              <p>On any profile, click the <strong>Hire</strong> button. It sends a DM directly to the operator's Telegram. No platform fee on the connection. No middleman.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>Is my profile permanent if I stop paying?</summary>
-            <div class="faq-body">
-              <p>Your URL stays. Your handle, bio, and photo stay. But when you go off the paid tier, your <strong>proofs, tier, DEV badge, and Grid visibility go dark</strong> until you reactivate. Your data is never deleted.</p>
-            </div>
-          </details>
-
-          <details class="faq">
-            <summary>Can I change my handle?</summary>
-            <div class="faq-body">
-              <p>Yes — there's a Handle Change flow in /manage. $100 in SOL/USDT or <strong class="orange">$60 in $LASTSHFT</strong> (40% off). Your old handle is released back to the pool after 30 days.</p>
-            </div>
-          </details>
-
+      <details class="faq" open>
+        <summary>Why are there two websites? Why can't I just sign up on LASTPROOF?</summary>
+        <div class="faq-body">
+          <p>Because LASTPROOF is one tool in a bigger suite. Same reason you don't sign up for Microsoft Word directly — you sign into Microsoft's system (Office 365), which gives you access to Word, Excel, PowerPoint. One identity, many tools. The Terminal is our Office 365. LASTPROOF is our Word.</p>
         </div>
-      </section>
+      </details>
 
-      <!-- ═══════════════ REFERENCE MATERIAL ═══════════════ -->
-      <section id="ref-stack">
-        <div class="ref-banner">
-          <span class="ref-label">REFERENCE MATERIAL</span>
-          <span class="dim">Quick references for the stack, Terminal ID, and wallet model. Read if you're curious about how it all fits.</span>
+      <details class="faq" open>
+        <summary>What's a Terminal ID, exactly?</summary>
+        <div class="faq-body">
+          <p>A license key formatted <span class="mono orange">SHIFT-XXXX-XXXX-XXXX-XXXX</span>. Think of it like a Windows product key. Paste it into each tool once to register, then it authenticates you automatically. One key works for every tool in the LASTSHIFT suite.</p>
         </div>
+      </details>
 
-        <h2 class="section-title">&gt; THE STACK — IN PLAIN ENGLISH</h2>
-        <p class="dim">If you've used Microsoft products, you already understand this.</p>
-        <div class="stack-compare">
-<span class="lbl">MICROSOFT STACK                  LASTSHIFT STACK
-───────────────                  ───────────────</span>
-<span class="co">Microsoft</span>            <span class="arrow-mono">→</span>           <span class="co">LASTSHIFT.AI</span>
-<span class="lbl">  (the company)</span>                    <span class="lbl">  (the company / ecosystem)</span>
-
-<span class="co">Office 365</span>           <span class="arrow-mono">→</span>           <span class="co">LASTSHIFT TERMINAL</span>
-<span class="lbl">  (the product suite)</span>              <span class="lbl">  (the product suite)</span>
-
-<span class="co">Word</span>                 <span class="arrow-mono">→</span>           <span class="co">LASTPROOF</span>
-<span class="lbl">  (one tool in the suite)</span>          <span class="lbl">  (one tool in the suite)</span>
-
-<span class="co">USD</span>                  <span class="arrow-mono">→</span>           <span class="co">$LASTSHFT</span>
-<span class="lbl">  (how you pay)</span>                    <span class="lbl">  (how you pay — 40% off)</span>
+      <details class="faq">
+        <summary>Is it free?</summary>
+        <div class="faq-body">
+          <p>Getting your Terminal ID is <strong>free</strong>. LASTPROOF: during the First 5,000 early-access campaign, your profile is <strong>free until 30 days after the Grid launches</strong> (2026-06-07). After that it's $10/mo ($6 in $LASTSHFT). Proofs cost $1 (paid by the verifier), DEV proofs $5.</p>
         </div>
-        <div class="stack-quick">
-          <span class="orange">LASTSHIFT.AI → LASTSHIFT TERMINAL → LASTPROOF</span><br>
-          <span class="dim">Same pattern as Microsoft → Office 365 → Word. That's it.</span>
-        </div>
+      </details>
 
-        <h2 class="section-title">&gt; WHAT EACH PIECE DOES</h2>
-        <div class="eco-grid">
-          <div class="eco-card">
-            <div class="eyebrow-dim">THE ECOSYSTEM</div>
-            <h4 class="sub-title">LASTSHIFT.AI</h4>
-            <div class="eco-url">lastshift.ai</div>
-            <div class="eco-body">The parent company. Home of the roadmap, brand, and $LASTSHFT token. You don't log in here — it's the front door.</div>
-            <a href="https://lastshift.ai" target="_blank" rel="noopener" class="inline-cta">Visit lastshift.ai →</a>
+      <details class="faq">
+        <summary>I connected my wallet but the page says "Operator not found in local registry."</summary>
+        <div class="faq-body">
+          <div class="shot" style="max-width:300px">
+            <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/manage</div></div>
+            <div class="shot-placeholder"><div class="shot-icon">⚠</div><div class="shot-src">/manage error state</div><div class="dim mono" style="font-size:10px">[NO REGISTRY MATCH]</div></div>
+            <div class="shot-caption">The exact error you're looking at.</div>
           </div>
-          <div class="eco-card">
-            <div class="eyebrow-dim">THE PRODUCT SUITE</div>
-            <h4 class="sub-title">LASTSHIFT TERMINAL</h4>
-            <div class="eco-url">lastshift.app</div>
-            <div class="eco-body">Your dashboard for everything. The Terminal issues your Terminal ID — one license key that unlocks every tool. Connect your wallet once, use it across the whole stack.</div>
-            <a href="https://lastshift.app" target="_blank" rel="noopener" class="inline-cta">Open the Terminal →</a>
-          </div>
-          <div class="eco-card">
-            <div class="eyebrow-dim">THE FIRST TOOL</div>
-            <h4 class="sub-title two-tone"><span class="last">LAST</span><span class="proof">PROOF</span></h4>
-            <div class="eco-url">lastproof.app</div>
-            <div class="eco-body">The pseudonymous on-chain resume for web3 marketers. Collect paid verifications, earn tiers, land hires. The first tool live in the Terminal.</div>
-            <a href="/manage" class="inline-cta">Build your profile →</a>
-          </div>
-          <div class="eco-card">
-            <div class="eyebrow-dim">THE CURRENCY</div>
-            <h4 class="sub-title">$LASTSHFT</h4>
-            <div class="eco-url">on Solana</div>
-            <div class="eco-body">The ecosystem token. Pay for any tool or proof with $LASTSHFT and get 40% off. SOL and USDT also accepted at full price. USDC not supported.</div>
-            <a href="#" class="inline-cta">Buy on Jupiter →</a>
-          </div>
+          <p>That means your wallet hasn't been registered with a Terminal ID yet.</p>
+          <ol>
+            <li>Go to <strong>lastshift.app</strong>, connect the same wallet, get your Terminal ID.</li>
+            <li>Come back here and paste your Terminal ID.</li>
+          </ol>
         </div>
+      </details>
 
-        <h2 class="section-title">&gt; YOUR TERMINAL ID — THE KEY TO EVERYTHING</h2>
-        <div class="tid-display">SHIFT-XXXX-XXXX-XXXX-XXXX</div>
-        <p>Your Terminal ID is a license key issued by the Terminal at lastshift.app. It looks like a Windows product key. One key. Every tool.</p>
-        <ul class="tid-bullets">
-          <li><span class="chk">✓</span> Issued once — free, wallet-only, takes 30 seconds</li>
-          <li><span class="chk">✓</span> Works across every tool in the suite (LASTPROOF, and more coming)</li>
-          <li><span class="chk">✓</span> Regenerate anytime from the Terminal — old key instantly revoked</li>
+      <details class="faq">
+        <summary>Can I use a different wallet to pay than the one I use to log in?</summary>
+        <div class="faq-body">
+          <p>Yes. Your Terminal wallet is your identity — it's how we know it's you. When paying for subscriptions, proofs, or handle changes, you can pay from ANY wallet. Burner, treasury, whatever. Tools care about: valid Terminal ID + any wallet sending a valid transaction.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>I regenerated my Terminal ID in the Terminal. Now LASTPROOF rejects my old key.</summary>
+        <div class="faq-body">
+          <p>That's by design. Regenerating invalidates your old key <strong>instantly across all tools</strong> — it's how you revoke a compromised key. Paste the new Terminal ID on /manage to re-authenticate.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>I lost my Terminal ID. Can I recover it?</summary>
+        <div class="faq-body">
+          <p>Connect the same wallet at lastshift.app — the Terminal dashboard shows your current ID. If you've lost the wallet too, you can't recover — your wallet is your identity. Standard web3 custody.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>What wallets are supported?</summary>
+        <div class="faq-body"><p>Phantom, Solflare, and Backpack. More coming.</p></div>
+      </details>
+
+      <details class="faq">
+        <summary>What's the difference between a Proof and a DEV Proof?</summary>
+        <div class="faq-body">
+          <ul>
+            <li><strong>Proof ($1)</strong> — any collaborator, teammate, or community member vouches for your work on-chain.</li>
+            <li><strong>DEV Proof ($5)</strong> — a project's <strong>deployer wallet</strong> vouches for you. Cryptographically proven. Earns the DEV badge — the strongest trust signal.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>Can I proof myself?</summary>
+        <div class="faq-body">
+          <p>No. Self-proofing is blocked — the system compares the paying wallet against the profile's Terminal wallet. If they match, you lose the payment and no proof is awarded. Proofs only have meaning because someone ELSE vouches for you.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>Do I need to connect my wallet to submit a proof?</summary>
+        <div class="faq-body">
+          <p><strong>No.</strong> As of V3 (shipped April 2026), proofs are wallet-free. Open your Solana wallet (Phantom, Solflare, Backpack), send the exact amount to the address shown, paste the transaction signature into the modal, done. No wallet connect popups, no signing prompts on lastproof.app.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>How long does proof verification take?</summary>
+        <div class="faq-body">
+          <p><strong class="green">1–5 seconds</strong> in the normal case via the Helius webhook. If the webhook is slow, a cron fallback picks it up within 60 seconds. No refresh needed — the modal updates itself.</p>
+        </div>
+      </details>
+
+      <details class="faq" id="faq-payment-stuck">
+        <summary>I sent the payment but nothing happened. What went wrong?</summary>
+        <div class="faq-body">
+          <p>Most common causes:</p>
+          <ul>
+            <li><strong>Wrong amount.</strong> Must be exact to the cent. $1.00 not $1.01.</li>
+            <li><strong>Wrong token.</strong> Only $LASTSHFT, SOL, or USDT. USDC not supported.</li>
+            <li><strong>TX before modal opened.</strong> Anti-scam protection — TX must be timestamped AFTER you opened the proof modal.</li>
+            <li><strong>Self-proof.</strong> Paid from the profile owner's own Terminal wallet — auto-rejected.</li>
+            <li><strong>Duplicate.</strong> Already proofed this work item with this wallet (1 wallet = 1 proof per work item).</li>
+          </ul>
+          <p>If none apply, DM support with the transaction signature.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>I picked "Dev" but I'm not the deployer — what happens?</summary>
+        <div class="faq-body">
+          <p>You lose the payment. The post-payment check compares the sending wallet against the project's actual deployer wallet on-chain. No match = no proof, no refund. Only pick Dev if you're actually the deployer.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>I'm on Android and Phantom keeps opening LASTPROOF inside its in-app browser — I'm stuck.</summary>
+        <div class="faq-body">
+          <p>Known Phantom-on-Android issue. <strong>The V3 paste-verify flow is designed to work around it.</strong></p>
+          <ol>
+            <li>In Phantom's browser, open the proof modal and copy the destination address + exact amount.</li>
+            <li>Switch to the Phantom wallet view and send from there.</li>
+            <li>Copy the TX signature.</li>
+            <li>Return to the LASTPROOF tab, paste the signature. Done.</li>
+          </ol>
+          <p>Works even inside the Phantom IAB.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>I approved a payment in Phantom but now it says "blockhash expired."</summary>
+        <div class="faq-body">
+          <p>Solana transactions have a ~60–90 second window before the blockhash expires. If you took too long to approve, the blockhash died and the broadcast failed. The <strong>transaction was never sent</strong> — you weren't charged.</p>
+          <p><strong>Fix:</strong> close the modal and start over. Be quick when approving.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>Phantom says "This dApp could be malicious" when I try to pay. Should I panic?</summary>
+        <div class="faq-body">
+          <p>No. Cosmetic warning Phantom shows for any domain not on their verified-domain list. Doesn't mean anything is wrong — we haven't submitted for verification yet. Safe to proceed.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>I sent the wrong token or wrong amount. What now?</summary>
+        <div class="faq-body">
+          <ul>
+            <li><strong>Wrong amount:</strong> must be exact to the cent. Mismatch = no proof credited. <strong>Funds aren't lost</strong> — DM support with the TX signature, we manually credit or refund.</li>
+            <li><strong>Wrong token:</strong> USDC isn't supported. Same deal — DM support. Don't resend a second TX hoping it'll work; open a ticket first.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>I don't see LASTPROOF in my Terminal dashboard — the "LAUNCH LASTPROOF" button is missing.</summary>
+        <div class="faq-body">
+          <p>Refresh once. If still missing, your wallet may not have completed Terminal ID issuance. Disconnect and reconnect at lastshift.app — triggers re-provisioning. Still missing? Contact support with your wallet address (first 4 + last 4).</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>My profile shows "DEFUNCT." What does that mean?</summary>
+        <div class="faq-body">
+          <p>You haven't paid AND haven't logged in for 90+ days. Liveness flag — not a ban. Data, handle, bio, past proofs all intact. Log into /manage (pulls back to FREE), then upgrade to return to ACTIVE PAID.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>My First 5,000 profile just expired and dropped to FREE. Can I get my tier back?</summary>
+        <div class="faq-body">
+          <p>Yes. Pay the subscription ($10/mo or $6 in $LASTSHFT) from /manage — everything comes back instantly. Proof count never resets, only its visibility.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>When exactly does my First 5,000 free window end?</summary>
+        <div class="faq-body">
+          <p><strong>2026-06-07</strong> — 30 days after Grid launch (2026-05-08). The clock starts at Grid launch, <strong>NOT</strong> at claim time. Whether you claimed in February or the day before launch, you get 30 days from May 8.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>I got a Telegram message from @LastShiftAuthBot about my profile expiring. Is this real?</summary>
+        <div class="faq-body">
+          <p>Yes. 3 days before your EA free window closes, we send a reminder via <span class="mono">@LastShiftAuthBot</span>. If you have a Telegram handle on your profile, it goes there. If not, we can only nudge via the in-app banner. <strong>Add a Telegram handle now</strong> if you want the reminder.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>Why does my free profile look so empty compared to others?</summary>
+        <div class="faq-body">
+          <p>Free profiles are deliberately stripped-down to encourage upgrading. Only identity shows — no tier, no proofs, no HIRE button, no DEV badge, no Grid visibility. It's the free tier. Upgrade to unlock everything — existing data renders fully again.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>I was on ACTIVE PAID but now I'm FREE. What happened?</summary>
+        <div class="faq-body">
+          <p>Subscription expired. System checks daily for lapsed subscriptions and flips them to FREE. You weren't charged again — billing is manual (pay-to-extend, not auto-renew). Renew from /manage; features return.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>What's $LASTSHFT and do I need it?</summary>
+        <div class="faq-body">
+          <p>$LASTSHFT is the ecosystem's native token. You don't <em>need</em> it — SOL and USDT work too. But paying with $LASTSHFT gets you <strong class="orange">40% off</strong> everything (subscription, proofs, handle change, mint). 25% of every transaction is permanently burned.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>Why don't you accept USDC?</summary>
+        <div class="faq-body"><p>We support SOL, USDT, and $LASTSHFT. USDC is intentionally not supported at this time.</p></div>
+      </details>
+
+      <details class="faq">
+        <summary>Do you store my wallet's private keys? My email?</summary>
+        <div class="faq-body">
+          <p><strong>No.</strong> We never see your private keys — wallet signing happens in your wallet app, not our servers. No email collected by default. Your handle and profile metadata are the only identifiers we store.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>What if I just want to browse profiles, not create one?</summary>
+        <div class="faq-body">
+          <p>You don't need a Terminal ID. The Grid (launching May 2026) is <strong>free to browse</strong>. Click profiles, click Hire on anyone — no login, no account, no fees.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>How do I hire someone?</summary>
+        <div class="faq-body">
+          <p>On any profile, click <strong>Hire</strong>. Sends a DM directly to the operator's Telegram. No platform fee on the connection.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>Is my profile permanent if I stop paying?</summary>
+        <div class="faq-body">
+          <p>URL, handle, bio, photo stay. But proofs, tier, DEV badge, and Grid visibility go dark until you reactivate. Data is never deleted.</p>
+        </div>
+      </details>
+
+      <details class="faq">
+        <summary>Can I change my handle?</summary>
+        <div class="faq-body">
+          <p>Yes. Handle Change flow in /manage. $100 in SOL/USDT or <strong class="orange">$60 in $LASTSHFT</strong> (40% off). Old handle released back to the pool after 30 days.</p>
+        </div>
+      </details>
+
+    </div>
+
+    <p class="dim" style="margin-top:20px;text-align:center">Didn't find your answer? Try the <a href="#" data-jump-tab="contact" class="inline-cta">Contact tab →</a></p>
+  </section>
+
+  <!-- ═══════════════ TAB: CONTACT ═══════════════ -->
+  <section id="tab-contact" class="tab-panel" role="tabpanel" aria-labelledby="contact" hidden>
+    <div class="panel-head">
+      <div class="panel-eyebrow">TOPIC 06 · STILL STUCK?</div>
+      <h2 class="panel-title">Contact Support</h2>
+      <p class="panel-intro">If the topics and FAQ above didn't unblock you, here's how to reach a real human.</p>
+    </div>
+
+    <div class="contact-hero">
+      <div class="dim mono" style="font-size:11px;letter-spacing:2px;text-transform:uppercase">Primary support channel</div>
+      <div class="big-tg">@lastshiftcoinbreakroom</div>
+      <p>Drop into the Telegram channel — active team + community. Real responses, usually within a few hours during work days.</p>
+      <a href="https://t.me/lastshiftcoinbreakroom" target="_blank" rel="noopener" class="btn btn-primary">OPEN TELEGRAM →</a>
+    </div>
+
+    <div class="contact-info-grid">
+      <div class="info-card">
+        <h4>WHAT TO INCLUDE IN YOUR MESSAGE</h4>
+        <ul>
+          <li>Your <strong>@handle</strong> (if you have one)</li>
+          <li>First 4 + last 4 characters of your wallet address (e.g. <span class="mono">DFUZ...4axP</span>)</li>
+          <li>TX signature if your issue is about a payment</li>
+          <li>Screenshot of the problem if it's visual</li>
+          <li>What you tried already</li>
         </ul>
-        <div class="callout callout-orange">
-          <span class="prefix">&gt;</span>You don't create your Terminal ID here on LASTPROOF. You get it from the Terminal. That's why — if you're new — the first step is always: LAUNCH TERMINAL.
-        </div>
+      </div>
+      <div class="info-card">
+        <h4>NEVER SHARE</h4>
+        <ul>
+          <li>Your <strong>full wallet address</strong> (first4+last4 is enough for lookup)</li>
+          <li>Your <strong>private key</strong> or <strong>seed phrase</strong> — no one on our team will ever ask</li>
+          <li>Your full <strong>Terminal ID</strong> — we can help you without it</li>
+        </ul>
+      </div>
+    </div>
 
-        <h2 class="section-title">&gt; TWO WALLETS? HERE'S WHY</h2>
-        <p class="dim">We respect how web3 actually works — most operators have multiple wallets.</p>
-        <div class="eco-grid" style="margin-top:14px">
-          <div class="eco-card">
-            <h4 class="card-title">TERMINAL WALLET · YOUR IDENTITY</h4>
-            <p class="eco-body">The wallet you connect to lastshift.app. One Terminal ID per wallet. Use the wallet you're comfortable being recognized by.</p>
-          </div>
-          <div class="eco-card">
-            <h4 class="card-title">TOOL WALLET · WHO PAYS</h4>
-            <p class="eco-body">When you pay for a LASTPROOF subscription, mint a proof, or change your handle, you can pay from ANY wallet. Doesn't have to be your Terminal wallet. Burner, treasury, whatever works.</p>
-          </div>
-        </div>
-        <div class="callout callout-dim">
-          <span class="prefix">&gt;</span>The wallet gets you into the Terminal. The Terminal ID gets you into each tool. The tool wallet is just who's paying.
-        </div>
-      </section>
+    <div class="callout callout-red">
+      <span class="prefix">&gt;</span><strong>Scam alert:</strong> anyone claiming to be "LASTPROOF support" in your DMs asking for your seed phrase or private key is NOT us. Real support only happens inside the @lastshiftcoinbreakroom channel. Don't click unknown links; don't screen-share with strangers.
+    </div>
 
-      <!-- ═══════════════ FINAL CTAs ═══════════════ -->
-      <section>
-        <h2 class="section-title">&gt; READY TO GET STARTED?</h2>
-        <div class="final-ctas">
-          <div class="final-cta primary">
-            <h3>Need a Terminal ID?</h3>
-            <p>Start at the Terminal. Connect your wallet, get your key, come back. 30 seconds.</p>
-            <a href="https://lastshift.app" target="_blank" rel="noopener" class="btn btn-primary">LAUNCH TERMINAL →</a>
-          </div>
-          <div class="final-cta secondary">
-            <h3>Already have your key?</h3>
-            <p>Head to /manage, paste your Terminal ID, and start building your profile.</p>
-            <a href="/manage" class="btn btn-secondary">GO TO /MANAGE →</a>
-          </div>
-        </div>
-      </section>
+    <div class="sec-label">READY TO KEEP GOING?</div>
+    <div class="card-grid">
+      <div class="mini-card" style="text-align:center;padding:28px">
+        <h4>Need a Terminal ID?</h4>
+        <p>Start at the Terminal. Connect your wallet, get your key, come back. 30 seconds.</p>
+        <a href="https://lastshift.app" target="_blank" rel="noopener" class="btn btn-primary">LAUNCH TERMINAL →</a>
+      </div>
+      <div class="mini-card" style="text-align:center;padding:28px">
+        <h4>Already have your key?</h4>
+        <p>Head to /manage, paste your Terminal ID, and start building your profile.</p>
+        <a href="/manage" class="btn btn-secondary">GO TO /MANAGE →</a>
+      </div>
+    </div>
+  </section>
 
-      <!-- ═══════════════ CONTACT ═══════════════ -->
-      <section id="contact">
-        <div class="contact-block">
-          <h3>&gt; STILL STUCK?</h3>
-          <div class="tg">Telegram: <span class="orange">@lastshiftcoinbreakroom</span></div>
-          <p class="dim" style="max-width:480px;margin:0 auto">Include your wallet address (first 4 + last 4) so we can look up your account. Never share full wallet addresses, private keys, or seed phrases.</p>
-        </div>
-      </section>
+  <!-- ═══════════════ LAST UPDATED + FOOTER ═══════════════ -->
+  <div class="last-updated">&gt; page last updated: 2026-04-20</div>
 
-      <!-- ═══════════════ LAST UPDATED ═══════════════ -->
-      <div class="last-updated">&gt; page last updated: 2026-04-20</div>
+  <footer class="page-footer">
+    <div>LAST<span class="orange">PROOF</span> BY LASTSHIFT.AI</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <a href="/terms">TERMS</a>
+      <a href="/privacy">PRIVACY</a>
+      <a href="https://x.com/lastshift" target="_blank" rel="noopener">X</a>
+      <a href="https://t.me/lastshiftcoinbreakroom" target="_blank" rel="noopener">TELEGRAM</a>
+    </div>
+    <div class="burn-tag">25% BURN ON EVERY TX</div>
+  </footer>
 
-      <!-- ═══════════════ FOOTER ═══════════════ -->
-      <footer class="page-footer">
-        <div>LAST<span class="orange">PROOF</span> BY LASTSHIFT.AI</div>
-        <div style="display:flex;gap:18px">
-          <a href="/terms">TERMS</a>
-          <a href="/privacy">PRIVACY</a>
-          <a href="https://x.com/lastshift" target="_blank" rel="noopener">X</a>
-          <a href="https://t.me/lastshiftcoinbreakroom" target="_blank" rel="noopener">TELEGRAM</a>
-        </div>
-        <div class="burn-tag">25% BURN ON EVERY TX</div>
-      </footer>
+</main>
 
-    </div><!-- /.inner -->
-  </div><!-- /.content-body -->
+<!-- ═══════════════ TAB-SWITCHER JS + FAQ SEARCH ═══════════════ -->
+<script>
+(function(){
+  var VALID_TABS = ['profile-creation','verify-work','updating-profile','profile-status','faq','contact'];
+  var tabs = document.querySelectorAll('.tab');
+  var panels = document.querySelectorAll('.tab-panel');
 
-  <!-- ═══ BOTTOM BAR ═══ -->
-  <div class="bottom-bar">
-    <div>HELP · lastproof.app/help</div>
-    <div>READ-ONLY · NO AUTH REQUIRED</div>
-  </div>
-</div><!-- /.terminal-frame -->
+  function activate(tabId){
+    if (VALID_TABS.indexOf(tabId) === -1) return;
+    tabs.forEach(function(t){
+      var isActive = t.dataset.tab === tabId;
+      t.classList.toggle('active', isActive);
+      t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    panels.forEach(function(p){
+      var isActive = p.id === 'tab-' + tabId;
+      p.classList.toggle('active', isActive);
+      if (isActive) p.removeAttribute('hidden'); else p.setAttribute('hidden','');
+    });
+    history.replaceState(null, '', '#' + tabId);
+    // Scroll to top of tab bar so isolated content starts at the top
+    var tabBar = document.querySelector('.tab-bar');
+    if (tabBar) {
+      var y = tabBar.getBoundingClientRect().top + window.scrollY - 20;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  }
 
-<!-- ═══════════════ FAQ JSON-LD ═══════════════ -->
+  // Tab click handlers
+  tabs.forEach(function(tab){
+    tab.addEventListener('click', function(){ activate(tab.dataset.tab); });
+    tab.addEventListener('keydown', function(e){
+      // Left/right arrow navigation between tabs
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        var idx = Array.prototype.indexOf.call(tabs, tab);
+        var next = e.key === 'ArrowRight' ? idx + 1 : idx - 1;
+        if (next < 0) next = tabs.length - 1;
+        if (next >= tabs.length) next = 0;
+        tabs[next].focus();
+        activate(tabs[next].dataset.tab);
+      }
+    });
+  });
+
+  // In-page "jump to tab" links (e.g. from Quick Answers to FAQ)
+  document.querySelectorAll('[data-jump-tab]').forEach(function(el){
+    el.addEventListener('click', function(e){
+      e.preventDefault();
+      activate(el.dataset.jumpTab);
+    });
+  });
+
+  // Initial load: hash sync
+  var hash = location.hash.replace('#','');
+  if (hash && VALID_TABS.indexOf(hash) !== -1) {
+    // Silently activate without scroll-jumping on initial load
+    tabs.forEach(function(t){
+      var isActive = t.dataset.tab === hash;
+      t.classList.toggle('active', isActive);
+      t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    panels.forEach(function(p){
+      var isActive = p.id === 'tab-' + hash;
+      p.classList.toggle('active', isActive);
+      if (isActive) p.removeAttribute('hidden'); else p.setAttribute('hidden','');
+    });
+  }
+
+  // FAQ search — simple substring match, hides non-matches
+  var faqSearch = document.getElementById('faq-search-input');
+  if (faqSearch) {
+    faqSearch.addEventListener('input', function(){
+      var q = faqSearch.value.trim().toLowerCase();
+      document.querySelectorAll('#faq-list .faq').forEach(function(faq){
+        var text = faq.textContent.toLowerCase();
+        var match = q === '' || text.indexOf(q) !== -1;
+        faq.style.display = match ? '' : 'none';
+        if (q && match) faq.setAttribute('open','');
+        if (!q) faq.removeAttribute('open');
+      });
+    });
+  }
+})();
+</script>
+
+<!-- ═══════════════ FAQ JSON-LD (SEO) ═══════════════ -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -1580,50 +1560,32 @@
     {
       "@type": "Question",
       "name": "I don't have a Terminal ID. How do I get one?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Head to lastshift.app (the Terminal) and connect your Solana wallet. It auto-generates your Terminal ID in about 30 seconds — no email, no password, no KYC."
-      }
+      "acceptedAnswer": {"@type": "Answer", "text": "Head to lastshift.app (the Terminal) and connect your Solana wallet. It auto-generates your Terminal ID in about 30 seconds — no email, no password, no KYC."}
     },
     {
       "@type": "Question",
       "name": "Why are there two websites?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "LASTPROOF is one tool in a bigger suite. Like Microsoft Word inside Office 365. You sign into the Terminal (lastshift.app) which gives you access to LASTPROOF and other tools. One identity, many tools."
-      }
+      "acceptedAnswer": {"@type": "Answer", "text": "LASTPROOF is one tool in a bigger suite. Like Microsoft Word inside Office 365. You sign into the Terminal (lastshift.app) which gives you access to LASTPROOF and other tools. One identity, many tools."}
     },
     {
       "@type": "Question",
       "name": "What's a Terminal ID?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "A license key formatted SHIFT-XXXX-XXXX-XXXX-XXXX. Like a Windows product key. Paste it into each tool once to register, then it authenticates you automatically. One key works for every tool in the LASTSHIFT suite."
-      }
+      "acceptedAnswer": {"@type": "Answer", "text": "A license key formatted SHIFT-XXXX-XXXX-XXXX-XXXX. Like a Windows product key. Paste it into each tool once to register, then it authenticates you automatically. One key works for every tool in the LASTSHIFT suite."}
     },
     {
       "@type": "Question",
       "name": "Do I need to connect my wallet to submit a proof?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "No. Proofs are wallet-free. You open your Solana wallet, send the exact amount to the address shown, paste the transaction signature into the modal, and you're done. No wallet connect popups, no signing prompts on lastproof.app itself."
-      }
+      "acceptedAnswer": {"@type": "Answer", "text": "No. Proofs are wallet-free. You open your Solana wallet, send the exact amount to the address shown, paste the transaction signature into the modal, and you're done."}
     },
     {
       "@type": "Question",
       "name": "What's the difference between a Proof and a DEV Proof?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "A standard Proof costs $1 and can be submitted by any collaborator. A DEV Proof costs $5 and can only be submitted by a project's deployer wallet — cryptographically proven. DEV Proofs earn the DEV badge."
-      }
+      "acceptedAnswer": {"@type": "Answer", "text": "A standard Proof costs $1 and can be submitted by any collaborator. A DEV Proof costs $5 and can only be submitted by a project's deployer wallet — cryptographically proven. DEV Proofs earn the DEV badge."}
     },
     {
       "@type": "Question",
       "name": "My profile shows DEFUNCT. What does that mean?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "You haven't paid AND haven't logged in for 90+ days. It's a liveness flag, not a ban. Your data, handle, bio, and past proofs are all intact. Log into /manage to return to FREE state, then upgrade to return to ACTIVE PAID."
-      }
+      "acceptedAnswer": {"@type": "Answer", "text": "You haven't paid AND haven't logged in for 90+ days. It's a liveness flag, not a ban. Your data, handle, bio, and past proofs are all intact. Log into /manage to return to FREE state, then upgrade to return to ACTIVE PAID."}
     }
   ]
 }
