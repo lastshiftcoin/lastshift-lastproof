@@ -1,5 +1,7 @@
 # LASTPROOF — Help Page (`/help`)
 
+> **This document is for `/help` ONLY.** It is NOT about `/how-it-works`. That's a separate marketing page with a separate purpose (Operator/Dev/Verify explainer for prospective users). Do not conflate the two. If a future edit frames this doc as "how it works," correct it.
+
 **Purpose:** single destination that resolves new-user confusion on lastproof.app — especially the "I don't have a Terminal ID" gap. Linked from every Terminal-ID prompt across the platform.
 
 **Primary route:** `lastproof.app/help`
@@ -25,7 +27,7 @@
 | Onboarding — any step | "Stuck? Get help" | Footer of onboarding screens |
 | Proof modal — before payment | "What am I paying for?" | Below the pay button |
 | Public profile (`/@handle`) | "Help" | Footer link |
-| Homepage (`/`) | "How it works →" | Below hero |
+| Homepage (`/`) | "Need help? →" | Below hero |
 | 404 page | "Lost? Start here." | Main CTA |
 
 ---
@@ -914,7 +916,7 @@ Reach out in our Telegram support channel: **@lastshiftcoinbreakroom**. Include 
 
 ## Design Notes for Frontend Builder
 
-- **Chrome:** match /manage — full terminal chrome (system bar, titlebar "how-it-works — lastproof — 80x24", scrollable body, bottom bar). CRT scanlines + vignette.
+- **Chrome:** match the homepage global header exactly (logo + LAST(white)PROOF(orange) + "VERIFIED OPERATORS" sub + $LASTSHFT ticker + HOW IT WORKS nav link + MANAGE PROFILE button). Grid-pattern body bg + orange radial glow. **NOT terminal chrome** — that earlier design was scrapped.
 - **Typography:** Inter for body/paragraphs, JetBrains Mono for labels/stack diagrams/Terminal IDs/code.
 - **Colors:** orange (#ff9100) for primary CTAs and accents, green (#00e676) for checks/secondary confirmations, red (#ff5252) reserved for error states only.
 - **Motion:** subtle only — fade-in on scroll per section, accordion on FAQ. No autoplay, no parallax.
@@ -951,7 +953,7 @@ Every visual on this page pulls from an existing wireframe or a real UI screen w
 - Lazy-load below the fold.
 - Each screenshot is clickable → opens a full-size lightbox.
 - Alt text is mandatory and descriptive (not "screenshot" — say what the image shows).
-- Store in `/public/how-it-works/` with semantic filenames (e.g. `step-02-terminal-id-keygen.webp`).
+- Store in `/public/help/` with semantic filenames (e.g. `step-02-terminal-id-keygen.webp`). Do NOT use `/public/how-it-works/` — that path is owned by the separate marketing page.
 
 ## Decisions Locked (2026-04-20)
 

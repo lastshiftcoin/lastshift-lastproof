@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>LASTPROOF — Help</title>
-<meta name="description" content="LASTPROOF help center — profile creation, submitting proofs, updating your profile, and profile states (Active Paid, First 5,000, Free, Defunct).">
+<meta name="description" content="LASTPROOF help center — profile creation, submitting proofs, updating your profile, and profile states (Active Paid, First 5,000, Free, Defunct). Separate from the /how-it-works marketing page.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -51,7 +51,7 @@
   ul,ol{margin:0 0 12px;padding-left:20px}
   button{font-family:inherit;cursor:pointer;background:none;border:none;color:inherit;padding:0}
 
-  /* ─── Page-background atmospherics (matches homepage / how-it-works) ─── */
+  /* ─── Page-background atmospherics — matches homepage global chrome ─── */
   body::before{
     content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
     background-image:
@@ -67,24 +67,26 @@
 
   .wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 24px 90px}
 
-  /* ═══════════════  TOPBAR  ═══════════════ */
-  .topbar{position:sticky;top:0;z-index:50;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:14px 24px;border-bottom:1px solid var(--border);background:rgba(18,19,26,.92);backdrop-filter:blur(8px)}
+  /* ═══════════════  TOPBAR — global site header (matches homepage.html)  ═══════════════ */
+  .topbar{position:relative;z-index:2;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:14px 24px;border-bottom:1px solid var(--border);background:var(--bg-secondary)}
   .topbar-left{display:flex;align-items:center;gap:12px;justify-self:start}
-  .topbar-logo{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--orange),#ff5722);display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
-  .topbar-brand{font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:2px;display:flex;flex-direction:column;gap:2px}
-  .topbar-brand .brand-name .last{color:var(--text-primary)}
-  .topbar-brand .brand-name .proof{color:var(--orange)}
-  .topbar-sub{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:2px}
+  .topbar-logo{width:36px;height:36px;object-fit:contain;border-radius:8px}
+  .topbar-logo-fallback{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--orange),#ff5722);display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:12px;color:#fff;flex-shrink:0;letter-spacing:.5px}
+  .topbar-brand{font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:2px}
+  .topbar-brand .last{color:var(--text-primary)}
+  .topbar-brand .proof{color:var(--orange)}
+  .topbar-sub{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:2px;margin-top:2px}
 
-  .ticker{justify-self:center;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;letter-spacing:1px}
+  /* Ticker — no pill border (matches homepage) */
+  .ticker{justify-self:center;display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:12px;letter-spacing:1px}
   .ticker .sym{color:var(--orange);font-weight:700}
   .ticker .price{color:var(--text-primary);font-weight:500}
   .ticker .chg{color:var(--green);font-size:11px}
+  .ticker .chg.down{color:#ff5470}
 
-  .topbar-right{display:flex;align-items:center;gap:18px;justify-self:end;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--text-secondary);text-transform:uppercase}
-  .topbar-right a{transition:color .15s}
-  .topbar-right a:hover{color:var(--orange)}
-  .topbar-right a.active{color:var(--orange)}
+  .topbar-right{display:flex;align-items:center;gap:16px;justify-self:end}
+  .topbar-nav{display:flex;gap:20px;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--text-secondary)}
+  .topbar-nav a:hover{color:var(--text-primary)}
 
   /* ═══════════════  BUTTONS  ═══════════════ */
   .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;font-family:var(--mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border:1px solid transparent;font-weight:600;border-radius:var(--r-btn);transition:all .15s}
@@ -118,7 +120,7 @@
   .qa-a a{color:var(--orange);border-bottom:1px dotted var(--orange)}
 
   /* ═══════════════  TAB BAR  ═══════════════ */
-  .tab-bar{position:sticky;top:60px;z-index:40;display:flex;gap:0;padding:0;margin:0 -8px 0;background:var(--bg-primary);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+  .tab-bar{position:sticky;top:0;z-index:40;display:flex;gap:0;padding:0;margin:0 -8px 0;background:rgba(10,11,15,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
   .tab-bar::-webkit-scrollbar{display:none}
   .tab{display:inline-flex;align-items:center;gap:10px;padding:18px 20px;border-bottom:2px solid transparent;background:transparent;color:var(--text-secondary);font-family:var(--mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;transition:all .15s;position:relative}
   .tab:hover{color:var(--text-primary);background:rgba(255,145,0,.04)}
@@ -308,10 +310,14 @@
     .wrap{padding:0 16px 60px}
     .hero{padding:44px 0 24px}
     .hero h1{font-size:34px}
-    .topbar{grid-template-columns:1fr auto;padding:12px 16px}
-    .ticker{display:none}
-    .topbar-right{font-size:9px;gap:14px}
-    .tab-bar{top:54px;margin:0 -16px}
+    /* Homepage topbar responsive pattern */
+    .topbar{padding:12px 14px;grid-template-columns:auto auto;gap:10px;row-gap:10px}
+    .topbar-left{grid-column:1}
+    .topbar-right{grid-column:2}
+    .ticker{grid-column:1 / -1;justify-self:center;order:3}
+    .topbar-nav{display:none}
+    .topbar-brand{font-size:12px}
+    .tab-bar{top:0;margin:0 -16px}
     .tab{padding:14px 14px}
     .panel-title{font-size:24px}
     .step,.sub-topic-grid,.state-card .state-grid{grid-template-columns:1fr}
@@ -328,34 +334,34 @@
 </head>
 <body>
 
-<!-- ═══════════════ TOPBAR ═══════════════ -->
-<header class="topbar">
-  <div class="topbar-left">
-    <span class="topbar-logo">L</span>
-    <div class="topbar-brand">
-      <span class="brand-name"><span class="last">LAST</span><span class="proof">PROOF</span></span>
-      <span class="topbar-sub">HELP · GETTING STARTED</span>
+<main class="wrap">
+
+  <!-- ═══════════════ GLOBAL TOPBAR — identical to homepage.html ═══════════════ -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <!-- Real SHIFTBOT logo gets loaded from /public in prod; fallback tile for wireframe -->
+      <img src="shiftbot-logo.png" alt="SHIFTBOT" class="topbar-logo" onerror="this.outerHTML='&lt;span class=\&quot;topbar-logo-fallback\&quot;&gt;SB&lt;/span&gt;'">
+      <div>
+        <div class="topbar-brand"><span class="last">LAST</span><span class="proof">PROOF</span></div>
+        <div class="topbar-sub">VERIFIED OPERATORS</div>
+      </div>
+    </div>
+    <div class="ticker">
+      <span class="sym">$LASTSHFT</span>
+      <span class="price">$0.00012</span>
+      <span class="chg down">-2.7%</span>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-nav">
+        <a href="/how-it-works">HOW IT WORKS</a>
+      </div>
+      <a class="btn btn-ghost btn-sm" href="/manage">MANAGE PROFILE</a>
     </div>
   </div>
-  <div class="ticker">
-    <span class="sym">$LASTSHFT</span>
-    <span class="price">$0.00342</span>
-    <span class="chg">+12.4%</span>
-  </div>
-  <nav class="topbar-right">
-    <a href="/">HOME</a>
-    <a href="/grid">GRID</a>
-    <a href="/how-it-works">HOW IT WORKS</a>
-    <a href="/help" class="active">HELP</a>
-    <a href="/manage" class="inline-cta">/MANAGE →</a>
-  </nav>
-</header>
-
-<main class="wrap">
 
   <!-- ═══════════════ HERO ═══════════════ -->
   <section class="hero">
-    <div class="hero-eyebrow">HELP · HOW IT WORKS</div>
+    <div class="hero-eyebrow">HELP CENTER · GET UNSTUCK</div>
     <h1>Getting unstuck on LAST<span class="orange">PROOF</span>.</h1>
     <p class="body-text">Profile creation, proofs, editing, and profile states — pick a topic below to see exactly what to do.</p>
     <div class="hero-ctas">

@@ -20,6 +20,107 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-21 00:28 MST — /help: global topbar match + scrub "how it works" framing
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1, account `tallada2023`)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`, `__CFBundleIdentifier=com.anthropic.claudefordesktop`)
+**Model:** claude-opus-4-6
+**Role:** help-page
+**Commits:** this entry
+**Migrations run in prod Supabase:** none
+**Impacts:** none — wireframe + content doc only, no code changes, no Terminal touches
+**Status:** ✅ shipped, preview verified at http://127.0.0.1:8765/help.html (HTTP 200)
+
+### Did
+
+- **Replaced `/help` topbar with the homepage global header verbatim**
+  so there's one consistent site-wide header. Kellen was specific: the
+  prior custom header ("HELP · GETTING STARTED" sub + custom 5-link nav)
+  was out of place. Now matches `wireframes/homepage.html`:
+  - Logo tile (SHIFTBOT PNG with inline-CSS fallback tile for wireframe
+    previews — frontend builder will wire `/public/shiftbot-logo.png`
+    in prod)
+  - Brand: `LAST` (white) + `PROOF` (orange)
+  - Sub-label: `VERIFIED OPERATORS` (homepage brand tagline — kept
+    consistent across site, not page-specific)
+  - Centered ticker: `$LASTSHFT $0.00012 -2.7%`
+  - Right side: `topbar-nav` with single `HOW IT WORKS` link + `MANAGE
+    PROFILE` ghost button
+  - Position: `relative` (not sticky — matches homepage exactly)
+- **Adjusted tab-bar sticky offset** from `top:60px` → `top:0` since the
+  topbar is no longer sticky; the tab bar now sticks flush to viewport
+  top once scrolled past. Added `backdrop-filter: blur(8px)` on the tab
+  bar so content scrolling behind it reads correctly.
+- **Mobile topbar rules** now mirror homepage responsive pattern exactly
+  (topbar becomes 2-column with ticker wrapping to row 2 on <900px,
+  `topbar-nav` hides on mobile).
+- **Scrubbed "how it works" framing from the help page:**
+  - `<title>`: `LASTPROOF — Help / How It Works` → `LASTPROOF — Help`
+  - `<meta description>`: added "Separate from the /how-it-works
+    marketing page." so crawlers and future edits don't conflate
+  - Hero eyebrow: `HELP · HOW IT WORKS` → `HELP CENTER · GET UNSTUCK`
+  - CSS comment: scrubbed reference to "matches homepage / how-it-works"
+    → "matches homepage global chrome"
+  - Kept: the `<a href="/how-it-works">HOW IT WORKS</a>` nav link — it
+    legitimately navigates TO the separate page, which is the behavior
+    the global header has on every page
+- **Renamed content doc** `wireframes/how-it-works-CONTENT.md` →
+  `wireframes/help-CONTENT.md` via `git mv` (history preserved).
+  Added top-of-doc warning callout: "This document is for /help ONLY.
+  It is NOT about /how-it-works..." to stop the naming confusion from
+  creeping back in.
+- **Content doc scrubs:**
+  - Entry Points table: Homepage link label `"How it works →"` → `"Need
+    help? →"` (it's the link text shown on homepage leading TO the help
+    page — "how it works" there is a category error)
+  - Design Notes: `Chrome: match /manage — full terminal chrome...` →
+    updated to describe the homepage global header (the current truth
+    per wireframe v3)
+  - Screenshot capture protocol: `/public/how-it-works/` → `/public/help/`
+    with explicit note that the how-it-works path is owned by the
+    separate marketing page
+- **Verified no stray "HOW IT WORKS" text remains** in the help-page
+  body — the only match is the legit global-header nav link.
+
+### Current state
+
+- `wireframes/help.html` — 1,601 lines, global topbar matches homepage
+  1:1, no "how it works" framing anywhere in the body content, FAQ
+  search + isolated tabs + 6 topic panels all still working.
+- `wireframes/help-CONTENT.md` — renamed + scrubbed, with a permanent
+  warning callout at the top to prevent regression.
+- Preview: http://127.0.0.1:8765/help.html (HTTP 200, 100,229 bytes).
+  Server `b3pu52zas` still backgrounded from prior task.
+- No code changes, no migrations, no Terminal impact.
+
+### Open / next
+
+- **Screenshot capture** still pending (same as prior entries).
+- **Link /help from every Terminal-ID prompt** per Entry Points table.
+- **Frontend builder productionization** at
+  `src/app/(marketing)/help/page.tsx`. When they build it, they'll
+  wire the real `shiftbot-logo.png` asset + real `$LASTSHFT` ticker
+  hook (same one used across other pages).
+
+### Gotchas for next session
+
+- **"How it works" is a sibling, not a synonym.** `/how-it-works` =
+  marketing explainer (`src/app/(marketing)/how-it-works/page.tsx`,
+  `wireframes/how-it-works.html`, for prospective users). `/help` =
+  help center for stuck users (`wireframes/help.html`,
+  `wireframes/help-CONTENT.md`, not yet in code). Two pages, two
+  purposes. Don't merge them.
+- **Global header is source-of-truth on homepage.html.** If the
+  global header changes site-wide (new nav link, different ticker
+  data), update homepage first, then cascade to /help. When
+  productionizing, the frontend builder should factor this into the
+  `(marketing)` layout rather than duplicate the markup per page.
+- **Content doc renamed** — anyone searching for
+  `how-it-works-CONTENT.md` won't find it. Git history tracks the
+  rename (use `git log --follow wireframes/help-CONTENT.md`).
+
+---
+
 ## 2026-04-21 00:08 MST — /help wireframe v2: standard page chrome + real tabs
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1, account `tallada2023`)
