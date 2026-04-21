@@ -20,6 +20,73 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-21 09:47 MST — validate-tid: dual-accept regex (match register-tid)
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** backend
+**Commits:** this commit (see git log)
+**Migrations run in prod Supabase:** none
+**Impacts:** none — aligns with Terminal's real emitted TID format; no
+contract change, no schema change, no shared-secret change
+**Status:** ✅ shipped
+
+### Did
+
+- Resolved the "Known mismatch (flagged, not yet fixed)" item opened
+  in `CLAUDE.md § Terminal bridge` when the real Terminal ID format
+  was confirmed 2026-04-21. `src/app/api/auth/validate-tid/route.ts`
+  now dual-accepts both `XXXX-XXXX-XXXX-XXXX-XXXX` (real Terminal
+  format) and `SHIFT-XXXX-XXXX-XXXX-XXXX` (legacy seed/test), matching
+  the already-correct pattern in `/api/auth/register-tid`.
+- Updated `CLAUDE.md § Terminal bridge` to drop the "Known mismatch"
+  callout and list validate-tid alongside register-tid + ManageTerminal
+  in the dual-accept line.
+- Validated a help-page session's claim that this was "blocking auth
+  for real users" — **false**. Production `/manage` renders
+  `ManageTerminal` which calls `/api/auth/register-tid` (already
+  dual-accept). The only caller of `validate-tid` is `ManageGate.tsx`,
+  which is a test-harness component not mounted on any production
+  route. Fix is defensive against a future caller, not a user-path
+  unblock.
+
+### Current state
+
+- Both auth entry points (`register-tid`, `validate-tid`) agree on
+  TID well-formedness.
+- No user-visible behavior change today → no VERSION bump, no
+  `data/updates.json` entry (per CLAUDE.md § Updates feed).
+- No commit-prefix convention applies (non-user-facing; backend
+  internal hardening).
+
+### Open / next
+
+- Local tsc still broken on this machine (`node_modules/typescript`
+  missing `../lib/tsc.js` from prior iCloud drift). Did not run
+  typecheck for this change — it's a regex-only swap in a route that
+  was already compiling on Vercel, low regression risk. Flagged in
+  the 2026-04-20 21:09 MST WORKLOG entry; `npm install` will
+  reintroduce the pre-existing `@solana/*` noise so deferring until
+  a task genuinely needs local typecheck.
+- Vercel will auto-deploy this commit on push.
+
+### Gotchas for next session
+
+- **Verify "blocking auth" claims against the actual mount graph.** A
+  bug in a route can be latent-only when no mounted component calls
+  it. Grep both routes (landing + marketing) and trace back to
+  `page.tsx` before accepting a severity framing from another
+  session. `ManageGate.tsx` in particular looks production-shaped but
+  is dead-adjacent test code — don't confuse it with `ManageTerminal`.
+- **If a non-specialist session proposes a drive-by fix in another
+  session's lane, decline it politely.** Coordinator explicitly
+  asked for this scope boundary to be enforced. Shipping this fix
+  from the backend lane (where it belongs) is the correct
+  resolution.
+
+---
+
 ## 2026-04-21 09:52 MST — /help: add SHIFTBOT pinned strip (matches global chrome)
 
 **Device:** Kellen's Mac mini

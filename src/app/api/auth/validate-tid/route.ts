@@ -26,7 +26,13 @@ export async function POST(req: NextRequest) {
   if (!walletAddress) {
     return NextResponse.json({ error: "wallet_required" }, { status: 400 });
   }
-  if (!/^SHIFT-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(terminalId)) {
+  // Accepts both real Terminal format XXXX-XXXX-XXXX-XXXX-XXXX (5 groups of
+  // 4 alphanum, no fixed prefix) and legacy SHIFT-XXXX-XXXX-XXXX-XXXX for
+  // backward-compat with existing seed/test fixtures. Matches the dual-accept
+  // pattern in /api/auth/register-tid so both auth entry points agree on
+  // which TIDs are well-formed.
+  if (!/^[A-Z0-9]{4}(-[A-Z0-9]{4}){4}$/.test(terminalId) &&
+      !/^SHIFT-[A-Z0-9]{4}(-[A-Z0-9]{4}){3}$/.test(terminalId)) {
     return NextResponse.json({ error: "tid_malformed" }, { status: 400 });
   }
 

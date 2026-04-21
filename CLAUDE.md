@@ -93,11 +93,10 @@ layer, just the adapter.
   `XXXX-XXXX-XXXX-XXXX-XXXX` — 5 groups of 4 alphanumeric chars (A-Z, 0-9),
   no fixed prefix. The `SHIFT-` prefix seen in older docs/wireframes was an
   artifact that never shipped in the production `generateTerminalId()`.
-  Validation in `/api/auth/register-tid` and `ManageTerminal.tsx` accepts
-  both the real format and the legacy `SHIFT-XXXX-XXXX-XXXX-XXXX` shape for
-  backward-compat with existing seed/test fixtures.
-  **Known mismatch (flagged, not yet fixed):** `/api/auth/validate-tid`
-  regex still only accepts the legacy SHIFT-prefix format.
+  Validation in `/api/auth/register-tid`, `/api/auth/validate-tid`, and
+  `ManageTerminal.tsx` accepts both the real format and the legacy
+  `SHIFT-XXXX-XXXX-XXXX-XXXX` shape for backward-compat with existing
+  seed/test fixtures.
 - Seed row for testing: wallet `TEST1111111111111111111111111111111111111111`,
   TID `SHIFT-TEST-0001-0001-0001` (legacy test string — still accepted by the
   dual-regex; don't use this shape for new fixtures, use `XXXX-XXXX-XXXX-XXXX-XXXX`).
