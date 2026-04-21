@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LASTPROOF — Updates</title>
+<meta name="description" content="LASTPROOF system status and recent updates. What's new, what's fixed, what's improved.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-primary:#0a0b0f;
+    --bg-secondary:#12131a;
+    --bg-card:#161822;
+    --bg-card-hover:#1a1d2a;
+    --bg-input:#0e0f16;
+    --border:#1e2030;
+    --border-2:#2a2d42;
+    --text-primary:#e2e4ed;
+    --text-secondary:#8b8fa3;
+    --text-dim:#5a5e73;
+    --green:#00e676;
+    --green-dim:rgba(0,230,118,.12);
+    --green-glow:rgba(0,230,118,.25);
+    --orange:#ff9100;
+    --orange-dim:rgba(255,145,0,.12);
+    --orange-glow:rgba(255,145,0,.25);
+    --accent:#ff9100;
+    --accent-glow:rgba(255,145,0,.15);
+    --red:#ff5252;
+    --red-dim:rgba(255,82,82,.10);
+    --blue:#60a5fa;
+    --blue-dim:rgba(96,165,250,.12);
+    --silver:#9ca3af;
+    --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:Inter,-apple-system,system-ui,sans-serif;
+    --r-card:10px;
+    --r-btn:6px;
+    --r-pill:4px;
+    --r-sm:3px;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg-primary);color:var(--text-primary);font-family:var(--sans);font-size:14px;line-height:1.55;min-height:100dvh}
+  a{color:inherit;text-decoration:none}
+  h1,h2,h3,h4{margin:0;font-weight:600;line-height:1.25}
+  p{margin:0 0 12px}
+  ul{margin:6px 0 0;padding-left:20px}
+  ul li{margin-bottom:4px}
+  button{font-family:inherit;cursor:pointer;background:none;border:none;color:inherit;padding:0}
+
+  /* Page-background atmospherics */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:
+      linear-gradient(rgba(30,32,48,.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30,32,48,.3) 1px, transparent 1px);
+    background-size:60px 60px;
+  }
+  body::after{
+    content:"";position:fixed;top:-200px;right:-200px;width:700px;height:700px;
+    pointer-events:none;z-index:0;
+    background:radial-gradient(circle,var(--accent-glow) 0%,transparent 60%);
+  }
+
+  .wrap{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:0 24px 90px}
+
+  /* ═══════════════  TOPBAR  ═══════════════ */
+  .topbar{position:sticky;top:0;z-index:50;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:14px 24px;border-bottom:1px solid var(--border);background:rgba(18,19,26,.92);backdrop-filter:blur(8px)}
+  .topbar-left{display:flex;align-items:center;gap:12px;justify-self:start}
+  .topbar-logo{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--orange),#ff5722);display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
+  .topbar-brand{font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:2px;display:flex;flex-direction:column;gap:2px}
+  .topbar-brand .brand-name .last{color:var(--text-primary)}
+  .topbar-brand .brand-name .proof{color:var(--orange)}
+  .topbar-sub{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:2px}
+
+  .ticker{justify-self:center;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;letter-spacing:1px}
+  .ticker .sym{color:var(--orange);font-weight:700}
+  .ticker .price{color:var(--text-primary);font-weight:500}
+  .ticker .chg{color:var(--green);font-size:11px}
+
+  .topbar-right{display:flex;align-items:center;gap:18px;justify-self:end;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--text-secondary);text-transform:uppercase}
+  .topbar-right a{transition:color .15s}
+  .topbar-right a:hover{color:var(--orange)}
+  .topbar-right a.active{color:var(--orange)}
+
+  /* ═══════════════  HERO  ═══════════════ */
+  .hero{padding:56px 0 24px;text-align:center}
+  .hero-eyebrow{font-family:var(--mono);font-size:10px;color:var(--orange);letter-spacing:3px;text-transform:uppercase;margin-bottom:20px}
+  .hero h1{font-family:var(--sans);font-size:44px;line-height:1.08;margin:0 auto 18px;font-weight:700;letter-spacing:-1px;max-width:680px}
+  .hero h1 .orange{color:var(--orange)}
+  .hero .body-text{font-size:15px;color:var(--text-secondary);max-width:540px;margin:0 auto;line-height:1.65}
+
+  /* ═══════════════  SYSTEM STATUS BAR  ═══════════════ */
+  .sys-status{margin:28px 0 48px;padding:18px 22px;border:1px solid var(--green);border-radius:var(--r-card);background:linear-gradient(180deg,var(--green-dim),transparent);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .sys-status-left{display:flex;align-items:center;gap:14px}
+  .sys-dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green-glow);position:relative;flex-shrink:0}
+  .sys-dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--green);opacity:.5;animation:pulse 2s ease-out infinite}
+  @keyframes pulse{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.8);opacity:0}}
+  .sys-label{font-family:var(--mono);font-size:13px;letter-spacing:1.5px;color:var(--green);font-weight:600;text-transform:uppercase}
+  .sys-sub{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase}
+
+  /* Degraded / outage variants (manual toggle) */
+  .sys-status.degraded{border-color:var(--orange);background:linear-gradient(180deg,var(--orange-dim),transparent)}
+  .sys-status.degraded .sys-dot{background:var(--orange);box-shadow:0 0 12px var(--orange-glow)}
+  .sys-status.degraded .sys-dot::after{border-color:var(--orange)}
+  .sys-status.degraded .sys-label{color:var(--orange)}
+  .sys-status.outage{border-color:var(--red);background:linear-gradient(180deg,var(--red-dim),transparent)}
+  .sys-status.outage .sys-dot{background:var(--red);box-shadow:0 0 12px rgba(255,82,82,.3)}
+  .sys-status.outage .sys-dot::after{border-color:var(--red)}
+  .sys-status.outage .sys-label{color:var(--red)}
+
+  /* ═══════════════  LATEST UPDATE HERO CARD  ═══════════════ */
+  .latest-eyebrow{font-family:var(--mono);font-size:10px;color:var(--orange);letter-spacing:2px;text-transform:uppercase;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+  .latest-eyebrow::before{content:"//";color:var(--orange)}
+
+  .latest-card{margin-bottom:48px;padding:28px;border:1px solid var(--orange);border-radius:var(--r-card);background:linear-gradient(180deg,var(--orange-dim),transparent);position:relative;overflow:hidden}
+  .latest-card::before{content:"";position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,var(--orange-glow) 0%,transparent 60%);pointer-events:none}
+  .latest-meta{position:relative;display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .latest-version{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--orange);letter-spacing:1px}
+  .latest-date{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:1px}
+  .latest-headline{position:relative;font-size:22px;font-weight:600;margin-bottom:10px;line-height:1.3}
+  .latest-copy{position:relative;font-size:15px;color:var(--text-secondary);line-height:1.65;margin:0}
+
+  /* ═══════════════  UPDATE FEED  ═══════════════ */
+  .feed-header{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 22px;gap:16px;flex-wrap:wrap}
+  .feed-title{font-family:var(--mono);font-size:12px;letter-spacing:2px;color:var(--text-secondary);text-transform:uppercase;margin:0;display:flex;align-items:center;gap:8px}
+  .feed-title::before{content:"//";color:var(--orange)}
+
+  .feed{display:flex;flex-direction:column;gap:0}
+  .update{display:grid;grid-template-columns:110px 1fr;gap:22px;padding:22px 0;border-top:1px solid var(--border)}
+  .update:first-child{border-top:none;padding-top:0}
+  .update-side{display:flex;flex-direction:column;gap:6px;padding-top:2px}
+  .update-version{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--text-primary);letter-spacing:.5px}
+  .update-date{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1px}
+
+  .update-body{display:flex;flex-direction:column;gap:8px}
+  .update-tag{display:inline-flex;align-items:center;padding:3px 8px;font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;border-radius:var(--r-pill);width:fit-content}
+  .update-tag.fixed{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,230,118,.3)}
+  .update-tag.added{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(255,145,0,.3)}
+  .update-tag.improved{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(96,165,250,.3)}
+
+  .update-copy{font-size:14.5px;line-height:1.6;color:var(--text-primary);margin:0}
+  .update-copy strong{color:var(--text-primary);font-weight:600}
+
+  /* ═══════════════  VIEW ALL CTA  ═══════════════ */
+  .view-all{margin-top:40px;text-align:center;padding-top:32px;border-top:1px solid var(--border)}
+  .view-all a{display:inline-flex;align-items:center;gap:8px;padding:14px 26px;font-family:var(--mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;border:1px solid var(--border-2);color:var(--text-secondary);background:var(--bg-card);border-radius:var(--r-btn);transition:all .15s;font-weight:600}
+  .view-all a:hover{border-color:var(--orange);color:var(--orange);background:var(--bg-card-hover)}
+  .view-all-sub{display:block;margin-top:12px;font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1px}
+
+  /* ═══════════════  SUBSCRIBE STRIP  ═══════════════ */
+  .subscribe{margin-top:48px;padding:22px 24px;border:1px solid var(--border-2);border-radius:var(--r-card);background:var(--bg-card);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .subscribe-text{display:flex;flex-direction:column;gap:4px}
+  .subscribe-head{font-family:var(--mono);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-primary);font-weight:600}
+  .subscribe-sub{font-size:13px;color:var(--text-secondary)}
+  .subscribe a{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;border:1px solid var(--orange);color:var(--orange);background:var(--orange-dim);border-radius:var(--r-btn);font-weight:600;transition:all .15s}
+  .subscribe a:hover{background:var(--orange);color:var(--bg-primary)}
+
+  /* ═══════════════  FOOTER  ═══════════════ */
+  .page-footer{margin-top:60px;padding-top:28px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:1px;gap:16px;flex-wrap:wrap}
+  .page-footer a{color:var(--text-secondary)}
+  .page-footer a:hover{color:var(--orange)}
+  .page-footer .burn-tag{color:var(--orange)}
+  .page-footer .orange{color:var(--orange)}
+
+  /* ═══════════════  RESPONSIVE  ═══════════════ */
+  @media (max-width:720px){
+    .ticker{display:none}
+    .topbar{grid-template-columns:1fr auto}
+    .hero h1{font-size:34px}
+    .hero{padding:36px 0 16px}
+    .latest-card{padding:22px}
+    .latest-headline{font-size:19px}
+    .latest-version{font-size:19px}
+    .update{grid-template-columns:1fr;gap:10px;padding:20px 0}
+    .update-side{flex-direction:row;align-items:center;gap:10px}
+    .update-date::before{content:"· "}
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ TOPBAR ═══════════════ -->
+<header class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-logo">L</span>
+    <div class="topbar-brand">
+      <span class="brand-name"><span class="last">LAST</span><span class="proof">PROOF</span></span>
+      <span class="topbar-sub">STATUS · UPDATES</span>
+    </div>
+  </div>
+  <div class="ticker">
+    <span class="sym">$LASTSHFT</span>
+    <span class="price">$0.00342</span>
+    <span class="chg">+12.4%</span>
+  </div>
+  <nav class="topbar-right">
+    <a href="/">HOME</a>
+    <a href="/grid">GRID</a>
+    <a href="/how-it-works">HOW IT WORKS</a>
+    <a href="/help">HELP</a>
+    <a href="/manage" class="inline-cta">/MANAGE →</a>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <!-- ═══════════════ HERO ═══════════════ -->
+  <section class="hero">
+    <div class="hero-eyebrow">STATUS · UPDATES</div>
+    <h1>What's new on LAST<span class="orange">PROOF</span>.</h1>
+    <p class="body-text">System status and every update we ship. Built in public, shipped in the open.</p>
+  </section>
+
+  <!-- ═══════════════ SYSTEM STATUS BAR (manual toggle) ═══════════════ -->
+  <section class="sys-status" aria-live="polite">
+    <div class="sys-status-left">
+      <span class="sys-dot" aria-hidden="true"></span>
+      <span class="sys-label">All Systems Operational</span>
+    </div>
+    <span class="sys-sub">Last checked: 2026-04-21 · 14:22 MST</span>
+  </section>
+
+  <!-- ═══════════════ LATEST UPDATE HERO CARD ═══════════════ -->
+  <div class="latest-eyebrow">Latest Update</div>
+  <article class="latest-card">
+    <div class="latest-meta">
+      <span class="latest-version">V0.6.2</span>
+      <span class="latest-date">April 18, 2026</span>
+      <span class="update-tag improved">Improved</span>
+    </div>
+    <h2 class="latest-headline">Mobile wallet returns now resume where you left off.</h2>
+    <p class="latest-copy">Switching to your wallet app during a payment or proof no longer loses your spot. When you come back to LASTPROOF, you'll pick up exactly where you were — no restart, no re-entering details.</p>
+  </article>
+
+  <!-- ═══════════════ UPDATE FEED ═══════════════ -->
+  <div class="feed-header">
+    <h2 class="feed-title">Recent Updates</h2>
+  </div>
+
+  <section class="feed">
+
+    <!-- ENTRY: V0.6.1 -->
+    <article class="update">
+      <div class="update-side">
+        <div class="update-version">V0.6.1</div>
+        <div class="update-date">Apr 18, 2026</div>
+      </div>
+      <div class="update-body">
+        <span class="update-tag fixed">Fixed</span>
+        <p class="update-copy">Ambassador referrals now track correctly from the very first sign-in. If you were referred to LASTPROOF by a Terminal ambassador, your profile is linked to them the moment you land — no lost attribution, no missing credit.</p>
+      </div>
+    </article>
+
+    <!-- ENTRY: V0.6.0 -->
+    <article class="update">
+      <div class="update-side">
+        <div class="update-version">V0.6.0</div>
+        <div class="update-date">Apr 16, 2026</div>
+      </div>
+      <div class="update-body">
+        <span class="update-tag added">Added</span>
+        <p class="update-copy">Proof modal now checks your wallet's dev eligibility <strong>before</strong> you pay. No more spending to find out you don't qualify — you'll see a clear yes/no up front, with the exact reason if it's a no.</p>
+      </div>
+    </article>
+
+    <!-- ENTRY: V0.5.3 -->
+    <article class="update">
+      <div class="update-side">
+        <div class="update-version">V0.5.3</div>
+        <div class="update-date">Apr 16, 2026</div>
+      </div>
+      <div class="update-body">
+        <span class="update-tag improved">Improved</span>
+        <p class="update-copy">Public profiles now show every proof, not just the first five. Visitors can scroll through your full work history without clicking through. Longer careers, longer feeds — no artificial cap.</p>
+      </div>
+    </article>
+
+    <!-- ENTRY: V0.5.2 -->
+    <article class="update">
+      <div class="update-side">
+        <div class="update-version">V0.5.2</div>
+        <div class="update-date">Apr 15, 2026</div>
+      </div>
+      <div class="update-body">
+        <span class="update-tag fixed">Fixed</span>
+        <p class="update-copy">Work item dates save reliably when you enter just a month and year. Editing a project with a date like "Mar 2026" no longer throws an error.</p>
+      </div>
+    </article>
+
+    <!-- ENTRY: V0.5.1 -->
+    <article class="update">
+      <div class="update-side">
+        <div class="update-version">V0.5.1</div>
+        <div class="update-date">Apr 15, 2026</div>
+      </div>
+      <div class="update-body">
+        <span class="update-tag fixed">Fixed</span>
+        <p class="update-copy">Treasury address copy button now works cleanly. Copying the address no longer picks up surrounding whitespace, and clicking COPY no longer highlights random page text.</p>
+      </div>
+    </article>
+
+    <!-- ENTRY: V0.5.0 -->
+    <article class="update">
+      <div class="update-side">
+        <div class="update-version">V0.5.0</div>
+        <div class="update-date">Apr 15, 2026</div>
+      </div>
+      <div class="update-body">
+        <span class="update-tag improved">Improved</span>
+        <p class="update-copy">Work items now sort by date automatically. We removed the manual drag-to-reorder step — your proofs appear newest-first everywhere, on the dashboard and on your public profile. One less thing to manage.</p>
+      </div>
+    </article>
+
+    <!-- ENTRY: V0.4.4 -->
+    <article class="update">
+      <div class="update-side">
+        <div class="update-version">V0.4.4</div>
+        <div class="update-date">Apr 14, 2026</div>
+      </div>
+      <div class="update-body">
+        <span class="update-tag improved">Improved</span>
+        <p class="update-copy">Share your profile straight from the name bar. The share icon moved from the topbar to sit right next to your @handle, where visitors actually expect it.</p>
+      </div>
+    </article>
+
+    <!-- ENTRY: V0.4.3 -->
+    <article class="update">
+      <div class="update-side">
+        <div class="update-version">V0.4.3</div>
+        <div class="update-date">Apr 14, 2026</div>
+      </div>
+      <div class="update-body">
+        <span class="update-tag improved">Improved</span>
+        <p class="update-copy">Clearer helper text on the Pitch and About Me fields. Reworded and brightened the hints on your dashboard so it's obvious what to put where.</p>
+      </div>
+    </article>
+
+    <!-- ENTRY: V0.4.2 -->
+    <article class="update">
+      <div class="update-side">
+        <div class="update-version">V0.4.2</div>
+        <div class="update-date">Apr 14, 2026</div>
+      </div>
+      <div class="update-body">
+        <span class="update-tag added">Added</span>
+        <p class="update-copy">Report inappropriate claims at <strong>reportclaims@lastshift.ai</strong>. A dedicated inbox for flagging fake or misleading proofs on any profile.</p>
+      </div>
+    </article>
+
+    <!-- ENTRY: V0.4.1 -->
+    <article class="update">
+      <div class="update-side">
+        <div class="update-version">V0.4.1</div>
+        <div class="update-date">Apr 14, 2026</div>
+      </div>
+      <div class="update-body">
+        <span class="update-tag added">Added</span>
+        <p class="update-copy">New landing page: <strong>/earlyaccess</strong>. A general-marketing destination for the platform, separate from the campaign and ambassador pages.</p>
+      </div>
+    </article>
+
+  </section>
+
+  <!-- ═══════════════ VIEW ALL CTA ═══════════════ -->
+  <div class="view-all">
+    <a href="/status/all">View All Updates →</a>
+    <span class="view-all-sub">Full archive grouped by month · 42 entries since V0.0.0</span>
+  </div>
+
+  <!-- ═══════════════ SUBSCRIBE STRIP ═══════════════ -->
+  <aside class="subscribe">
+    <div class="subscribe-text">
+      <span class="subscribe-head">Get updates as they ship</span>
+      <span class="subscribe-sub">We post every update to the LASTSHIFT Break Room on Telegram.</span>
+    </div>
+    <a href="https://t.me/lastshiftcoinbreakroom" target="_blank" rel="noopener">Join Telegram →</a>
+  </aside>
+
+  <footer class="page-footer">
+    <div>LAST<span class="orange">PROOF</span> BY LASTSHIFT.AI</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <a href="/terms">TERMS</a>
+      <a href="/privacy">PRIVACY</a>
+      <a href="/help">HELP</a>
+      <a href="https://x.com/lastshift" target="_blank" rel="noopener">X</a>
+      <a href="https://t.me/lastshiftcoinbreakroom" target="_blank" rel="noopener">TELEGRAM</a>
+    </div>
+    <div class="burn-tag">25% BURN ON EVERY TX</div>
+  </footer>
+
+</main>
+</body>
+</html>
