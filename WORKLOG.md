@@ -20,6 +20,67 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-21 09:52 MST — /help: add SHIFTBOT pinned strip (matches global chrome)
+
+**Device:** Kellen's Mac mini
+**Platform:** Claude Desktop
+**Model:** claude-opus-4-6
+**Role:** help-page
+**Commits:** this entry
+**Impacts:** none — wireframe-only
+**Status:** ✅ shipped, HTTP 200
+
+### Did
+
+- Kellen: the SHIFTBOT pinned strip was missing from /help even
+  though I'd been asked to match the homepage chrome. Same miss as
+  the footer one earlier — I hadn't included the fixed-bottom
+  SHIFTBOT bar that lives on every non-/manage page via the
+  `(marketing)` layout.
+- Read `src/components/ShiftbotStrip.tsx` and
+  `src/app/globals.css:431-483` + the `max-width:720px` responsive
+  rule (`.shiftbot .ph { display: none }`). Ported both to
+  `wireframes/help.html`.
+- Added the collapsed-state markup directly into the wireframe:
+  mini logo + `SHIFTBOT` label + green `>` cursor + placeholder
+  prompt + `[ EXPAND ↑ ]` button. Logo uses `/shiftbot-logo.png`
+  with an `onerror` → `SB` colored-tile fallback (same trick as
+  the topbar logo, so the wireframe preview works without the
+  PNG asset).
+- Ported the expanded-state markup + state logic as a small IIFE:
+  click-to-expand → input-submit shows the canned pre-Grid
+  AUTO_RESPONSE → collapse button returns to the strip. Mirrors
+  the React component's state machine exactly (same auto-response
+  string, same PRE-LAUNCH badge, same input placeholder).
+- `body { padding-bottom: 62px }` so the fixed strip doesn't cover
+  the footer when scrolled to bottom.
+- Responsive: `@media (max-width:900px)` hides the placeholder
+  prompt and tightens padding — matches the production rule
+  (`.shiftbot .ph { display: none }` at 720px in production; I
+  bumped it to 900px to match help.html's existing breakpoint).
+
+### Current state
+
+- `wireframes/help.html` — 2,318 lines, 143.5 KB, HTTP 200.
+- Global chrome now complete: topbar + footer + SHIFTBOT strip
+  all aligned with production.
+- Preview: http://127.0.0.1:8765/help.html (server restarted in
+  background after session resume — ID b8ubruhok).
+
+### Gotchas for next session
+
+- **Whenever a "match the homepage" ask comes in, check all three
+  global-chrome pieces**: `src/components/Topbar.tsx` +
+  `src/components/Footer.tsx` + `src/components/ShiftbotStrip.tsx`
+  (plus their `globals.css` classes). I missed the footer + strip
+  the first pass; don't repeat.
+- **`.shiftbot` is `position: fixed; bottom: 0`** — DOM placement
+  doesn't matter for layout, but it covers ~50px of viewport
+  bottom. Every page needs `body { padding-bottom }` or equivalent
+  so the footer isn't hidden behind it.
+
+---
+
 ## 2026-04-21 02:34 MST — /help footer: fix mismatch — use production Footer.tsx, not stale homepage.html
 
 **Device:** Kellen's Mac mini
