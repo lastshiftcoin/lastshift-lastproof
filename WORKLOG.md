@@ -20,6 +20,50 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-21 02:26 MST — /help footer: match homepage global footer
+
+**Device:** Kellen's Mac mini
+**Platform:** Claude Desktop
+**Model:** claude-opus-4-6
+**Role:** help-page
+**Commits:** this entry
+**Impacts:** none — wireframe-only
+**Status:** ✅ shipped, HTTP 200
+
+### Did
+
+- Replaced the custom `.page-footer` block in `/help` with the global
+  site footer from `wireframes/homepage.html` (matches production
+  `src/components/Footer.tsx` + coordinator's STATUS link commit
+  `b7db33c`). Same pattern as the earlier global-topbar match.
+- Old footer content dropped: "LASTPROOF BY LASTSHIFT.AI" brand,
+  TERMS / PRIVACY / X / TELEGRAM links, "25% BURN ON EVERY TX" tag.
+  None of those belong on the global footer.
+- Old `.last-updated` "page last updated: YYYY-MM-DD" div also
+  dropped — not part of the global footer pattern. If we want a
+  timestamp later, it can ship as a standalone element separate
+  from the footer.
+- New footer matches homepage exactly:
+  - Left: "lastshift.ai, a company of vibe coders"
+  - Right: STATUS · TERMINAL · LASTSHIFTCOIN.COM
+  - Mono typography, text-dim color, hover → text-primary
+  - `padding:24px`, `border-top` separator, flexed between
+- Responsive: mobile ≤900px stacks column-direction + centers text,
+  mirrors homepage.html's `@media (max-width:900px)` footer rule.
+
+### Current state
+
+- `wireframes/help.html` — 136.2 KB, HTTP 200.
+- Global chrome (topbar + footer) now fully aligned with homepage.
+  Frontend builder will wire the production (marketing) layout once
+  productionized; this wireframe is the copy-reference.
+
+### Open / next
+
+- Prior open items unchanged.
+
+---
+
 ## 2026-04-21 02:14 MST — /help stack-compare: real responsive grid + visual polish
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`)

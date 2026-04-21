@@ -443,11 +443,11 @@
   .info-card ul{padding-left:18px;margin:0}
 
   /* ═══════════════  PAGE FOOTER  ═══════════════ */
-  .page-footer{margin-top:60px;padding-top:28px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:1px;gap:16px;flex-wrap:wrap}
-  .page-footer a{color:var(--text-secondary)}
-  .page-footer a:hover{color:var(--orange)}
-  .page-footer .burn-tag{color:var(--orange)}
-  .last-updated{margin-top:12px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--text-dim);text-transform:uppercase}
+  /* Global site footer — identical to homepage.html */
+  footer.site-footer{margin-top:60px;padding:24px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1.5px;border-top:1px solid var(--border);text-transform:uppercase}
+  footer.site-footer .right{display:flex;gap:22px}
+  footer.site-footer a{color:var(--text-dim);transition:color .15s}
+  footer.site-footer a:hover{color:var(--text-primary)}
 
   /* ═══════════════  RESPONSIVE  ═══════════════ */
   @media (max-width:900px){
@@ -468,6 +468,7 @@
     .step .shot,.sub-topic .shot{max-width:420px}
     .card-grid,.contact-info-grid{grid-template-columns:1fr}
     .tid-display{font-size:18px;letter-spacing:2px;padding:22px 14px}
+    footer.site-footer{flex-direction:column;gap:14px;text-align:center;padding:20px 14px}
   }
   @media (max-width:540px){
     .hero h1{font-size:28px}
@@ -2055,18 +2056,14 @@
     </div>
   </section>
 
-  <!-- ═══════════════ LAST UPDATED + FOOTER ═══════════════ -->
-  <div class="last-updated">&gt; page last updated: 2026-04-20</div>
-
-  <footer class="page-footer">
-    <div>LAST<span class="orange">PROOF</span> BY LASTSHIFT.AI</div>
-    <div style="display:flex;gap:16px;flex-wrap:wrap">
-      <a href="/terms">TERMS</a>
-      <a href="/privacy">PRIVACY</a>
-      <a href="https://x.com/lastshift" target="_blank" rel="noopener">X</a>
-      <a href="https://t.me/lastshiftcoinbreakroom" target="_blank" rel="noopener">TELEGRAM</a>
+  <!-- ═══════════════ GLOBAL FOOTER — identical to homepage.html ═══════════════ -->
+  <footer class="site-footer">
+    <div>lastshift.ai, a company of vibe coders</div>
+    <div class="right">
+      <a href="https://lastproof.app/status" target="_blank" rel="noreferrer">STATUS</a>
+      <a href="https://lastshift.app">TERMINAL</a>
+      <a href="https://lastshiftcoin.com">LASTSHIFTCOIN.COM</a>
     </div>
-    <div class="burn-tag">25% BURN ON EVERY TX</div>
   </footer>
 
 </main>
