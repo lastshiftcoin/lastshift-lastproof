@@ -94,6 +94,55 @@ layer, just the adapter.
 
 ---
 
+## Session protocol — multi-session / multi-machine coordination
+
+This repo is edited from multiple Claude sessions, sometimes across different
+machines (e.g. a MacBook Air + an iMac sharing files over iCloud). The
+`WORKLOG.md` file at the repo root is the authoritative hand-off log so
+sessions don't overwrite each other's context.
+
+**At session start — before any substantive work:**
+1. Read `WORKLOG.md` top-to-bottom to at least the last 3 entries. "Open /
+   next" and "Gotchas for next session" from the previous entry are
+   non-negotiable context.
+2. Run `git log --oneline -20` to see what shipped recently — commit
+   messages are the ground truth for *what changed*; WORKLOG.md is the
+   ground truth for *why and what's still in flight*.
+
+**At the end of every substantive work block — before responding "done"
+to the user on a task that shipped code, ran migrations, changed
+architecture, or resolved an open item from a prior entry:**
+3. Append a new entry at the **top** of `WORKLOG.md` using the template at
+   the bottom of that file.
+4. Capture device + platform + model automatically — don't ask the user
+   for what the environment can tell you:
+   - Device: `scutil --get ComputerName` + `hostname` + `sw_vers -productVersion`
+   - Platform: `$CLAUDE_CODE_ENTRYPOINT` (`claude-desktop` → Claude Desktop,
+     `claude-cli` → terminal CLI, `cowork` → Cowork) and `$__CFBundleIdentifier`
+     as a tiebreaker
+   - Model: `$DEFAULT_LLM_MODEL`
+   - Timestamp: `date "+%Y-%m-%d %H:%M %Z"`
+5. If you changed architecture (new subsystem, new table, new contract
+   between services), **also update the relevant section of this file**.
+   CLAUDE.md always reflects current truth. WORKLOG.md always reflects
+   history. If they disagree later, CLAUDE.md wins — update it to match
+   reality and leave a pointer in the newest WORKLOG entry.
+
+**Never edit an older WORKLOG entry** except to mark an "Open" item as
+resolved with a `→ resolved YYYY-MM-DD in <newer entry title>` pointer.
+Append-only.
+
+**iCloud sync conflicts:** if `git status` shows
+`WORKLOG.md (conflicted copy …)`, merge both sets of entries in timestamp
+order and commit — never discard either side. Git is the source of truth
+for this repo; iCloud is incidental filesystem sync.
+
+**If the WORKLOG entry would be effectively empty** (you only read files,
+answered a question, nothing shipped or changed state), do not write an
+entry. Only log work that another session needs to know about.
+
+---
+
 ## Priorities
 
 Wireframes drive implementation order. Current priority (set by user,
