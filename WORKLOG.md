@@ -20,6 +20,61 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-21 02:34 MST — /help footer: fix mismatch — use production Footer.tsx, not stale homepage.html
+
+**Device:** Kellen's Mac mini
+**Platform:** Claude Desktop
+**Model:** claude-opus-4-6
+**Role:** help-page
+**Commits:** this entry
+**Impacts:** none — wireframe-only
+**Status:** ✅ shipped, HTTP 200
+
+### Did
+
+- Prior entry (02:26 MST) pulled the footer from
+  `wireframes/homepage.html` — which is stale (dated Apr 12, before
+  coordinator's Updates-feed work). Production `Footer.tsx` +
+  `globals.css .lp-footer` have drifted since. Kellen flagged:
+  "thats not the same footer as the homepage."
+- Re-read the production source of truth:
+  - `src/components/Footer.tsx` — adds `lastshift.ai` as an anchor
+    wrapping the word (not plain text), different to the wireframe
+    version
+  - `src/app/globals.css:400-402, 508` — class `.lp-footer` (not
+    `site-footer`), padding `12px 24px` (not `24px`), no
+    `text-transform:uppercase`
+- Rewrote the help.html footer to mirror production byte-for-byte:
+  - Class `lp-footer`
+  - Padding `12px 24px`
+  - Left: `lastshift.ai` wrapped in `<a href="https://lastshift.ai"
+    target="_blank" rel="noreferrer">`, followed by `,&nbsp;a
+    company of vibe coders`
+  - Right: STATUS · TERMINAL · LASTSHIFTCOIN.COM (unchanged)
+  - `a:hover → text-primary`; no uppercase transform
+  - Responsive: `<=900px` → `flex-direction:column; gap:14px;
+    text-align:center` (verbatim from production `globals.css`
+    line 508)
+
+### Current state
+
+- `wireframes/help.html` — 136.3 KB, HTTP 200.
+- Footer now matches production exactly; next time the help page
+  ships, the (marketing) layout's Footer component will render it
+  identically.
+
+### Gotchas for next session
+
+- **`wireframes/homepage.html` is stale** as a design reference.
+  Last touched Apr 12; production marketing layout has evolved
+  since (footer, STATUS link, etc.). When matching "the homepage"
+  in a wireframe, prefer checking `src/components/Footer.tsx`,
+  `src/components/Topbar.tsx`, and `src/app/globals.css` as the
+  canonical source — `wireframes/homepage.html` is a snapshot, not
+  a live reference.
+
+---
+
 ## 2026-04-21 02:26 MST — /help footer: match homepage global footer
 
 **Device:** Kellen's Mac mini

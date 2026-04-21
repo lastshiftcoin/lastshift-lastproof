@@ -443,11 +443,11 @@
   .info-card ul{padding-left:18px;margin:0}
 
   /* ═══════════════  PAGE FOOTER  ═══════════════ */
-  /* Global site footer — identical to homepage.html */
-  footer.site-footer{margin-top:60px;padding:24px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1.5px;border-top:1px solid var(--border);text-transform:uppercase}
-  footer.site-footer .right{display:flex;gap:22px}
-  footer.site-footer a{color:var(--text-dim);transition:color .15s}
-  footer.site-footer a:hover{color:var(--text-primary)}
+  /* Global site footer — identical to production src/components/Footer.tsx + globals.css .lp-footer */
+  footer.lp-footer{margin-top:60px;padding:12px 24px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1.5px;border-top:1px solid var(--border)}
+  footer.lp-footer .right{display:flex;gap:22px}
+  footer.lp-footer a{color:inherit;text-decoration:none;transition:color .15s}
+  footer.lp-footer a:hover{color:var(--text-primary)}
 
   /* ═══════════════  RESPONSIVE  ═══════════════ */
   @media (max-width:900px){
@@ -468,7 +468,7 @@
     .step .shot,.sub-topic .shot{max-width:420px}
     .card-grid,.contact-info-grid{grid-template-columns:1fr}
     .tid-display{font-size:18px;letter-spacing:2px;padding:22px 14px}
-    footer.site-footer{flex-direction:column;gap:14px;text-align:center;padding:20px 14px}
+    footer.lp-footer{flex-direction:column;gap:14px;text-align:center}
   }
   @media (max-width:540px){
     .hero h1{font-size:28px}
@@ -2056,9 +2056,11 @@
     </div>
   </section>
 
-  <!-- ═══════════════ GLOBAL FOOTER — identical to homepage.html ═══════════════ -->
-  <footer class="site-footer">
-    <div>lastshift.ai, a company of vibe coders</div>
+  <!-- ═══════════════ GLOBAL FOOTER — identical to production Footer.tsx ═══════════════ -->
+  <footer class="lp-footer">
+    <div>
+      <a href="https://lastshift.ai" target="_blank" rel="noreferrer">lastshift.ai</a>, a company of vibe coders
+    </div>
     <div class="right">
       <a href="https://lastproof.app/status" target="_blank" rel="noreferrer">STATUS</a>
       <a href="https://lastshift.app">TERMINAL</a>
