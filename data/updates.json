@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.8.1",
+  "latest_version": "0.8.2",
   "entries": [
+    {
+      "version": "0.8.2",
+      "date": "2026-04-21",
+      "category": "improved",
+      "headline": "Your profile now shows up as a rich result in search.",
+      "copy": "Every paid profile now sends Google the full picture — your name, photo, role, verified X and Telegram, and website. Instead of a plain blue link, search results can show your avatar, your identity across platforms, and a one-line description of what you do. Applied automatically to every new profile as it's created.",
+      "source_commits": []
+    },
     {
       "version": "0.8.1",
       "date": "2026-04-21",

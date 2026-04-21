@@ -20,6 +20,94 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-21 10:17 MST — profile pages: per-profile `ProfilePage`/`Person` JSON-LD
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** backend
+**Commits:** this commit (see git log)
+**Migrations run in prod Supabase:** none
+**Impacts:** none — SEO-only, no Terminal contract change
+**Status:** ✅ shipped
+
+### Did
+
+- Added a `buildProfileJsonLd(view)` helper in
+  `src/app/(marketing)/profile/[handle]/page.tsx` that emits a
+  `schema.org/ProfilePage` + nested `Person` entity per profile, using
+  the same `PublicProfileView` data already rendered in the page.
+  Fields:
+  - `name` — `displayName`
+  - `alternateName` — `@handle`
+  - `url` — `https://lastproof.app/@handle`
+  - `image` — avatar URL (omitted if null)
+  - `description` — bio statement, or a generated "verified web3
+    operator with N proofs across M projects" fallback, capped at
+    500 chars
+  - `jobTitle` — primary category label, or first category, or
+    "Web3 Operator"
+  - `sameAs` — only **verified** X + Telegram URLs, plus the
+    operator's website. Unverified social claims are omitted so
+    we don't feed Google a poisoned identity graph.
+- Emitted as `<script type="application/ld+json">` at the top of the
+  paid/legend variant return. **Free profiles do not get JSON-LD** —
+  consistent with their exclusion from the sitemap (they're not
+  canonical content worth a rich card).
+- Applies automatically to all 14 existing profiles on the next
+  deploy, and to every new profile thereafter — no per-profile
+  config, no migration.
+- Updates feed convention applied:
+  - VERSION 0.8.1 → 0.8.2 (patch, category=improved)
+  - `data/updates.json` entry appended at top, `latest_version` bumped
+  - `[update: improved]` prefix on the commit subject
+
+### Current state
+
+- Every paid profile page now serves `ProfilePage` schema in addition
+  to OpenGraph/Twitter cards. Google can render rich results showing
+  the operator's photo, identity across platforms, role, and bio
+  snippet directly in search listings.
+- The site-wide `Organization` JSON-LD in `src/app/layout.tsx` is
+  unchanged — it's still emitted on every page including profiles.
+  Having both per-page and site-wide schema is standard and correct.
+- No visual changes to the profile page itself; the `<script>` tag
+  emits zero rendered content.
+
+### Open / next
+
+- **Consider `CreativeWork` markup for each work item.** A proof
+  flow work item is effectively a portfolio entry; could be
+  described as nested `CreativeWork` entities under the Person.
+  Would give Google a deeper sense of what the operator has shipped.
+  Not urgent — current Person/ProfilePage is the high-value layer.
+- **Google Rich Results test** once deployed: paste a profile URL
+  into https://search.google.com/test/rich-results to verify the
+  structured data parses cleanly. If any field fails validation,
+  Google just drops that field silently in prod — the test surface
+  is where you catch it.
+- **Resubmit sitemap in Google Search Console** (carried over from
+  previous WORKLOG entry — still open).
+
+### Gotchas for next session
+
+- **`sameAs` should only contain verified identities.** Adding
+  unverified `x_handle`/`tg_handle` to `sameAs` would let Google
+  merge LASTPROOF profile data with random social accounts the
+  operator doesn't control. If you ever relax the `xVerified`/
+  `tgVerified` gate in that helper, you're corrupting Google's
+  entity graph for every profile.
+- **Description capped at 500 chars.** Google tolerates longer, but
+  treats very-long descriptions as low-confidence. 500 is safe.
+- **Free-variant profiles skip JSON-LD by design.** Don't "fix" the
+  asymmetry by adding JSON-LD to the free branch — free profiles
+  render a stripped hero that wouldn't validate as a `ProfilePage`
+  (no meaningful content). If that variant ever becomes indexable,
+  the schema should use a lighter `Person`-only shape, not
+  `ProfilePage`.
+
+---
+
 ## 2026-04-21 10:09 MST — sitemap: fix `is_published` bug + expand crawl surface
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)

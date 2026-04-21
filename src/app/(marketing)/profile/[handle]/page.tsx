@@ -31,6 +31,52 @@ interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
+/**
+ * Build the `ProfilePage` + `Person` JSON-LD for this profile. Embedded
+ * as `<script type="application/ld+json">` on paid/legend variants so
+ * Google can render rich results (name, photo, role, social links) in
+ * search — not just a plain link. Free profiles don't get structured
+ * data, consistent with being excluded from the sitemap.
+ *
+ * Spec: https://schema.org/ProfilePage
+ */
+function buildProfileJsonLd(view: PublicProfileView): Record<string, unknown> {
+  const profileUrl = `https://lastproof.app/@${view.handle}`;
+
+  // sameAs lists verified cross-platform identities + the operator's
+  // own website. Only verified socials are included — Google uses
+  // sameAs to build the entity's identity graph; unverified claims
+  // would poison that graph.
+  const sameAs: string[] = [];
+  if (view.xVerified && view.xHandle) sameAs.push(`https://x.com/${view.xHandle}`);
+  if (view.tgVerified && view.tgHandle) sameAs.push(`https://t.me/${view.tgHandle}`);
+  if (view.website) sameAs.push(view.website);
+
+  const primaryCategory =
+    view.categories.find((c) => c.isPrimary) ?? view.categories[0];
+  const jobTitle = primaryCategory?.label ?? "Web3 Operator";
+
+  const description =
+    view.bioStatement ||
+    `${view.displayName} is a verified web3 operator on LASTPROOF with ${view.proofsConfirmed} on-chain proof${view.proofsConfirmed === 1 ? "" : "s"}${view.projectsCount > 0 ? ` across ${view.projectsCount} project${view.projectsCount === 1 ? "" : "s"}` : ""}.`;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    url: profileUrl,
+    mainEntity: {
+      "@type": "Person",
+      name: view.displayName,
+      alternateName: `@${view.handle}`,
+      url: profileUrl,
+      ...(view.avatarUrl ? { image: view.avatarUrl } : {}),
+      description: description.slice(0, 500),
+      jobTitle,
+      ...(sameAs.length > 0 ? { sameAs } : {}),
+    },
+  };
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { handle } = await params;
   const view = (await getPublicProfileView(handle)) ?? FIXTURES[handle] ?? null;
@@ -177,8 +223,16 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
   const mintedItems = view.workItems.filter((w) => w.section === "minted");
   const recentItems = view.workItems.filter((w) => w.section === "recent");
 
+  // Structured data for search engines — see buildProfileJsonLd() above.
+  const jsonLd = buildProfileJsonLd(view);
+
   return (
     <div className="pp-page pp-page-bg">
+      {/* eslint-disable-next-line react/no-danger */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="pp-container">
         {isPreview && <PreviewBanner handle={view.handle} />}
         <ProfileTopBar handle={view.handle} />
