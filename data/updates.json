@@ -1,6 +1,16 @@
 {
-  "latest_version": "0.6.2",
+  "latest_version": "0.7.0",
   "entries": [
+    {
+      "version": "0.7.0",
+      "date": "2026-04-21",
+      "category": "added",
+      "headline": "Every update we ship now lives at /status.",
+      "copy": "A new public page shows what we've shipped, what's new, and what's coming. Browse the last 10 updates on /status, or scroll the full archive at /status/all — grouped by month, going all the way back to launch.",
+      "source_commits": [
+        "0fc4257"
+      ]
+    },
     {
       "version": "0.6.2",
       "date": "2026-04-18",
