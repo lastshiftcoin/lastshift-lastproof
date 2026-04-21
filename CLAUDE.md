@@ -108,13 +108,16 @@ sessions don't overwrite each other's context.
 2. Run `git log --oneline -20` to see what shipped recently — commit
    messages are the ground truth for *what changed*; WORKLOG.md is the
    ground truth for *why and what's still in flight*.
+3. Run `git status` to confirm the working tree is clean. If it isn't,
+   figure out which prior session left work uncommitted **before** starting
+   your own. iCloud syncs files across machines; git does not.
 
 **At the end of every substantive work block — before responding "done"
 to the user on a task that shipped code, ran migrations, changed
 architecture, or resolved an open item from a prior entry:**
-3. Append a new entry at the **top** of `WORKLOG.md` using the template at
+4. Append a new entry at the **top** of `WORKLOG.md` using the template at
    the bottom of that file.
-4. Capture device + platform + model automatically — don't ask the user
+5. Capture device + platform + model automatically — don't ask the user
    for what the environment can tell you:
    - Device: `scutil --get ComputerName` + `hostname` + `sw_vers -productVersion`
    - Platform: `$CLAUDE_CODE_ENTRYPOINT` (`claude-desktop` → Claude Desktop,
@@ -122,11 +125,22 @@ architecture, or resolved an open item from a prior entry:**
      as a tiebreaker
    - Model: `$DEFAULT_LLM_MODEL`
    - Timestamp: `date "+%Y-%m-%d %H:%M %Z"`
-5. If you changed architecture (new subsystem, new table, new contract
+6. If the change impacts Terminal (e.g. you changed how you call Terminal's
+   `/api/license/validate`, changed the TID handshake, changed a shared
+   secret) note it on the `**Impacts:**` line so the next Terminal session
+   sees the pointer.
+7. If you changed architecture (new subsystem, new table, new contract
    between services), **also update the relevant section of this file**.
    CLAUDE.md always reflects current truth. WORKLOG.md always reflects
    history. If they disagree later, CLAUDE.md wins — update it to match
    reality and leave a pointer in the newest WORKLOG entry.
+8. Commit and push before signing off. Never leave uncommitted changes on
+   disk — iCloud will sync them to other machines but git won't, creating
+   exactly the divergence this protocol prevents.
+
+The sibling log lives at `lastshiftcoin/lastshift-terminal` → `WORKLOG.md`.
+When a Terminal change impacts this repo, the other session records it on
+its `**Impacts:**` line; read their entry before touching related code.
 
 **Never edit an older WORKLOG entry** except to mark an "Open" item as
 resolved with a `→ resolved YYYY-MM-DD in <newer entry title>` pointer.

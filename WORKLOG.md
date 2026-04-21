@@ -5,6 +5,16 @@ session touching this repo reads the top of this file before work, and writes a
 new entry at the top when a work block ships. See `CLAUDE.md § Session protocol`
 for the rules.
 
+This log is one of a pair:
+
+- `WORKLOG.md` (this file) — LASTPROOF repo, covers LASTPROOF work
+- `lastshiftcoin/lastshift-terminal` → `WORKLOG.md` — Terminal repo, covers Terminal work
+
+When a change in one repo impacts the other (shared contract, shared secret,
+API signature, wallet/TID handshake), note it on the `**Impacts:**` line of
+your entry. The other platform's next session will see the pointer and read
+the linked entry before touching related code.
+
 When this file exceeds ~500 lines, roll the oldest half into
 `WORKLOG-ARCHIVE.md` and keep only the recent entries here.
 
@@ -17,6 +27,10 @@ When this file exceeds ~500 lines, roll the oldest half into
 **Model:** claude-opus-4-6
 **Commits:** `67fc011`, `adca9f1`, `d04e9e9`
 **Migrations run in prod Supabase:** 0017, 0018, 0019, 0020
+**Impacts:** none directly — LASTPROOF still calls Terminal's
+`/api/license/validate` unchanged. Terminal sessions don't need to act on
+this entry, but the fix does rely on Terminal's existing TID validation
+contract staying stable.
 **Status:** ✅ shipped, verified in prod, street team can drive traffic
 
 ### Did
@@ -102,6 +116,7 @@ How to fill each line at session-end:
 | Model | `echo $DEFAULT_LLM_MODEL` |
 | Commits | `git log --oneline <last-entry-sha>..HEAD` |
 | Migrations | any `.sql` under `supabase/migrations/` that the user ran in Supabase SQL Editor during this session |
+| Impacts | If your change affects the Terminal repo (shared contract, shared secret, wallet/TID handshake, etc.), say so. If not, write "none". |
 | Status | ✅ shipped, 🟡 in-flight, ❌ blocked |
 
 ```
@@ -112,6 +127,7 @@ How to fill each line at session-end:
 **Model:** <model name>
 **Commits:** `<sha>` [, `<sha>` …]
 **Migrations run in prod Supabase:** <list or "none">
+**Impacts:** <none | terminal-build — short reason + pointer to their WORKLOG entry>
 **Status:** ✅ | 🟡 | ❌
 
 ### Did
