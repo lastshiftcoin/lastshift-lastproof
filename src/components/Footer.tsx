@@ -22,6 +22,7 @@ export default function Footer() {
         , a company of vibe coders
       </div>
       <div className="right">
+        <a href="https://lastproof.app/status" target="_blank" rel="noreferrer">STATUS</a>
         <Link href="https://lastshift.app">TERMINAL</Link>
         <Link href="https://lastshiftcoin.com">LASTSHIFTCOIN.COM</Link>
       </div>

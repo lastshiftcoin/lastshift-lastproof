@@ -16,6 +16,9 @@ export function DashboardFooter() {
     }}>
       <span>lastshift.ai, a company of vibe coders</span>
       <span style={{ display: "flex", gap: 16 }}>
+        <a href="https://lastproof.app/status" target="_blank" rel="noopener noreferrer">
+          Status
+        </a>
         <a href="https://lastshiftcoin.com" target="_blank" rel="noopener noreferrer">
           lastshiftcoin.com
         </a>
