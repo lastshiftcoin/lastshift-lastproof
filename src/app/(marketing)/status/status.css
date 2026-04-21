@@ -1,0 +1,322 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   /status + /status/all — page-scoped styles.
+   Topbar, footer, body atmospherics, and .wrap come from globals.css +
+   (marketing)/layout.tsx. Everything below is scoped under .status-page.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.status-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 24px 90px;
+}
+
+/* ─── page-specific palette additions (blue for "improved" tag) ────────── */
+.status-page {
+  --status-blue: #60a5fa;
+  --status-blue-dim: rgba(96, 165, 250, 0.12);
+  --status-blue-border: rgba(96, 165, 250, 0.3);
+  --status-green-border: rgba(0, 230, 118, 0.3);
+  --status-orange-border: rgba(255, 145, 0, 0.3);
+}
+
+/* ═══════════════  HERO  ═══════════════ */
+.status-page .status-hero { padding: 56px 0 24px; text-align: center; }
+.status-page .status-hero-eyebrow {
+  font-family: var(--mono); font-size: 10px; color: var(--orange);
+  letter-spacing: 3px; text-transform: uppercase; margin-bottom: 20px;
+}
+.status-page .status-hero h1 {
+  font-family: var(--sans); font-size: 44px; line-height: 1.08;
+  margin: 0 auto 18px; font-weight: 700; letter-spacing: -1px; max-width: 680px;
+}
+.status-page .status-hero h1 .orange { color: var(--orange); }
+.status-page .status-hero .body-text {
+  font-size: 15px; color: var(--text-secondary);
+  max-width: 540px; margin: 0 auto; line-height: 1.65;
+}
+
+/* ═══════════════  SYSTEM STATUS BAR  ═══════════════ */
+.status-page .sys-status {
+  margin: 28px 0 48px; padding: 18px 22px;
+  border: 1px solid var(--green); border-radius: var(--r-card);
+  background: linear-gradient(180deg, var(--green-dim), transparent);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
+.status-page .sys-status-left { display: flex; align-items: center; gap: 14px; }
+.status-page .sys-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--green); box-shadow: 0 0 12px rgba(0, 230, 118, 0.25);
+  position: relative; flex-shrink: 0;
+}
+.status-page .sys-dot::after {
+  content: ""; position: absolute; inset: -4px; border-radius: 50%;
+  border: 2px solid var(--green); opacity: 0.5;
+  animation: sys-pulse 2s ease-out infinite;
+}
+@keyframes sys-pulse {
+  0%   { transform: scale(1);   opacity: 0.5; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+.status-page .sys-label {
+  font-family: var(--mono); font-size: 13px; letter-spacing: 1.5px;
+  color: var(--green); font-weight: 600; text-transform: uppercase;
+}
+.status-page .sys-sub {
+  font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.status-page .sys-status.degraded {
+  border-color: var(--orange);
+  background: linear-gradient(180deg, var(--orange-dim), transparent);
+}
+.status-page .sys-status.degraded .sys-dot { background: var(--orange); box-shadow: 0 0 12px rgba(255, 145, 0, 0.25); }
+.status-page .sys-status.degraded .sys-dot::after { border-color: var(--orange); }
+.status-page .sys-status.degraded .sys-label { color: var(--orange); }
+.status-page .sys-status.outage {
+  border-color: var(--red);
+  background: linear-gradient(180deg, rgba(255, 82, 82, 0.1), transparent);
+}
+.status-page .sys-status.outage .sys-dot { background: var(--red); box-shadow: 0 0 12px rgba(255, 82, 82, 0.3); }
+.status-page .sys-status.outage .sys-dot::after { border-color: var(--red); }
+.status-page .sys-status.outage .sys-label { color: var(--red); }
+
+/* ═══════════════  LATEST UPDATE HERO CARD  ═══════════════ */
+.status-page .latest-eyebrow {
+  font-family: var(--mono); font-size: 10px; color: var(--orange);
+  letter-spacing: 2px; text-transform: uppercase; margin: 0 0 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.status-page .latest-eyebrow::before { content: "//"; color: var(--orange); }
+.status-page .latest-card {
+  margin-bottom: 48px; padding: 28px;
+  border: 1px solid var(--orange); border-radius: var(--r-card);
+  background: linear-gradient(180deg, var(--orange-dim), transparent);
+  position: relative; overflow: hidden;
+}
+.status-page .latest-card::before {
+  content: ""; position: absolute; top: -60px; right: -60px;
+  width: 220px; height: 220px;
+  background: radial-gradient(circle, rgba(255, 145, 0, 0.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+.status-page .latest-meta {
+  position: relative; display: flex; align-items: center; gap: 12px;
+  margin-bottom: 14px; flex-wrap: wrap;
+}
+.status-page .latest-version {
+  font-family: var(--mono); font-size: 22px; font-weight: 700;
+  color: var(--orange); letter-spacing: 1px;
+}
+.status-page .latest-date {
+  font-family: var(--mono); font-size: 11px;
+  color: var(--text-dim); letter-spacing: 1px;
+}
+.status-page .latest-headline {
+  position: relative; font-size: 22px; font-weight: 600;
+  margin: 0 0 10px; line-height: 1.3;
+}
+.status-page .latest-copy {
+  position: relative; font-size: 15px; color: var(--text-secondary);
+  line-height: 1.65; margin: 0;
+}
+
+/* ═══════════════  UPDATE FEED  ═══════════════ */
+.status-page .feed-header {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin: 0 0 22px; gap: 16px; flex-wrap: wrap;
+}
+.status-page .feed-title {
+  font-family: var(--mono); font-size: 12px; letter-spacing: 2px;
+  color: var(--text-secondary); text-transform: uppercase; margin: 0;
+  display: flex; align-items: center; gap: 8px;
+}
+.status-page .feed-title::before { content: "//"; color: var(--orange); }
+
+.status-page .feed { display: flex; flex-direction: column; gap: 0; }
+.status-page .update {
+  display: grid; grid-template-columns: 110px 1fr; gap: 22px;
+  padding: 22px 0; border-top: 1px solid var(--border);
+}
+.status-page .update:first-child { border-top: none; padding-top: 0; }
+.status-page .update-side { display: flex; flex-direction: column; gap: 6px; padding-top: 2px; }
+.status-page .update-version {
+  font-family: var(--mono); font-size: 13px; font-weight: 700;
+  color: var(--text-primary); letter-spacing: 0.5px;
+}
+.status-page .update-date {
+  font-family: var(--mono); font-size: 10px;
+  color: var(--text-dim); letter-spacing: 1px;
+}
+.status-page .update-body { display: flex; flex-direction: column; gap: 8px; }
+.status-page .update-tag {
+  display: inline-flex; align-items: center; padding: 3px 8px;
+  font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px;
+  text-transform: uppercase; font-weight: 700;
+  border-radius: var(--r-pill); width: fit-content;
+}
+.status-page .update-tag.fixed    { background: var(--green-dim); color: var(--green); border: 1px solid var(--status-green-border); }
+.status-page .update-tag.added    { background: var(--orange-dim); color: var(--orange); border: 1px solid var(--status-orange-border); }
+.status-page .update-tag.improved { background: var(--status-blue-dim); color: var(--status-blue); border: 1px solid var(--status-blue-border); }
+.status-page .update-copy {
+  font-size: 14.5px; line-height: 1.6; color: var(--text-primary); margin: 0;
+}
+.status-page .update-copy strong { color: var(--text-primary); font-weight: 600; }
+
+/* ═══════════════  VIEW ALL CTA (status.html only)  ═══════════════ */
+.status-page .view-all {
+  margin-top: 40px; text-align: center;
+  padding-top: 32px; border-top: 1px solid var(--border);
+}
+.status-page .view-all a {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 26px; font-family: var(--mono); font-size: 11px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  border: 1px solid var(--border-2); color: var(--text-secondary);
+  background: var(--bg-card); border-radius: var(--r-btn);
+  transition: all 0.15s; font-weight: 600; text-decoration: none;
+}
+.status-page .view-all a:hover {
+  border-color: var(--orange); color: var(--orange); background: var(--bg-card-hover);
+}
+.status-page .view-all-sub {
+  display: block; margin-top: 12px; font-family: var(--mono);
+  font-size: 10px; color: var(--text-dim); letter-spacing: 1px;
+}
+
+/* ═══════════════  SUBSCRIBE STRIP  ═══════════════ */
+.status-page .subscribe {
+  margin-top: 48px; padding: 22px 24px;
+  border: 1px solid var(--border-2); border-radius: var(--r-card);
+  background: var(--bg-card); display: flex; align-items: center;
+  justify-content: space-between; gap: 16px; flex-wrap: wrap;
+}
+.status-page .subscribe-text { display: flex; flex-direction: column; gap: 4px; }
+.status-page .subscribe-head {
+  font-family: var(--mono); font-size: 12px; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--text-primary); font-weight: 600;
+}
+.status-page .subscribe-sub { font-size: 13px; color: var(--text-secondary); }
+.status-page .subscribe a {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 18px; font-family: var(--mono); font-size: 10px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  border: 1px solid var(--orange); color: var(--orange);
+  background: var(--orange-dim); border-radius: var(--r-btn);
+  font-weight: 600; transition: all 0.15s; text-decoration: none;
+}
+.status-page .subscribe a:hover { background: var(--orange); color: var(--bg-primary); }
+
+/* ═══════════════  ARCHIVE-SPECIFIC (/status/all)  ═══════════════ */
+.status-page .breadcrumb {
+  margin-top: 28px; font-family: var(--mono); font-size: 11px;
+  letter-spacing: 1.5px; color: var(--text-dim); text-transform: uppercase;
+  display: flex; align-items: center; gap: 8px;
+}
+.status-page .breadcrumb a { color: var(--text-secondary); transition: color 0.15s; text-decoration: none; }
+.status-page .breadcrumb a:hover { color: var(--orange); }
+.status-page .breadcrumb .sep { color: var(--text-dim); }
+.status-page .breadcrumb .current { color: var(--orange); }
+
+.status-page .archive-hero { padding: 32px 0 20px; }
+.status-page .archive-hero .status-hero-eyebrow { margin-bottom: 14px; }
+.status-page .archive-hero h1 {
+  font-family: var(--sans); font-size: 36px; line-height: 1.1;
+  margin: 0 0 14px; font-weight: 700; letter-spacing: -0.5px; text-align: left;
+}
+.status-page .archive-hero h1 .orange { color: var(--orange); }
+.status-page .archive-hero .body-text {
+  font-size: 15px; color: var(--text-secondary);
+  max-width: 620px; line-height: 1.6; text-align: left;
+}
+
+.status-page .stats-strip {
+  margin: 24px 0 36px; padding: 18px 22px;
+  border: 1px solid var(--border-2); border-radius: var(--r-card);
+  background: var(--bg-card); display: flex; align-items: center;
+  gap: 32px; flex-wrap: wrap; font-family: var(--mono);
+}
+.status-page .stat { display: flex; flex-direction: column; gap: 3px; }
+.status-page .stat-value {
+  font-size: 20px; font-weight: 700; color: var(--text-primary); letter-spacing: 0.5px;
+}
+.status-page .stat-value .orange { color: var(--orange); }
+.status-page .stat-label {
+  font-size: 9px; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase;
+}
+
+.status-page .month-group {
+  margin-bottom: 32px; border: 1px solid var(--border);
+  border-radius: var(--r-card); overflow: hidden; background: var(--bg-secondary);
+}
+.status-page .month-header {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px; background: var(--bg-card);
+  border-bottom: 1px solid var(--border); font-family: var(--mono);
+  cursor: pointer; transition: background 0.15s; gap: 16px;
+}
+.status-page .month-header:hover { background: var(--bg-card-hover); }
+.status-page .month-header-left {
+  display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+}
+.status-page .month-title {
+  font-size: 16px; font-weight: 700; color: var(--text-primary);
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.status-page .month-meta {
+  font-size: 11px; color: var(--text-dim); letter-spacing: 1px;
+}
+.status-page .month-meta .orange { color: var(--orange); }
+.status-page .month-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10px; color: var(--text-secondary);
+  letter-spacing: 1.5px; text-transform: uppercase;
+  transition: color 0.15s; flex-shrink: 0;
+}
+.status-page .month-header:hover .month-toggle { color: var(--orange); }
+.status-page .chevron {
+  width: 10px; height: 10px;
+  border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+  transform: rotate(45deg); transition: transform 0.2s;
+}
+.status-page details[open] .chevron { transform: rotate(-135deg); }
+.status-page summary { list-style: none; }
+.status-page summary::-webkit-details-marker { display: none; }
+
+.status-page .month-body { padding: 8px 22px 22px; }
+
+/* Archive uses the same .update rows as the recent-feed, no overrides */
+
+.status-page .back-cta {
+  margin-top: 40px; text-align: center;
+  padding-top: 28px; border-top: 1px solid var(--border);
+}
+.status-page .back-cta a {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 22px; font-family: var(--mono); font-size: 11px;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  border: 1px solid var(--border-2); color: var(--text-secondary);
+  background: var(--bg-card); border-radius: var(--r-btn);
+  transition: all 0.15s; font-weight: 600; text-decoration: none;
+}
+.status-page .back-cta a:hover {
+  border-color: var(--orange); color: var(--orange); background: var(--bg-card-hover);
+}
+
+/* ═══════════════  RESPONSIVE  ═══════════════ */
+@media (max-width: 720px) {
+  .status-page .status-hero h1 { font-size: 34px; }
+  .status-page .status-hero { padding: 36px 0 16px; }
+  .status-page .latest-card { padding: 22px; }
+  .status-page .latest-headline { font-size: 19px; }
+  .status-page .latest-version { font-size: 19px; }
+  .status-page .archive-hero h1 { font-size: 28px; }
+  .status-page .archive-hero { padding: 20px 0 12px; }
+  .status-page .stats-strip { gap: 22px; padding: 16px 18px; }
+  .status-page .stat-value { font-size: 17px; }
+  .status-page .month-header { padding: 14px 16px; }
+  .status-page .month-body { padding: 6px 16px 16px; }
+  .status-page .update { grid-template-columns: 1fr; gap: 10px; padding: 20px 0; }
+  .status-page .update-side { flex-direction: row; align-items: center; gap: 10px; }
+  .status-page .update-date::before { content: "· "; }
+}
