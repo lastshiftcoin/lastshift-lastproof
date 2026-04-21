@@ -184,6 +184,32 @@ session correctly halted, ran diagnostics, identified that the
 "dangling commit" was a week-old abandoned stash with no rescue value,
 and only then executed the fix. That's the pattern.
 
+### Task-specific sessions
+
+Sessions tied to a specific in-flight task (content writing, docs,
+feature work, debugging threads) follow the same protocol as the
+named specialist roles. A few adaptations:
+
+- **Self-declare a role descriptor** that reflects the session's
+  current scope — e.g. `help-page`, `blog`, `payment-debug`,
+  `onboarding-copy`. Stamp it on every WORKLOG entry:
+  `**Role:** help-page`.
+- **Don't collide with the four persistent roles**: `coordinator`,
+  `backend`, `frontend`, `fullstack`. Anything else is fair game.
+- **When the task is complete and the session is retired**, the role
+  naturally retires with it. No cleanup of CLAUDE.md needed — the
+  protocol doesn't enumerate valid roles, it just says "stamp one."
+- **First-time onboarding of a task session** uses the same prompt
+  shape as a specialist session but asks the session to declare its
+  own role and one-sentence-summarize its in-flight task before
+  continuing. Protocol onboarding is idempotent and won't disrupt
+  the task work.
+
+This convention was codified on 2026-04-20 after the help-page
+session (author of `wireframes/how-it-works-CONTENT.md`) onboarded
+cleanly without needing to fit into one of the four specialist
+buckets.
+
 ### iCloud duplicates: hunt both files AND directories
 
 iCloud creates conflict copies in two shapes, and one find pattern
