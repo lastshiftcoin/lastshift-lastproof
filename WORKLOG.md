@@ -20,6 +20,88 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-21 10:09 MST — sitemap: fix `is_published` bug + expand crawl surface
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** backend
+**Commits:** this commit (see git log)
+**Migrations run in prod Supabase:** none
+**Impacts:** none — SEO-only, no Terminal contract change
+**Status:** ✅ shipped
+
+### Did
+
+- **Fixed a silent sitemap bug.** The previous `sitemap.ts` query
+  filtered profiles by `is_published=true` — that column doesn't exist
+  on `profiles`. The PostgREST error was swallowed (no try/catch), the
+  profile array came back empty, and the live sitemap only ever
+  published 2 URLs (`/` and `/how-it-works`). Every operator profile
+  was invisible to Google. Verified by hitting the live sitemap and
+  by direct Supabase query returning `column profiles.is_published
+  does not exist`. The canonical published signal on `profiles` is
+  `published_at IS NOT NULL`.
+- **Expanded the sitemap to cover every public page:**
+  - Static: `/`, `/how-it-works`, `/help`, `/earlyaccess`, `/grid`,
+    `/status`, `/status/all`
+  - Every published+paid profile at `/@<handle>` (14 URLs today)
+  - Every active ambassador campaign at `/<campaign_slug>` (6 URLs)
+- **Tightened robots.ts** — added `/auth/` (transient OAuth callback
+  pages) and `/5k/` (private ambassador reports + god-ops admin) to
+  the disallow list. Previously those were technically crawlable.
+- **Updates feed convention applied** (this commit changes
+  user-visible SEO behavior):
+  - Bumped `VERSION` 0.8.0 → 0.8.1 (patch, category=fixed)
+  - Added `data/updates.json` entry at the top, `latest_version` bumped
+  - `[update: fixed]` prefix on the commit subject
+
+### Current state
+
+- Live sitemap will rebuild on next deploy and emit ~27 URLs
+  (7 static + 14 profiles + 6 campaigns). Grows with each new paid
+  profile.
+- robots.txt reflects the tightened disallow list.
+- VERSION + updates.json + source code all landed in one commit so
+  the feed never lies about production state.
+
+### Open / next
+
+- **Google Search Console resubmit.** When this deploys, resubmit the
+  sitemap in Google Search Console so Google re-crawls immediately
+  instead of waiting for its own schedule. Also worth submitting to
+  Bing Webmaster Tools. Not urgent; indexing will happen either way
+  within a few weeks, but resubmitting accelerates it to days.
+- **Ambassador `/lastproof/<slug>` parallel landing route.** The repo
+  has a second ambassador-landing variant at
+  `src/app/(landing)/lastproof/[slug]/page.tsx` that mirrors
+  `/<campaign_slug>` with different chrome. Left OUT of the sitemap
+  deliberately — indexing both would create duplicate-content
+  penalties. If we want it indexed instead of `/<campaign_slug>`, or
+  want canonical links on one pointing at the other, flag it and
+  we'll pick one.
+- **Stats placeholder page** at `/lastproof/<slug>/stats` returns
+  hardcoded placeholder numbers (47/31/65.9). Not in sitemap. Either
+  wire to real data or delete.
+
+### Gotchas for next session
+
+- **PostgREST swallows column-not-found on optional filters.** When a
+  `.eq()` filter references a nonexistent column AND the error isn't
+  awaited/inspected, the chain returns `data: null, error: <msg>` —
+  easy to miss. The sitemap consumer did `data?.map(...) ?? []` which
+  silently produces an empty array. Any future dynamic sitemap
+  expansion should explicitly log `error` from the Supabase call so
+  schema drift surfaces loudly.
+- **`is_published` is not a column on profiles.** Published ↔
+  `published_at IS NOT NULL`. Don't re-add `is_published` unless
+  you're actually adding the column in a migration.
+- When adding a new public route, **update both `sitemap.ts` AND
+  `robots.ts`**. Sitemap adds it to crawl; robots ensures it isn't
+  accidentally disallowed by a wildcard pattern above it.
+
+---
+
 ## 2026-04-21 10:24 MST — /help shipped to production route
 
 **Device:** Kellen's Mac mini

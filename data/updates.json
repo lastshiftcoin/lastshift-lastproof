@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.8.0",
+  "latest_version": "0.8.1",
   "entries": [
+    {
+      "version": "0.8.1",
+      "date": "2026-04-21",
+      "category": "fixed",
+      "headline": "Your profile can now show up in Google.",
+      "copy": "We fixed how we tell search engines about the site. Every paid operator profile, every ambassador campaign link, the /help page, and the updates feed are now listed for Google and other crawlers. When someone searches your handle or an ambassador campaign slug, your page can surface in the results — not just the LASTPROOF homepage.",
+      "source_commits": []
+    },
     {
       "version": "0.8.0",
       "date": "2026-04-21",
