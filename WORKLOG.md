@@ -20,6 +20,52 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-21 02:14 MST — /help stack-compare: real responsive grid + visual polish
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`)
+**Platform:** Claude Desktop
+**Model:** claude-opus-4-6
+**Role:** help-page
+**Commits:** this entry
+**Impacts:** none — wireframe-only
+**Status:** ✅ shipped, HTTP 200
+
+### Did
+
+- Replaced the Microsoft↔LASTSHIFT stack analogy block (previously a
+  `<pre>`-based ASCII table with hardcoded whitespace for alignment)
+  with a real CSS Grid layout. Old version overflowed horizontally
+  on mobile because `<pre>` preserves whitespace; new version
+  reflows cleanly at every breakpoint.
+- Visual enhancements on the grid:
+  - Each side is now its own card: MS side dimmed (78% opacity,
+    subtle bg) as the "familiar reference"; LASTSHIFT side orange-
+    accented gradient + border as the focal point.
+  - Circular orange arrow between the two sides (32px) — scales on
+    row hover + glows.
+  - Column headers at the top (Microsoft stack · LASTSHIFT stack,
+    orange for LASTSHIFT).
+  - Tier label ("COMPANY", "PRODUCT SUITE", "ONE TOOL", "CURRENCY")
+    fades in on hover per row on desktop; always visible on mobile
+    as a row header.
+  - 40% off callout on the $LASTSHFT row turned green inline.
+  - stack-quick callout below got a thicker orange left-border and
+    full border treatment for polish.
+- Responsive:
+  - Desktop (≥641px): 3-column grid — MS / arrow / LASTSHIFT
+  - Mobile (≤640px): 1-column stack — tier label → MS card → arrow
+    rotated 90° → LASTSHIFT card. Column headers hide on mobile
+    since the tier labels provide the same info contextually.
+- Zero horizontal scroll at any breakpoint; cards wrap gracefully.
+
+### Current state
+
+- `wireframes/help.html` — 2,201 lines (up from 2,137), 136.4 KB.
+- HTTP 200 verified via local preview server.
+- Only the stack-compare block changed; rest of page untouched.
+
+---
+
 ## 2026-04-21 02:04 MST — /help hero: trim eyebrow, remove CTAs + microcopy
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1, account `tallada2023`)

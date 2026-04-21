@@ -316,12 +316,34 @@
   .callout-red .prefix{color:var(--red)}
   .callout strong{color:var(--text-primary)}
 
-  /* ═══════════════  STACK COMPARE VISUAL  ═══════════════ */
-  .stack-compare{margin:18px 0;padding:24px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card);font-family:var(--mono);font-size:13px;line-height:1.9;white-space:pre;overflow-x:auto}
-  .stack-compare .lbl{color:var(--text-dim)}
-  .stack-compare .co{color:var(--text-primary);font-weight:700}
-  .stack-compare .arrow-mono{color:var(--orange)}
-  .stack-quick{margin:12px 0 0;padding:12px 16px;background:var(--bg-input);border-left:2px solid var(--orange);font-family:var(--mono);font-size:13px;line-height:1.7}
+  /* ═══════════════  STACK COMPARE VISUAL — responsive grid  ═══════════════ */
+  .stack-compare{margin:18px 0;padding:22px 24px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--bg-card);overflow:hidden}
+  .stack-heads{display:grid;grid-template-columns:1fr 48px 1fr;gap:18px;padding:0 4px 14px;border-bottom:1px solid var(--border);margin-bottom:6px;align-items:center}
+  .stack-col-head{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);padding:0 14px}
+  .stack-col-head.lastshift{color:var(--orange)}
+  .stack-row{display:grid;grid-template-columns:1fr 48px 1fr;gap:18px;align-items:stretch;padding:12px 0;border-bottom:1px solid var(--border);position:relative}
+  .stack-row:last-child{border-bottom:none;padding-bottom:4px}
+  .stack-tier{position:absolute;left:0;top:14px;font-family:var(--mono);font-size:8.5px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;pointer-events:none;opacity:0;transition:opacity .15s}
+  .stack-row:hover .stack-tier{opacity:1}
+  .stack-side{padding:14px 16px;border-radius:var(--r-sm);display:flex;flex-direction:column;justify-content:center;transition:all .18s;min-width:0}
+  .stack-side.ms{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);opacity:.78}
+  .stack-side.ms:hover{opacity:1;background:rgba(255,255,255,.04)}
+  .stack-side.lastshift{background:linear-gradient(180deg,var(--orange-dim),rgba(255,145,0,.02));border:1px solid rgba(255,145,0,.3)}
+  .stack-side.lastshift:hover{border-color:var(--orange);box-shadow:0 0 18px rgba(255,145,0,.12)}
+  .stack-name{font-family:var(--mono);font-size:14.5px;font-weight:700;letter-spacing:.5px;color:var(--text-primary);line-height:1.1;margin-bottom:4px;overflow-wrap:break-word}
+  .stack-side.lastshift .stack-name{color:var(--orange)}
+  .stack-desc{font-family:var(--sans);font-size:12px;color:var(--text-secondary);line-height:1.4}
+  .stack-arrow{width:32px;height:32px;border-radius:50%;background:var(--orange-dim);border:1px solid var(--orange);display:flex;align-items:center;justify-content:center;color:var(--orange);font-size:16px;font-weight:700;flex-shrink:0;justify-self:center;align-self:center;transition:transform .3s}
+  .stack-row:hover .stack-arrow{transform:scale(1.08);box-shadow:0 0 14px var(--orange-glow)}
+  @media (max-width:640px){
+    .stack-compare{padding:18px 14px}
+    .stack-heads{display:none}
+    .stack-row{grid-template-columns:1fr;gap:8px;padding:16px 0}
+    .stack-tier{position:relative;left:0;top:0;opacity:1;margin-bottom:2px}
+    .stack-arrow{transform:rotate(90deg);margin:-2px auto;width:28px;height:28px;font-size:14px}
+    .stack-row:hover .stack-arrow{transform:rotate(90deg) scale(1.08)}
+  }
+  .stack-quick{margin:14px 0 0;padding:14px 18px;background:var(--bg-input);border:1px solid var(--border);border-left:3px solid var(--orange);border-radius:var(--r-sm);font-family:var(--mono);font-size:13px;line-height:1.7}
 
   /* ═══════════════  ECOSYSTEM / TERMINAL ID / TACTICS GRIDS  ═══════════════ */
   .card-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
@@ -540,19 +562,61 @@
     <!-- Stack analogy (why Terminal first) -->
     <div class="sec-label">WHY THE TERMINAL FIRST?</div>
     <p class="dim">If you've used Microsoft products, you already understand this.</p>
-    <div class="stack-compare"><span class="lbl">MICROSOFT STACK                  LASTSHIFT STACK
-───────────────                  ───────────────</span>
-<span class="co">Microsoft</span>            <span class="arrow-mono">→</span>           <span class="co">LASTSHIFT.AI</span>
-<span class="lbl">  (the company)</span>                    <span class="lbl">  (the company / ecosystem)</span>
-
-<span class="co">Office 365</span>           <span class="arrow-mono">→</span>           <span class="co">LASTSHIFT TERMINAL</span>
-<span class="lbl">  (the product suite)</span>              <span class="lbl">  (the product suite)</span>
-
-<span class="co">Word</span>                 <span class="arrow-mono">→</span>           <span class="co">LASTPROOF</span>
-<span class="lbl">  (one tool in the suite)</span>          <span class="lbl">  (one tool in the suite)</span>
-
-<span class="co">USD</span>                  <span class="arrow-mono">→</span>           <span class="co">$LASTSHFT</span>
-<span class="lbl">  (how you pay)</span>                    <span class="lbl">  (how you pay — 40% off)</span></div>
+    <div class="stack-compare">
+      <div class="stack-heads">
+        <div class="stack-col-head">Microsoft stack</div>
+        <div></div>
+        <div class="stack-col-head lastshift">LASTSHIFT stack</div>
+      </div>
+      <div class="stack-row">
+        <div class="stack-tier">COMPANY</div>
+        <div class="stack-side ms">
+          <div class="stack-name">Microsoft</div>
+          <div class="stack-desc">The parent company</div>
+        </div>
+        <div class="stack-arrow" aria-hidden="true">→</div>
+        <div class="stack-side lastshift">
+          <div class="stack-name">LASTSHIFT.AI</div>
+          <div class="stack-desc">The company / ecosystem</div>
+        </div>
+      </div>
+      <div class="stack-row">
+        <div class="stack-tier">PRODUCT SUITE</div>
+        <div class="stack-side ms">
+          <div class="stack-name">Office 365</div>
+          <div class="stack-desc">The product suite</div>
+        </div>
+        <div class="stack-arrow" aria-hidden="true">→</div>
+        <div class="stack-side lastshift">
+          <div class="stack-name">LASTSHIFT TERMINAL</div>
+          <div class="stack-desc">The product suite</div>
+        </div>
+      </div>
+      <div class="stack-row">
+        <div class="stack-tier">ONE TOOL</div>
+        <div class="stack-side ms">
+          <div class="stack-name">Word</div>
+          <div class="stack-desc">One tool in the suite</div>
+        </div>
+        <div class="stack-arrow" aria-hidden="true">→</div>
+        <div class="stack-side lastshift">
+          <div class="stack-name">LASTPROOF</div>
+          <div class="stack-desc">One tool in the suite</div>
+        </div>
+      </div>
+      <div class="stack-row">
+        <div class="stack-tier">CURRENCY</div>
+        <div class="stack-side ms">
+          <div class="stack-name">USD</div>
+          <div class="stack-desc">How you pay</div>
+        </div>
+        <div class="stack-arrow" aria-hidden="true">→</div>
+        <div class="stack-side lastshift">
+          <div class="stack-name">$LASTSHFT</div>
+          <div class="stack-desc">How you pay — <span class="green">40% off</span></div>
+        </div>
+      </div>
+    </div>
     <div class="stack-quick">
       <span class="orange">LASTSHIFT.AI → LASTSHIFT TERMINAL → LASTPROOF</span><br>
       <span class="dim">Same pattern as Microsoft → Office 365 → Word. The Terminal issues your license key (Terminal ID) — every tool uses the same key.</span>
