@@ -20,6 +20,109 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-20 23:02 MST — /help page content brief: 10 open questions resolved, final-copy locked
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1, account `tallada2023`)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`, `__CFBundleIdentifier=com.anthropic.claudefordesktop`)
+**Model:** claude-opus-4-6
+**Role:** help-page (new — doesn't collide with backend/frontend/fullstack/coordinator)
+**Commits:** this entry
+**Migrations run in prod Supabase:** none
+**Impacts:** none — pure content work in `wireframes/how-it-works-CONTENT.md`, no code behavior changed, no Terminal touches
+**Status:** ✅ shipped, content doc final-copy-ready for wireframe build
+
+### Did
+
+- Onboarded per protocol steps 1–6. Pulled main cleanly (7927313 → b8f606b).
+  Git status clean, both iCloud duplicate scans (`* 2*` and `* 3*`) returned
+  zero. Read top two WORKLOG entries + `CLAUDE.md § Session protocol`
+  including the new "Broken git state" and "iCloud duplicates" sub-sections.
+- Self-declared role `help-page`. Confirmed
+  `wireframes/how-it-works-CONTENT.md` (ceb8091, rescued from iCloud drift
+  earlier today) is this session's work — 973 lines with 4 TOPIC sections
+  matching the in-memory context from the pre-onboarding session.
+- Resolved all 10 open questions in the content doc via direct answers from
+  Kellen:
+  1. Support channel = `@lastshiftcoinbreakroom` on Telegram.
+  2. `lastshift.ai` card links to homepage; help page carries visual
+     ecosystem explanation itself.
+  3. First 5,000 campaign mechanics excluded — help page references FIRST
+     5,000 only as a profile state (Topic 4), not campaign copy.
+  4. "Last updated" timestamp added to footer; matches (or falls back if
+     absent) whatever dashboard pattern the frontend builder finds.
+  5. **Handle change cost = $100 in SOL/USDT, or $60 in $LASTSHFT**
+     (40% off — platform-wide $LASTSHFT discount). Locked in sub-topic
+     3.5 + Topic 4 cost matrix. Added green callout that the 40% discount
+     applies to every paid action: subscription, handle change, mint,
+     proof.
+  6. Single page with scroll-jumps confirmed — no `/help/[topic]`
+     sub-routes.
+  7. All 8 Updating-My-Profile sub-topic affordances exist on the live
+     dashboard; Topic 3 references `/wireframes/lastproof-dashboard.html`
+     with confidence.
+  8. Defunct = 90+ days AND no payment AND no login. Locked.
+  9. Defunct → Free on login (no payment required to exit Defunct).
+     Locked.
+  10. Research from the prior thorough-research agent was **stale on three
+      claims** — verified directly against code:
+      - View counter works — `src/components/dashboard/StatQuad.tsx:47`
+        reads `profile.viewCount`; FAQ entry removed.
+      - Handle change payment is fully on-chain verified (it's a code
+        duplicate of the proof paste-verify modal). No FAQ concern needed.
+      - `payer_wallet` column exists on `proofs` table — migration
+        `0008_proofs_payer_wallet.sql` added it, `scripts/backfill-payer-wallet.ts`
+        backfills historical rows by joining on `tx_signature`. Dedup gap
+        closed. Wrote a short explanation in the doc so Kellen has the
+        full context on what the original concern was.
+- Replaced the "Open Questions" section in the content doc with a
+  "Decisions Locked" section logging all 10 answers + the `payer_wallet`
+  explainer.
+
+### Current state
+
+- `wireframes/how-it-works-CONTENT.md` is final-copy-ready. All 10 blocking
+  and nice-to-have questions resolved. Ready to hand to frontend builder
+  for HTML wireframe build, or for this session to build the wireframe
+  next.
+- Content doc covers 4 TOPIC sections (Profile Creation, Verify This Work,
+  Updating My Profile, Profile Status) + cross-topic FAQ + references
+  (stack analogy, ecosystem cards, Terminal ID, two-wallet model).
+- No code changes. No Terminal impact. No migrations run.
+- Memory file `project_profile_states.md` written in prior-session scope —
+  per-session, not per-repo — captures Active/EA/Free/Defunct rules for
+  future sessions on this machine.
+
+### Open / next
+
+- **Build the HTML wireframe for `/help`** using the content doc as
+  source of truth. Match `/manage` terminal chrome (system bar,
+  titlebar "how-it-works — lastproof — 80x24", CRT scanlines, bottom
+  bar). Topic hub at top scroll-jumps to 4 anchored topic sections.
+  FAQ accordion with `<details>`/`<summary>`. Embed screenshots per
+  the Visual Assets Inventory in the doc.
+- **Link /help from every Terminal-ID prompt** across lastproof —
+  `/manage`, onboarding screens, proof modal ("What am I paying for?"),
+  public profile footer, homepage, 404 — per the Entry Points table in
+  the content doc.
+- **Frontend builder integration** — this doc is the canonical copy
+  source for whoever builds the production `/help` route.
+
+### Gotchas for next session
+
+- **Thorough-research agent output can be stale** — yesterday's research
+  report flagged three "known bugs" from handoff-doc line references
+  (view counter, handle-change verify, payer_wallet) that were all
+  already fixed in code. Never copy "known bug" disclaimers from
+  handoff docs into user-facing FAQ without grepping current `src/` +
+  `migrations/` first. `FULLSTACK-BUILDER-HANDOFF.md:124-126` was
+  written before several migrations shipped; file-line citations from
+  older handoff docs are point-in-time snapshots, not live state.
+- **Role name `help-page`** is new in this repo's convention — add to
+  the role list in the prior entry's Gotchas if another session picks
+  up help-page work.
+
+---
+
 ## 2026-04-20 22:39 MST — Multi-session onboarding + protocol codification
 
 **Device:** Tallada's MacBook Air (`Talladas-MacBook-Air.local`, macOS 26.4.1 arm64)

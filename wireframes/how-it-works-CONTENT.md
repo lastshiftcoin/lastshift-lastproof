@@ -460,7 +460,7 @@ Each sub-topic below is its own mini-card with a screenshot and short copy:
 - After 30 days, old handle is released back to the pool.
 - Anyone hitting your old URL gets redirected to your new one during the 30-day window.
 - Your proofs, tier, and DEV badge carry over — only the URL changes.
-**Cost (TBD — confirm with Kellen):** `$[X] per handle change.`
+**Cost:** `$100 per handle change — paid in SOL or USDT, or $60 in $LASTSHFT (40% off with $LASTSHFT — same discount applies across the whole platform).`
 
 ---
 
@@ -672,10 +672,12 @@ DEFUNCT            red          "DEFUNCT" pill          no — 90+ days no payme
 
 | State | Subscription | Handle change | Proofs (paid by verifier) | DEV proofs (paid by verifier) | Mint |
 |---|---|---|---|---|---|
-| ACTIVE PAID | $10/mo ($6 in $LASTSHFT) | $[X] | $1 | $5 | $1 |
-| FIRST 5,000 | $0 until 2026-06-07 then $10/mo | $[X] | $1 | $5 | $1 |
+| ACTIVE PAID | $10/mo (SOL/USDT) or $6 in $LASTSHFT | $100 (SOL/USDT) or $60 in $LASTSHFT | $1 | $5 | $1 |
+| FIRST 5,000 | $0 until 2026-06-07 then $10/mo | $100 (SOL/USDT) or $60 in $LASTSHFT | $1 | $5 | $1 |
 | FREE | $0 (can't receive proofs) | locked | n/a | n/a | locked |
 | DEFUNCT | $0 (reactivate to unlock) | locked | n/a | n/a | locked |
+
+**Callout (green, below table):** `$LASTSHFT gets you 40% off every paid action on the platform — subscription, handle change, mint, proof. Same discount everywhere.`
 
 ---
 
@@ -829,9 +831,6 @@ Free profiles are deliberately stripped-down to encourage upgrading. You see onl
 ### Q: I was on ACTIVE PAID but now I'm FREE. What happened?
 Your subscription expired. The system checks each day for lapsed subscriptions and flips them to FREE. You were NOT charged again — billing is manual (pay-to-extend, not auto-renew). Renew from /manage when you're ready; all features return.
 
-### Q: Can a view counter say I have 0 views forever?
-Known issue: view counts aren't currently incrementing on page load. Doesn't mean no one's looking — just that the counter isn't wired up yet. This will be fixed; don't interpret 0 as "nobody cares."
-
 
 
 ### Q: What's $LASTSHFT and do I need it?
@@ -856,7 +855,7 @@ Your URL stays. Your handle, bio, and photo stay. But when you go off the paid t
 Yes — there's a Handle Change flow in /manage. Small fee. Your old handle is released back to the pool after 30 days.
 
 ### Q: I'm stuck / something's broken. How do I get help?
-Reach out via [Telegram TBD] or email [support TBD]. Include your wallet address (first 4 + last 4) so we can look up your account without asking for the full string.
+Reach out in our Telegram support channel: **@lastshiftcoinbreakroom**. Include your wallet address (first 4 + last 4) so we can look up your account without asking for the full string. Don't share full wallet addresses, private keys, or seed phrases — ever.
 
 ---
 
@@ -952,22 +951,30 @@ Every visual on this page pulls from an existing wireframe or a real UI screen w
 - Alt text is mandatory and descriptive (not "screenshot" — say what the image shows).
 - Store in `/public/how-it-works/` with semantic filenames (e.g. `step-02-terminal-id-keygen.webp`).
 
-## Open Questions for Kellen
+## Decisions Locked (2026-04-20)
 
-1. Confirm the Telegram support handle + support email for the final FAQ entry.
-2. Confirm the `lastshift.ai` destination for the "ecosystem card" — is there a dedicated /stack page there we should deep-link, or just the homepage?
-3. Should the FAQ include a "What's the First 5,000 campaign?" entry, or keep that separate on the existing 5,000 landing page?
-4. Do we want a "Last updated" timestamp at the bottom? (Useful for trust, but adds a maintenance step.)
-5. **Handle change cost** — confirm the price (shown in the HandleChangeModal). I've left it as `$[X]` in sub-topic 3.5 and the Topic 4 cost table.
-6. **Topic hub as single page vs sub-pages?** — currently spec'd as one page with scroll-jump to each topic. If topics grow more content, we may want `/help/profile-creation`, `/help/verify-this-work`, `/help/updating-my-profile`, `/help/profile-status` as sub-routes. Confirm whether to design for this split now or leave as one page.
-7. **Sub-topic screenshots (Topic 3)** — several of the "Updating My Profile" sub-topics reference `/wireframes/lastproof-dashboard.html` but that dashboard may not have every editing affordance I described. Before the wireframe phase, confirm which sub-sections exist in the live dashboard vs need to be added.
-8. **Defunct state — exact definition** — our research surfaced the 90-day rule from your message and the `.status-pill.defunct` CSS but I did not find a formal documented transition rule (cron job, schedule, etc.). Confirm:
-   - Trigger: 90+ days AND no payment AND no login — correct?
-   - Does logging in alone exit Defunct, or is payment required?
-   - Is the dormant indicator shown on the public profile page itself, or only on the owner's dashboard?
-9. **Reactivation from Defunct** — does a simple login pull profile back to FREE, or does it stay DEFUNCT until reactivation via payment? The doc currently says "log in → FREE"; confirm.
-10. **Known bugs surfaced in research** — these affect the FAQ. Confirm whether we acknowledge them in the Help page or wait for fixes:
-    - Profile view counter always shows 0 (increment RPC not wired up)
-    - Handle change payment not yet fully on-chain verified
-    - Proofs table missing `payer_wallet` column → dedup gap (same wallet can double-proof a work item)
-    If these are getting fixed soon, leave them out of the FAQ. If they'll linger, the current transparent FAQ copy is the honest move.
+All 10 original open questions answered by Kellen:
+
+1. ✅ Support handle = `@lastshiftcoinbreakroom` on Telegram (FAQ updated).
+2. ✅ `lastshift.ai` card links to the homepage; help page itself carries the visual ecosystem explanation (stack analogy + 4 cards already do this).
+3. ✅ First 5,000 campaign mechanics stay on `/5k` — the help page does NOT explain campaign mechanics, it only references FIRST 5,000 as a profile state inside Topic 4.
+4. ✅ Add a "Last updated" timestamp at the page footer — matches the pattern Kellen thinks exists on the dashboard. If no existing pattern is found when the frontend builder implements, fall back to a static ISO date rendered server-side from git commit date.
+5. ✅ Handle change cost = **$100 in SOL or USDT, or $60 in $LASTSHFT** (40% discount — consistent with the platform-wide $LASTSHFT discount). Locked in sub-topic 3.5 and the Topic 4 cost matrix.
+6. ✅ Single page with scroll-jumps — NO sub-routes. Keep the single-page design.
+7. ✅ All 8 Updating-My-Profile sub-topic affordances exist on the dashboard; proceed with confidence referencing `/wireframes/lastproof-dashboard.html`.
+8. ✅ Defunct = 90+ days AND no payment AND no login. Locked.
+9. ✅ Login → Free automatically. No payment required to exit Defunct state. Locked.
+10. ✅ Known-bugs transparency — research findings were stale:
+    - **View counter works** — `StatQuad.tsx` reads `profile.viewCount`; increment RPC wired up. FAQ entry removed.
+    - **Handle change payment is fully verified on-chain** — it's a code-base duplicate of the proof paste-verify modal. FAQ concern dropped.
+    - **`payer_wallet` column is present on proofs table** — migration `0008_proofs_payer_wallet.sql` added it + `scripts/backfill-payer-wallet.ts` backfills historical rows. Dedup gap closed. No FAQ entry needed.
+
+### Explanation for Kellen — what `payer_wallet` was about
+
+`payer_wallet` = the Solana wallet that sent the on-chain payment for a given proof. Every proof has one payer.
+
+**Why it matters:** The uniqueness rule "1 wallet = 1 proof per work item" (prevents someone buying 5 proofs for the same project with one wallet to juice the count) needs this column on the `proofs` table so the database can enforce the rule via a unique index.
+
+**What the research claim was:** `FULLSTACK-BUILDER-HANDOFF.md` line 126 flagged that the column was missing — meaning the uniqueness rule was being enforced in app code only, not at the DB level (which is weaker — app bugs could let duplicates slip through).
+
+**What I found on 2026-04-20:** The column is already there. Migration `0008_proofs_payer_wallet.sql` added it (date unknown — predates today's session). `scripts/backfill-payer-wallet.ts` exists to populate it for any proofs that existed before the migration by joining on `tx_signature`. So the concern is resolved. No action needed, no FAQ copy needed.
