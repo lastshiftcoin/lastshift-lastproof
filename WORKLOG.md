@@ -20,6 +20,81 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-21 01:42 MST — /help wireframe: 24 placeholder shots → coded mini-renders
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1, account `tallada2023`)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`, `__CFBundleIdentifier=com.anthropic.claudefordesktop`)
+**Model:** claude-opus-4-6
+**Role:** help-page
+**Commits:** this entry
+**Migrations run in prod Supabase:** none
+**Impacts:** none — wireframe-only, no code changes, no Terminal touches
+**Status:** ✅ shipped, preview verified at http://127.0.0.1:8765/help.html
+
+### Did
+
+- Kellen flagged: "the entire lastproof platform is all coded images
+  (HTML/CSS) except 2 screenshot JPGs + avatars." Replaced all 24
+  `shot-placeholder` blocks in `/help` with real coded mini-renders —
+  no static screenshots, no external image deps except the existing
+  `wireframes/cryptoMark.jpg` avatar.
+- Added a reusable `.mr-*` ("mini render") CSS library to
+  `help.html` (~200 lines of inline styles). Covers: backgrounds
+  (dark/stage/grid), terminal boot log lines with animated caret,
+  Terminal ID 5-segment keygen display, dashboard sidebar+stat-quad
+  skeleton, profile cards with state variants (ACTIVE/EA/FREE/
+  DEFUNCT avatar filters + badges + tier pills + EA gold ribbon +
+  countdown units), proof modal scaffold (head/body/options/tokens/
+  copy-rows/textarea/cascade), and form primitives (fields, chips,
+  drop zones, work-item rows, link rows, handle-pick, pay-row,
+  mint badge, upgrade CTAs).
+- Replaced 24 placeholders:
+  - **TOPIC 1 (5)**: cold-boot wallet-connect → keygen ceremony with
+    last-segment pending state → dashboard with pulsing LAUNCH
+    LASTPROOF → /manage paste-TID + handle-pick → public profile
+    with CryptoMark avatar
+  - **TOPIC 2 (6)**: profile with VERIFY highlight → path select
+    (Collaborator/Dev) → 3-token pick row → SEND w/ COPY rows →
+    PASTE TX + comment textarea → verify cascade with animated
+    caret
+  - **TOPIC 3 (8)**: bio editor + categories, work items + LOCKED +
+    ADD, screenshot drop zone, links + verified checks, handle
+    change paste-verify, verified profile, upgrade modal, mint
+    modal
+  - **TOPIC 4 (4)**: Active Paid / First 5,000 w/ countdown /
+    Free stripped w/ upgrade CTA / Defunct w/ desaturated avatar
+  - **FAQ (1)**: "NO REGISTRY MATCH" error log matching Kellen's
+    original 2026-04-19 screenshot verbatim
+- Uses existing `wireframes/cryptoMark.jpg` avatar. No other raster
+  assets introduced.
+- Preview-verified at http://127.0.0.1:8765/help.html (HTTP 200,
+  133,554 bytes; cryptoMark.jpg HTTP 200).
+
+### Current state
+
+- `wireframes/help.html` — 2,144 lines (up from 1,601), 133.5 KB.
+  Every shot is now a functional mini-render.
+- No other wireframes, code, or content-doc edits this commit.
+
+### Open / next
+
+- Frontend builder productionization: decide whether React mini-
+  preview components (richer) or captured Playwright screenshots
+  (simpler) for prod `/help`.
+- Link /help from every Terminal-ID prompt (still pending).
+- validate-tid regex bug still open (flagged 2026-04-21 01:02).
+
+### Gotchas for next session
+
+- Mini-render `<img src="cryptoMark.jpg">` uses a relative path — in
+  prod, swap to a `/public/` path or Next `<Image>`.
+- `.mr-*` CSS is scoped inside `.shot` ancestor — preserve that
+  constraint if lifting.
+- Mini-renders use `margin-top:auto` to pin bottom CTAs inside the
+  4:3 shot box.
+
+---
+
 ## 2026-04-21 00:58 MST — Status page wireframes + 42-entry Updates backfill proposal
 
 **Device:** Tallada's MacBook Air (`Talladas-MacBook-Air.local`, macOS 26.4.1)
@@ -126,6 +201,126 @@ When this file exceeds ~500 lines, roll the oldest half into
 - **Three parallel sessions pushed today** (help-page, coordinator,
   status-page) and all landed cleanly via `git pull --rebase`.
   The discipline holds. Don't skip the rebase.
+## 2026-04-21 01:42 MST — /help wireframe: 24 placeholder shots → coded mini-renders
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1, account `tallada2023`)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`, `__CFBundleIdentifier=com.anthropic.claudefordesktop`)
+**Model:** claude-opus-4-6
+**Role:** help-page
+**Commits:** this entry
+**Migrations run in prod Supabase:** none
+**Impacts:** none — wireframe-only, no code changes, no Terminal touches
+**Status:** ✅ shipped, preview verified at http://127.0.0.1:8765/help.html
+
+### Did
+
+- Kellen flagged: "the entire lastproof platform is all coded images
+  (HTML/CSS) except 2 screenshot JPGs + avatars." Replaced all 24
+  `shot-placeholder` blocks in `/help` with real coded mini-renders —
+  no static screenshots, no external image deps except the existing
+  `wireframes/cryptoMark.jpg` avatar.
+- Added a reusable `.mr-*` ("mini render") CSS library to
+  `help.html` (~200 lines of inline styles). Covers:
+  - Backgrounds: `mr-dark`, `mr-stage`, `mr-grid`
+  - Terminal boot log: `mr-log`, `mr-line` (with `.dim`, `.orange`,
+    `.warn`, `.red` variants) + `mr-caret` blink animation
+  - Terminal ID key display: `mr-tid` + 5-segment layout with
+    `mr-tid-seg.pending` state for keygen mid-animation
+  - Dashboard skeleton: `mr-dash`, `mr-sb` (sidebar), `mr-main`,
+    `mr-stat` quad, `mr-sec-label`
+  - Profile card: `mr-prof`, `mr-pheader`, `mr-avatar` (with `.ea`,
+    `.free`, `.defunct` filter variants), `mr-pname`, `mr-phandle`,
+    `mr-bio`, `mr-quad`, `mr-hire`, state `mr-badge` pills,
+    `mr-tier` (`.t1`/`.t3`), `mr-ea-ribbon`, `mr-countdown` units
+  - Proof modal: `mr-modal`, `mr-modal-head`, `mr-opt`, `mr-tokens`
+    (with brand-tinted token icons), `mr-copy-row` with COPY pill,
+    `mr-textarea`, `mr-cascade` with step-checked lines
+  - Form primitives: `mr-field`, `mr-chips`, `mr-chip.on`, `mr-drop`
+    (upload zone), `mr-work` rows, `mr-link` rows, `mr-handle-pick`,
+    `mr-pay-row`
+- Replaced 24 placeholder `<div class="shot-placeholder">...</div>`
+  blocks with real mini-renders:
+  - **TOPIC 1 / Profile Creation (5)**: cold-boot wallet-connect
+    screen, Terminal ID keygen ceremony with animated last-segment
+    pending state, Terminal dashboard with sidebar + stat-quad +
+    LAUNCH LASTPROOF button with pulse-glow, /manage paste-TID +
+    handle-pick flow, public profile with CryptoMark avatar JPG
+  - **TOPIC 2 / Verify Work (6)**: profile with one work item
+    highlighted + VERIFY button, path select (Collaborator/Dev),
+    3-token pick row with branded token circles, SEND PAYMENT
+    with COPY ADDRESS + AMT rows, PASTE TX + 140-char comment
+    textarea, verify cascade with animated "Recording proof..."
+    line
+  - **TOPIC 3 / Updating Profile (8)**: bio editor with categories
+    chips, work items list with LOCKED badge + ADD button,
+    screenshot drop zone with 3 existing thumbs, links list with
+    X/TG verified checkmarks, handle-change paste-verify flow,
+    verified profile with green check + verified links, upgrade
+    modal with 3-token pay row, mint modal with gold MINT badge
+  - **TOPIC 4 / Profile Status (4)**: ACTIVE PAID full profile,
+    FIRST 5,000 with gold EA ribbon + countdown timer,
+    FREE with grayed avatar + "hidden" placeholder + upgrade CTA,
+    DEFUNCT with desaturated avatar + red "LAST LOGIN 118 DAYS
+    AGO" banner
+  - **FAQ thumbnail (1)**: the exact "Operator not found" error
+    boot log matching Kellen's original 2026-04-19 /manage
+    screenshot
+- Used existing `wireframes/cryptoMark.jpg` as the avatar across all
+  profile-card renders. No other image assets introduced — all other
+  visuals are pure HTML+CSS.
+- Mini-renders respect the browser-chrome frame + shot-caption
+  overlay already in place. Caption still pins to the bottom; shots
+  remain the same 4:3 aspect ratio with `cursor:zoom-in` hover
+  behavior.
+- Mobile responsive: existing breakpoint rules carry over — shot
+  containers collapse to max-width 420px on <900px and the mini-
+  renders scale their internal content proportionally (tight
+  font-size / padding choices).
+- Preview-tested via the local static server (still running from
+  prior task, `b3pu52zas`): help.html → HTTP 200 (133,554 bytes,
+  up from 100,224), cryptoMark.jpg → HTTP 200, no 404s.
+
+### Current state
+
+- `wireframes/help.html` — 2,144 lines (up from 1,601), 133.5 KB.
+  Every shot is now a functional mini-render, no external image
+  dependencies beyond the one avatar JPG.
+- Mini-render component library is reusable — if a future wireframe
+  needs similar inline UI previews, these `.mr-*` classes can be
+  lifted.
+- No other wireframes, code, or content-doc edits this commit.
+
+### Open / next
+
+- **Frontend builder productionization** — when building
+  `src/app/(marketing)/help/page.tsx`, decide whether to:
+  (a) render each mini-preview as actual React components built
+  from real data (richer, but more work), or
+  (b) treat mini-renders as purely visual help aids and use real
+  captured screenshots (Playwright at 1440×900 → WebP) as initially
+  spec'd in the Visual Assets Inventory of `help-CONTENT.md`.
+  The wireframe makes (a) viable; it was previously only (b).
+- **Link /help from every Terminal-ID prompt** across lastproof
+  (still pending from prior entries).
+- **validate-tid regex bug** (flagged 2026-04-21 01:02, not fixed)
+  still open.
+
+### Gotchas for next session
+
+- **Mini-render relative-path asset** — `<img src="cryptoMark.jpg">`
+  in profile cards assumes the page is served from `wireframes/`.
+  In production at `/help` the path becomes `/public/help/...`. If
+  frontend builder productionizes the mini-renders as React, swap
+  the `src` to a `/public/` path (e.g. `/avatars/cryptoMark.jpg` or
+  wherever the prod avatar lives) or use Next `<Image>` with the
+  proper public path.
+- **`.mr-*` CSS is scoped inside `.shot`** so it won't leak to
+  other components — safe to lift into a shared stylesheet only if
+  the `.shot` ancestor constraint is preserved or stripped.
+- **All mini-renders stay within the 4:3 shot box** via flex layout
+  — the last child typically uses `margin-top:auto` to pin CTA
+  buttons to the bottom. Preserve that pattern if adding new
+  renders.
 
 ---
 

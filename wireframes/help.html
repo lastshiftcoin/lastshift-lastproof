@@ -181,7 +181,131 @@
   .shot .shot-placeholder{width:100%;height:100%;padding-top:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center}
   .shot .shot-src{font-family:var(--mono);font-size:10px;color:var(--orange);letter-spacing:1px}
   .shot .shot-icon{font-family:var(--mono);font-size:26px;color:var(--text-dim)}
-  .shot .shot-caption{position:absolute;bottom:0;left:0;right:0;padding:6px 10px;background:rgba(10,11,15,.9);font-family:var(--mono);font-size:10px;color:var(--text-secondary);letter-spacing:.5px;text-align:center;line-height:1.4}
+  .shot .shot-caption{position:absolute;bottom:0;left:0;right:0;padding:6px 10px;background:rgba(10,11,15,.9);font-family:var(--mono);font-size:10px;color:var(--text-secondary);letter-spacing:.5px;text-align:center;line-height:1.4;z-index:2}
+
+  /* ═══════════════  MINI RENDERS — coded screenshots  ═══════════════ */
+  /* Each mini-render fills the .shot below the 24px browser chrome and above the 24px caption. */
+  .shot .mr{position:absolute;top:24px;left:0;right:0;bottom:24px;padding:7px;overflow:hidden;font-family:var(--mono);font-size:8px;line-height:1.5;display:flex;flex-direction:column}
+  .shot .mr-dark{background:var(--bg-primary)}
+  .shot .mr-stage{background:linear-gradient(180deg,#0a0b0f,#12131a);background-image:radial-gradient(circle at 30% 10%,rgba(255,145,0,.08),transparent 50%)}
+  .shot .mr-grid{background-image:linear-gradient(rgba(30,32,48,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(30,32,48,.5) 1px,transparent 1px);background-size:18px 18px}
+  /* Terminal log lines */
+  .shot .mr-log{display:flex;flex-direction:column;gap:3px}
+  .shot .mr-line{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--green)}
+  .shot .mr-line::before{content:"> ";color:var(--orange)}
+  .shot .mr-line.dim{color:var(--text-dim)}
+  .shot .mr-line.orange{color:var(--orange)}
+  .shot .mr-line.red{color:var(--red)}
+  .shot .mr-line.warn{color:var(--orange)}
+  .shot .mr-caret{display:inline-block;width:4px;height:8px;background:var(--orange);margin-left:2px;animation:mr-blink 1s step-end infinite;vertical-align:middle}
+  @keyframes mr-blink{50%{opacity:0}}
+  /* Terminal ID key display */
+  .shot .mr-tid{display:flex;justify-content:center;align-items:center;gap:2px;margin:6px 2px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--orange);padding:6px;border:1px solid var(--orange);background:var(--orange-dim);border-radius:3px;text-shadow:0 0 6px var(--orange-glow)}
+  .shot .mr-tid-seg{display:inline-block}
+  .shot .mr-tid-seg.pending{color:var(--text-dim)}
+  .shot .mr-tid-dash{color:var(--text-dim)}
+  /* Input / button */
+  .shot .mr-input{padding:5px 7px;border:1px solid var(--orange);background:transparent;color:var(--text-dim);font-family:var(--mono);font-size:7.5px;letter-spacing:1px;border-radius:2px;margin:3px 4px}
+  .shot .mr-btn{display:inline-block;padding:4px 8px;font-family:var(--mono);font-size:7px;font-weight:700;letter-spacing:.5px;border-radius:2px;border:1px solid transparent;text-align:center}
+  .shot .mr-btn.orange{border-color:var(--orange);color:var(--orange);background:var(--orange-dim)}
+  .shot .mr-btn.green{border-color:var(--green);color:var(--green);background:var(--green-dim)}
+  .shot .mr-btn.block{display:block;margin:3px 4px}
+  /* Dashboard skeleton */
+  .shot .mr-dash{display:grid;grid-template-columns:40px 1fr;gap:2px;height:100%;padding:0}
+  .shot .mr-sb{background:#0e0f15;padding:5px 3px;display:flex;flex-direction:column;gap:3px;border-right:1px solid var(--border)}
+  .shot .mr-sb-logo{width:16px;height:16px;border-radius:3px;background:linear-gradient(135deg,var(--orange),#ff5722);margin:0 auto 2px}
+  .shot .mr-sb-item{height:6px;background:var(--bg-card);border-radius:1px}
+  .shot .mr-sb-item.active{background:var(--orange-dim);border-left:2px solid var(--orange)}
+  .shot .mr-main{padding:5px 5px 4px;overflow:hidden;display:flex;flex-direction:column;gap:3px;flex:1}
+  .shot .mr-row{display:flex;gap:3px}
+  .shot .mr-stat{flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:2px;padding:3px;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:18px}
+  .shot .mr-stat .n{font-size:8px;color:var(--text-primary);font-weight:700;line-height:1}
+  .shot .mr-stat .n.orange{color:var(--orange)}
+  .shot .mr-stat .n.green{color:var(--green)}
+  .shot .mr-stat .l{font-size:5px;color:var(--text-dim);letter-spacing:.3px;margin-top:1px}
+  .shot .mr-sec-label{font-size:5.5px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-top:2px;margin-bottom:1px}
+  /* Profile card */
+  .shot .mr-prof{flex:1;padding:6px;display:flex;flex-direction:column;gap:4px;background:var(--bg-primary)}
+  .shot .mr-pheader{display:flex;align-items:center;gap:5px}
+  .shot .mr-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#a17b4a 0%,#5a3e22 100%);flex-shrink:0;overflow:hidden;position:relative}
+  .shot .mr-avatar.ea{box-shadow:0 0 0 2px var(--gold)}
+  .shot .mr-avatar.defunct{filter:grayscale(1) opacity(.55)}
+  .shot .mr-avatar.free{filter:saturate(.5) opacity(.85)}
+  .shot .mr-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+  .shot .mr-pname{font-size:9.5px;color:var(--text-primary);font-weight:700;line-height:1.1}
+  .shot .mr-phandle{font-size:7px;color:var(--text-dim)}
+  .shot .mr-pright{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+  .shot .mr-tier{padding:1px 4px;border-radius:2px;font-size:5.5px;font-weight:700;letter-spacing:.3px}
+  .shot .mr-tier.t1{background:rgba(156,163,175,.18);color:var(--silver);border:1px solid var(--silver)}
+  .shot .mr-tier.t3{background:rgba(255,215,0,.15);color:var(--gold);border:1px solid var(--gold)}
+  .shot .mr-badge{padding:1px 4px;border-radius:2px;font-size:5.5px;font-weight:700;letter-spacing:.3px}
+  .shot .mr-badge.active{background:var(--green-dim);color:var(--green);border:1px solid var(--green)}
+  .shot .mr-badge.ea{background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold)}
+  .shot .mr-badge.free{background:rgba(156,163,175,.15);color:var(--silver);border:1px solid var(--silver)}
+  .shot .mr-badge.defunct{background:var(--red-dim);color:var(--red);border:1px solid var(--red)}
+  .shot .mr-bio{font-size:6.5px;color:var(--text-secondary);line-height:1.35}
+  .shot .mr-quad{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2px;margin-top:2px}
+  .shot .mr-hire{padding:4px 6px;background:var(--green);color:var(--bg-primary);text-align:center;border-radius:2px;font-size:7px;font-weight:700;letter-spacing:.5px;margin-top:auto}
+  .shot .mr-ea-ribbon{position:absolute;top:28px;right:2px;padding:2px 5px;background:linear-gradient(90deg,var(--gold),#f59f00);color:#0a0b0f;font-size:6px;font-weight:800;letter-spacing:.5px;border-radius:2px;z-index:2}
+  .shot .mr-countdown{display:flex;gap:2px;justify-content:center;font-family:var(--mono);font-size:6.5px;color:var(--gold);margin-top:2px}
+  .shot .mr-countdown .u{padding:2px 3px;background:var(--gold-dim);border:1px solid var(--gold);border-radius:2px;min-width:14px;text-align:center}
+  .shot .mr-upgrade{padding:5px;background:var(--orange-dim);border:1px solid var(--orange);border-radius:2px;text-align:center;font-size:7px;color:var(--orange);font-weight:700;letter-spacing:.5px;margin-top:auto}
+  .shot .mr-free-note{font-size:6.5px;color:var(--text-dim);text-align:center;padding:3px;font-style:italic}
+  /* Proof modal */
+  .shot .mr-modal{flex:1;display:flex;flex-direction:column;padding:4px 5px}
+  .shot .mr-modal-head{display:flex;justify-content:space-between;align-items:center;padding-bottom:3px;border-bottom:1px solid var(--border);margin-bottom:4px}
+  .shot .mr-modal-title{font-size:7.5px;color:var(--text-primary);font-weight:700;letter-spacing:.5px}
+  .shot .mr-modal-step{font-size:6px;color:var(--orange);letter-spacing:.5px}
+  .shot .mr-modal-body{flex:1;display:flex;flex-direction:column;gap:3px}
+  .shot .mr-opt{padding:5px 6px;border:1px solid var(--border);border-radius:2px;display:flex;justify-content:space-between;align-items:center;font-size:7px;color:var(--text-secondary)}
+  .shot .mr-opt.active{border-color:var(--orange);background:var(--orange-dim);color:var(--orange)}
+  .shot .mr-opt .price{font-weight:700}
+  .shot .mr-opt .dev{color:var(--orange);font-size:6px;font-weight:700}
+  .shot .mr-tokens{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px}
+  .shot .mr-token{padding:6px 3px;border:1px solid var(--border);border-radius:2px;text-align:center;font-size:6px;color:var(--text-secondary);display:flex;flex-direction:column;align-items:center;gap:2px}
+  .shot .mr-token.on{border-color:var(--orange);background:var(--orange-dim);color:var(--orange);font-weight:700}
+  .shot .mr-token-ic{width:12px;height:12px;border-radius:50%;background:var(--orange)}
+  .shot .mr-token.sol .mr-token-ic{background:linear-gradient(135deg,#9945ff,#14f195)}
+  .shot .mr-token.usdt .mr-token-ic{background:#26a17b}
+  .shot .mr-copy-row{display:flex;align-items:center;gap:3px;padding:3px 5px;background:var(--bg-input);border:1px solid var(--border);border-radius:2px;font-size:6.5px;margin-bottom:2px}
+  .shot .mr-copy-row .lbl{color:var(--text-dim);width:28px;flex-shrink:0}
+  .shot .mr-copy-row .val{flex:1;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+  .shot .mr-copy-row .copybtn{font-size:5.5px;padding:1px 3px;border:1px solid var(--orange);color:var(--orange);border-radius:1px}
+  .shot .mr-textarea{padding:3px 4px;border:1px solid var(--border);border-radius:2px;background:var(--bg-input);font-size:6.5px;color:var(--text-primary);min-height:22px;line-height:1.35}
+  .shot .mr-cascade{display:flex;flex-direction:column;gap:1px;padding:3px 5px;background:var(--bg-input);border:1px solid var(--border);border-radius:2px}
+  .shot .mr-cascade-line{font-size:6.5px;color:var(--green)}
+  .shot .mr-cascade-line::before{content:"> ";color:var(--orange)}
+  .shot .mr-cascade-line.dim{color:var(--text-dim)}
+  /* Dropzone / form */
+  .shot .mr-field{margin-bottom:3px}
+  .shot .mr-flbl{font-size:5.5px;color:var(--text-dim);letter-spacing:.5px;margin-bottom:1px;text-transform:uppercase}
+  .shot .mr-fval{padding:3px 5px;background:var(--bg-input);border:1px solid var(--border);border-radius:2px;font-size:7px;color:var(--text-primary)}
+  .shot .mr-chips{display:flex;flex-wrap:wrap;gap:2px}
+  .shot .mr-chip{font-size:5.5px;padding:1px 4px;border:1px solid var(--border);border-radius:2px;color:var(--text-secondary);white-space:nowrap}
+  .shot .mr-chip.on{background:var(--orange);color:var(--bg-primary);border-color:var(--orange);font-weight:700}
+  .shot .mr-drop{border:1.5px dashed var(--border-2);border-radius:3px;padding:12px 4px;text-align:center;font-size:7px;color:var(--text-dim);display:flex;flex-direction:column;align-items:center;gap:2px;flex:1}
+  .shot .mr-drop .plus{font-size:18px;color:var(--text-dim);line-height:1}
+  .shot .mr-work{padding:4px 6px;border:1px solid var(--border);border-radius:2px;background:var(--bg-card);margin-bottom:2px;display:flex;justify-content:space-between;align-items:center}
+  .shot .mr-work-l{min-width:0;flex:1}
+  .shot .mr-work-t{font-size:7.5px;color:var(--text-primary);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .shot .mr-work-m{font-size:5.5px;color:var(--text-dim)}
+  .shot .mr-work-r{display:flex;align-items:center;gap:3px}
+  .shot .mr-dev{padding:1px 3px;font-size:5px;background:var(--orange-dim);color:var(--orange);border:1px solid rgba(255,145,0,.35);border-radius:1px;font-weight:700;letter-spacing:.3px}
+  .shot .mr-mint-badge{padding:1px 3px;font-size:5px;background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold);border-radius:1px;font-weight:700;letter-spacing:.3px}
+  .shot .mr-link{display:flex;align-items:center;gap:4px;padding:3px 4px;border-bottom:1px solid var(--border);font-size:7px;color:var(--text-secondary)}
+  .shot .mr-link-ic{width:10px;height:10px;border-radius:2px;background:var(--bg-card);display:inline-flex;align-items:center;justify-content:center;color:var(--orange);font-size:6px;font-weight:700;flex-shrink:0}
+  .shot .mr-link .chk{margin-left:auto;color:var(--green);font-size:8px}
+  .shot .mr-handle-pick{display:flex;align-items:center;gap:3px;padding:5px 7px;border:1px solid var(--border);border-radius:2px;background:var(--bg-input);font-size:7.5px}
+  .shot .mr-handle-pick .pre{color:var(--text-dim)}
+  .shot .mr-handle-pick .at{color:var(--orange);font-weight:700}
+  .shot .mr-handle-pick .val{color:var(--text-primary);font-weight:700}
+  .shot .mr-pay-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin-top:3px}
+  .shot .mr-pay{padding:4px 2px;border:1px solid var(--border);border-radius:2px;text-align:center;font-size:6px;color:var(--text-secondary)}
+  .shot .mr-pay.on{border-color:var(--orange);background:var(--orange-dim);color:var(--orange);font-weight:700}
+  .shot .mr-verify-ctx{padding:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:2px;text-align:center}
+  .shot .mr-vctx-icon{width:24px;height:24px;border-radius:50%;background:var(--green-dim);color:var(--green);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;margin-bottom:3px}
+  .shot .mr-locked-overlay{position:relative}
+  .shot .mr-locked-overlay::after{content:"LOCKED";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:var(--mono);font-size:8px;color:var(--red);letter-spacing:1px;font-weight:700;background:rgba(10,11,15,.85);padding:3px 8px;border:1px solid var(--red);border-radius:2px}
 
   /* ═══════════════  CALLOUTS  ═══════════════ */
   .callout{margin:14px 0;padding:14px 16px;border-radius:var(--r-sm);font-size:13.5px;line-height:1.55}
@@ -457,7 +581,16 @@
     <article class="step">
       <div class="shot">
         <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastshift.app</div></div>
-        <div class="shot-placeholder"><div class="shot-icon">▦</div><div class="shot-src">wireframes/screen1-launch-terminal.html</div><div class="dim mono" style="font-size:10px">cold-boot · CONNECT WALLET</div></div>
+        <div class="mr mr-stage">
+          <div class="mr-log">
+            <div class="mr-line dim">SHIFTBOT · LASTSHIFT TERMINAL v1.0</div>
+            <div class="mr-line">System online</div>
+            <div class="mr-line">Awaiting wallet<span class="mr-caret"></span></div>
+          </div>
+          <div style="text-align:center;font-size:7px;color:var(--text-primary);margin:6px 0 3px;font-weight:700">CONNECT YOUR WALLET</div>
+          <div class="mr-btn orange block">&gt; CONNECT WALLET</div>
+          <div style="text-align:center;font-size:6px;color:var(--text-dim);margin-top:auto">PHANTOM · SOLFLARE · BACKPACK</div>
+        </div>
         <div class="shot-caption">lastshift.app — click CONNECT WALLET</div>
       </div>
       <div>
@@ -473,7 +606,19 @@
     <article class="step">
       <div class="shot">
         <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastshift.app/keygen</div></div>
-        <div class="shot-placeholder"><div class="shot-icon">⌨</div><div class="shot-src">wireframes/screen2-key-generation.html</div><div class="dim mono" style="font-size:10px">XXXX-XXXX-XXXX-XXXX-XXXX</div></div>
+        <div class="mr mr-stage">
+          <div class="mr-log">
+            <div class="mr-line dim">Wallet connected · F7k2…9xMp</div>
+            <div class="mr-line orange">Creating operator account...</div>
+            <div class="mr-line">Generating Terminal ID</div>
+          </div>
+          <div class="mr-tid">
+            <span class="mr-tid-seg">8F3K</span><span class="mr-tid-dash">-</span><span class="mr-tid-seg">VXNM</span><span class="mr-tid-dash">-</span><span class="mr-tid-seg">R2PW</span><span class="mr-tid-dash">-</span><span class="mr-tid-seg">7TJD</span><span class="mr-tid-dash">-</span><span class="mr-tid-seg pending">••••</span>
+          </div>
+          <div class="mr-log" style="margin-top:auto">
+            <div class="mr-line dim">Save this key — works across all tools</div>
+          </div>
+        </div>
         <div class="shot-caption">Your Terminal ID. One key. Every tool.</div>
       </div>
       <div>
@@ -489,7 +634,30 @@
     <article class="step">
       <div class="shot">
         <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastshift.app/dashboard</div></div>
-        <div class="shot-placeholder"><div class="shot-icon">▥</div><div class="shot-src">wireframes/screen3-dashboard.html</div><div class="dim mono" style="font-size:10px">LAUNCH LASTPROOF highlighted</div></div>
+        <div class="mr mr-dark" style="padding:0">
+          <div class="mr-dash">
+            <div class="mr-sb">
+              <div class="mr-sb-logo"></div>
+              <div class="mr-sb-item active"></div>
+              <div class="mr-sb-item"></div>
+              <div class="mr-sb-item"></div>
+              <div class="mr-sb-item"></div>
+              <div class="mr-sb-item"></div>
+            </div>
+            <div class="mr-main">
+              <div class="mr-banner"></div>
+              <div class="mr-sec-label">YOUR ACCOUNT</div>
+              <div class="mr-row">
+                <div class="mr-stat"><span class="n">•••</span><span class="l">WALLET</span></div>
+                <div class="mr-stat"><span class="n orange">2.4K</span><span class="l">LASTSHFT</span></div>
+                <div class="mr-stat"><span class="n">1/7</span><span class="l">TOOLS</span></div>
+              </div>
+              <div class="mr-sec-label">YOUR TERMINAL ID</div>
+              <div class="mr-tid" style="margin:0;padding:3px;font-size:7.5px">8F3K-VXNM-R2PW-7TJD-AB9C</div>
+              <div class="mr-btn orange block" style="margin-top:auto;box-shadow:0 0 8px var(--orange-glow)">&gt; LAUNCH LASTPROOF</div>
+            </div>
+          </div>
+        </div>
         <div class="shot-caption">Terminal dashboard — click LAUNCH LASTPROOF in the sidebar.</div>
       </div>
       <div>
@@ -505,7 +673,18 @@
     <article class="step">
       <div class="shot">
         <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/manage</div></div>
-        <div class="shot-placeholder"><div class="shot-icon">▤</div><div class="shot-src">wireframes/lastproof-onboarding.html + lastproof-dashboard-fresh.html</div><div class="dim mono" style="font-size:10px">paste TID → claim @handle</div></div>
+        <div class="mr mr-stage">
+          <div class="mr-log">
+            <div class="mr-line dim">Wallet connected · F7k2…9xMp</div>
+            <div class="mr-line green">Terminal ID verified</div>
+          </div>
+          <div style="text-align:center;font-size:6.5px;color:var(--text-dim);margin:4px 0 2px;letter-spacing:.5px">PICK YOUR HANDLE</div>
+          <div class="mr-handle-pick">
+            <span class="pre">lastproof.app/</span><span class="at">@</span><span class="val">cryptomark</span>
+          </div>
+          <div style="font-size:6px;color:var(--green);text-align:center;margin:3px">✓ AVAILABLE</div>
+          <div class="mr-btn orange block" style="margin-top:auto">&gt; RESERVE HANDLE</div>
+        </div>
         <div class="shot-caption">Paste your Terminal ID → claim your @handle.</div>
       </div>
       <div>
@@ -520,7 +699,27 @@
     <article class="step">
       <div class="shot">
         <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/@cryptomark</div></div>
-        <div class="shot-placeholder"><div class="shot-icon">◉</div><div class="shot-src">wireframes/lastproof-profile-public.html</div><div class="dim mono" style="font-size:10px">public profile · shareable</div></div>
+        <div class="mr mr-prof">
+          <div class="mr-pheader">
+            <div class="mr-avatar"><img src="cryptoMark.jpg" alt=""></div>
+            <div>
+              <div class="mr-pname">CRYPTOMARK</div>
+              <div class="mr-phandle">@cryptomark</div>
+            </div>
+            <div class="mr-pright">
+              <span class="mr-badge active">ACTIVE</span>
+              <span class="mr-tier t3">TIER 3 · EXP</span>
+            </div>
+          </div>
+          <div class="mr-bio">Web3 growth strategist. 3 years in crypto marketing. X growth, raid leading, community.</div>
+          <div class="mr-quad">
+            <div class="mr-stat"><span class="n orange">3</span><span class="l">DEV</span></div>
+            <div class="mr-stat"><span class="n">47</span><span class="l">PROOFS</span></div>
+            <div class="mr-stat"><span class="n">50</span><span class="l">PROJ</span></div>
+            <div class="mr-stat"><span class="n green">$$$</span><span class="l">FEE</span></div>
+          </div>
+          <div class="mr-hire">HIRE · DM ON TG</div>
+        </div>
         <div class="shot-caption">lastproof.app/@you — your on-chain resume. Drop it in any DM.</div>
       </div>
       <div>
@@ -551,7 +750,29 @@
     <article class="step">
       <div class="shot">
         <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/@handle</div></div>
-        <div class="shot-placeholder"><div class="shot-icon">◑</div><div class="shot-src">wireframes/lastproof-profile-public.html</div><div class="dim mono" style="font-size:10px">Proof of Work · VERIFY THIS WORK</div></div>
+        <div class="mr mr-prof">
+          <div class="mr-sec-label" style="margin-top:0">PROOF OF WORK</div>
+          <div class="mr-work">
+            <div class="mr-work-l">
+              <div class="mr-work-t">$BONK · Raid Commander</div>
+              <div class="mr-work-m">May 24 – Sep 24 · 9 proofs</div>
+            </div>
+            <div class="mr-work-r"><span class="mr-dev">DEV</span></div>
+          </div>
+          <div class="mr-work" style="border-color:var(--orange);box-shadow:0 0 10px var(--orange-glow)">
+            <div class="mr-work-l">
+              <div class="mr-work-t">$SOL · Marketing Director</div>
+              <div class="mr-work-m">Sep 23 – Mar 24</div>
+            </div>
+            <div class="mr-work-r"><span class="mr-btn orange" style="font-size:6px;padding:3px 5px">VERIFY</span></div>
+          </div>
+          <div class="mr-work">
+            <div class="mr-work-l">
+              <div class="mr-work-t">$WIF · Community Mgr</div>
+              <div class="mr-work-m">Nov 24 – now · 4 proofs</div>
+            </div>
+          </div>
+        </div>
         <div class="shot-caption">VERIFY THIS WORK — click the project you're vouching for.</div>
       </div>
       <div>
@@ -564,7 +785,24 @@
     <article class="step">
       <div class="shot">
         <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">proof modal · screen 1</div></div>
-        <div class="shot-placeholder"><div class="shot-icon">▦</div><div class="shot-src">wireframes/lastproof-proof-modal-v2.html</div><div class="dim mono" style="font-size:10px">Collaborator · Dev</div></div>
+        <div class="mr mr-modal">
+          <div class="mr-modal-head">
+            <div class="mr-modal-title">VERIFY THIS WORK</div>
+            <div class="mr-modal-step">STEP 1 / 6</div>
+          </div>
+          <div class="mr-modal-body">
+            <div style="font-size:6.5px;color:var(--text-dim);margin-bottom:2px;letter-spacing:.5px">PICK YOUR PATH</div>
+            <div class="mr-opt active">
+              <span>COLLABORATOR</span>
+              <span class="price">$1</span>
+            </div>
+            <div class="mr-opt">
+              <span>DEV <span class="dev">+DEV BADGE</span></span>
+              <span class="price">$5</span>
+            </div>
+            <div style="font-size:6px;color:var(--red);padding:3px 5px;margin-top:auto;border-left:2px solid var(--red);background:var(--red-dim);border-radius:2px;line-height:1.4">Dev path verified on-chain. Wrong = lose payment.</div>
+          </div>
+        </div>
         <div class="shot-caption">Two paths — Collaborator ($1) or Dev ($5).</div>
       </div>
       <div>
@@ -583,7 +821,30 @@
     <article class="step">
       <div class="shot">
         <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">proof modal · screen 2</div></div>
-        <div class="shot-placeholder"><div class="shot-icon">◈</div><div class="shot-src">wireframes/lastproof-proof-modal-v2.html</div><div class="dim mono" style="font-size:10px">$LASTSHFT · SOL · USDT</div></div>
+        <div class="mr mr-modal">
+          <div class="mr-modal-head">
+            <div class="mr-modal-title">PICK TOKEN</div>
+            <div class="mr-modal-step">STEP 2 / 6</div>
+          </div>
+          <div class="mr-modal-body">
+            <div class="mr-tokens">
+              <div class="mr-token on">
+                <div class="mr-token-ic"></div>
+                <div>$LASTSHFT</div>
+                <div style="font-size:5.5px">40% off</div>
+              </div>
+              <div class="mr-token sol">
+                <div class="mr-token-ic"></div>
+                <div>SOL</div>
+              </div>
+              <div class="mr-token usdt">
+                <div class="mr-token-ic"></div>
+                <div>USDT</div>
+              </div>
+            </div>
+            <div style="font-size:6px;color:var(--text-dim);padding:3px;margin-top:auto;text-align:center">USDC NOT SUPPORTED</div>
+          </div>
+        </div>
         <div class="shot-caption">Pay with $LASTSHFT (40% off), SOL, or USDT. USDC not accepted.</div>
       </div>
       <div>
@@ -603,7 +864,25 @@
     <article class="step">
       <div class="shot">
         <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">proof modal · screen 3</div></div>
-        <div class="shot-placeholder"><div class="shot-icon">⎘</div><div class="shot-src">wireframes/lastproof-proof-modal-v2.html</div><div class="dim mono" style="font-size:10px">copy address · copy amount</div></div>
+        <div class="mr mr-modal">
+          <div class="mr-modal-head">
+            <div class="mr-modal-title">SEND PAYMENT</div>
+            <div class="mr-modal-step">STEP 3 / 6</div>
+          </div>
+          <div class="mr-modal-body">
+            <div class="mr-copy-row">
+              <span class="lbl">ADDR</span>
+              <span class="val">DFUZ...4axP</span>
+              <span class="copybtn">COPY</span>
+            </div>
+            <div class="mr-copy-row">
+              <span class="lbl">AMT</span>
+              <span class="val">1.00 LASTSHFT</span>
+              <span class="copybtn">COPY</span>
+            </div>
+            <div style="font-size:6px;color:var(--orange);padding:3px 5px;margin-top:auto;border-left:2px solid var(--orange);background:var(--orange-dim);border-radius:2px;line-height:1.4">Amount must be EXACT — $1.00 not $1.01.</div>
+          </div>
+        </div>
         <div class="shot-caption">Copy address. Copy exact amount. Send from your wallet.</div>
       </div>
       <div>
@@ -620,7 +899,20 @@
     <article class="step">
       <div class="shot">
         <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">proof modal · screen 4</div></div>
-        <div class="shot-placeholder"><div class="shot-icon">▣</div><div class="shot-src">wireframes/lastproof-proof-modal-v2.html</div><div class="dim mono" style="font-size:10px">paste TX · 140-char comment</div></div>
+        <div class="mr mr-modal">
+          <div class="mr-modal-head">
+            <div class="mr-modal-title">PASTE TX</div>
+            <div class="mr-modal-step">STEP 4 / 6</div>
+          </div>
+          <div class="mr-modal-body">
+            <div class="mr-flbl">TX SIGNATURE</div>
+            <div class="mr-copy-row" style="margin-bottom:4px">
+              <span class="val" style="font-size:5.5px">4k2Fp9xQr...nBvC8mT3</span>
+            </div>
+            <div class="mr-flbl">COMMENT · 140 CHARS</div>
+            <div class="mr-textarea">@kellen ran our Tier 1 raid team for 6 months. Real one.</div>
+          </div>
+        </div>
         <div class="shot-caption">Paste your TX signature. Add an optional 140-char comment.</div>
       </div>
       <div>
@@ -640,7 +932,22 @@
     <article class="step">
       <div class="shot">
         <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">proof modal · screen 5</div></div>
-        <div class="shot-placeholder"><div class="shot-icon">✓</div><div class="shot-src">wireframes/lastproof-proof-modal-v2.html</div><div class="dim mono" style="font-size:10px">cascade · receipt · solscan</div></div>
+        <div class="mr mr-modal">
+          <div class="mr-modal-head">
+            <div class="mr-modal-title">VERIFYING...</div>
+            <div class="mr-modal-step">STEP 5 / 6</div>
+          </div>
+          <div class="mr-modal-body">
+            <div class="mr-cascade">
+              <div class="mr-cascade-line">Transaction found ✓</div>
+              <div class="mr-cascade-line">Amount matches ✓</div>
+              <div class="mr-cascade-line">Token matches ✓</div>
+              <div class="mr-cascade-line">Not self-proof ✓</div>
+              <div class="mr-cascade-line dim">Recording proof...<span class="mr-caret"></span></div>
+            </div>
+            <div style="font-size:6px;color:var(--green);text-align:center;padding:3px;margin-top:auto;background:var(--green-dim);border-radius:2px">HELIUS · 1–5s · SOLSCAN LINKED</div>
+          </div>
+        </div>
         <div class="shot-caption">1–5 second verification via Helius. Then the receipt.</div>
       </div>
       <div>
@@ -701,7 +1008,33 @@
       <div class="sub-topic-grid">
         <div class="shot">
           <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · bio</div></div>
-          <div class="shot-placeholder"><div class="shot-icon">✎</div><div class="shot-src">lastproof-dashboard.html</div><div class="dim mono" style="font-size:10px">inline edit</div></div>
+          <div class="mr mr-dark" style="padding:0">
+            <div class="mr-dash">
+              <div class="mr-sb">
+                <div class="mr-sb-logo"></div>
+                <div class="mr-sb-item active"></div>
+                <div class="mr-sb-item"></div>
+                <div class="mr-sb-item"></div>
+              </div>
+              <div class="mr-main">
+                <div class="mr-sec-label">ABOUT ME</div>
+                <div class="mr-field">
+                  <div class="mr-flbl" style="display:flex;justify-content:space-between"><span>BIO</span><span style="color:var(--orange)">EDIT</span></div>
+                  <div class="mr-fval">3 years in web3 marketing. Taken projects zero to 15K organic.</div>
+                </div>
+                <div class="mr-field">
+                  <div class="mr-flbl">CATEGORIES · 3/3</div>
+                  <div class="mr-chips">
+                    <span class="mr-chip on">X GROWTH</span>
+                    <span class="mr-chip on">RAID</span>
+                    <span class="mr-chip on">COMMUNITY</span>
+                    <span class="mr-chip">DEV</span>
+                    <span class="mr-chip">DESIGN</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="shot-caption">Click EDIT on any section to open the inline editor.</div>
         </div>
         <div>
@@ -724,7 +1057,34 @@
       <div class="sub-topic-grid">
         <div class="shot">
           <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · work items</div></div>
-          <div class="shot-placeholder"><div class="shot-icon">▢</div><div class="shot-src">lastproof-dashboard.html</div><div class="dim mono" style="font-size:10px">+ ADD WORK ITEM</div></div>
+          <div class="mr mr-dark" style="padding:0">
+            <div class="mr-dash">
+              <div class="mr-sb">
+                <div class="mr-sb-logo"></div>
+                <div class="mr-sb-item"></div>
+                <div class="mr-sb-item active"></div>
+                <div class="mr-sb-item"></div>
+              </div>
+              <div class="mr-main">
+                <div class="mr-sec-label">PROOF OF WORK</div>
+                <div class="mr-work">
+                  <div class="mr-work-l">
+                    <div class="mr-work-t">$BONK · Raid Commander</div>
+                    <div class="mr-work-m">LOCKED · 9 proofs</div>
+                  </div>
+                  <div class="mr-work-r"><span class="mr-dev">DEV</span></div>
+                </div>
+                <div class="mr-work">
+                  <div class="mr-work-l">
+                    <div class="mr-work-t">$SOL · Marketing Director</div>
+                    <div class="mr-work-m">Sep 23 – Mar 24</div>
+                  </div>
+                  <div class="mr-work-r"><span style="color:var(--orange);font-size:6px;font-weight:700">EDIT</span></div>
+                </div>
+                <div class="mr-btn orange block" style="margin-top:auto">+ ADD WORK ITEM</div>
+              </div>
+            </div>
+          </div>
           <div class="shot-caption">Work items are the projects proofs attach to.</div>
         </div>
         <div>
@@ -748,7 +1108,29 @@
       <div class="sub-topic-grid">
         <div class="shot">
           <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · screenshots</div></div>
-          <div class="shot-placeholder"><div class="shot-icon">⊞</div><div class="shot-src">lastproof-dashboard.html</div><div class="dim mono" style="font-size:10px">JPG/PNG · max 5MB</div></div>
+          <div class="mr mr-dark" style="padding:0">
+            <div class="mr-dash">
+              <div class="mr-sb">
+                <div class="mr-sb-logo"></div>
+                <div class="mr-sb-item"></div>
+                <div class="mr-sb-item"></div>
+                <div class="mr-sb-item active"></div>
+              </div>
+              <div class="mr-main">
+                <div class="mr-sec-label">SCREENSHOTS · 3/10</div>
+                <div class="mr-row" style="flex-wrap:wrap;gap:3px">
+                  <div style="width:34px;height:22px;background:linear-gradient(135deg,#2a2d42,#161822);border:1px solid var(--border);border-radius:2px;position:relative"><span style="position:absolute;bottom:1px;right:2px;font-size:5px;color:var(--text-dim)">1</span></div>
+                  <div style="width:34px;height:22px;background:linear-gradient(135deg,#0e2a22,#1a3a30);border:1px solid var(--border);border-radius:2px;position:relative"><span style="position:absolute;bottom:1px;right:2px;font-size:5px;color:var(--text-dim)">2</span></div>
+                  <div style="width:34px;height:22px;background:linear-gradient(135deg,#2a1f0e,#3a2a1a);border:1px solid var(--border);border-radius:2px;position:relative"><span style="position:absolute;bottom:1px;right:2px;font-size:5px;color:var(--text-dim)">3</span></div>
+                </div>
+                <div class="mr-drop" style="margin-top:3px">
+                  <div class="plus">+</div>
+                  <div>DROP JPG/PNG</div>
+                  <div style="font-size:5.5px;color:var(--text-dim)">MAX 5MB · 120-CHAR CAPTION</div>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="shot-caption">Drop JPG/PNG. Max 5MB per file.</div>
         </div>
         <div>
@@ -771,7 +1153,24 @@
       <div class="sub-topic-grid">
         <div class="shot">
           <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · links</div></div>
-          <div class="shot-placeholder"><div class="shot-icon">⎔</div><div class="shot-src">lastproof-dashboard.html</div><div class="dim mono" style="font-size:10px">up to 5 links</div></div>
+          <div class="mr mr-dark" style="padding:0">
+            <div class="mr-dash">
+              <div class="mr-sb">
+                <div class="mr-sb-logo"></div>
+                <div class="mr-sb-item"></div>
+                <div class="mr-sb-item active"></div>
+                <div class="mr-sb-item"></div>
+              </div>
+              <div class="mr-main">
+                <div class="mr-sec-label">LINKS · 4/5</div>
+                <div class="mr-link"><span class="mr-link-ic">𝕏</span><span>@cryptomark</span><span class="chk">✓</span></div>
+                <div class="mr-link"><span class="mr-link-ic">✈</span><span>@cryptomark_tg</span><span class="chk">✓</span></div>
+                <div class="mr-link"><span class="mr-link-ic">L</span><span>linkedin.com/...</span></div>
+                <div class="mr-link"><span class="mr-link-ic">W</span><span>cryptomark.dev</span></div>
+                <div class="mr-btn orange block" style="margin-top:auto">+ ADD LINK</div>
+              </div>
+            </div>
+          </div>
           <div class="shot-caption">Add up to 5 links. X and Telegram can be verified.</div>
         </div>
         <div>
@@ -797,7 +1196,19 @@
       <div class="sub-topic-grid">
         <div class="shot">
           <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · handle change</div></div>
-          <div class="shot-placeholder"><div class="shot-icon">↻</div><div class="shot-src">handle-change-modal</div><div class="dim mono" style="font-size:10px">$100 or $60 $LASTSHFT</div></div>
+          <div class="mr mr-stage">
+            <div style="text-align:center;font-size:8px;color:var(--text-primary);margin-bottom:5px;font-weight:700;letter-spacing:1px">CHANGE HANDLE</div>
+            <div class="mr-handle-pick">
+              <span class="pre">lastproof.app/</span><span class="at">@</span><span class="val">newhandle</span>
+            </div>
+            <div style="font-size:6.5px;color:var(--green);text-align:center;margin:4px">✓ AVAILABLE</div>
+            <div class="mr-pay-row">
+              <div class="mr-pay on">$60<div style="font-size:5px;font-weight:400">$LASTSHFT</div></div>
+              <div class="mr-pay">$100<div style="font-size:5px;font-weight:400">SOL</div></div>
+              <div class="mr-pay">$100<div style="font-size:5px;font-weight:400">USDT</div></div>
+            </div>
+            <div class="mr-btn orange block" style="margin-top:auto">&gt; PAY & CHANGE</div>
+          </div>
           <div class="shot-caption">Your handle is your public URL. Changing it is paid.</div>
         </div>
         <div>
@@ -828,7 +1239,19 @@
       <div class="sub-topic-grid">
         <div class="shot">
           <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · verify X + TG</div></div>
-          <div class="shot-placeholder"><div class="shot-icon">✓</div><div class="shot-src">lastproof-profile-public.html</div><div class="dim mono" style="font-size:10px">verification badge</div></div>
+          <div class="mr mr-prof">
+            <div class="mr-pheader">
+              <div class="mr-avatar"><img src="cryptoMark.jpg" alt=""></div>
+              <div>
+                <div class="mr-pname" style="display:flex;align-items:center;gap:3px">CRYPTOMARK <span style="display:inline-flex;width:10px;height:10px;border-radius:50%;background:var(--green);color:var(--bg-primary);align-items:center;justify-content:center;font-size:7px;font-weight:900">✓</span></div>
+                <div class="mr-phandle" style="color:var(--green)">VERIFIED IDENTITY</div>
+              </div>
+            </div>
+            <div class="mr-sec-label" style="margin-top:2px">VERIFIED LINKS</div>
+            <div class="mr-link"><span class="mr-link-ic">𝕏</span><span>@cryptomark</span><span class="chk">✓</span></div>
+            <div class="mr-link"><span class="mr-link-ic">✈</span><span>@cryptomark_tg</span><span class="chk">✓</span></div>
+            <div style="font-size:6.5px;color:var(--green);padding:4px;margin-top:auto;text-align:center;background:var(--green-dim);border:1px solid var(--green);border-radius:2px;letter-spacing:.3px">BADGE ACTIVE · X + TG VERIFIED</div>
+          </div>
           <div class="shot-caption">Green checkmark on your profile = verified identity.</div>
         </div>
         <div>
@@ -848,7 +1271,26 @@
       <div class="sub-topic-grid">
         <div class="shot">
           <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · upgrade</div></div>
-          <div class="shot-placeholder"><div class="shot-icon">↑</div><div class="shot-src">lastproof-upgrade-modal.html</div><div class="dim mono" style="font-size:10px">$10/mo · $6 $LASTSHFT</div></div>
+          <div class="mr mr-stage">
+            <div style="text-align:center;font-size:8.5px;color:var(--orange);margin-bottom:3px;font-weight:700;letter-spacing:1px">UPGRADE PROFILE</div>
+            <div style="text-align:center;font-size:6.5px;color:var(--text-secondary);margin-bottom:6px">Unlock Grid · tier · DEV badge · hire</div>
+            <div class="mr-pay-row">
+              <div class="mr-pay on" style="padding:7px 2px">
+                <div style="font-size:10px;color:var(--orange);font-weight:700">$6</div>
+                <div style="font-size:5.5px">$LASTSHFT</div>
+                <div style="font-size:5px;color:var(--green)">-40%</div>
+              </div>
+              <div class="mr-pay" style="padding:7px 2px">
+                <div style="font-size:10px">$10</div>
+                <div style="font-size:5.5px">SOL</div>
+              </div>
+              <div class="mr-pay" style="padding:7px 2px">
+                <div style="font-size:10px">$10</div>
+                <div style="font-size:5.5px">USDT</div>
+              </div>
+            </div>
+            <div class="mr-btn orange block" style="margin-top:auto">&gt; PAY & UPGRADE</div>
+          </div>
           <div class="shot-caption">Paid tier unlocks Grid visibility, tier progression, DEV badge.</div>
         </div>
         <div>
@@ -875,7 +1317,23 @@
       <div class="sub-topic-grid">
         <div class="shot">
           <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">/manage · mint</div></div>
-          <div class="shot-placeholder"><div class="shot-icon">◈</div><div class="shot-src">lastproof-mint-modal.html</div><div class="dim mono" style="font-size:10px">$1 · MINTED badge</div></div>
+          <div class="mr mr-stage">
+            <div style="text-align:center;font-size:8.5px;color:var(--gold);margin-bottom:4px;font-weight:700;letter-spacing:1px">MINT PROJECT</div>
+            <div class="mr-work" style="border-color:var(--gold);background:rgba(255,215,0,.06)">
+              <div class="mr-work-l">
+                <div class="mr-work-t">$BONK · Raid Commander</div>
+                <div class="mr-work-m">9 proofs · DEV</div>
+              </div>
+              <div class="mr-work-r"><span class="mr-mint-badge">★ MINT</span></div>
+            </div>
+            <div style="text-align:center;font-size:6.5px;color:var(--text-secondary);margin:3px 0">Pins to top · gold badge · $1</div>
+            <div class="mr-pay-row">
+              <div class="mr-pay on">$0.60<div style="font-size:5px;font-weight:400">$LASTSHFT</div></div>
+              <div class="mr-pay">$1<div style="font-size:5px;font-weight:400">SOL</div></div>
+              <div class="mr-pay">$1<div style="font-size:5px;font-weight:400">USDT</div></div>
+            </div>
+            <div class="mr-btn orange block" style="margin-top:auto">&gt; MINT</div>
+          </div>
           <div class="shot-caption">Minted projects pin to the top of your profile.</div>
         </div>
         <div>
@@ -941,7 +1399,27 @@
       <div class="state-grid">
         <div class="shot">
           <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/@you</div></div>
-          <div class="shot-placeholder"><div class="shot-icon">◉</div><div class="shot-src">lastproof-profile-public.html</div><div class="dim mono" style="font-size:10px">full profile</div></div>
+          <div class="mr mr-prof">
+            <div class="mr-pheader">
+              <div class="mr-avatar"><img src="cryptoMark.jpg" alt=""></div>
+              <div>
+                <div class="mr-pname" style="display:flex;align-items:center;gap:3px">CRYPTOMARK <span style="display:inline-flex;width:9px;height:9px;border-radius:50%;background:var(--green);color:var(--bg-primary);align-items:center;justify-content:center;font-size:6px;font-weight:900">✓</span></div>
+                <div class="mr-phandle">@cryptomark</div>
+              </div>
+              <div class="mr-pright">
+                <span class="mr-badge active">ACTIVE</span>
+                <span class="mr-tier t3">TIER 3 · EXP</span>
+              </div>
+            </div>
+            <div class="mr-bio">Web3 growth strategist. X growth, raid leading, community building for Solana projects.</div>
+            <div class="mr-quad">
+              <div class="mr-stat"><span class="n orange">3</span><span class="l">DEV</span></div>
+              <div class="mr-stat"><span class="n">47</span><span class="l">PROOFS</span></div>
+              <div class="mr-stat"><span class="n">50</span><span class="l">PROJ</span></div>
+              <div class="mr-stat"><span class="n green">$$$</span><span class="l">FEE</span></div>
+            </div>
+            <div class="mr-hire">HIRE · DM ON TG</div>
+          </div>
           <div class="shot-caption">Everything on. This is what the Grid sees.</div>
         </div>
         <div class="details">
@@ -975,7 +1453,28 @@
       <div class="state-grid">
         <div class="shot">
           <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/@you</div></div>
-          <div class="shot-placeholder"><div class="shot-icon">★</div><div class="shot-src">lastproof-profile-5000.html</div><div class="dim mono" style="font-size:10px">gold ribbon + countdown</div></div>
+          <div class="mr mr-prof" style="position:relative">
+            <div class="mr-ea-ribbon">★ FIRST 5,000</div>
+            <div class="mr-pheader">
+              <div class="mr-avatar ea"><img src="cryptoMark.jpg" alt=""></div>
+              <div>
+                <div class="mr-pname">CRYPTOMARK</div>
+                <div class="mr-phandle" style="color:var(--gold)">@cryptomark · EA</div>
+              </div>
+              <div class="mr-pright">
+                <span class="mr-badge ea">EA</span>
+                <span class="mr-tier t3">TIER 3 · EXP</span>
+              </div>
+            </div>
+            <div class="mr-bio">Early access operator. Full Active Paid until 2026-06-07.</div>
+            <div style="font-size:6px;color:var(--gold);text-align:center;letter-spacing:.5px;margin-top:2px">AUTO-CONVERT IN</div>
+            <div class="mr-countdown">
+              <div class="u">17<div style="font-size:4.5px;opacity:.7">D</div></div>
+              <div class="u">08<div style="font-size:4.5px;opacity:.7">H</div></div>
+              <div class="u">42<div style="font-size:4.5px;opacity:.7">M</div></div>
+            </div>
+            <div class="mr-hire">HIRE · DM ON TG</div>
+          </div>
           <div class="shot-caption">Full profile + gold early-access ribbon + countdown.</div>
         </div>
         <div class="details">
@@ -1004,7 +1503,24 @@
       <div class="state-grid">
         <div class="shot">
           <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/@you</div></div>
-          <div class="shot-placeholder"><div class="shot-icon">◌</div><div class="shot-src">lastproof-profile-free.html</div><div class="dim mono" style="font-size:10px">stripped · identity only</div></div>
+          <div class="mr mr-prof">
+            <div class="mr-pheader">
+              <div class="mr-avatar free"><img src="cryptoMark.jpg" alt=""></div>
+              <div>
+                <div class="mr-pname" style="color:var(--text-secondary)">CRYPTOMARK</div>
+                <div class="mr-phandle">@cryptomark</div>
+              </div>
+              <div class="mr-pright">
+                <span class="mr-badge free">FREE</span>
+              </div>
+            </div>
+            <div class="mr-bio">Web3 growth strategist. Identity only — tier, proofs, DEV badge, HIRE all hidden.</div>
+            <div style="padding:6px;border:1px dashed var(--border-2);border-radius:2px;text-align:center;margin:3px 0">
+              <div style="font-size:5.5px;color:var(--text-dim);letter-spacing:1px">TIER · PROOFS · HIRE</div>
+              <div style="font-size:7px;color:var(--text-dim);margin-top:2px">— HIDDEN —</div>
+            </div>
+            <div class="mr-upgrade">UPGRADE TO UNLOCK</div>
+          </div>
           <div class="shot-caption">Identity only. No tier, no Hire button, no proofs visible.</div>
         </div>
         <div class="details">
@@ -1036,7 +1552,23 @@
       <div class="state-grid">
         <div class="shot">
           <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/manage</div></div>
-          <div class="shot-placeholder"><div class="shot-icon">◎</div><div class="shot-src">lastproof-dashboard.html · .status-pill.defunct</div><div class="dim mono" style="font-size:10px">red pill · 90+ days</div></div>
+          <div class="mr mr-prof">
+            <div class="mr-pheader">
+              <div class="mr-avatar defunct"><img src="cryptoMark.jpg" alt=""></div>
+              <div>
+                <div class="mr-pname" style="color:var(--text-dim)">CRYPTOMARK</div>
+                <div class="mr-phandle">@cryptomark</div>
+              </div>
+              <div class="mr-pright">
+                <span class="mr-badge defunct">DEFUNCT</span>
+              </div>
+            </div>
+            <div class="mr-bio" style="color:var(--text-dim);font-style:italic">90+ days no activity. Data intact. Hire DMs discouraged.</div>
+            <div style="padding:4px 5px;border:1px solid var(--red);border-radius:2px;text-align:center;background:var(--red-dim);margin:2px 0">
+              <div style="font-size:6.5px;color:var(--red);letter-spacing:.5px;font-weight:700">LAST LOGIN · 118 DAYS AGO</div>
+            </div>
+            <div class="mr-free-note">Log in → Free · Upgrade → Active</div>
+          </div>
           <div class="shot-caption">Red "DEFUNCT" pill. 90+ days no payment + no login.</div>
         </div>
         <div class="details">
@@ -1170,7 +1702,18 @@
         <div class="faq-body">
           <div class="shot" style="max-width:300px">
             <div class="browser-chrome"><div class="browser-dots"><span class="browser-dot"></span><span class="browser-dot"></span><span class="browser-dot"></span></div><div class="browser-url">lastproof.app/manage</div></div>
-            <div class="shot-placeholder"><div class="shot-icon">⚠</div><div class="shot-src">/manage error state</div><div class="dim mono" style="font-size:10px">[NO REGISTRY MATCH]</div></div>
+            <div class="mr mr-stage">
+              <div class="mr-log">
+                <div class="mr-line dim">Wallet connected · DFUZ…4axP</div>
+                <div class="mr-line orange">Verifying terminal ID...</div>
+                <div class="mr-line warn">New wallet [NO REGISTRY MATCH]</div>
+                <div class="mr-line dim">Operator not found in registry</div>
+                <div class="mr-line orange">Authentication process booting...</div>
+                <div class="mr-line">Terminal ID required<span class="mr-caret"></span></div>
+              </div>
+              <div class="mr-input" style="color:var(--text-dim);font-size:7px;margin-top:auto">XXXX-XXXX-XXXX-XXXX-XXXX</div>
+              <div class="mr-btn green block">&gt; AUTHENTICATE</div>
+            </div>
             <div class="shot-caption">The exact error you're looking at.</div>
           </div>
           <p>That means your wallet hasn't been registered with a Terminal ID yet.</p>
