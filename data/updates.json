@@ -1,0 +1,507 @@
+{
+  "latest_version": "0.6.2",
+  "entries": [
+    {
+      "version": "0.6.2",
+      "date": "2026-04-18",
+      "category": "improved",
+      "headline": "Mobile wallet returns now resume where you left off.",
+      "copy": "Switching to your wallet app during a payment or proof no longer loses your spot. When you come back to LASTPROOF, you'll pick up exactly where you were — no restart, no re-entering details.",
+      "source_commits": [
+        "d04e9e9"
+      ]
+    },
+    {
+      "version": "0.6.1",
+      "date": "2026-04-18",
+      "category": "fixed",
+      "headline": "Ambassador referrals now track correctly from the very first sign-in.",
+      "copy": "If you were referred to LASTPROOF by a Terminal ambassador, your profile is linked to them the moment you land — no lost attribution, no missing credit.",
+      "source_commits": [
+        "67fc011",
+        "adca9f1"
+      ]
+    },
+    {
+      "version": "0.6.0",
+      "date": "2026-04-16",
+      "category": "added",
+      "headline": "Proof modal now checks your wallet's dev eligibility *before* you pay.",
+      "copy": "No more spending to find out you don't qualify. You'll see a clear yes/no up front, with the exact reason if it's a no.",
+      "source_commits": [
+        "3fc41bb"
+      ]
+    },
+    {
+      "version": "0.5.3",
+      "date": "2026-04-16",
+      "category": "improved",
+      "headline": "Public profiles now show every proof, not just the first five.",
+      "copy": "Visitors can scroll through your full work history without clicking through. Longer careers, longer feeds — no artificial cap.",
+      "source_commits": [
+        "0abae83"
+      ]
+    },
+    {
+      "version": "0.5.2",
+      "date": "2026-04-15",
+      "category": "fixed",
+      "headline": "Work item dates save reliably when you enter just a month and year.",
+      "copy": "Editing a project with a date like \"Mar 2026\" no longer throws an error. Whether you enter a full date or month-only, it saves cleanly.",
+      "source_commits": [
+        "9255503"
+      ]
+    },
+    {
+      "version": "0.5.1",
+      "date": "2026-04-15",
+      "category": "fixed",
+      "headline": "Treasury address copy button now works cleanly.",
+      "copy": "Copying the treasury address no longer picks up surrounding whitespace, and clicking COPY no longer highlights random page text.",
+      "source_commits": [
+        "a04e3ae"
+      ]
+    },
+    {
+      "version": "0.5.0",
+      "date": "2026-04-15",
+      "category": "improved",
+      "headline": "Work items now sort by date automatically.",
+      "copy": "We removed the manual drag-to-reorder step — your proofs appear newest-first everywhere, on the dashboard and on your public profile. One less thing to manage.",
+      "source_commits": [
+        "1955ba0"
+      ]
+    },
+    {
+      "version": "0.4.4",
+      "date": "2026-04-14",
+      "category": "improved",
+      "headline": "Share your profile straight from the name bar.",
+      "copy": "The share icon moved from the topbar to sit right next to your @handle on the public profile, where visitors actually expect it.",
+      "source_commits": [
+        "2fadfdd",
+        "4c5f59a"
+      ]
+    },
+    {
+      "version": "0.4.3",
+      "date": "2026-04-14",
+      "category": "improved",
+      "headline": "Clearer helper text on the Pitch and About Me fields.",
+      "copy": "Reworded and brightened the hints on your dashboard so it's obvious what to put where.",
+      "source_commits": [
+        "605a6b1"
+      ]
+    },
+    {
+      "version": "0.4.2",
+      "date": "2026-04-14",
+      "category": "added",
+      "headline": "Report inappropriate claims at reportclaims@lastshift.ai.",
+      "copy": "A dedicated inbox for flagging fake or misleading proofs on any profile.",
+      "source_commits": [
+        "db319bb"
+      ]
+    },
+    {
+      "version": "0.4.1",
+      "date": "2026-04-14",
+      "category": "added",
+      "headline": "New landing page: /earlyaccess.",
+      "copy": "A general-marketing destination for the platform, separate from the campaign and ambassador pages.",
+      "source_commits": [
+        "9540bae",
+        "fe949d6"
+      ]
+    },
+    {
+      "version": "0.4.0",
+      "date": "2026-04-14",
+      "category": "added",
+      "headline": "How It Works now explains Verify This Work.",
+      "copy": "A new third tab on /how-it-works walks you through the proof-verification flow — what verifiers see, how disputes work, and why the trust tier matters.",
+      "source_commits": [
+        "f7a78f8",
+        "763dfe8",
+        "d0a99fd",
+        "3ce08a9"
+      ]
+    },
+    {
+      "version": "0.3.9",
+      "date": "2026-04-13",
+      "category": "added",
+      "headline": "In-app browser warning banner.",
+      "copy": "Opening LASTPROOF inside Telegram, Instagram, or Twitter's in-app browser now shows a banner with a one-tap \"copy link\" — wallets don't work in those browsers, so we route you out cleanly.",
+      "source_commits": [
+        "dc160af"
+      ]
+    },
+    {
+      "version": "0.3.8",
+      "date": "2026-04-13",
+      "category": "added",
+      "headline": "Mint + Handle Change now use paste-to-verify — no wallet connect required.",
+      "copy": "The same frictionless flow that powers proofs now works for paying to mint and paying to change your @handle. Send the transaction from any wallet, paste the signature, done.",
+      "source_commits": [
+        "7792c17",
+        "c479e60",
+        "df1fb81",
+        "8b476a4"
+      ]
+    },
+    {
+      "version": "0.3.7",
+      "date": "2026-04-13",
+      "category": "improved",
+      "headline": "Modals share a consistent visual language.",
+      "copy": "The proof, mint, and handle-change modals now match the onboarding design — same spacing, same colors, same feel across every paid action.",
+      "source_commits": [
+        "0800506",
+        "2196bbf",
+        "8523049",
+        "ca1030f"
+      ]
+    },
+    {
+      "version": "0.3.6",
+      "date": "2026-04-13",
+      "category": "improved",
+      "headline": "Work item dates now display as \"Mar 2026\" instead of raw ISO strings.",
+      "copy": "Cleaner reading on public profiles, no more `2026-03-15T00:00:00Z` leaking through.",
+      "source_commits": [
+        "7bc1bc6"
+      ]
+    },
+    {
+      "version": "0.3.5",
+      "date": "2026-04-13",
+      "category": "improved",
+      "headline": "Work items now sort newest-first on public profiles.",
+      "copy": "Matches the dashboard order and the way most people read timelines.",
+      "source_commits": [
+        "310672d"
+      ]
+    },
+    {
+      "version": "0.3.4",
+      "date": "2026-04-13",
+      "category": "improved",
+      "headline": "Cleaner timezone picker.",
+      "copy": "We stripped city and country names — you'll see the UTC offset only, which is what actually matters.",
+      "source_commits": [
+        "9864115"
+      ]
+    },
+    {
+      "version": "0.3.3",
+      "date": "2026-04-13",
+      "category": "improved",
+      "headline": "Payment modals now cover the full screen on mobile.",
+      "copy": "No more dashboard bleeding through the corners of the modal on smaller devices.",
+      "source_commits": [
+        "33fa1e7",
+        "ff72ec2",
+        "b0b3257"
+      ]
+    },
+    {
+      "version": "0.3.2",
+      "date": "2026-04-13",
+      "category": "improved",
+      "headline": "Logo and wordmark in the topbar now link back to the homepage.",
+      "copy": "Click anywhere on the brand to go home, the way every other site works.",
+      "source_commits": [
+        "280b533"
+      ]
+    },
+    {
+      "version": "0.3.1",
+      "date": "2026-04-13",
+      "category": "fixed",
+      "headline": "Dev verification now correctly checks the original mint authority.",
+      "copy": "The verify flow looks at your wallet's full history with the token, not just current holdings, so legitimate launch-wallet devs qualify reliably.",
+      "source_commits": [
+        "3f7286a",
+        "5e053d6",
+        "30ca999"
+      ]
+    },
+    {
+      "version": "0.3.0",
+      "date": "2026-04-13",
+      "category": "added",
+      "headline": "Site is discoverable: SEO, sitemap, social cards, and analytics.",
+      "copy": "Google can now index LASTPROOF properly, link previews on X and Telegram show a real card, and we can see which pages get traffic.",
+      "source_commits": [
+        "d5ec54c",
+        "bd00a4f",
+        "6cfb8ea"
+      ]
+    },
+    {
+      "version": "0.2.9",
+      "date": "2026-04-12",
+      "category": "improved",
+      "headline": "Token picker in the proof modal now shows token logos.",
+      "copy": "Faster to spot SOL vs USDT vs $LASTSHFT at a glance.",
+      "source_commits": [
+        "93b7dac"
+      ]
+    },
+    {
+      "version": "0.2.8",
+      "date": "2026-04-12",
+      "category": "improved",
+      "headline": "Live conversion rates on the payment screen.",
+      "copy": "The amount-to-send now updates in real time using live Raydium and Jupiter price feeds, so the number you paste into your wallet matches what your wallet will charge.",
+      "source_commits": [
+        "b06b421",
+        "99f6973"
+      ]
+    },
+    {
+      "version": "0.2.7",
+      "date": "2026-04-12",
+      "category": "fixed",
+      "headline": "Tier progress bar now fills within the right segment.",
+      "copy": "The bar used to show progress toward the *final* tier — it now fills within your *current* tier, which is what people actually want to see.",
+      "source_commits": [
+        "9666f20",
+        "d66de17"
+      ]
+    },
+    {
+      "version": "0.2.6",
+      "date": "2026-04-12",
+      "category": "fixed",
+      "headline": "Five smaller fixes across the profile and dashboard.",
+      "copy": "- Comments now render correctly on public profiles\n- Tier math edge cases cleaned up\n- \"Past projects\" section displays correctly\n- Animated dot indicators no longer jitter\n- Dashboard proof counts fixed for paste-verified proofs",
+      "source_commits": [
+        "b4fd7b2",
+        "ad6e041",
+        "234fec6"
+      ]
+    },
+    {
+      "version": "0.2.5",
+      "date": "2026-04-12",
+      "category": "improved",
+      "headline": "Work items capped at 6, proofs at 10 — with expand buttons.",
+      "copy": "Cleaner first view of any profile, with a one-click way to see everything.",
+      "source_commits": [
+        "3f95f22"
+      ]
+    },
+    {
+      "version": "0.2.4",
+      "date": "2026-04-12",
+      "category": "improved",
+      "headline": "Gold glow on the VERIFY THIS WORK button.",
+      "copy": "Makes it unmistakable where the action is on a public profile.",
+      "source_commits": [
+        "3730fb4"
+      ]
+    },
+    {
+      "version": "0.2.3",
+      "date": "2026-04-12",
+      "category": "improved",
+      "headline": "Profile automatically reloads after minting a proof.",
+      "copy": "\"Back to Profile\" now shows the fresh proof count and updated tier without a manual refresh.",
+      "source_commits": [
+        "d6543ab"
+      ]
+    },
+    {
+      "version": "0.2.2",
+      "date": "2026-04-12",
+      "category": "improved",
+      "headline": "Android wallet sign-in flow is more reliable.",
+      "copy": "Multiple rounds of fixes to mobile wallet authorization on Android — the handshake no longer hangs or races, and stale sessions get cleared automatically.",
+      "source_commits": [
+        "6ac8c76",
+        "d8bf55c",
+        "12cb54c",
+        "2ec63eb",
+        "335b2cb",
+        "4444e96"
+      ]
+    },
+    {
+      "version": "0.2.1",
+      "date": "2026-04-12",
+      "category": "fixed",
+      "headline": "Payment confirmation screen no longer crashes on narrow terminals.",
+      "copy": "The animated terminal readout on Screen 5 is now safe against missing data and timing edge cases.",
+      "source_commits": [
+        "f2b6207",
+        "fdd897b",
+        "73603bc",
+        "915c4b5"
+      ]
+    },
+    {
+      "version": "0.2.0",
+      "date": "2026-04-12",
+      "category": "added",
+      "headline": "Proof Flow V3: paste-to-verify — no wallet connect required.",
+      "copy": "The biggest single improvement we've shipped. Send payment from any wallet, paste the transaction signature, and your proof verifies instantly via a webhook. No wallet connect, no 60-second wait, no mobile wallet headaches.",
+      "source_commits": [
+        "a201574",
+        "37fb831",
+        "376520c",
+        "4c1ce78"
+      ]
+    },
+    {
+      "version": "0.1.8",
+      "date": "2026-04-11",
+      "category": "fixed",
+      "headline": "Subscription cron no longer accidentally downgrades Early Access profiles.",
+      "copy": "First-5000 profiles stay First-5000 until you choose otherwise.",
+      "source_commits": [
+        "cca0572"
+      ]
+    },
+    {
+      "version": "0.1.7",
+      "date": "2026-04-11",
+      "category": "improved",
+      "headline": "HIRE button falls back to your verified Telegram handle.",
+      "copy": "If a visitor clicks HIRE and you haven't set X, we point them to your Telegram instead of leaving them stuck.",
+      "source_commits": [
+        "95b269e"
+      ]
+    },
+    {
+      "version": "0.1.6",
+      "date": "2026-04-11",
+      "category": "added",
+      "headline": "Ambassador landing pages.",
+      "copy": "Dedicated pages for Terminal ambassadors to share with their audience, with stats and attribution built in.",
+      "source_commits": [
+        "dfa2e92"
+      ]
+    },
+    {
+      "version": "0.1.5",
+      "date": "2026-04-11",
+      "category": "improved",
+      "headline": "Tier badge colors now match the tier everywhere.",
+      "copy": "Silver for TIER 1 · NEW, bronze for TIER 2 · VERIFIED, gold for TIER 3 · EXPERIENCED, purple for TIER 4 · LEGEND. Consistent across public profiles, dashboard, and Trust Tier cards.",
+      "source_commits": [
+        "67b7f9f",
+        "8429249"
+      ]
+    },
+    {
+      "version": "0.1.4",
+      "date": "2026-04-11",
+      "category": "improved",
+      "headline": "Links tabs now filter by platform.",
+      "copy": "Click the X or Telegram tab on your profile's Links section and you'll see only the links for that platform.",
+      "source_commits": [
+        "2e7dec6",
+        "27972c4"
+      ]
+    },
+    {
+      "version": "0.1.3",
+      "date": "2026-04-11",
+      "category": "fixed",
+      "headline": "Six smaller fixes in one pass.",
+      "copy": "- Paste into Previously Known As no longer strips whitespace\n- Pinning links shows a clear visual confirmation\n- Clicking a pinned link works in all contexts\n- Screenshot thumbnails load reliably\n- Work item dates parse correctly\n- Handle history shows the full trail",
+      "source_commits": [
+        "0e8de72",
+        "ad0976a"
+      ]
+    },
+    {
+      "version": "0.1.2",
+      "date": "2026-04-11",
+      "category": "added",
+      "headline": "First-5000 profiles auto-publish on campaign claim.",
+      "copy": "Claim a 5K slot and your profile goes live immediately — no extra publish step.",
+      "source_commits": [
+        "3587f4d",
+        "eea0b74"
+      ]
+    },
+    {
+      "version": "0.1.1",
+      "date": "2026-04-11",
+      "category": "improved",
+      "headline": "Telegram login now uses the official Login Widget.",
+      "copy": "Cleaner sign-in flow that works reliably on mobile, including inside in-app browsers where the old popup broke.",
+      "source_commits": [
+        "faf0cac",
+        "2859a51",
+        "9bf97d5",
+        "face91d",
+        "d8607f5"
+      ]
+    },
+    {
+      "version": "0.1.0",
+      "date": "2026-04-11",
+      "category": "added",
+      "headline": "Phantom wallet now works on Android.",
+      "copy": "Android users can connect their Phantom wallet and mint proofs end-to-end. Full mobile wallet adapter integration with a guided 9-screen flow.",
+      "source_commits": [
+        "157eca6",
+        "1c0a379",
+        "b371f23",
+        "f55740f"
+      ]
+    },
+    {
+      "version": "0.0.3",
+      "date": "2026-04-10",
+      "category": "improved",
+      "headline": "SHIFTBOT can now rewrite your Pitch and About Me fields.",
+      "copy": "Click the SHIFTBOT button on any long-form field to get an AI-polished version, instantly. Keep the tone, fix the structure.",
+      "source_commits": [
+        "994ec22"
+      ]
+    },
+    {
+      "version": "0.0.2",
+      "date": "2026-04-10",
+      "category": "added",
+      "headline": "Screenshot gallery with lightbox view.",
+      "copy": "Upload up to six screenshots per work item — visitors can click any thumbnail to view it full-size without leaving your profile.",
+      "source_commits": [
+        "852c8fa"
+      ]
+    },
+    {
+      "version": "0.0.1",
+      "date": "2026-04-10",
+      "category": "added",
+      "headline": "Profile view counter.",
+      "copy": "Your dashboard now shows how many times your public profile has been viewed, counted fresh on every page load.",
+      "source_commits": [
+        "c1e2c04"
+      ]
+    },
+    {
+      "version": "0.0.0",
+      "date": "2026-04-10",
+      "category": "added",
+      "headline": "LASTPROOF is live.",
+      "copy": "The first shippable build. What's in it:\n- Public profiles with the tier system (TIER 1 NEW → TIER 4 LEGEND) based on on-chain minted proofs\n- The FIRST 5,000 campaign — claim a free premium slot while supply lasts, with a live counter and badge\n- Onboarding flow: claim a handle, add your first proofs, publish\n- Dashboard: identity, pitch, about me, work items, screenshots, links, categories\n- Proof verification modal (first version)\n- 16 supported languages including Tagalog, Hindi, Indonesian, and Thai\n- Wallet connect, X and Telegram authentication\n- Subscription at $10 / 30 days, handle changes at $100 USD\n- **Pay in $LASTSHFT for 40% off every paid action** — subscription, handle change, mint, proof. Discount wired through the entire payment pipeline from day one.",
+      "source_commits": [
+        "98d7cb4",
+        "86bdee5",
+        "746dc3e",
+        "4068095",
+        "e563375",
+        "07cb73b",
+        "28e884b",
+        "ec847c6",
+        "e32288b"
+      ]
+    }
+  ]
+}

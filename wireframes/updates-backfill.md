@@ -1,10 +1,10 @@
 # LASTPROOF Updates — Backfill Proposal
 
 **Scope:** 2026-04-08 (git init) through 2026-04-20
-**Source commits:** 281 total → clustered to 42 user-facing entries
+**Source commits:** 281 total → clustered to 45 user-facing entries
 **Version range:** V0.0.0 (launch) → V0.6.2 (current head)
 **Reserved:** V1.0.0 for Grid launch on 2026-05-08
-**Status:** DRAFT — awaiting approval. Each entry shows source commits so you can trace back.
+**Status:** LANDED 2026-04-21 — seeded into `data/updates.json` as the live public feed. This file remains as the historical backfill record + authoritative source-commit ledger.
 
 **Voice rules applied:** 1–3 sentences, App Store tone, no jargon (no "schema," "API," "commit," "migration"), focus on what the user feels, not what the code does.
 
