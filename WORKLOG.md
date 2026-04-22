@@ -20,6 +20,67 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-22 12:41 MST — BLOG link in footer (left of HELP)
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`, `com.anthropic.claudefordesktop`)
+**Model:** claude-opus-4-6
+**Role:** frontend
+**Commits:** `37d0dac` (BLOG link + updates entry), plus this WORKLOG entry
+**Migrations run in prod Supabase:** none
+**Impacts:** none — footer-only addition, companion to 3f9805c's BLOG launch
+**Status:** ✅ shipped, clean
+
+### Did
+
+Added BLOG link to both the marketing footer (`Footer.tsx`) and the
+dashboard footer (`DashboardFooter.tsx`), positioned left of HELP.
+Final footer order: `BLOG / HELP / STATUS / TERMINAL / LASTSHIFTCOIN.COM`.
+
+Followed the last-session gotcha this time: fetched origin first,
+read both `data/updates.json` and `VERSION` via `git show origin/main:`
+before editing to confirm ground-truth state (mid-plan, the blog
+session had shipped `2f97160` bumping VERSION to `0.10.0` with its
+own `[update: added]` — renumbered my entry to `0.11.0` before any
+edits). Clean commit stat: `data/updates.json | 10 +++++++++-` which
+matches exactly the one new entry + `latest_version` swap.
+
+Committed `[update: added]` per § Updates feed convention.
+VERSION `0.10.0 → 0.11.0`. Pulled-rebase before push (clean,
+already-up-to-date).
+
+### Current state
+
+- VERSION at `0.11.0`, `data/updates.json` has 59 entries, latest
+  `0.11.0`, top 3 versions `0.11.0 / 0.10.0 / 0.9.1`
+- BLOG link live in both footers
+- Working tree clean except `wireframes/help images/` (iCloud
+  artifact inherited from last session — flagged but not mine to
+  claim)
+
+### Open / next
+
+- The `wireframes/help images/` untracked directory is still sitting
+  in the working tree, same as the 2026-04-22 01:52 entry flagged.
+  Not acted on.
+
+### Gotchas for next session
+
+- **Last session's gotcha held this time**: `git show origin/main:data/updates.json`
+  gave the correct pre-edit ground truth — and it revealed a mid-plan
+  version collision (blog session bumped 0.9.1 → 0.10.0 between my
+  plan post and my first edit). Renumbered to 0.11.0 before touching
+  the file. `git show --stat HEAD` after push confirmed no data loss.
+  The workflow is now: (1) fetch, (2) show origin/main, (3) edit,
+  (4) show --stat after commit. Skip step 2 at your peril.
+- **Multi-session contention is the new normal**. On any day with
+  parallel sessions (this one had blog + frontend active
+  simultaneously), assume VERSION and updates.json can advance between
+  "I read the file" and "I commit" — even within a single turn. The
+  only safe move is to re-read origin after plan approval.
+
+---
+
 ## 2026-04-22 11:29 MST — /blog infrastructure: 12 articles, article template, category landings, RSS
 
 **Device:** Tallada's MacBook Air (`Talladas-Air.lan`, macOS 26.4.1)
