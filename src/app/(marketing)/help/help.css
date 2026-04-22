@@ -195,7 +195,7 @@
 
 /* ─── REAL SCREENSHOT IMAGE ─── */
 /* Applied when Shot receives an `image` prop — real <Image fill> inside the chrome frame. */
-.help-page .help-shot-real { cursor: default; }
+.help-page .help-shot-real { cursor: zoom-in; }
 .help-page .help-shot-real .help-shot-img {
   object-fit: cover;
   /* Show the top of the screenshot, not a cropped mid-section */
@@ -203,6 +203,90 @@
   /* Slide down below the ~32px browser-chrome bar so the chrome doesn't cover content */
   top: 32px !important;
   height: calc(100% - 32px) !important;
+}
+
+/* Zoom hint badge — bottom-right corner of real shots */
+.help-page .help-shot-zoom-hint {
+  position: absolute; bottom: 32px; right: 8px; z-index: 3;
+  font-size: 14px; color: var(--orange); opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none; line-height: 1;
+}
+.help-page .help-shot-real:hover .help-shot-zoom-hint { opacity: 0.7; }
+
+/* ─── LIGHTBOX OVERLAY ─── */
+.help-lightbox-backdrop {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0, 0, 0, 0.88);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px 16px;
+  cursor: zoom-out;
+  /* Animate in */
+  animation: help-lb-fade 0.18s ease;
+}
+@keyframes help-lb-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.help-lightbox-panel {
+  position: relative;
+  width: min(860px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  display: flex; flex-direction: column;
+  background: var(--bg-input);
+  border: 1px solid var(--border-2); border-radius: var(--r-sm);
+  overflow: hidden;
+  cursor: default;
+  /* Animate in with slight scale */
+  animation: help-lb-pop 0.18s ease;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7);
+}
+@keyframes help-lb-pop {
+  from { transform: scale(0.94); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+.help-lightbox-chrome {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 12px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+/* Re-declare browser-chrome sub-elements for the lightbox (outside .help-page scope) */
+.help-lightbox-chrome .help-browser-dots { display: flex; gap: 3px; }
+.help-lightbox-chrome .help-browser-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--border-2);
+}
+.help-lightbox-chrome .help-browser-url {
+  font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+  letter-spacing: 0.5px; flex: 1; text-align: center;
+}
+.help-lightbox-close {
+  background: none; border: none; padding: 2px 4px;
+  color: var(--text-secondary); font-size: 13px; cursor: pointer;
+  line-height: 1; border-radius: 3px;
+  transition: color 0.1s, background 0.1s;
+  margin-left: auto;
+}
+.help-lightbox-close:hover { color: var(--orange); background: var(--orange-dim); }
+.help-lightbox-img-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 200px;
+  max-height: calc(100vh - 140px);
+  overflow: hidden;
+}
+.help-lightbox-img {
+  object-fit: contain !important;
+  object-position: top center !important;
+}
+.help-lightbox-caption {
+  padding: 8px 12px;
+  background: rgba(10, 11, 15, 0.9);
+  font-family: var(--mono); font-size: 11px; color: var(--text-secondary);
+  letter-spacing: 0.5px; text-align: center; line-height: 1.4;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
 }
 
 /* ─── CALLOUTS ─── */

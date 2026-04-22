@@ -602,7 +602,8 @@ const FAQ_JSONLD = {
 
 // ─── Shot component ───────────────────────────────────────────────────────────
 // When `image` + `alt` are supplied, renders a real Next.js <Image> inside the
-// browser-chrome frame. Falls back to the styled placeholder when they're not —
+// browser-chrome frame — clicking expands it into a full-size lightbox overlay.
+// Falls back to the styled placeholder when they're not —
 // so partial capture completion ships cleanly at any point.
 function Shot({
   url,
@@ -628,28 +629,94 @@ function Shot({
   /** true for above-the-fold shots — disables lazy loading for those. */
   priority?: boolean;
 }) {
+  // Hooks must be called unconditionally (React rules of hooks).
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setExpanded(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [expanded]);
+
   // Real image branch — used once captures land in /public/help/
   if (image) {
     return (
-      <div className={`help-shot help-shot-real ${className ?? ""}`}>
-        <div className="help-browser-chrome">
-          <div className="help-browser-dots">
-            <span className="help-browser-dot" />
-            <span className="help-browser-dot" />
-            <span className="help-browser-dot" />
+      <>
+        <div
+          className={`help-shot help-shot-real ${className ?? ""}`}
+          onClick={() => setExpanded(true)}
+          role="button"
+          tabIndex={0}
+          aria-label={`Expand screenshot: ${alt ?? caption}`}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded(true); } }}
+        >
+          <div className="help-browser-chrome">
+            <div className="help-browser-dots">
+              <span className="help-browser-dot" />
+              <span className="help-browser-dot" />
+              <span className="help-browser-dot" />
+            </div>
+            <div className="help-browser-url">{url}</div>
           </div>
-          <div className="help-browser-url">{url}</div>
+          <Image
+            src={image}
+            alt={alt ?? ""}
+            fill
+            priority={priority}
+            sizes="(max-width: 900px) 100vw, 340px"
+            className="help-shot-img"
+          />
+          <div className="help-shot-caption">{caption}</div>
+          <div className="help-shot-zoom-hint" aria-hidden>⊕</div>
         </div>
-        <Image
-          src={image}
-          alt={alt ?? ""}
-          fill
-          priority={priority}
-          sizes="(max-width: 900px) 100vw, 340px"
-          className="help-shot-img"
-        />
-        <div className="help-shot-caption">{caption}</div>
-      </div>
+
+        {expanded && (
+          <div
+            className="help-lightbox-backdrop"
+            onClick={() => setExpanded(false)}
+            role="dialog"
+            aria-modal
+            aria-label={alt ?? caption}
+          >
+            <div
+              className="help-lightbox-panel"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="help-lightbox-chrome">
+                <div className="help-browser-dots">
+                  <span className="help-browser-dot" />
+                  <span className="help-browser-dot" />
+                  <span className="help-browser-dot" />
+                </div>
+                <div className="help-browser-url">{url}</div>
+                <button
+                  className="help-lightbox-close"
+                  onClick={() => setExpanded(false)}
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="help-lightbox-img-wrap">
+                <Image
+                  src={image}
+                  alt={alt ?? ""}
+                  fill
+                  sizes="(max-width: 900px) 100vw, 860px"
+                  className="help-lightbox-img"
+                  priority
+                />
+              </div>
+              {caption && (
+                <div className="help-lightbox-caption">{caption}</div>
+              )}
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 

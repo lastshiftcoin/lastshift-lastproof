@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.8.5",
+  "latest_version": "0.8.6",
   "entries": [
+    {
+      "version": "0.8.6",
+      "date": "2026-04-21",
+      "category": "improved",
+      "headline": "Help page screenshots now expand into a full-size viewer when you click them",
+      "copy": "Every screenshot on the Help page is now clickable. Click any image to expand it to full size — close it with the ✕ button, by pressing Escape, or by clicking outside the image.",
+      "source_commits": []
+    },
     {
       "version": "0.8.5",
       "date": "2026-04-21",
