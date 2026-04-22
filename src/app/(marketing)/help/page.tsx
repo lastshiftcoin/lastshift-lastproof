@@ -1272,8 +1272,6 @@ export default function HelpPage() {
             icon="✓"
             note="cascade · receipt · solscan"
             caption="1–5 second verification via Helius. Then the receipt."
-            image="/help/t2-step-06-modal-receipt.png"
-            alt="Proof modal — verification cascade then receipt with Solscan link"
           />
           <div>
             <div className="help-step-num">STEP 06</div>
@@ -1940,8 +1938,6 @@ export default function HelpPage() {
               icon="◎"
               note="red pill · 90+ days"
               caption={'Red "DEFUNCT" pill. 90+ days no payment + no login.'}
-              image="/help/t4-defunct-profile.png"
-              alt="Defunct profile — red DEFUNCT pill, 90+ days inactive"
             />
             <div className="help-state-details">
               <p className="help-what-means">
