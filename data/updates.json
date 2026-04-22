@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.10.0",
+  "latest_version": "0.11.0",
   "entries": [
+    {
+      "version": "0.11.0",
+      "date": "2026-04-22",
+      "category": "added",
+      "headline": "A BLOG link now lives in the footer on every page",
+      "copy": "The footer gained a BLOG entry, sitting just left of HELP. One click takes you to /blog — where we write about how LASTPROOF works, what we're shipping, and how operators are using it.",
+      "source_commits": []
+    },
     {
       "version": "0.10.0",
       "date": "2026-04-22",

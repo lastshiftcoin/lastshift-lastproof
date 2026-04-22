@@ -16,6 +16,9 @@ export function DashboardFooter() {
     }}>
       <span>lastshift.ai, a company of vibe coders</span>
       <span style={{ display: "flex", gap: 16 }}>
+        <a href="/blog">
+          Blog
+        </a>
         <a href="/help">
           Help
         </a>
