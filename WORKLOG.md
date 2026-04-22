@@ -20,6 +20,34 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-21 23:52 MST — Help page screenshot lightbox
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`, `com.anthropic.claudefordesktop`)
+**Model:** claude-opus-4-6
+**Role:** help-page
+**Commits:** `e983f56`
+**Migrations run in prod Supabase:** none
+**Impacts:** none
+
+### What shipped
+- `Shot` component now supports click-to-expand lightbox on all shots that have an `image` prop
+- Clicking a screenshot opens a fixed full-screen overlay: browser-chrome bar with URL, full `<Image>` with `object-fit: contain`, caption footer, ✕ close button
+- Close via Escape key, ✕ button, or backdrop click
+- Zoom-hint `⊕` badge fades in on hover (discoverable affordance)
+- Smooth fade + scale animation on open
+- Hooks restructured to be unconditional (React rules of hooks): `useState`/`useEffect` called at top of Shot, before the `if (image)` branch
+- Lightbox CSS added to `help.css` — uses `.help-lightbox-*` prefix (no `.help-page` scope since overlay is rendered outside that DOM tree); browser-dot styles re-declared for lightbox scope
+- VERSION 0.8.5 → 0.8.6, `data/updates.json` entry added
+
+### Open / next
+- Receipt screenshot (Shot 11) — still placeholder; needs real post-verify capture from a live session
+- Defunct screenshot (Shot 23) — still placeholder; needs a wireframe that renders the DEFUNCT status pill
+- Terminal shots (Shots 1–3) — held for Terminal builder session
+- Per-wallet ProofModal flows (Phantom → Solflare → Backpack) — see `~/.claude/plans/validated-shimmying-raccoon.md`
+
+---
+
 ## 2026-04-21 23:27 MST — Copy accuracy audit: /help + /how-it-works fixes
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
