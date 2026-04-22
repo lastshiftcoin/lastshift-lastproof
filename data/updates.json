@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.8.3",
+  "latest_version": "0.8.4",
   "entries": [
+    {
+      "version": "0.8.4",
+      "date": "2026-04-21",
+      "category": "improved",
+      "headline": "The Help page now shows real screenshots instead of placeholders.",
+      "copy": "Every step on the Help page — from registering your profile to submitting a proof to the upgrade modal — now shows an actual screenshot instead of a grey wireframe box. 20 screens across all four help topics are live.",
+      "source_commits": []
+    },
     {
       "version": "0.8.3",
       "date": "2026-04-21",

@@ -1023,6 +1023,9 @@ export default function HelpPage() {
             icon="▤"
             note="paste TID → claim @handle"
             caption="Paste your Terminal ID → claim your @handle."
+            image="/help/t1-step-04-register-profile.png"
+            alt="Register profile — paste your Terminal ID and claim your @handle"
+            priority
           />
           <div>
             <div className="help-step-num">STEP 04</div>
@@ -1045,6 +1048,9 @@ export default function HelpPage() {
             icon="◉"
             note="public profile · shareable"
             caption="lastproof.app/@you — your on-chain resume. Drop it in any DM."
+            image="/help/t1-step-05-public-profile.png"
+            alt="Public profile — your on-chain resume, shareable link"
+            priority
           />
           <div>
             <div className="help-step-num">STEP 05</div>
@@ -1108,6 +1114,8 @@ export default function HelpPage() {
             icon="◑"
             note="Proof of Work · VERIFY THIS WORK"
             caption="VERIFY THIS WORK — click the project you're vouching for."
+            image="/help/t2-step-01-profile-verify-button.png"
+            alt="VERIFY THIS WORK button on a project card"
           />
           <div>
             <div className="help-step-num">STEP 01</div>
@@ -1130,6 +1138,8 @@ export default function HelpPage() {
             icon="▦"
             note="Collaborator · Dev"
             caption="Two paths — Collaborator ($1) or Dev ($5)."
+            image="/help/t2-step-02-modal-path-select.png"
+            alt="Proof modal — choose Collaborator or Dev path"
           />
           <div>
             <div className="help-step-num">STEP 02</div>
@@ -1161,6 +1171,8 @@ export default function HelpPage() {
             icon="◈"
             note="$LASTSHFT · SOL · USDT"
             caption="Pay with $LASTSHFT (40% off), SOL, or USDT. USDC not accepted."
+            image="/help/t2-step-03-modal-token-select.png"
+            alt="Proof modal — select payment token"
           />
           <div>
             <div className="help-step-num">STEP 03</div>
@@ -1193,6 +1205,8 @@ export default function HelpPage() {
             icon="⎘"
             note="copy address · copy amount"
             caption="Copy address. Copy exact amount. Send from your wallet."
+            image="/help/t2-step-04-modal-send.png"
+            alt="Proof modal — copy address and exact amount to send"
           />
           <div>
             <div className="help-step-num">STEP 04</div>
@@ -1225,6 +1239,8 @@ export default function HelpPage() {
             icon="▣"
             note="paste TX · 140-char comment"
             caption="Paste your TX signature. Add an optional 140-char comment."
+            image="/help/t2-step-05-modal-paste.png"
+            alt="Proof modal — paste TX signature and add optional comment"
           />
           <div>
             <div className="help-step-num">STEP 05</div>
@@ -1256,6 +1272,8 @@ export default function HelpPage() {
             icon="✓"
             note="cascade · receipt · solscan"
             caption="1–5 second verification via Helius. Then the receipt."
+            image="/help/t2-step-06-modal-receipt.png"
+            alt="Proof modal — verification cascade then receipt with Solscan link"
           />
           <div>
             <div className="help-step-num">STEP 06</div>
@@ -1380,6 +1398,8 @@ export default function HelpPage() {
             icon: "✎",
             note: "inline edit",
             caption: "Click EDIT on any section to open the inline editor.",
+            image: "/help/t3-step-01-dashboard-bio.png",
+            alt: "Dashboard — editing bio, pitch, and categories",
             body: (
               <>
                 <p>
@@ -1416,6 +1436,8 @@ export default function HelpPage() {
             icon: "▢",
             note: "+ ADD WORK ITEM",
             caption: "Work items are the projects proofs attach to.",
+            image: "/help/t3-step-02-dashboard-work.png",
+            alt: "Dashboard — add and edit work items",
             body: (
               <>
                 <p>
@@ -1455,6 +1477,8 @@ export default function HelpPage() {
             icon: "⊞",
             note: "JPG/PNG · max 5MB",
             caption: "Drop JPG/PNG. Max 5MB per file.",
+            image: "/help/t3-step-03-dashboard-screenshots.png",
+            alt: "Dashboard — upload screenshots section",
             body: (
               <>
                 <p>
@@ -1482,6 +1506,8 @@ export default function HelpPage() {
             icon: "⎔",
             note: "up to 5 links",
             caption: "Add up to 5 links. X and Telegram can be verified.",
+            image: "/help/t3-step-04-dashboard-links.png",
+            alt: "Dashboard — add links including X, Telegram, and more",
             body: (
               <>
                 <p>
@@ -1508,6 +1534,8 @@ export default function HelpPage() {
             icon: "↻",
             note: "$100 or $60 $LASTSHFT",
             caption: "Your handle is your public URL. Changing it is paid.",
+            image: "/help/t3-step-05-handle-change.png",
+            alt: "Handle change modal — check availability and pay to switch",
             body: (
               <>
                 <p>
@@ -1548,6 +1576,8 @@ export default function HelpPage() {
             icon: "✓",
             note: "verification badge",
             caption: "Green checkmark on your profile = verified identity.",
+            image: "/help/t3-step-06-verify-social.png",
+            alt: "Profile with green verification badge after X and Telegram verified",
             body: (
               <>
                 <p>
@@ -1579,6 +1609,8 @@ export default function HelpPage() {
             icon: "↑",
             note: "$10/mo · $6 $LASTSHFT",
             caption: "Paid tier unlocks Grid visibility, tier progression, DEV badge.",
+            image: "/help/t3-step-07-upgrade.png",
+            alt: "Upgrade modal — pay $10/mo or $6 in $LASTSHFT to unlock full profile",
             body: (
               <>
                 <p>
@@ -1612,6 +1644,8 @@ export default function HelpPage() {
             icon: "◈",
             note: "$1 · MINTED badge",
             caption: "Minted projects pin to the top of your profile.",
+            image: "/help/t3-step-08-mint.png",
+            alt: "Mint modal — pay $1 to pin a work item to the top of your profile",
             body: (
               <>
                 <p>
@@ -1645,6 +1679,8 @@ export default function HelpPage() {
                 icon={s.icon}
                 note={s.note}
                 caption={s.caption}
+                image={s.image}
+                alt={s.alt}
               />
               <div>
                 <h4>
@@ -1755,6 +1791,8 @@ export default function HelpPage() {
               icon="◉"
               note="full profile"
               caption="Everything on. This is what the Grid sees."
+              image="/help/t4-active-paid-profile.png"
+              alt="Active Paid profile — full profile with tier badge, proofs, and hire button"
             />
             <div className="help-state-details">
               <p className="help-what-means">
@@ -1803,6 +1841,8 @@ export default function HelpPage() {
               icon="★"
               note="gold ribbon + countdown"
               caption="Full profile + gold early-access ribbon + countdown."
+              image="/help/t4-first-5000-profile.png"
+              alt="First 5,000 EA profile — gold ribbon and countdown to conversion"
             />
             <div className="help-state-details">
               <p className="help-what-means">
@@ -1852,6 +1892,8 @@ export default function HelpPage() {
               icon="◌"
               note="stripped · identity only"
               caption="Identity only. No tier, no Hire button, no proofs visible."
+              image="/help/t4-free-profile.png"
+              alt="Free profile — identity only, tier and proofs hidden"
             />
             <div className="help-state-details">
               <p className="help-what-means">
@@ -1898,6 +1940,8 @@ export default function HelpPage() {
               icon="◎"
               note="red pill · 90+ days"
               caption={'Red "DEFUNCT" pill. 90+ days no payment + no login.'}
+              image="/help/t4-defunct-profile.png"
+              alt="Defunct profile — red DEFUNCT pill, 90+ days inactive"
             />
             <div className="help-state-details">
               <p className="help-what-means">
