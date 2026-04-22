@@ -20,6 +20,119 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-22 01:52 MST — HELP link in footer + updates-feed recovery from stale-view clobber
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`, `com.anthropic.claudefordesktop`)
+**Model:** claude-opus-4-6
+**Role:** frontend
+**Commits:** `e8add4f` (HELP link + entry), `73c4ad0` (recovery), plus this WORKLOG entry
+**Migrations run in prod Supabase:** none
+**Impacts:** none — footer-only UX addition + updates feed repair
+**Status:** ✅ shipped after a mid-session data-loss-and-recover cycle
+
+### Did
+
+User asked for a HELP link in the footer, left of STATUS, on all
+relevant pages. Two-file change in principle — `Footer.tsx` (marketing)
+and `DashboardFooter.tsx` (dashboard). `[update: added]` per the
+Updates feed convention → minor VERSION bump + `data/updates.json`
+entry.
+
+Shipped both footer edits cleanly. The trouble was on the feed entry:
+
+- Started session with `git pull --rebase`. Working tree came back
+  dirty with 6 iCloud ` 2` duplicates (`VERSION 2`, `data 2/`,
+  `wireframes/status 2.html`, etc.) plus a non-mine modification to
+  `wireframes/help.html` and a linter annotation on `CLAUDE.md`.
+- Per drift-triage protocol (WORKLOG 2026-04-20) I left all of that
+  alone — only added/committed my 4 intentional files.
+- **But** the stash-unstash cycle masked a real issue: my in-tree view
+  of `data/updates.json` showed `latest_version: 0.7.0` when the
+  actual origin/main state was `0.8.8`. Four `[update: improved]`
+  commits (`e983f56`, `d9261f4`, `d3a3d7c`, `33132bc`) had advanced
+  the feed between my 4cd04f6 from yesterday and now. I didn't
+  notice.
+- Edited the file on top of the stale view, bumped VERSION `0.7.0 →
+  0.8.0`, committed as `e8add4f`. **Silently clobbered 8 entries**
+  (`0.8.1` through `0.8.8`) — my new `0.8.0` entry replaced the
+  0.8.1 slot and everything above it was orphaned.
+- Caught it in the post-commit `git show --stat` — `data/updates.json
+  | 72 ++--------------------------` and net `-69` lines on a file
+  that should have gained ~10 lines. Opened the diff, saw the 8 lost
+  entries.
+- **Recovery path** (`73c4ad0`):
+  1. `git show HEAD~1:data/updates.json > /tmp/updates-prior.json`
+     to get the pre-clobber state (e8add4f^ == 2557271, which had
+     `0.8.8`)
+  2. `cp /tmp/updates-prior.json data/updates.json`
+  3. Re-added my HELP-link entry at `0.9.0` (correct minor bump from
+     real `0.8.8`, not the stale `0.8.0`)
+  4. VERSION → `0.9.0`
+  5. Validated with `node -e 'require("./data/updates.json")'` — 56
+     entries parsed cleanly, top 3 versions correct
+  6. Committed with an honest root-cause post-mortem in the message
+- Broken window of exposure: `e8add4f` sat on main for about 7 minutes
+  before `73c4ad0` landed. The `/status` page renders from this feed —
+  during that window the feed showed my `0.8.0` HELP entry directly
+  next to `0.7.0`, silently hiding `0.8.1`–`0.8.8`. No data was
+  destroyed on disk; it was a feed-integrity regression only.
+
+### Current state
+
+- VERSION at `0.9.0`
+- `data/updates.json` has 56 entries, latest `0.9.0`, feed intact
+- HELP link live in both footers
+- Working tree dirty with the same iCloud drift I inherited at session
+  start (flagged to user but not acted on): 6 ` 2` duplicates + the
+  non-mine `wireframes/help.html` edit + the linter CLAUDE.md note.
+
+### Open / next
+
+- **iCloud drift cleanup**: the 6 ` 2` duplicates and the unclaimed
+  `wireframes/help.html` modification are still sitting in the
+  working tree, awaiting the user's call on whether to diff-and-delete
+  or let another session claim them. Reported inline; not touched.
+- **Pre-existing `@solana/*` tsc errors** (from 2026-04-20 WORKLOG)
+  still present.
+
+### Gotchas for next session
+
+- **Never edit a structured-data file (VERSION, data/updates.json,
+  migrations, etc.) based on the working-tree view after a messy
+  rebase.** Working tree can reflect a pre-merge snapshot if a
+  stash-pop didn't fully merge. Always read from origin directly:
+
+  ```
+  git show origin/main:data/updates.json | head
+  git show origin/main:VERSION
+  ```
+
+  Then edit against that ground-truth version. The `git stash && git
+  pull --rebase && git stash pop` cycle did NOT give me a faithful
+  view this time, and I didn't double-check.
+
+- **Catch data-loss commits via `git show --stat HEAD` after every
+  push that touches structured files.** Unexpected deletion counts
+  are the first signal. I caught this one within 7 minutes because I
+  happened to check the stat; had I skipped that step the broken
+  feed would have been live until someone noticed the /status page
+  skipping versions.
+
+- **The recovery pattern is: `git show HEAD~1:<path>` to extract the
+  pre-damage blob, not `git revert`.** Revert would have undone my
+  footer-file edits too. Surgical restore of the single corrupted
+  file, then re-apply my intended diff on top, then commit with a
+  post-mortem message.
+
+- **iCloud drift at session start is the new normal on this MacBook
+  Air ↔ Mac mini pair.** Every session that rebases should expect
+  ` 2` files and same-name modified files that weren't touched this
+  turn. Protocol handles it (leave them alone unless explicitly
+  scoped), but be aware the drift can mask mismatched file views.
+
+---
+
 ## 2026-04-22 01:18 MST — /help: place 23 new screenshots from Kellen, wire last 5 Shot calls
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
