@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.8.6",
+  "latest_version": "0.8.7",
   "entries": [
+    {
+      "version": "0.8.7",
+      "date": "2026-04-22",
+      "category": "improved",
+      "headline": "Help page now reads like the rest of the site — centered column, consistent margins",
+      "copy": "The Help page content sat edge-to-edge on wide screens and touched the browser edges on smaller ones. It's now centered in a 960px reading column with 24px side gutters — same pattern as Status and How-It-Works. Easier to read, no more wall-of-text stretched across the full viewport.",
+      "source_commits": []
+    },
     {
       "version": "0.8.6",
       "date": "2026-04-21",

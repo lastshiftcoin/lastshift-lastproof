@@ -20,6 +20,68 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-22 00:14 MST — /help: centered 960px column with 24px gutters (matches /status pattern)
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** help-page
+**Commits:** this entry
+**Migrations run in prod Supabase:** none
+**Impacts:** none — CSS-only change on /help, no shared contracts
+
+### What shipped
+
+- Kellen flagged that /help was missing the centered reading column
+  seen on /status and /how-it-works. Diagnosed: my `.help-page`
+  wrapper only defined utility classes (color, font-family); no
+  max-width, no horizontal padding. Content inherited the global
+  `.wrap` (1240px) and had zero side gutter below 1240px.
+- Added the wrapper rule per the `/status` pattern:
+  ```
+  .help-page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px 90px;
+  }
+  ```
+  960px picked (over 860px on /status) to give the 2-column step
+  cards + state-detail cards enough room for their 340px image +
+  copy layout without squeezing the right column.
+- Synced the sticky tab bar's negative margin to the new gutter:
+  was `margin: 0 -8px` (desktop) / `0 -16px` (900px) / stale; now
+  `margin: 0 -24px` with `padding: 0 24px` on the bar itself. This
+  keeps the bar's background bleeding to the 960px edges while the
+  tabs themselves stay aligned with the content indent.
+- Removed the stale 900px responsive override for tab-bar margin
+  (padding is now consistent 24px at all viewports, same as /status).
+- VERSION 0.8.6 → 0.8.7 (improved = patch). `data/updates.json`
+  entry appended per Updates feed convention, voice: user-facing
+  outcome ("reads like the rest of the site"), no banned words.
+
+### Verified
+
+- No horizontal overflow at 1440 / 900 / 640 / 400 breakpoints in
+  the CSS (all overflow-sensitive elements — state-glance pre,
+  transition-diagram pre, cost-table — already wrap in
+  `overflow-x: auto`).
+- Sticky tab bar bleed logic: `margin: 0 -24px` cancels the .help-page
+  padding, `padding: 0 24px` inside the bar re-indents the buttons
+  to align with content above/below. Background blurs edge-to-edge.
+
+### Open / next
+
+- Prior open items unchanged (receipt + defunct screenshots,
+  Terminal shots, per-wallet ProofModal flows).
+
+### Gotchas for next session
+
+- **Tab-bar padding + margin are paired.** If anyone changes the
+  .help-page horizontal padding, also change the tab-bar padding +
+  negative margin to match. Otherwise the bar's alignment breaks.
+
+---
+
 ## 2026-04-21 23:52 MST — Help page screenshot lightbox
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)

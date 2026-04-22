@@ -4,6 +4,13 @@
    buttons). Classes already in globals.css are NOT duplicated here.
    ================================================================ */
 
+/* ─── PAGE WRAPPER — centered reading column (matches /status pattern) ─── */
+.help-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px 90px;
+}
+
 /* ─── UTILITIES ─── */
 .help-page .mono { font-family: var(--mono); }
 .help-page .help-orange { color: var(--orange); }
@@ -64,7 +71,10 @@
 /* ─── TAB BAR ─── */
 .help-page .help-tab-bar {
   position: sticky; top: 0; z-index: 40;
-  display: flex; gap: 0; padding: 0; margin: 0 -8px;
+  display: flex; gap: 0; padding: 0 24px;
+  /* Negative margin cancels .help-page's 24px horizontal padding so the
+     sticky tab bar bleeds edge-to-edge within the centered column. */
+  margin: 0 -24px;
   background: rgba(10, 11, 15, 0.94); backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
   overflow-x: auto; scrollbar-width: none;
@@ -633,7 +643,8 @@
 @media (max-width: 900px) {
   .help-page .help-hero { padding: 44px 0 24px; }
   .help-page .help-hero h1 { font-size: 34px; }
-  .help-page .help-tab-bar { top: 0; margin: 0 -16px; }
+  /* Tab bar: padding + negative margin stay at 24px — page padding is
+     consistent at all viewports, matching the /status pattern. */
   .help-page .help-tab { padding: 14px 14px; }
   .help-page .help-panel-title { font-size: 24px; }
   .help-page .help-step,
