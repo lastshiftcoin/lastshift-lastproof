@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { validateTerminalId } from "@/lib/terminal-client";
 import { writeSession, readSession } from "@/lib/session";
 import { logReferralEvent } from "@/lib/referral-events";
@@ -28,7 +29,20 @@ export async function POST(req: NextRequest) {
   }
 
   const walletAddress = (body.walletAddress || "").trim();
-  const rawRef = (body.ref || "").trim() || null;
+
+  // Attribution source priority (first-non-null wins):
+  //   1. body.ref         — URL ?ref= relayed by the client
+  //   2. lp_ref cookie    — set by src/proxy.ts on ambassador landing visits
+  // See register-tid/route.ts for the companion logic + rationale.
+  const cookieStore = await cookies();
+  const cookieRef = cookieStore.get("lp_ref")?.value ?? null;
+  const rawRef = ((body.ref || "").trim() || null) ?? cookieRef;
+  const refSource: "body" | "cookie" | "none" = body.ref
+    ? "body"
+    : cookieRef
+      ? "cookie"
+      : "none";
+
   if (!walletAddress) {
     return NextResponse.json({ error: "wallet_required" }, { status: 400 });
   }
@@ -65,9 +79,9 @@ export async function POST(req: NextRequest) {
       type: "wallet_gate",
       walletAddress,
       campaignSlug: rawRef,
-      source: rawRef ? "body" : "none",
+      source: refSource,
       outcome: "no_ref",
-      metadata: { newWallet: true, hasIncomingRef: !!rawRef },
+      metadata: { newWallet: true, hasIncomingRef: !!rawRef, refSource },
     });
     return NextResponse.json(
       { ok: false, reason: "no_terminal", message: "No terminal ID bound to this wallet" },
@@ -114,7 +128,7 @@ export async function POST(req: NextRequest) {
         walletAddress,
         operatorId: operator.id,
         campaignSlug: rawRef,
-        source: "body",
+        source: refSource,
         outcome: "invalid_slug",
       });
     } else {
@@ -130,7 +144,7 @@ export async function POST(req: NextRequest) {
           walletAddress,
           operatorId: operator.id,
           campaignSlug: amb.campaign_slug,
-          source: "body",
+          source: refSource,
           outcome: "error",
           metadata: { error: stampErr.message },
         });
@@ -141,11 +155,20 @@ export async function POST(req: NextRequest) {
           walletAddress,
           operatorId: operator.id,
           campaignSlug: amb.campaign_slug,
-          source: "body",
+          source: refSource,
           outcome: "stamped",
         });
       }
     }
+  }
+
+  // Consume the lp_ref cookie once attribution has been evaluated — whether
+  // or not we stamped (first-touch may already be set, or no operator row
+  // yet). Subsequent wallet-gate calls shouldn't re-trigger the branch.
+  // If no operator row exists yet (the early return above), the cookie is
+  // intentionally preserved so register-tid can read it on the next step.
+  if (refSource === "cookie") {
+    cookieStore.delete("lp_ref");
   }
 
   // 3. Validate via Terminal

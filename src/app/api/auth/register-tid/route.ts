@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { validateTerminalId } from "@/lib/terminal-client";
 import { writeSession } from "@/lib/session";
 import { logReferralEvent } from "@/lib/referral-events";
@@ -28,7 +29,21 @@ export async function POST(req: NextRequest) {
 
   const walletAddress = (body.walletAddress || "").trim();
   const terminalId = (body.terminalId || "").trim().toUpperCase();
-  const rawRef = (body.ref || "").trim() || null;
+
+  // Attribution source priority (first-non-null wins):
+  //   1. body.ref         — URL ?ref= carried from /manage?ref=<slug>
+  //   2. lp_ref cookie    — set by src/proxy.ts on ambassador landing visits,
+  //                         survives tab close and direct /manage navigations
+  //                         (the missing link that dropped @namesake01's
+  //                         attribution on 2026-04-22).
+  const cookieStore = await cookies();
+  const cookieRef = cookieStore.get("lp_ref")?.value ?? null;
+  const rawRef = ((body.ref || "").trim() || null) ?? cookieRef;
+  const refSource: "body" | "cookie" | "none" = body.ref
+    ? "body"
+    : cookieRef
+      ? "cookie"
+      : "none";
 
   if (!walletAddress) {
     return NextResponse.json({ ok: false, reason: "wallet_required" }, { status: 400 });
@@ -108,7 +123,7 @@ export async function POST(req: NextRequest) {
         walletAddress,
         operatorId: existing.id,
         campaignSlug: validatedRef ?? rawRef,
-        source: rawRef ? "body" : "none",
+        source: refSource,
         outcome: "error",
         metadata: { error: updateErr.message, path: "update" },
       });
@@ -125,7 +140,7 @@ export async function POST(req: NextRequest) {
       operatorId,
       campaignSlug: existing.referred_by ?? (shouldStampRef ? validatedRef : null),
       source: shouldStampRef
-        ? "body"
+        ? refSource
         : existing.referred_by
           ? "operator"
           : "none",
@@ -158,7 +173,7 @@ export async function POST(req: NextRequest) {
         type: "register_tid",
         walletAddress,
         campaignSlug: validatedRef ?? rawRef,
-        source: rawRef ? "body" : "none",
+        source: refSource,
         outcome: "error",
         metadata: { error: insertErr?.message ?? "unknown", path: "insert" },
       });
@@ -176,7 +191,7 @@ export async function POST(req: NextRequest) {
       walletAddress,
       operatorId,
       campaignSlug: validatedRef,
-      source: validatedRef ? "body" : "none",
+      source: validatedRef ? refSource : "none",
       outcome: validatedRef
         ? "stamped"
         : refOutcome === "invalid_slug"
@@ -184,6 +199,14 @@ export async function POST(req: NextRequest) {
           : "no_ref",
       metadata: { path: "insert", isNew: true, incomingRef: rawRef },
     });
+  }
+
+  // Consume the lp_ref cookie once the operators row has been written
+  // (either inserted or updated). Whether or not we ended up stamping
+  // referred_by (first-touch may already be set), the cookie has served
+  // its purpose — subsequent visits shouldn't re-trigger stamping logic.
+  if (refSource === "cookie") {
+    cookieStore.delete("lp_ref");
   }
 
   // Write session cookie

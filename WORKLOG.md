@@ -20,6 +20,123 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-22 02:14 MST — Ambassador attribution: close the landing→manage gap (namesake01 incident)
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** backend
+**Commits:** this commit (see git log)
+**Migrations run in prod Supabase:** one manual stamp by Kellen in Supabase
+SQL Editor to backfill `@namesake01`'s referral to `@TheLeadOps`:
+```
+UPDATE operators SET referred_by = 'free-early-access'
+WHERE id = '38eee769-3bfc-44da-b5b9-132580764c36' AND referred_by IS NULL;
+```
+**Impacts:** none — auth endpoints now read a new cookie set by proxy,
+but Terminal contract is unchanged
+**Status:** ✅ shipped
+
+### Did
+
+- **Diagnosed a real attribution gap.** Kellen reported `@namesake01`
+  was @TheLeadOps's referral but `referred_by` was null. Pulled the
+  referral_events trail: 4× `landing_visit` on `/free-early-access`
+  (08:16–08:20), then `wallet_gate` at 08:23 with
+  `hasIncomingRef: false`, then `register_tid` with `incomingRef: null`.
+  User hit the landing page but never clicked the CTA — arrived at
+  `/manage` directly with no `?ref=` in URL, no localStorage (only
+  set on `/manage?ref=<slug>` mount), no cookie (the `lp_ref`
+  server-side cookie was written from `/manage/page.tsx` via
+  `cookies().set()` which **silently no-ops in Next 16 Server
+  Components** — flagged in CLAUDE.md gotchas, never actually
+  working).
+- **Root cause:** nothing persisted attribution at the landing page
+  visit itself. The three fallbacks (URL → localStorage → cookie)
+  all required the user to click through the CTA.
+- **Fix:** new `src/proxy.ts` (Next 16 renamed `middleware.ts` →
+  `proxy.ts`) that matches exactly the 6 ambassador campaign paths
+  and stashes the slug in an HttpOnly `lp_ref` cookie, 30-day TTL,
+  `sameSite: lax`, first-touch-wins (doesn't overwrite). Matcher
+  config scopes it so no runtime cost on any other route.
+- **Wired cookie read into both auth endpoints** with explicit
+  source-priority chain. `lp_ref` is the server-side fallback when
+  `body.ref` is absent. Both endpoints:
+  - Read `cookies().get("lp_ref")` at the top
+  - Stamp `referred_by` using the cookie value if `body.ref` is empty
+  - Log the `source` as `"cookie"` (already a valid enum member in
+    `src/lib/referral-events.ts`) so the funnel view shows which
+    path attribution came in through
+  - Delete the cookie once consumed (cleanly terminates first-touch
+    state — subsequent visits don't re-trigger stamping attempts)
+- **`wallet-gate` preserves the cookie** if the wallet has no operator
+  row yet (early `no_terminal` return). `register-tid` consumes it
+  when the row lands.
+- **Kellen ran the namesake01 backfill SQL** in Supabase SQL Editor.
+  @TheLeadOps's `/5k/leadops-ops` report picks up the new referral
+  on next count-refresh.
+- **Updates feed convention applied** (user-visible outcome):
+  - VERSION 0.9.0 → 0.9.1 (patch, category=fixed)
+  - `data/updates.json` entry appended, `latest_version` bumped
+  - `[update: fixed]` prefix on the commit subject
+
+### Current state
+
+- Attribution chain is now: `body.ref` → `lp_ref` cookie → null. The
+  cookie covers every edge case that previously dropped attribution:
+  user closes tab and types the site URL, user types `/manage`
+  directly after landing visit, mobile wallet deep-link return
+  strips query params, etc.
+- Existing `localStorage` fallback on `/manage` stays as an
+  additional client-side safety net.
+- First-touch wins remains the policy (enforced at proxy level and
+  DB level).
+
+### Open / next
+
+- **Working tree hygiene handled on arrival.** Local files were
+  reverted by iCloud to a stale pre-SEO-commits snapshot (CLAUDE.md
+  undoing validate-tid fix, `wireframes/help.html` dropping 787
+  help-page lines). Restored both to HEAD and deleted 7 iCloud
+  duplicates (`VERSION 2`, `data 2/`, `src/app/(marketing)/status
+  2/`, plus 4 wireframes). All confirmed identical or stale before
+  deletion. `wireframes/help images/` preserved per help-page
+  session's explicit "kellen's call" note.
+- **Keep `AMBASSADOR_SLUGS` in `src/proxy.ts` synced with the
+  `ambassadors.campaign_slug` column** when onboarding a new
+  ambassador. The list hardcoded into the matcher must match. Six
+  slugs today, simple enough.
+
+### Gotchas for next session
+
+- **Next 16: `middleware.ts` is deprecated → `proxy.ts`.** Function
+  name is `proxy` (not `middleware`). Runtime defaults to Node.js.
+  `NextResponse.cookies.set()` works identically. Config + matcher
+  syntax unchanged. If you see someone create `middleware.ts` on
+  this codebase, rename it.
+- **Next 16 Server Component cookies are WRITE-NO-OP.** If you see
+  `cookies().set()` in a `page.tsx`, it's silently doing nothing.
+  Only Route Handlers, Server Actions, Proxy (formerly Middleware),
+  and client code can mutate cookies. This exact gotcha caused the
+  @namesake01 attribution miss — `/manage/page.tsx` was trying to
+  set `lp_ref` but the cookie never actually got written.
+- **When adding a new ambassador campaign slug**, update THREE
+  places atomically in the same commit: (a) `ambassadors` table row
+  in Supabase, (b) `AMBASSADOR_SLUGS` array in `src/proxy.ts`,
+  (c) `matcher` config at the bottom of that file. Missing any one
+  silently breaks attribution for that ambassador.
+- **Backfill SQL for dropped attributions.** If a user reports their
+  ref was lost, run:
+  ```
+  SELECT id, created_at, referred_by FROM operators
+  WHERE terminal_wallet = '<wallet>';
+  ```
+  If `referred_by` is null and you can confirm the ambassador, UPDATE
+  the row with the `campaign_slug`. The referral gets counted in the
+  7-day rolling window on `/5k/<report_slug>` from that moment.
+
+---
+
 ## 2026-04-22 01:52 MST — HELP link in footer + updates-feed recovery from stale-view clobber
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)

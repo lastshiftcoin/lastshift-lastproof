@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.9.0",
+  "latest_version": "0.9.1",
   "entries": [
+    {
+      "version": "0.9.1",
+      "date": "2026-04-22",
+      "category": "fixed",
+      "headline": "Ambassador referrals now stick even if you close the tab.",
+      "copy": "Visiting an ambassador's campaign link is now enough — your referral is remembered server-side for 30 days, so the ambassador gets credit even if you close the page, come back later from a different link, or get bounced through a wallet app on mobile. No more lost attribution when someone types the main site URL after visiting a campaign page.",
+      "source_commits": []
+    },
     {
       "version": "0.9.0",
       "date": "2026-04-22",
