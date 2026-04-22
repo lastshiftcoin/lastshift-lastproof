@@ -20,6 +20,96 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-21 23:27 MST — Copy accuracy audit: /help + /how-it-works fixes
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`, `com.anthropic.claudefordesktop`)
+**Model:** claude-opus-4-6
+**Role:** frontend
+**Commits:** `4cd04f6` (copy fixes + VERSION + updates.json), plus this WORKLOG entry
+**Migrations run in prod Supabase:** none
+**Impacts:** none — copy-only changes, no Terminal touches, no shared-contract edits
+**Status:** ✅ shipped, working tree clean after WORKLOG commit
+
+### Did
+
+User asked for a factual-accuracy audit of the live `/help` page. Dispatched
+an Explore agent first; it returned weak results. Did a second pass manually
+by grepping factually-loaded claims (pricing, tier, proof flow, Grid launch,
+DEV qualification, refund policy) and cross-checking against the actual
+shipped code:
+
+- `src/lib/pricing.ts` — base prices + 40% $LASTSHFT discount
+- `src/lib/tier.ts` — thresholds 0/10/25/50
+- `src/lib/payment-events.ts:207-249` — the authoritative dev-verification
+  failure path
+- `src/lib/token-dev-verify.ts` — the three qualification rules
+- `project_proof_flow_decisions.md` + `project_profile_states.md`
+
+Found four factual errors and two under-documented rules, reported them to
+the user with suggested rewrites, then shipped fixes in `4cd04f6`:
+
+1. **Dev-verification refund policy** (both /help and /how-it-works said
+   "no refund"; the code actually writes a notification telling the user to
+   contact support for a manual refund). Help FAQ, how-it-works
+   qualification card, and how-it-works step-5 check list all rewritten.
+2. **DEV qualification criteria** across 4 copy locations — was "deployer
+   wallet" only; actual rule is deployer OR mint-authority OR founder
+   multisig. Would have rejected legitimate dev identities via paths 1 and 3.
+   Updated FAQ short form + FAQ JSON-LD mirror + Tactic 2 card on /help,
+   plus the proof-types card on /how-it-works.
+3. **Tier math in "Batch the ask" tactic** — said 5 proofs pushes past
+   TIER 1. TIER 2 is 10+ per tier.ts. Rewrote to 10 proofs → TIER 2 · VERIFIED.
+4. **Helius cron fallback phrasing** — said "if the webhook is slow";
+   cron is actually for webhook failure, not slowness. Corrected.
+5. **90-day handle-change cooldown** (HANDLE_CHANGE_COOLDOWN_DAYS) was
+   undocumented on /help; added to both the Can-I-change-my-handle FAQ
+   and the Topic 3.5 section.
+6. **"One DEV Proof worth 10"** softened to clarify tier math still weighs
+   them equally; devs reading a profile weight them more heavily but the
+   system doesn't.
+
+Followed § Updates feed convention: commit prefixed `[update: fixed]`,
+VERSION bumped 0.8.4 → 0.8.5 (patch), new entry appended to the top of
+`data/updates.json`. Followed multi-session protocol: `git stash` +
+`git pull --rebase` before push (no new commits incoming). `source_commits`
+field in updates.json backfilled with the SHA in this follow-up commit.
+
+### Current state
+
+- Both /help and /how-it-works now match `payment-events.ts` +
+  `token-dev-verify.ts` + `tier.ts` behavior
+- VERSION at 0.8.5
+- `data/updates.json` top entry references `4cd04f6`
+- Working tree clean after WORKLOG entry commit
+
+### Open / next
+
+- Pre-existing `@solana/*` tsc errors noted in WORKLOG entries on
+  2026-04-20 still present. Not touched this session — out of scope.
+- No other known copy-accuracy issues on /help or /how-it-works that I
+  didn't already flag and fix in this pass.
+
+### Gotchas for next session
+
+- **The audit pattern is reusable** — grep factually-loaded claims
+  (pricing, tier numbers, flow step counts, policy words like "refund",
+  "qualifies", "cooldown", specific dates) → cross-check against
+  `src/lib/*` authoritative sources. Memory files help but are
+  point-in-time; always confirm against code.
+- **The Explore agent returned false-confidence results on this kind of
+  audit** — it flagged three weak nits and missed all four real errors.
+  For copy-accuracy work, do the cross-reference manually with grep +
+  targeted Reads. The agent's strength is file discovery, not factual
+  reasoning across code + copy.
+- **Dev-verification failure is the single highest-cost copy error** —
+  users who think "no refund" file support tickets anyway and lose trust;
+  users who know to contact support save everyone time. If anyone writes
+  copy about DEV proofs in the future, read `payment-events.ts:207-278`
+  FIRST.
+
+---
+
 ## 2026-04-21 21:34 MST — help page: wire 20 real screenshots into Shot components
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
