@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { supabaseService } from "@/lib/db/client";
+import { blogSitemapEntries } from "@/lib/blog/sitemap-entries";
 
 /**
  * /sitemap.xml — full crawl surface for lastproof.app.
@@ -65,5 +66,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...profilePages, ...campaignPages];
+  // ─── Blog posts: /blog, /blog/:category, /blog/:slug, rss ──────────
+  // Entries come from the blog system's own manifest — see
+  // src/lib/blog/sitemap-entries.ts. Wiring is a single spread here
+  // so the blog pipeline owns everything about its own crawl surface.
+  const blogEntries = await blogSitemapEntries();
+
+  return [...staticPages, ...profilePages, ...campaignPages, ...blogEntries];
 }
