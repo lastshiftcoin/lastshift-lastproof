@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/mirror-blog-images.mjs",
     "dev": "next dev -p 3001",
+    "prebuild": "node scripts/mirror-blog-images.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -20,9 +22,14 @@
     "@solana/wallet-adapter-wallets": "^0.19.38",
     "@solana/web3.js": "^1.98.4",
     "@supabase/supabase-js": "^2.102.1",
+    "gray-matter": "^4.0.3",
     "next": "^16.0.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "reading-time": "^1.5.0",
+    "remark": "^15.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-html": "^16.0.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

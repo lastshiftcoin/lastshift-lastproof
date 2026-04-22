@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.9.1",
+  "latest_version": "0.10.0",
   "entries": [
+    {
+      "version": "0.10.0",
+      "date": "2026-04-22",
+      "category": "added",
+      "headline": "The blog is live — 12 articles on web3 marketing pay and hiring.",
+      "copy": "Real 2026 pay rates, hiring guides, and vetting playbooks — written for operators who take on the work and for builders who need to hire someone they can trust. Read the first batch at lastproof.app/blog.",
+      "source_commits": []
+    },
     {
       "version": "0.9.1",
       "date": "2026-04-22",

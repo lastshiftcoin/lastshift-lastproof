@@ -20,6 +20,158 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-22 11:29 MST — /blog infrastructure: 12 articles, article template, category landings, RSS
+
+**Device:** Tallada's MacBook Air (`Talladas-Air.lan`, macOS 26.4.1)
+**Platform:** Claude Desktop (`claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** blog
+**Commits:** this commit (see git log)
+**Migrations run in prod Supabase:** none
+**Impacts:** **Sitemap integration pending** — coordinator needs a one-line addition to `src/app/sitemap.ts` to wire the new blog routes into `/sitemap.xml`. See "Open / next" below for the exact diff.
+**Status:** ✅ shipped (pending sitemap wiring + footer/topbar link)
+
+### Did
+
+- **Full `/blog` infrastructure built from scratch** under
+  `src/app/(marketing)/blog/` so routes inherit the existing Topbar /
+  Footer / ShiftbotStrip / WalletBoundary chrome without touching any
+  existing file. Hard rule observed: **zero edits to existing code**
+  across Footer, Topbar, sitemap, robots, or marketing layout. Every
+  change is additive. Another builder wires footer/topbar links.
+- **4 route types, all returning 200 on webpack dev + typecheck clean:**
+  - `/blog` — index grid, 12 posts, single page (no pagination until
+    the corpus crosses 20)
+  - `/blog/[slug]` — article template, static-generated for all 12
+    slugs via `generateStaticParams`
+  - `/blog/category/[category]` — operators + builders landing pages,
+    filtered grids, `notFound()` on any other category value
+  - `/blog/rss.xml` — RSS 2.0 feed, excerpt-only (drives click-through
+    rather than giving the full article to RSS clients)
+- **Content pipeline** (`src/lib/blog/`):
+  - `parse.ts` → reads `content/blog/<nn-slug>/article.md`,
+    gray-matter frontmatter split, strict validation (throws with
+    missing-key list on malformed articles), splits at first `---`
+    divider (public content above, SEO Implementation Notes block
+    below — the block is stripped from all public output).
+  - FAQ extraction: detects `## FAQ` heading (uppercase, singular —
+    wireframer's answer of `## faqs` was incorrect; locked to what
+    actually exists in the 12 articles). Parses `### <q?>` → answer
+    pairs into structured `BlogFaqEntry[]`.
+  - HowTo JSON-LD extraction: parses the ```` ```json howto ```` fenced
+    block in the dev-notes section of posts 05, 10, 11, 12. Other
+    posts emit no HowTo schema.
+  - `load.ts` applies the same-day time stagger rule (first post of
+    day → 09:00 PST, second → 14:00 PST) and emits ISO timestamps in
+    JSON-LD / RSS to avoid identical-timestamp feed reads.
+  - `related.ts` picks 3 related posts: same-category recency-desc
+    first, cross-category fallback, exclude self.
+  - `jsonld.ts` emits WebSite, CollectionPage+ItemList,
+    BlogPosting, BreadcrumbList, FAQPage per page type. HowTo is
+    emitted unmodified from the article's own JSON block.
+- **Image mirror script** (`scripts/mirror-blog-images.mjs`) runs on
+  `predev` + `prebuild` — copies `content/blog/<nn-slug>/featured-image.png`
+  → `public/blog/<slug>/featured.png` keyed by slug. Idempotent on
+  mtime. No resize (aspect ratio preserved per lock). `next/image`
+  handles srcset generation from the originals.
+- **5 new deps** landed: `gray-matter`, `remark`, `remark-gfm`,
+  `remark-html`, `reading-time`. No MDX, no syntax highlighter (none
+  of the 12 articles use code blocks). `npm install` also churned
+  ~400 transitive packages bringing `node_modules` back in sync with
+  `package-lock.json` after this morning's broken-git recovery — not
+  corruption, owed cleanup.
+- **Content moved** from `publish/posts/` (parent dir, not
+  git-tracked, iCloud-exposed) → `lastproof-build/content/blog/`
+  (git-tracked, iCloud-resilient). `publish/` bundle stays in place
+  as historical source; not in scope to delete.
+- **Per-page metadata** via Next 16 Metadata API: title, description,
+  canonical, og:image, og:type article with published_time /
+  modified_time, twitter summary_large_image, article:section +
+  article:tag.
+- **Updates feed entry** appended at `0.10.0` with launch copy. Voice
+  rules followed (no banned jargon — article copy is exempt, but the
+  feed entry itself stays in warm App-Store-changelog tone). VERSION
+  bumped 0.9.1 → 0.10.0 (minor bump, category=added).
+- **Dev server verified** on webpack (`npx next dev -p 3001 --webpack`
+  per prior feedback rule, not Turbopack). All 4 route types return
+  200, rendered HTML contains 12 cards on index, FAQ sections render
+  on articles with FAQs, JSON-LD emits 4 blocks per article (5 when
+  HowTo is present), image optimization generates srcset across 8
+  widths.
+
+### Current state
+
+- **Content on disk, tracked, ready to ship.** `content/blog/` has
+  all 12 article folders, each with `article.md` + `featured-image.png`.
+  Matches the publish-schedule dates (2026-04-15 → 2026-04-22).
+- **Sitemap manifest shipped at** `src/lib/blog/sitemap-entries.ts` —
+  exports `async function blogSitemapEntries(): Promise<MetadataRoute.Sitemap>`.
+  Entries for `/blog`, both category pages, `/blog/rss.xml`, and all 12
+  post URLs. Coordinator wires with a one-line addition (below).
+- **Internal link verification clean.** Two actual cross-blog links
+  in body copy (both to `/blog/how-much-does-memecoin-marketing-cost`,
+  resolve correctly). No `/how-it-works#anchor` or `/manage` links in
+  rendered body copy — those references exist only in the stripped
+  SEO Implementation Notes block.
+
+### Open / next
+
+- **Sitemap wiring (for coordinator).** Add to `src/app/sitemap.ts`:
+
+  ```ts
+  import { blogSitemapEntries } from "@/lib/blog/sitemap-entries";
+  // inside default export, after campaignPages:
+  const blogEntries = await blogSitemapEntries();
+  return [...staticPages, ...profilePages, ...campaignPages, ...blogEntries];
+  ```
+
+  Until this lands, `/blog/*` URLs are crawlable via link discovery
+  only — not enumerated in `/sitemap.xml`. Low-risk with a nav link,
+  but GSC indexing will be slower. `robots.txt` already allows
+  `/blog/*` via the root `allow: "/"` directive; no robots edit
+  needed.
+- **Topbar + footer BLOG link (for other builder).** Wireframe shows
+  BLOG in the topbar between HOW IT WORKS and /MANAGE, and possibly
+  in the footer. Out of this session's scope per hard-rule split —
+  flagging for coordinator or frontend session to wire.
+- **`/how-it-works#dev-verification` / `#tiers` anchors are missing
+  from the live /how-it-works page.** Articles don't actually link to
+  those anchors in rendered output (the references are in the
+  stripped SEO dev-notes section), so this is not user-facing
+  breakage today. But if content updates ever activate those links,
+  the anchors will need to be added. Flagging, not fixing — not my
+  scope.
+- **iCloud duplicate surfaced mid-session:** `src/proxy 2.ts`. Did
+  not delete (out of scope, not my file) — flagging for coordinator
+  drift-triage pass before the next Terminal impact.
+
+### Gotchas for next session
+
+- **Time-stagger rule for same-day publishes** lives in
+  `src/lib/blog/load.ts` → `TIME_SLOTS = ["T09:00:00-07:00",
+  "T14:00:00-07:00"]`. If the wireframer expands publish frequency
+  to >2 posts/day, add more slots here (17:00, 20:00, etc.). Console
+  warns at load time if the rule is exceeded but continues with the
+  last slot.
+- **FAQ marker is `## FAQ` (uppercase, singular), NOT `## faqs`.**
+  The wireframer's handoff said `## faqs` but all 12 articles
+  actually use `## FAQ`. Parser matches what's real. If the
+  standardization ever flips, update `parse.ts` → `extractFaq` regex.
+- **Node v25's native TS-stripping** corrupts some named-export
+  patterns when importing .ts files via ESM `import`. The loader
+  works fine inside Next.js (SWC bundler), but smoke-testing via
+  `tsx .mts` will fail with "does not provide an export named X."
+  Use CJS require in standalone test scripts (see
+  `scripts/smoke-blog-loader.cjs` for the pattern).
+- **Images live in TWO places by design**: `content/blog/<nn>/` is
+  the authoring source, `public/blog/<slug>/` is the served copy.
+  `scripts/mirror-blog-images.mjs` enforces this on every build +
+  dev start. If you edit an image, re-run the script (or let
+  `predev`/`prebuild` do it) — the mtime check is the idempotency
+  signal.
+
+---
+
 ## 2026-04-22 02:14 MST — Ambassador attribution: close the landing→manage gap (namesake01 incident)
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
