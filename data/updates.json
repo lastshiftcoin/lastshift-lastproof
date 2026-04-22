@@ -1,76 +1,12 @@
 {
-  "latest_version": "0.8.8",
+  "latest_version": "0.8.0",
   "entries": [
     {
-      "version": "0.8.8",
-      "date": "2026-04-22",
-      "category": "improved",
-      "headline": "Help page screenshots now cover every step and state",
-      "copy": "The last few wireframe placeholders are gone. Every Profile Creation step, every Verify Work screen, every Updating My Profile sub-topic, and every profile state (Active Paid, First 5,000, Free, Defunct) shows a real screenshot of the actual screen.",
-      "source_commits": []
-    },
-    {
-      "version": "0.8.7",
-      "date": "2026-04-22",
-      "category": "improved",
-      "headline": "Help page now reads like the rest of the site — centered column, consistent margins",
-      "copy": "The Help page content sat edge-to-edge on wide screens and touched the browser edges on smaller ones. It's now centered in a 960px reading column with 24px side gutters — same pattern as Status and How-It-Works. Easier to read, no more wall-of-text stretched across the full viewport.",
-      "source_commits": []
-    },
-    {
-      "version": "0.8.6",
-      "date": "2026-04-21",
-      "category": "improved",
-      "headline": "Help page screenshots now expand into a full-size viewer when you click them",
-      "copy": "Every screenshot on the Help page is now clickable. Click any image to expand it to full size — close it with the ✕ button, by pressing Escape, or by clicking outside the image.",
-      "source_commits": []
-    },
-    {
-      "version": "0.8.5",
-      "date": "2026-04-21",
-      "category": "fixed",
-      "headline": "Help and How-It-Works pages now match how the product actually behaves",
-      "copy": "Cleaned up a handful of copy mistakes: if a DEV proof payment doesn't qualify you now know to contact support for a refund (not \"no refund\"), DEV proofs can come from the deployer, the wallet holding mint authority, or a founder multisig signer (not just the deployer), a 10-proof streak lifts you to TIER 2 (not 5), the 90-day cooldown between handle changes is spelled out, and the cron fallback only kicks in on webhook failure (not slowness).",
-      "source_commits": ["4cd04f6"]
-    },
-    {
-      "version": "0.8.4",
-      "date": "2026-04-21",
-      "category": "improved",
-      "headline": "The Help page now shows real screenshots instead of placeholders.",
-      "copy": "Every step on the Help page — from registering your profile to submitting a proof to the upgrade modal — now shows an actual screenshot instead of a grey wireframe box. 20 screens across all four help topics are live.",
-      "source_commits": []
-    },
-    {
-      "version": "0.8.3",
-      "date": "2026-04-21",
-      "category": "fixed",
-      "headline": "Website links on your profile now open correctly.",
-      "copy": "If you added your website with or without https:// in front, the link chip on your profile could end up broken (https://https://yoursite.com) and refuse to open. Fixed by cleaning up the URL once behind the scenes — paste it any way you like, we handle the rest.",
-      "source_commits": []
-    },
-    {
-      "version": "0.8.2",
-      "date": "2026-04-21",
-      "category": "improved",
-      "headline": "Your profile now shows up as a rich result in search.",
-      "copy": "Every paid profile now sends Google the full picture — your name, photo, role, verified X and Telegram, and website. Instead of a plain blue link, search results can show your avatar, your identity across platforms, and a one-line description of what you do. Applied automatically to every new profile as it's created.",
-      "source_commits": []
-    },
-    {
-      "version": "0.8.1",
-      "date": "2026-04-21",
-      "category": "fixed",
-      "headline": "Your profile can now show up in Google.",
-      "copy": "We fixed how we tell search engines about the site. Every paid operator profile, every ambassador campaign link, the /help page, and the updates feed are now listed for Google and other crawlers. When someone searches your handle or an ambassador campaign slug, your page can surface in the results — not just the LASTPROOF homepage.",
-      "source_commits": []
-    },
-    {
       "version": "0.8.0",
-      "date": "2026-04-21",
+      "date": "2026-04-22",
       "category": "added",
-      "headline": "Stuck? The new /help page walks you through it.",
-      "copy": "Profile creation, submitting proofs, updating your profile, and what each profile status means — all laid out with step-by-step walkthroughs, a searchable FAQ, and clear answers to the most common blockers. One place for anything you'd otherwise DM us about.",
+      "headline": "A HELP link now lives in the footer on every page",
+      "copy": "Stuck on something? There's a new HELP entry in the footer, right next to STATUS — one click to /help, where you'll find the full FAQ, screen-by-screen walkthroughs, and the rules behind proofs, tiers, handles, and more.",
       "source_commits": []
     },
     {
