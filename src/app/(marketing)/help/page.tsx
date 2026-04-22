@@ -199,7 +199,7 @@ const FAQS: FaqEntry[] = [
   {
     q: "What's the difference between a Proof and a DEV Proof?",
     searchText:
-      "proof dev proof difference collaborator $1 $5 deployer wallet badge trust signal cryptographic",
+      "proof dev proof difference collaborator $1 $5 deployer mint authority multisig wallet badge trust signal cryptographic",
     a: (
       <ul>
         <li>
@@ -207,9 +207,13 @@ const FAQS: FaqEntry[] = [
           member vouches for your work on-chain.
         </li>
         <li>
-          <strong>DEV Proof ($5)</strong> — a project&apos;s{" "}
-          <strong>deployer wallet</strong> vouches for you. Cryptographically proven.
-          Earns the DEV badge — the strongest trust signal.
+          <strong>DEV Proof ($5)</strong> — a wallet that{" "}
+          <strong>
+            deployed the project, currently holds its mint authority, or is a
+            signer on its founder multisig
+          </strong>{" "}
+          vouches for you. Checked on-chain. Earns the DEV badge — the strongest
+          trust signal.
         </li>
       </ul>
     ),
@@ -247,8 +251,9 @@ const FAQS: FaqEntry[] = [
     a: (
       <p>
         <strong className="help-green">1–5 seconds</strong> in the normal case via the
-        Helius webhook. If the webhook is slow, a cron fallback picks it up within 60
-        seconds. No refresh needed — the modal updates itself.
+        Helius webhook. If the webhook misses (dropped delivery, network hiccup), a
+        cron fallback picks it up within 60 seconds. No refresh needed — the modal
+        updates itself.
       </p>
     ),
   },
@@ -286,14 +291,16 @@ const FAQS: FaqEntry[] = [
     ),
   },
   {
-    q: "I picked \"Dev\" but I'm not the deployer — what happens?",
+    q: "I picked \"Dev\" but my wallet doesn't qualify — what happens?",
     searchText:
-      "dev proof not deployer lose payment wallet on-chain no refund qualification check",
+      "dev proof not deployer wallet on-chain refund support qualification check mint authority multisig",
     a: (
       <p>
-        You lose the payment. The post-payment check compares the sending wallet
-        against the project&apos;s actual deployer wallet on-chain. No match = no
-        proof, no refund. Only pick Dev if you&apos;re actually the deployer.
+        No dev proof is created and your wallet won&apos;t earn the DEV badge. The
+        payment is held and we send you a notification telling you to{" "}
+        <strong>contact support for a refund</strong>. Only pick Dev if your
+        wallet actually qualifies — deployer, mint authority, or founder
+        multisig. Refunds are manual, so picking the wrong path costs you time.
       </p>
     ),
   },
@@ -525,12 +532,13 @@ const FAQS: FaqEntry[] = [
   {
     q: "Can I change my handle?",
     searchText:
-      "change handle manage flow paid $100 sol usdt $60 lastshft 40 off old released pool 30 days",
+      "change handle manage flow paid $100 sol usdt $60 lastshft 40 off old released pool 30 days 90 day cooldown",
     a: (
       <p>
         Yes. Handle Change flow in /manage. $100 in SOL/USDT or{" "}
-        <strong className="help-orange">$60 in $LASTSHFT</strong> (40% off). Old handle
-        released back to the pool after 30 days.
+        <strong className="help-orange">$60 in $LASTSHFT</strong> (40% off). Old
+        handle is held for 30 days then released back to the pool.{" "}
+        <strong>90-day cooldown</strong> between changes on your profile.
       </p>
     ),
   },
@@ -578,7 +586,7 @@ const FAQ_JSONLD = {
       name: "What's the difference between a Proof and a DEV Proof?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "A standard Proof costs $1 and can be submitted by any collaborator. A DEV Proof costs $5 and can only be submitted by a project's deployer wallet — cryptographically proven. DEV Proofs earn the DEV badge.",
+        text: "A standard Proof costs $1 and can be submitted by any collaborator. A DEV Proof costs $5 and can only be submitted by a wallet that deployed the project, currently holds its mint authority, or is a signer on its founder multisig — all checked on-chain. DEV Proofs earn the DEV badge.",
       },
     },
     {
@@ -1317,9 +1325,11 @@ export default function HelpPage() {
               title: "Target Dev Proofs ($5)",
               body: (
                 <>
-                  DEV Proofs come from the project&apos;s actual deployer wallet — the
-                  strongest trust signal. One DEV Proof is worth 10 regular proofs in
-                  credibility. It&apos;s also the only way to earn the DEV badge.
+                  DEV Proofs come from the wallet that deployed the project (or
+                  holds its mint authority or multisig signer seat) — the strongest
+                  trust signal on the platform, and the only way to earn the DEV
+                  badge. Tier math still counts a DEV Proof as one proof, but devs
+                  reading your profile weigh them a lot heavier than regular ones.
                 </>
               ),
             },
@@ -1328,9 +1338,10 @@ export default function HelpPage() {
               title: "Batch the ask",
               body: (
                 <>
-                  Hit 5–10 past collaborators in one week, not spread out. Profile goes
-                  0 → 5 proofs fast, which pushes you past TIER 1 to TIER 2 in momentum.
-                  Profiles with momentum convert teams better.
+                  Hit 10+ past collaborators in one week, not spread out. Profile
+                  goes 0 → 10 proofs fast, which pushes you from TIER 1 · NEW
+                  straight into TIER 2 · VERIFIED. Profiles with momentum convert
+                  teams better.
                 </>
               ),
             },
@@ -1561,6 +1572,10 @@ export default function HelpPage() {
                   <li>Old URL redirects to the new one during that window</li>
                   <li>
                     Proofs, tier, DEV badge carry over — only the URL changes
+                  </li>
+                  <li>
+                    <strong>90-day cooldown</strong> between handle changes — you
+                    can&apos;t swap again until then, even if you pay
                   </li>
                 </ul>
               </>

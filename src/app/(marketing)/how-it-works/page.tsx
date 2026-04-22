@@ -997,10 +997,12 @@ export default function HowItWorksPage() {
             <div className="pt-label">DEV PROOF</div>
             <div className="pt-price">$5</div>
             <p>
-              A project&rsquo;s{" "}
-              <strong style={{ color: "var(--green)" }}>deployer wallet</strong>{" "}
-              signs off on your work. Strongest trust signal — can&rsquo;t be
-              coordinated, can&rsquo;t be faked.
+              A wallet that{" "}
+              <strong style={{ color: "var(--green)" }}>
+                deployed, holds mint authority over, or is a multisig signer on
+              </strong>{" "}
+              the project signs off on your work. Strongest trust signal —
+              can&rsquo;t be coordinated, can&rsquo;t be faked.
             </p>
           </div>
           <div className="pt pt-mint">
@@ -1233,8 +1235,10 @@ export default function HowItWorksPage() {
               </li>
             </ul>
             <div className="vw-qual-foot">
-              Checked on-chain, post-payment. Fails the check &rarr; downgrades
-              to a collaborator-tier proof. <strong>No refund.</strong>
+              Checked on-chain, post-payment. Fails the check &rarr; no proof is
+              created and no DEV badge is awarded. The payment is held and
+              you&apos;re notified to{" "}
+              <strong>contact support for a manual refund</strong>.
             </div>
           </div>
         </div>
@@ -1369,8 +1373,8 @@ export default function HowItWorksPage() {
                       <strong>DEV QUALIFICATION</strong>
                       <span>
                         Dev path only — <code>token-dev-verify</code> runs
-                        against extracted sender. Fail = collaborator-tier
-                        proof.
+                        against the extracted sender. Fail = no proof inserted,
+                        payment held for manual refund via support.
                       </span>
                     </div>
                   </li>

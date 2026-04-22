@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.8.4",
+  "latest_version": "0.8.5",
   "entries": [
+    {
+      "version": "0.8.5",
+      "date": "2026-04-21",
+      "category": "fixed",
+      "headline": "Help and How-It-Works pages now match how the product actually behaves",
+      "copy": "Cleaned up a handful of copy mistakes: if a DEV proof payment doesn't qualify you now know to contact support for a refund (not \"no refund\"), DEV proofs can come from the deployer, the wallet holding mint authority, or a founder multisig signer (not just the deployer), a 10-proof streak lifts you to TIER 2 (not 5), the 90-day cooldown between handle changes is spelled out, and the cron fallback only kicks in on webhook failure (not slowness).",
+      "source_commits": []
+    },
     {
       "version": "0.8.4",
       "date": "2026-04-21",
