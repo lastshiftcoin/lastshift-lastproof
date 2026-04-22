@@ -20,6 +20,76 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-22 01:18 MST — /help: place 23 new screenshots from Kellen, wire last 5 Shot calls
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** help-page
+**Commits:** this entry
+**Migrations run in prod Supabase:** none
+**Impacts:** none — /help route assets + page.tsx wiring only
+
+### What shipped
+
+- Kellen dropped 23 final screenshots into `wireframes/help images/`
+  (4 subfolders: Profile Creation, Verify Work, Updating Profile,
+  Profile Status). Copied all 23 into `/public/help/` under the
+  existing semantic filenames used by `<Shot image="..." />` calls.
+- 18 of the 23 overwrote prior placeholder captures from the earlier
+  frontend-session pass.
+- 5 were brand-new: `t1-step-01-open-terminal.png`,
+  `t1-step-02-terminal-id.png`, `t1-step-03-launch-lastproof.png`
+  (Terminal-side Shots previously held for the Terminal builder);
+  plus the T2 Step 06 receipt capture and the T4 Defunct state capture,
+  both previously rendering as styled placeholders.
+- Wired `image=` + `alt=` props into the 5 remaining unwired `<Shot>`
+  calls at lines 1018 (T1 Step 01), 1046 (T1 Step 02), 1071 (T1 Step
+  03), 1344 (T2 Step 06), 2017 (T4 Defunct). Matched existing prop
+  style from the earlier wiring pass.
+- `priority` set on T1 Step 01 since it's above the fold when the
+  Profile Creation tab is active (default landing tab). Others lazy.
+- Every `<Shot>` instance in `page.tsx` now has an `image` prop —
+  no more placeholder fallbacks on the rendered page. 15 direct
+  `image="/help/..."` + 1 map-interpolated (8 sub-topic renders via
+  Topic 3 data array) = 23 Shot renders, all with real assets.
+
+### Numbers
+
+- `/public/help/` total: 24 PNG files, 5.7 MB (largest: 732 KB for
+  t1-step-01; median ~200 KB). Next.js `<Image>` handles
+  optimization + format negotiation + responsive srcset + lazy-load
+  automatically, no further action needed.
+
+### Protocol
+
+- VERSION 0.8.7 → 0.8.8 (improved = patch bump).
+- `data/updates.json` entry added: "Help page screenshots now cover
+  every step and state."
+- All changes scoped to `/help`: `public/help/*.png`,
+  `src/app/(marketing)/help/page.tsx`, plus bookkeeping
+  (VERSION, updates.json, this entry).
+
+### Open / next
+
+- Source PNGs in `wireframes/help images/` can be deleted or kept
+  as archive — they're duplicates of what's now in `/public/help/`.
+  Leaving them for now; Kellen's call whether to clean up.
+- Terminal shots (T1 Steps 01–03) previously flagged as blocked on
+  Terminal builder — now resolved with Kellen-provided captures.
+- No remaining placeholder Shots in the /help render tree.
+
+### Gotchas for next session
+
+- **`/public/help/` filenames are the contract** between `page.tsx`
+  Shot calls and the asset files. If Kellen swaps in new versions,
+  drop them in with the same filename and no code change is needed.
+- **Adding NEW shots** (not replacing existing): requires both the
+  file in `/public/help/` and a new `<Shot image="..." />` prop or
+  map-data entry in `page.tsx`.
+
+---
+
 ## 2026-04-22 00:14 MST — /help: centered 960px column with 24px gutters (matches /status pattern)
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)

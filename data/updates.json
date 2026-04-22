@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.8.7",
+  "latest_version": "0.8.8",
   "entries": [
+    {
+      "version": "0.8.8",
+      "date": "2026-04-22",
+      "category": "improved",
+      "headline": "Help page screenshots now cover every step and state",
+      "copy": "The last few wireframe placeholders are gone. Every Profile Creation step, every Verify Work screen, every Updating My Profile sub-topic, and every profile state (Active Paid, First 5,000, Free, Defunct) shows a real screenshot of the actual screen.",
+      "source_commits": []
+    },
     {
       "version": "0.8.7",
       "date": "2026-04-22",

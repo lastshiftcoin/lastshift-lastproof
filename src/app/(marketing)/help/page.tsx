@@ -1021,6 +1021,9 @@ export default function HelpPage() {
             icon="▦"
             note="cold-boot · CONNECT WALLET"
             caption="lastshift.app — click CONNECT WALLET"
+            image="/help/t1-step-01-open-terminal.png"
+            alt="Terminal cold-boot screen with CONNECT WALLET button"
+            priority
           />
           <div>
             <div className="help-step-num">STEP 01</div>
@@ -1049,6 +1052,8 @@ export default function HelpPage() {
             icon="⌨"
             note="XXXX-XXXX-XXXX-XXXX-XXXX"
             caption="Your Terminal ID. One key. Every tool."
+            image="/help/t1-step-02-terminal-id.png"
+            alt="Terminal ID keygen screen showing the XXXX-XXXX-XXXX-XXXX-XXXX key"
           />
           <div>
             <div className="help-step-num">STEP 02</div>
@@ -1074,6 +1079,8 @@ export default function HelpPage() {
             icon="▥"
             note="LAUNCH LASTPROOF highlighted"
             caption="Terminal dashboard — click LAUNCH LASTPROOF in the sidebar."
+            image="/help/t1-step-03-launch-lastproof.png"
+            alt="Terminal dashboard with LAUNCH LASTPROOF action highlighted in the sidebar"
           />
           <div>
             <div className="help-step-num">STEP 03</div>
@@ -1347,6 +1354,8 @@ export default function HelpPage() {
             icon="✓"
             note="cascade · receipt · solscan"
             caption="1–5 second verification via Helius. Then the receipt."
+            image="/help/t2-step-06-modal-receipt.png"
+            alt="Proof modal receipt screen with verification cascade and Solscan link"
           />
           <div>
             <div className="help-step-num">STEP 06</div>
@@ -2020,6 +2029,8 @@ export default function HelpPage() {
               icon="◎"
               note="red pill · 90+ days"
               caption={'Red "DEFUNCT" pill. 90+ days no payment + no login.'}
+              image="/help/t4-defunct-profile.png"
+              alt="Public profile in Defunct state — dim DEFUNCT marker shown"
             />
             <div className="help-state-details">
               <p className="help-what-means">
