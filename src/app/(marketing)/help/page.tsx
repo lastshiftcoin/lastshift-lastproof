@@ -704,8 +704,8 @@ function Shot({
                 <Image
                   src={image}
                   alt={alt ?? ""}
-                  fill
-                  sizes="(max-width: 900px) 100vw, 860px"
+                  width={1200}
+                  height={900}
                   className="help-lightbox-img"
                   priority
                 />

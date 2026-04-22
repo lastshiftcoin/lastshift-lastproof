@@ -280,15 +280,17 @@
 }
 .help-lightbox-close:hover { color: var(--orange); background: var(--orange-dim); }
 .help-lightbox-img-wrap {
-  position: relative;
-  flex: 1;
-  min-height: 200px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Let the image drive the height — don't constrain to 0 via flex */
+  flex-shrink: 1;
   max-height: calc(100vh - 140px);
-  overflow: hidden;
 }
 .help-lightbox-img {
-  object-fit: contain !important;
-  object-position: top center !important;
+  /* Override Next.js inline styles — fill the wrap width, natural height */
+  width: 100% !important;
+  height: auto !important;
+  display: block;
 }
 .help-lightbox-caption {
   padding: 8px 12px;
