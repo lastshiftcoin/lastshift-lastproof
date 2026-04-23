@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.11.0",
+  "latest_version": "0.11.1",
   "entries": [
+    {
+      "version": "0.11.1",
+      "date": "2026-04-22",
+      "category": "improved",
+      "headline": "The wallet-connect screen on /manage is clearer and more honest",
+      "copy": "Five small fixes on the boot screen at /manage: the SHIFTBOT logo is now centered instead of hugging the left edge, the wallet list correctly says \"Phantom, Solflare, Backpack\" (the three we actually support), the CONNECT WALLET button is now green to read as a clear go-action, the safety link is blue and underlined so it reads as clickable, and a new line under the button tells you what to do if nothing happens — open the page in Chrome or Safari, since wallet connect is blocked inside in-app browsers like Telegram, X, or Discord.",
+      "source_commits": []
+    },
     {
       "version": "0.11.0",
       "date": "2026-04-22",

@@ -453,8 +453,13 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
                 <div className="mg-connect-sub">
                   {phase === "connected" || phase === "validating"
                     ? "Initializing..."
-                    : "Phantom, Jupiter, Binance + more"}
+                    : "Phantom, Solflare, Backpack"}
                 </div>
+                {phase !== "connected" && phase !== "validating" && (
+                  <div className="mg-connect-sub mg-connect-iab-warning">
+                    Button not responding? Open in Chrome / Safari — wallet connect is blocked in in-app browsers
+                  </div>
+                )}
                 <Link href="/manage/safety" className="mg-safe-link">
                   Is it safe to connect my wallet?
                 </Link>

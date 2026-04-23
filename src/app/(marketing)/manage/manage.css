@@ -164,7 +164,8 @@
 .mg-boot-logo {
   width: 56px;
   height: 56px;
-  margin-bottom: 24px;
+  display: block;
+  margin: 0 auto 24px;
   filter: drop-shadow(0 0 12px rgba(255, 145, 0, 0.3));
 }
 
@@ -250,9 +251,9 @@
 .mg-connect-btn {
   padding: 14px 40px;
   background: transparent;
-  border: 1px solid var(--accent, #ff9100);
+  border: 1px solid var(--green, #00e676);
   border-radius: 4px;
-  color: var(--accent, #ff9100);
+  color: var(--green, #00e676);
   font-family: var(--mono, 'JetBrains Mono', monospace);
   font-size: 12px;
   letter-spacing: 2px;
@@ -262,8 +263,8 @@
 }
 
 .mg-connect-btn:hover {
-  background: rgba(255, 145, 0, 0.08);
-  box-shadow: 0 0 20px rgba(255, 145, 0, 0.15);
+  background: rgba(0, 230, 118, 0.08);
+  box-shadow: 0 0 20px rgba(0, 230, 118, 0.18);
 }
 
 .mg-connect-btn.connecting {
@@ -288,22 +289,31 @@
   font-size: 10px;
   color: var(--text-dim, #5a5e73);
   letter-spacing: 1px;
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* In-app-browser troubleshooting hint — paired visually with the wallet
+   list (same .mg-connect-sub style), max-width to prevent wrap into a
+   wall on wide viewports. */
+.mg-connect-iab-warning {
+  max-width: 320px;
 }
 
 .mg-safe-link {
   font-family: var(--mono, 'JetBrains Mono', monospace);
   font-size: 10px;
-  color: var(--text-dim, #5a5e73);
+  color: var(--blue, #409eff);
   letter-spacing: 0.5px;
   text-decoration: none;
-  border-bottom: 1px solid transparent;
+  border-bottom: 1px solid rgba(64, 158, 255, 0.4);
   transition: all 0.2s ease;
-  margin-top: 4px;
+  margin-top: 16px;
 }
 
 .mg-safe-link:hover {
-  color: var(--text-secondary, #8b8fa3);
-  border-bottom-color: var(--text-dim, #5a5e73);
+  color: #66b3ff;
+  border-bottom-color: var(--blue, #409eff);
 }
 
 /* ─── Post-connect lines (validating Terminal ID) ─────────────────────────── */
