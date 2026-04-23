@@ -20,6 +20,97 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-23 09:49 MST — /manage boot screen — five UI polish fixes
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`, `com.anthropic.claudefordesktop`)
+**Model:** claude-opus-4-6
+**Role:** frontend
+**Commits:** `d632cd0` (5 UI fixes + VERSION + updates entry), plus this WORKLOG entry
+**Migrations run in prod Supabase:** none
+**Impacts:** none — presentation-layer only, zero changes to wallet phase machine, validation flow, or any API
+**Status:** ✅ shipped, clean
+
+### Did
+
+Shipped 5 visual/copy fixes on the `/manage` wallet-connect boot
+screen. All queued through a plan+mockup cycle in the previous
+conversation block (user approved via `/tmp/manage-boot-mockup.html`
+Before/After preview). Patch was pre-applied to the drive's clone
+via `git apply` during the iCloud→drive migration; this session just
+pulled, rebased, committed, and pushed.
+
+**The 5 changes:**
+
+1. **Wallet list corrected** — `ManageTerminal.tsx:456` was claiming
+   *"Phantom, Jupiter, Binance + more"*; the allowlist in
+   `wallet-policy.ts` is Phantom, Solflare, Backpack only. Copy now
+   matches reality. Jupiter and Binance are not wallets we support.
+2. **In-app browser warning** added as a new line under the wallet
+   list: *"Button not responding? Open in Chrome / Safari — wallet
+   connect is blocked in in-app browsers."* Shown unconditionally —
+   bypasses the existing `InAppBanner` UA detection (which missed
+   at least one user's IAB last week). Placing the notice at the
+   action point solves the detection-miss problem entirely.
+   `max-width: 320px` so it reads as one line on mobile and doesn't
+   wall-of-text on wide viewports.
+3. **SHIFTBOT logo centered** — `.mg-boot-logo` gained
+   `display: block; margin: 0 auto 24px;`. Logo is now a centered
+   hero element; boot text below stays left-aligned so the CLI
+   aesthetic of the terminal console is preserved.
+4. **Safety link → blue** — `.mg-safe-link` color
+   `var(--text-dim)` → `var(--blue, #409eff)`, plus a subtle
+   `rgba(64,158,255,0.4)` border-bottom so it reads as clickable.
+   Purple was the first pick but dropped because `--purple` is
+   reserved for Tier 4 · LEGEND per CLAUDE.md; blue is the standard
+   link-color convention and already in the token palette.
+5. **CONNECT WALLET → green default** — `.mg-connect-btn` border +
+   color `var(--accent)` (orange) → `var(--green)`. Hover rgba
+   tuned to match. The `connected` state is transient (sub-second
+   before the view swaps to `validating`/`granted`), so Option A
+   (checkmark + filled bg + glow) was scoped out — the user never
+   dwells on that state long enough for the design to matter. The
+   existing `.mg-connect-btn.connected` CSS still provides color
+   feedback during the render frame it exists.
+
+### Current state
+
+- VERSION at `0.11.1`, `data/updates.json` has 60 entries (one new
+  `0.11.1` entry prepended). Top 3 versions: `0.11.1 / 0.11.0 / 0.10.0`.
+- HEAD `d632cd0`, up to date with origin/main.
+- Working tree clean. No stray modifications.
+- The 5 fixes are live on Vercel next deploy (or via the pre-deploy
+  hook if one fires on the push).
+
+### Open / next
+
+- No outstanding items from this work block.
+- Referenced gotchas from prior sessions still apply:
+  - Sitemap wiring for `/blog` flagged as coordinator work (WORKLOG
+    2026-04-22 11:29)
+  - Topbar + footer BLOG link wiring (partially done: footer BLOG
+    link shipped in `37d0dac`; topbar BLOG link status unknown —
+    coordinator to confirm)
+
+### Gotchas for next session
+
+- **The drive-based workflow held flawlessly.** `git fetch`,
+  `git pull --rebase`, and `git push` all executed without the mmap
+  crashes or iCloud-lock hangs we hit last week. The external drive
+  is paying off immediately — use it.
+- **Pre-commit sanity: always `git show --stat HEAD` after push.**
+  Caught no issues this time but it's the cheapest insurance against
+  the kind of silent data-loss we hit on `b9bad04` (the 8-entry
+  updates.json clobber). Keep it in the loop.
+- **`git apply` for cross-clone patch transfer works cleanly.** When
+  the iCloud clone had uncommitted edits and the drive clone was at
+  the same HEAD, `git diff -- <tracked files> | git apply` moved the
+  diff surgically without touching iCloud drift artifacts. Useful
+  recipe if we ever need to move WIP between clones again (hopefully
+  never — we're drive-only now).
+
+---
+
 ## 2026-04-22 12:41 MST — BLOG link in footer (left of HELP)
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
