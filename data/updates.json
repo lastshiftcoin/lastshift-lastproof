@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.11.1",
+  "latest_version": "0.11.2",
   "entries": [
+    {
+      "version": "0.11.2",
+      "date": "2026-04-23",
+      "category": "improved",
+      "headline": "A security upgrade you don't have to think about",
+      "copy": "We hardened how the platform stores the keys that power login, payments, and proof verification — they're now locked in a way that can't be read back, even from our own tooling. Nothing changes in how you use the site. Your data and your work are a little safer than they were yesterday.",
+      "source_commits": []
+    },
     {
       "version": "0.11.1",
       "date": "2026-04-22",

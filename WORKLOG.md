@@ -20,6 +20,74 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-23 10:35 MST — production credential storage: hardened posture
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** backend
+**Commits:** this commit (see git log)
+**Migrations run in prod Supabase:** none
+**Impacts:** none — infrastructure-level platform config only, no shared
+contract change, no code change, no Terminal-side impact
+**Status:** ✅ shipped
+
+### Did
+
+- Routine hardening pass on how production credentials are stored at
+  the platform layer. Aligned with current best practice for the
+  deployment provider. No values changed. No code changed. No
+  deploy change needed (running production is unaffected).
+- One-time post-CLI-upgrade task: re-linked the drive's checkout to
+  the correct project in the provider's CLI (an earlier stray link
+  attempt had created an empty project that was deleted).
+- User-facing `data/updates.json` entry added in the same commit for
+  transparency on `/status` — kept deliberately vague about the
+  mechanism so it reads as "security upgrade" to users without
+  handing anyone a roadmap for what the prior posture was.
+
+### Protocol
+
+- `VERSION` 0.11.1 → 0.11.2 (patch bump, category=improved)
+- `data/updates.json` entry added, `latest_version` bumped
+- `[update: improved]` prefix on the commit subject
+- Working tree clean before signoff
+
+### Open / next
+
+- Two unrelated auto-named projects remain in the deployment
+  dashboard under the team (`project-rjyww`, `project-b1tk1`).
+  `rjyww` is NOT a stray — it serves `lastshift.ai` in production
+  with 35 env vars and 3 domains; should be renamed in the dashboard
+  (manual). `b1tk1` looks dormant but has 9 historical deploys;
+  Kellen will verify and clean up manually.
+- No other outstanding items from this work block.
+
+### Gotchas for next session
+
+- **When rotating a production credential from now on, you cannot
+  pull the current value back.** Have the new value ready before
+  starting the swap, or regenerate at the upstream provider first.
+  This is intentional; it's the whole point of the hardening.
+- **Non-public production credentials are one-way from now on.**
+  Treat the deployment dashboard as write-only for those. If you
+  need to USE a value locally (e.g. for a script or ad-hoc query),
+  get it from the upstream source of truth, not from the deployment
+  dashboard.
+- **`NEXT_PUBLIC_*` variables remain readable** and must stay that
+  way — they're bundled into client JS at build time and marking
+  them protected would either break the build or falsely claim
+  protection. Don't "fix" the asymmetry.
+- **Protocol note on future entries:** this work changed only
+  infrastructure config, not user-visible code. The updates.json
+  entry is a deliberate transparency choice (user confidence),
+  not a strict requirement of § Updates feed convention, which
+  exempts "deployment config, CI tweaks, env var additions." If
+  a similar future entry feels like protocol over-reach, it's fine
+  to skip it.
+
+---
+
 ## 2026-04-23 09:49 MST — /manage boot screen — five UI polish fixes
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
