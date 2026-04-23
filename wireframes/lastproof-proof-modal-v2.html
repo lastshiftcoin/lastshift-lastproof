@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LASTPROOF — Proof Modal v2 (Wallet-First)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-primary:#0a0b0f;
+    --bg-secondary:#12131a;
+    --bg-card:#161822;
+    --bg-card-hover:#1a1d2a;
+    --bg-input:#0e0f16;
+    --border:#1e2030;
+    --border-2:#2a2d42;
+    --text-primary:#e2e4ed;
+    --text-secondary:#8b8fa3;
+    --text-dim:#5a5e73;
+    --green:#00e676;
+    --green-dim:rgba(0,230,118,.12);
+    --green-glow:rgba(0,230,118,.25);
+    --orange:#ff9100;
+    --orange-dim:rgba(255,145,0,.12);
+    --accent:#ff9100;
+    --accent-glow:rgba(255,145,0,.15);
+    --red:#ff5470;
+    --red-dim:rgba(255,84,112,.1);
+    --purple:#a78bfa;
+    --gold:#ffd700;
+    --gold-dim:rgba(255,215,0,.1);
+    --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:Inter,-apple-system,system-ui,sans-serif;
+    --r-card:10px;--r-btn:6px;--r-pill:4px;--r-sm:3px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg-primary);color:var(--text-primary);font-family:var(--sans);font-size:14px;line-height:1.5;min-height:100dvh}
+  a{color:inherit;text-decoration:none}
+  body::before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(30,32,48,.3) 1px, transparent 1px),linear-gradient(90deg, rgba(30,32,48,.3) 1px, transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+  body::after{content:"";position:fixed;top:-200px;right:-200px;width:700px;height:700px;background:radial-gradient(circle,var(--accent-glow) 0%,transparent 60%);pointer-events:none;z-index:0}
+  .scanlines{position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.05) 2px,rgba(0,0,0,.05) 4px);pointer-events:none;z-index:9999}
+  .stage{position:relative;z-index:1;min-height:100dvh;padding:60px 20px;display:flex;align-items:center;justify-content:center}
+  .stage::before{content:"";position:fixed;inset:0;background:rgba(5,6,10,.82);backdrop-filter:blur(4px);z-index:2}
+  @keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,145,0,.35)}50%{box-shadow:0 0 0 10px rgba(255,145,0,0)}}
+  @keyframes pulseGreen{0%,100%{box-shadow:0 0 0 0 rgba(0,230,118,.35)}50%{box-shadow:0 0 0 10px rgba(0,230,118,0)}}
+  @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:.25}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .modal::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;z-index:1;border-radius:inherit}
+  .modal > *{position:relative;z-index:2}
+  .modal{position:relative;z-index:3;width:100%;max-width:600px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--r-card);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.02);animation:popIn .35s ease}
+  .titlebar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--border)}
+  .titlebar .left{display:flex;align-items:center;gap:8px}
+  .dots{display:flex;gap:5px}
+  .dots span{width:9px;height:9px;border-radius:50%}
+  .dots .r{background:#ff5f56}.dots .y{background:#ffbd2e}.dots .g{background:#27c93f}
+  .title{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-left:6px}
+  .title-right{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1.5px;display:flex;align-items:center;gap:6px}
+  .pulse{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px rgba(255,145,0,.6);animation:blink 1.2s infinite}
+  .ref-row{display:flex;justify-content:space-between;align-items:center;padding:12px 22px 0;gap:12px;flex-wrap:wrap}
+  .step-counter{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1.5px;margin-left:auto}
+  .step-counter .now{color:var(--accent);font-weight:700}
+  .progress-wrap{padding:10px 22px 0}
+  .bar-track{width:100%;height:4px;background:rgba(255,255,255,.04);border-radius:3px;overflow:hidden}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--accent) 0%,#ffb347 100%);border-radius:3px;box-shadow:0 0 10px rgba(255,145,0,.5);transition:width .35s ease}
+  .body{padding:28px 36px 22px}
+  .pain{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;text-align:center}
+  .pain::before{content:">";color:var(--orange);margin-right:6px;opacity:.6}
+  h2.head{font-family:var(--sans);font-size:26px;font-weight:700;line-height:1.18;margin:0 0 12px;letter-spacing:-.3px;color:var(--text-primary);text-align:center}
+  h2.head .accent{color:var(--accent)}
+  h2.head .green{color:var(--green)}
+  .sub{font-family:var(--sans);font-size:13px;color:var(--text-secondary);line-height:1.65;margin:0 auto 24px;max-width:460px;text-align:center}
+
+  /* Wallet providers — Step 1 */
+  .wallet-providers{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+  .wallet-prov{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-btn);color:var(--text);text-align:left;cursor:pointer;font-family:inherit;transition:all .15s ease;text-decoration:none}
+  .wallet-prov:hover{border-color:var(--accent);background:rgba(255,107,0,.06);transform:translateX(2px)}
+  .wp-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;background:#0a0b0f;border:1px solid rgba(255,255,255,.06)}
+  .wp-icon img{width:100%;height:100%;object-fit:cover;display:block}
+  .wp-meta{flex:1;min-width:0}
+  .wp-name{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:1px;color:var(--text)}
+  .wp-sub{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1.2px;margin-top:3px}
+  .wp-arrow{font-size:18px;color:var(--text-dim);font-weight:700}
+  .wallet-prov:hover .wp-arrow{color:var(--accent)}
+
+  /* Mobile variant labels */
+  .wp-mobile-label{display:none;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--accent);padding:3px 8px;border:1px solid var(--accent);border-radius:var(--r-pill);white-space:nowrap}
+  .wp-mobile-label.app{color:var(--green);border-color:var(--green)}
+
+  /* Environment toggle (wireframe only) */
+  .env-toggle{position:fixed;top:10px;right:10px;z-index:10000;display:flex;gap:6px}
+  .env-toggle button{font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:6px 12px;border-radius:4px;cursor:pointer;border:1px solid var(--border);background:var(--bg-card);color:var(--text-dim)}
+  .env-toggle button.active{border-color:var(--accent);color:var(--accent);background:var(--orange-dim)}
+
+  /* Wallet connecting + verified states (same as v1) */
+  .wallet-connecting{display:flex;flex-direction:column;align-items:center;gap:14px;padding:40px 20px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-btn)}
+  .spinner{width:56px;height:56px;margin:0 auto;border-radius:50%;border:3px solid rgba(255,145,0,.18);border-top-color:var(--accent);animation:spin 1s linear infinite}
+  .wc-status{font-family:var(--mono);font-size:12px;letter-spacing:1.5px;color:var(--text);font-weight:700}
+  .wc-status span{color:var(--accent)}
+  .wc-hint{font-family:var(--mono);font-size:9px;letter-spacing:1.2px;color:var(--text-dim)}
+  .btn-link{background:transparent;border:0;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--text-dim);cursor:pointer;padding:6px 12px;text-decoration:underline}
+  .btn-link:hover{color:var(--red)}
+
+  .wallet-verified{display:flex;flex-direction:column;align-items:center;gap:10px;padding:36px 20px;background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.4);border-radius:var(--r-btn);text-align:center}
+  .wv-check{width:58px;height:58px;border-radius:50%;background:rgba(0,230,118,.15);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;box-shadow:0 0 28px rgba(0,230,118,.28);margin-bottom:4px}
+  .wv-check svg{width:30px;height:30px;color:var(--green)}
+  .wv-title{font-family:var(--mono);font-size:11px;font-weight:800;color:var(--green);letter-spacing:1.6px}
+  .wv-wallet{font-family:var(--mono);font-size:13px;color:var(--text);font-weight:700;letter-spacing:.5px}
+  .wv-wallet span:first-child{color:var(--accent)}
+  .wv-sub{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-bottom:10px}
+
+  .conn-pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.45);border-radius:999px;font-family:var(--mono);font-size:9px;letter-spacing:1.2px;color:var(--green);cursor:pointer;transition:all .15s ease}
+  .conn-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+  .conn-label{font-weight:700}
+  .conn-addr{opacity:.85}
+
+  /* CTA */
+  .cta-row{padding:8px 36px 26px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+  .cta{display:inline-flex;align-items:center;justify-content:center;padding:14px 28px;color:var(--orange);background:var(--orange-dim);border:1px solid var(--orange);border-radius:var(--r-btn);font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .15s;animation:pulseGlow 2.2s infinite;text-align:center;margin-left:auto}
+  .cta:hover{background:var(--orange);color:#0a0b0f;box-shadow:0 0 24px var(--accent-glow)}
+  .btn-back{padding:14px 18px;color:var(--text-dim);background:transparent;border:1px solid var(--border-2);border-radius:var(--r-btn);font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.5px;cursor:pointer;transition:all .15s}
+  .btn-back:hover{color:var(--orange);border-color:var(--orange)}
+  .fine{padding:0 26px 18px;text-align:center;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1px}
+  .field-help{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.5px;margin-top:6px;line-height:1.6}
+
+  @media (max-width:600px){
+    .stage{padding:0}
+    .modal{max-width:100%;border-radius:14px 14px 0 0;margin-top:auto}
+    .body{padding:24px 20px 18px}
+    h2.head{font-size:21px}
+    .cta-row{padding:6px 22px 22px}
+    .wp-mobile-label{display:inline-block}
+  }
+</style>
+</head>
+<body>
+
+<div class="scanlines"></div>
+
+<!-- WIREFRAME TOGGLE: desktop / mobile simulation -->
+<div class="env-toggle">
+  <button class="active" id="envDesktop">DESKTOP</button>
+  <button id="envMobile">MOBILE</button>
+</div>
+
+<div class="stage">
+  <div class="modal" id="modal">
+
+    <!-- TITLEBAR -->
+    <div class="titlebar">
+      <div class="left">
+        <div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <span class="title">lastproof — verify this work</span>
+      </div>
+      <div class="title-right"><span class="pulse"></span>PROOF</div>
+    </div>
+
+    <!-- STEP COUNTER + CONNECTED PILL -->
+    <div class="ref-row">
+      <div class="conn-pill" id="connPill" style="display:none">
+        <span class="conn-dot"></span>
+        <span class="conn-label">CONNECTED</span>
+        <span class="conn-addr" id="connAddr">PHANTOM · F7k2…9xMp</span>
+      </div>
+      <span class="step-counter">STEP <span class="now" id="stepNow">1</span> / 8</span>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="progress-wrap">
+      <div class="bar-track"><div class="bar-fill" id="barFill" style="width:12.5%"></div></div>
+    </div>
+
+    <div class="body" id="modalBody">
+
+      <!-- ═══ STEP 1 — WALLET PICKER (NEW: was Step 2) ═══ -->
+      <div class="step" data-step="1">
+        <div class="pain">CONNECT YOUR WALLET</div>
+        <h2 class="head">Pick a <span class="accent">wallet.</span></h2>
+        <p class="sub">One wallet, one proof per project. We'll verify it hasn't proofed this project before you sign — no gas until you approve.</p>
+
+        <!-- DEFAULT: provider picker -->
+        <div class="wallet-providers" id="walletPicker">
+          <button class="wallet-prov" data-prov="phantom">
+            <div class="wp-icon"><img src="https://www.google.com/s2/favicons?domain=phantom.app&sz=128" alt="Phantom" onerror="this.style.display='none'"/></div>
+            <div class="wp-meta">
+              <div class="wp-name">PHANTOM</div>
+              <div class="wp-sub desktop-label">BROWSER EXTENSION + MOBILE</div>
+              <div class="wp-sub mobile-label" style="display:none">OPENS IN PHANTOM APP</div>
+            </div>
+            <span class="wp-mobile-label app" style="display:none">OPEN IN APP &rarr;</span>
+            <span class="wp-arrow desktop-arrow">&rarr;</span>
+          </button>
+          <button class="wallet-prov" data-prov="solflare">
+            <div class="wp-icon"><img src="https://www.google.com/s2/favicons?domain=solflare.com&sz=128" alt="Solflare" onerror="this.style.display='none'"/></div>
+            <div class="wp-meta">
+              <div class="wp-name">SOLFLARE</div>
+              <div class="wp-sub desktop-label">BROWSER EXTENSION + MOBILE</div>
+              <div class="wp-sub mobile-label" style="display:none">OPENS IN SOLFLARE APP</div>
+            </div>
+            <span class="wp-mobile-label app" style="display:none">OPEN IN APP &rarr;</span>
+            <span class="wp-arrow desktop-arrow">&rarr;</span>
+          </button>
+          <button class="wallet-prov" data-prov="jupiter">
+            <div class="wp-icon"><img src="https://www.google.com/s2/favicons?domain=jup.ag&sz=128" alt="Jupiter" onerror="this.style.display='none'"/></div>
+            <div class="wp-meta">
+              <div class="wp-name">JUPITER</div>
+              <div class="wp-sub desktop-label">BROWSER EXTENSION + MOBILE</div>
+              <div class="wp-sub mobile-label" style="display:none">OPEN URL IN JUPITER'S BROWSER</div>
+            </div>
+            <span class="wp-mobile-label" style="display:none">GET APP &rarr;</span>
+            <span class="wp-arrow desktop-arrow">&rarr;</span>
+          </button>
+          <button class="wallet-prov" data-prov="binance">
+            <div class="wp-icon"><img src="https://www.google.com/s2/favicons?domain=binance.com&sz=128" alt="Binance" onerror="this.style.display='none'"/></div>
+            <div class="wp-meta">
+              <div class="wp-name">BINANCE WALLET</div>
+              <div class="wp-sub desktop-label">BROWSER EXTENSION + MOBILE</div>
+              <div class="wp-sub mobile-label" style="display:none">OPEN URL IN BINANCE'S BROWSER</div>
+            </div>
+            <span class="wp-mobile-label" style="display:none">GET APP &rarr;</span>
+            <span class="wp-arrow desktop-arrow">&rarr;</span>
+          </button>
+        </div>
+
+        <!-- CONNECTING -->
+        <div class="wallet-connecting" id="walletConnecting" style="display:none">
+          <div class="spinner"></div>
+          <div class="wc-status">WAITING FOR <span id="wcName">PHANTOM</span>&hellip;</div>
+          <div class="wc-hint">APPROVE THE CONNECTION REQUEST IN YOUR WALLET</div>
+          <button class="btn-link" id="wcCancel">CANCEL</button>
+        </div>
+
+        <!-- VERIFIED -->
+        <div class="wallet-verified" id="walletVerified" style="display:none">
+          <div class="wv-check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="wv-title">WALLET CONNECTED</div>
+          <div class="wv-wallet"><span id="wvName">PHANTOM</span> &middot; <span id="wvAddr">F7k2k9aH4z&hellip;9xMp</span></div>
+          <div class="wv-sub">Signature verified. Your wallet is ready to proof.</div>
+          <button class="cta" id="btnWvContinue"><span>&gt; CONTINUE TO PROOF</span></button>
+        </div>
+
+        <div class="field-help" style="text-align:center;margin-top:14px">
+          LASTPROOF NEVER HOLDS OR CUSTODIES FUNDS &middot; YOU SIGN EVERY TRANSACTION
+        </div>
+      </div>
+
+      <!-- ═══ STEP 2 — PATH SELECT (was Step 1) ═══ -->
+      <div class="step" data-step="2" style="display:none">
+        <div class="pain">VERIFY THIS WORK ON-CHAIN</div>
+        <h2 class="head">You're proofing <span class="accent">@cryptomark</span>.</h2>
+        <p class="sub">Pick the path that matches your relationship to $LASTSHFT. Proofs are permanent &mdash; you can't edit, delete, or refund after signature.</p>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);text-align:center;margin-bottom:18px;letter-spacing:1px">
+          STEPS 2&ndash;8 ARE IDENTICAL TO THE CURRENT MODAL (Steps 1, 3&ndash;8)<br>
+          ONLY STEP 1 (WALLET PICKER) IS NEW
+        </div>
+        <div class="field-help" style="text-align:center">
+          [Path select cards, comment, token select, eligibility, review, sign, outcome &mdash; all unchanged from current wireframe]
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CTA ROW -->
+    <div class="cta-row" id="ctaRow" style="display:none">
+      <button class="btn-back" id="btnBack" style="display:none">&larr;</button>
+      <button class="cta" id="btnNext"><span id="btnNextLabel">&gt; PICK A WALLET ABOVE</span></button>
+    </div>
+
+    <div class="fine">PROOFS ARE PERMANENT &middot; 1 WALLET PER PROJECT &middot; 1 DEV PROOF PER PROJECT</div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  var env='desktop'; // 'desktop' | 'mobile'
+  var connected=false;
+  var step=1;
+
+  var WALLET_LABEL={phantom:'PHANTOM',solflare:'SOLFLARE',jupiter:'JUPITER',binance:'BINANCE WALLET'};
+
+  var walletPicker=document.getElementById('walletPicker');
+  var walletConnecting=document.getElementById('walletConnecting');
+  var walletVerified=document.getElementById('walletVerified');
+  var wcName=document.getElementById('wcName');
+  var wvName=document.getElementById('wvName');
+  var wvAddr=document.getElementById('wvAddr');
+  var wcCancel=document.getElementById('wcCancel');
+  var btnWvContinue=document.getElementById('btnWvContinue');
+  var connPill=document.getElementById('connPill');
+  var connAddr=document.getElementById('connAddr');
+  var stepNow=document.getElementById('stepNow');
+  var barFill=document.getElementById('barFill');
+  var ctaRow=document.getElementById('ctaRow');
+
+  // Environment toggle
+  var envDesktop=document.getElementById('envDesktop');
+  var envMobile=document.getElementById('envMobile');
+
+  function applyEnv(){
+    envDesktop.classList.toggle('active', env==='desktop');
+    envMobile.classList.toggle('active', env==='mobile');
+
+    // Toggle labels per wallet
+    document.querySelectorAll('.desktop-label').forEach(function(el){
+      el.style.display = env==='desktop' ? '' : 'none';
+    });
+    document.querySelectorAll('.mobile-label').forEach(function(el){
+      el.style.display = env==='mobile' ? '' : 'none';
+    });
+    document.querySelectorAll('.desktop-arrow').forEach(function(el){
+      el.style.display = env==='desktop' ? '' : 'none';
+    });
+    document.querySelectorAll('.wp-mobile-label').forEach(function(el){
+      el.style.display = env==='mobile' ? 'inline-block' : 'none';
+    });
+  }
+
+  envDesktop.addEventListener('click', function(){env='desktop';applyEnv();});
+  envMobile.addEventListener('click', function(){env='mobile';applyEnv();});
+
+  function render(){
+    document.querySelectorAll('.step').forEach(function(s){
+      s.style.display=(s.dataset.step==String(step))?'block':'none';
+    });
+    stepNow.textContent=step;
+    barFill.style.width=((step/8)*100)+'%';
+    connPill.style.display=(connected && step>=2)?'inline-flex':'none';
+    // Step 1: wallet picker manages its own CTA (hidden)
+    ctaRow.style.display=(step===1)?'none':'flex';
+  }
+
+  function showPicker(){
+    walletPicker.style.display='flex';
+    walletConnecting.style.display='none';
+    walletVerified.style.display='none';
+  }
+
+  // Wallet click — desktop: connecting sim / mobile: would deep-link
+  document.querySelectorAll('.wallet-prov[data-prov]').forEach(function(b){
+    b.addEventListener('click',function(){
+      var prov=b.dataset.prov;
+      var label=WALLET_LABEL[prov]||prov.toUpperCase();
+
+      if(env==='mobile'){
+        // Mobile: simulate deep-link
+        if(prov==='phantom'){
+          alert('DEEP LINK: Opens phantom.app/ul/browse/{currentUrl}\n\nThe page reloads inside Phantom\'s in-app browser.\nWallet auto-detected, user clicks Phantom again to connect.');
+        } else if(prov==='solflare'){
+          alert('DEEP LINK: Opens solflare.com/ul/v1/browse/{currentUrl}\n\nSame pattern as Phantom.');
+        } else if(prov==='jupiter'){
+          alert('APP LINK: Opens jup.ag/mobile\n\nUser installs Jupiter, opens this URL in Jupiter\'s built-in browser.');
+        } else if(prov==='binance'){
+          alert('APP LINK: Opens binance.com/en/web3wallet\n\nUser opens this URL in Binance\'s built-in browser.');
+        }
+        return;
+      }
+
+      // Desktop: simulate adapter connect
+      wcName.textContent=label;
+      walletPicker.style.display='none';
+      walletVerified.style.display='none';
+      walletConnecting.style.display='flex';
+
+      setTimeout(function(){
+        walletConnecting.style.display='none';
+        walletVerified.style.display='flex';
+        wvName.textContent=label;
+        wvAddr.textContent='F7k2k9aH4z\u2026 9xMp';
+        connected=true;
+        connAddr.textContent=label+' \u00B7 F7k2\u20269xMp';
+      },1600);
+    });
+  });
+
+  wcCancel.addEventListener('click', showPicker);
+
+  // Verified → Continue → Step 2 (path select)
+  btnWvContinue.addEventListener('click', function(){
+    step=2;
+    render();
+    showPicker();
+  });
+
+  render();
+  applyEnv();
+})();
+</script>
+
+</body>
+</html>

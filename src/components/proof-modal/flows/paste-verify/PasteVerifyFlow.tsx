@@ -1,0 +1,338 @@
+"use client";
+
+/**
+ * PasteVerifyFlow V3 — 6-screen proof flow, no wallet connect.
+ *
+ * User is anonymous until they submit a TX. Everything we need
+ * comes from the on-chain transaction itself.
+ *
+ * Screens:
+ *   1  Path      — collab / dev
+ *   2  Token     — LASTSHFT / SOL / USDT with prices
+ *   3  Send      — treasury address + copy button + instructions
+ *   4  Paste     — paste TX URL + optional comment + submit
+ *   5  Terminal  — verification cascade + deployment
+ *   6  Receipt   — proof confirmed, screenshot-friendly
+ *
+ * 3-tier failure recovery:
+ *   Tier 1 (attempt 1): TRY AGAIN → back to Screen 4
+ *   Tier 2 (attempt 2): DEEP VERIFY → re-submit with deep=true
+ *   Tier 3 (attempt 3+): OPEN SUPPORT TICKET
+ */
+
+import { useCallback, useEffect, useState } from "react";
+import { useDebugLog } from "@/lib/debug/useDebugLog";
+import type { ProofPath } from "../../types";
+import type { ProofTokenKey } from "@/lib/proof-tokens";
+
+import { Screen1Path } from "./Screen1Path";
+import { Screen1DevCheck } from "./Screen1DevCheck";
+import { Screen2Token } from "./Screen2Token";
+import { Screen3Send } from "./Screen3Send";
+import { Screen4Paste } from "./Screen4Paste";
+import { Screen5Terminal } from "./Screen5Terminal";
+import { Screen6Receipt } from "./Screen6Receipt";
+
+type PvScreen = 1 | 1.5 | 2 | 3 | 4 | 5 | 6;
+
+const SESSION_STORAGE_PREFIX = "lp_session_";
+
+export interface PasteVerifyFlowProps {
+  workItemId: string;
+  ticker: string;
+  handle: string;
+  onClose: () => void;
+}
+
+export function PasteVerifyFlow({
+  workItemId,
+  ticker,
+  handle,
+  onClose,
+}: PasteVerifyFlowProps) {
+  const [screen, setScreen] = useState<PvScreen>(1);
+  const [path, setPath] = useState<ProofPath | null>(null);
+  const [token, setToken] = useState<ProofTokenKey>("LASTSHFT");
+  const [comment, setComment] = useState("");
+  const [verificationId, setVerificationId] = useState<string | null>(null);
+  const [proofData, setProofData] = useState<Record<string, unknown> | null>(null);
+  const [solscanUrl, setSolscanUrl] = useState<string | null>(null);
+  const [failureAttempt, setFailureAttempt] = useState(0);
+  const [failureCheck, setFailureCheck] = useState<string | null>(null);
+  const [failureDetail, setFailureDetail] = useState<string | null>(null);
+  const [showFailure, setShowFailure] = useState(false);
+  const [devWallet, setDevWallet] = useState<string | null>(null);
+
+  const debug = useDebugLog();
+
+  // Log modal open
+  useEffect(() => {
+    debug.log("proof_flow", "modal_open", { workItemId, ticker, handle });
+    return () => { debug.log("proof_flow", "modal_close", { screen }); debug.flush(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Session anti-scam: create session on mount, persist in localStorage
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const storageKey = `${SESSION_STORAGE_PREFIX}${workItemId}`;
+
+  useEffect(() => {
+    // Check localStorage for existing session
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored) as { session_id: string; opened_at: string };
+        setSessionId(parsed.session_id);
+        return;
+      }
+    } catch { /* no stored session */ }
+
+    // Create new session
+    fetch("/api/proof/session-start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ work_item_id: workItemId }),
+    })
+      .then((r) => r.json())
+      .then((data: { ok: boolean; session_id?: string; opened_at?: string }) => {
+        if (data.ok && data.session_id) {
+          setSessionId(data.session_id);
+          debug.log("proof_flow", "session_start_ok", { session_id: data.session_id });
+          try {
+            localStorage.setItem(
+              storageKey,
+              JSON.stringify({ session_id: data.session_id, opened_at: data.opened_at }),
+            );
+          } catch { /* storage full — continue without persistence */ }
+        }
+      })
+      .catch((err) => { debug.log("error", "session_start_failed", { error: String(err) }); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workItemId, storageKey]);
+
+  const handlePathPick = useCallback((p: ProofPath) => {
+    debug.log("proof_flow", "path_selected", { path: p });
+    setPath(p);
+    setScreen(p === "dev" ? 1.5 : 2);
+  }, [debug]);
+
+  const handleDevQualified = useCallback((w: string) => {
+    debug.log("proof_flow", "dev_wallet_qualified", { wallet: w });
+    setDevWallet(w);
+    setScreen(2);
+  }, [debug]);
+
+  const handleTokenPick = useCallback((t: ProofTokenKey) => {
+    setToken(t);
+  }, []);
+
+  const handleContinueFromToken = useCallback(() => {
+    setScreen(3);
+  }, []);
+
+  const handleContinueToSubmit = useCallback(() => {
+    setScreen(4);
+  }, []);
+
+  const handleSubmit = useCallback(
+    async (signatureInput: string) => {
+      if (!path || !sessionId) return;
+      debug.log("proof_flow", "submit_tx", { path, token, workItemId, attempt: failureAttempt });
+      try {
+        const res = await fetch("/api/proof/verify-tx", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            signature: signatureInput,
+            path,
+            token,
+            work_item_id: workItemId,
+            session_id: sessionId,
+            comment: comment || undefined,
+            deep: failureAttempt >= 1,
+          }),
+        });
+        const data = (await res.json()) as {
+          ok: boolean;
+          verification_id?: string;
+          error?: string;
+          detail?: string;
+          status?: string;
+          proof_id?: string;
+          sender_wallet?: string;
+          silent_duplicate?: boolean;
+        };
+
+        if (!data.ok) {
+          debug.log("error", "submit_failed", { error: data.error, detail: data.detail, attempt: failureAttempt + 1 });
+          setFailureAttempt((a) => a + 1);
+          setFailureCheck(data.error ?? "unknown");
+          setFailureDetail(data.detail ?? data.error ?? "Submission failed.");
+          setShowFailure(true);
+          return;
+        }
+
+        // Instant verify (webhook cache hit) or silent duplicate
+        debug.log("proof_flow", "submit_ok", { status: data.status, verification_id: data.verification_id, instant: data.status === "verified" });
+        if (data.status === "verified" && data.proof_id) {
+          try { localStorage.removeItem(storageKey); } catch {}
+          setProofData({
+            proof_id: data.proof_id,
+            sender_wallet: data.sender_wallet ?? "",
+            comment: comment || "",
+          });
+          setScreen(6);
+          return;
+        }
+
+        setVerificationId(data.verification_id!);
+        setShowFailure(false);
+        setScreen(5);
+      } catch (err) {
+        debug.log("error", "submit_network_error", { error: String(err), attempt: failureAttempt + 1 });
+        setFailureAttempt((a) => a + 1);
+        setFailureCheck("network");
+        setFailureDetail("Failed to reach the server. Check your connection.");
+        setShowFailure(true);
+      }
+    },
+    [path, token, workItemId, sessionId, comment, failureAttempt, storageKey, debug],
+  );
+
+  const handleVerified = useCallback(
+    (data: Record<string, unknown>, sUrl: string | null) => {
+      debug.log("proof_flow", "verified_success", { proof_id: data.proof_id, solscan: sUrl });
+      try { localStorage.removeItem(storageKey); } catch {}
+      setProofData(data);
+      setSolscanUrl(sUrl);
+      setScreen(6);
+    },
+    [storageKey, debug],
+  );
+
+  const handleTerminalFailed = useCallback(
+    (check: string, detail: string, attempt: number) => {
+      debug.log("error", "terminal_failed", { check, detail, attempt });
+      setFailureAttempt(attempt);
+      setFailureCheck(check);
+      setFailureDetail(detail);
+      setShowFailure(true);
+      setScreen(4);
+    },
+    [debug],
+  );
+
+  const handleTryAgain = useCallback(() => {
+    setVerificationId(null);
+    setShowFailure(false);
+    setScreen(4);
+  }, []);
+
+  // Back navigation
+  const handleBack = useCallback(() => {
+    if (screen === 1.5) setScreen(1);
+    else if (screen === 2) setScreen(path === "dev" ? 1.5 : 1);
+    else if (screen === 3) setScreen(2);
+    else if (screen === 4) setScreen(3);
+  }, [screen, path]);
+
+  // Screen number for progress bar
+  const isDev = path === "dev";
+  const totalSteps = isDev ? 7 : 6;
+  // Map screen numbers to progress step (dev path inserts 1.5 as step 2)
+  const progressStep = isDev
+    ? (screen === 1 ? 1 : screen === 1.5 ? 2 : screen === 2 ? 3 : screen === 3 ? 4 : screen === 4 ? 5 : screen === 5 ? 6 : 7)
+    : (screen === 1.5 ? 1 : screen as number);
+
+  return (
+    <>
+      {/* Progress bar — no step counter, just the bar */}
+      <div className="pm-progress-wrap">
+        <div className="pm-bar-track">
+          <div
+            className="pm-bar-fill"
+            style={{ width: `${(progressStep / totalSteps) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="pm-body">
+        {screen === 1 && (
+          <Screen1Path
+            path={path}
+            onPick={handlePathPick}
+            ticker={ticker}
+            handle={handle}
+          />
+        )}
+        {screen === 1.5 && path === "dev" && (
+          <Screen1DevCheck
+            ticker={ticker}
+            workItemId={workItemId}
+            onQualified={handleDevQualified}
+          />
+        )}
+        {screen === 2 && path && (
+          <Screen2Token path={path} token={token} onPick={handleTokenPick} />
+        )}
+        {screen === 3 && path && (
+          <Screen3Send path={path} token={token} />
+        )}
+        {screen === 4 && path && (
+          <Screen4Paste
+            comment={comment}
+            onCommentChange={setComment}
+            onSubmit={handleSubmit}
+            failureCheck={showFailure ? failureCheck : null}
+            failureDetail={showFailure ? failureDetail : null}
+            failureAttempt={failureAttempt}
+            onTryAgain={handleTryAgain}
+          />
+        )}
+        {screen === 5 && verificationId && (
+          <Screen5Terminal
+            verificationId={verificationId}
+            handle={handle}
+            onVerified={handleVerified}
+            onFailed={handleTerminalFailed}
+            debug={debug}
+          />
+        )}
+        {screen === 6 && proofData && (
+          <Screen6Receipt
+            proofData={proofData}
+            solscanUrl={solscanUrl}
+            ticker={ticker}
+            handle={handle}
+            path={path!}
+            token={token}
+            onClose={onClose}
+          />
+        )}
+      </div>
+
+      {/* Navigation bar for screens 1.5-4 */}
+      {(screen === 1.5 || screen === 2 || screen === 3 || screen === 4) && (
+        <div className="pm-cta-bar" style={{ display: "flex", justifyContent: "space-between" }}>
+          <button
+            type="button"
+            className="pm-cta-ghost"
+            onClick={handleBack}
+          >
+            &lt; BACK
+          </button>
+          {screen === 2 && (
+            <button type="button" className="pm-cta" onClick={handleContinueFromToken}>
+              &gt; CONTINUE
+            </button>
+          )}
+          {screen === 3 && (
+            <button type="button" className="pm-cta" onClick={handleContinueToSubmit}>
+              &gt; SUBMIT TRANSACTION RECEIPT
+            </button>
+          )}
+        </div>
+      )}
+    </>
+  );
+}

@@ -1,0 +1,17 @@
+{
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/subscription/cron",
+      "schedule": "5 0 * * *"
+    },
+    {
+      "path": "/api/affiliate/worker",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/proof/verify-tx/process",
+      "schedule": "* * * * *"
+    }
+  ]
+}

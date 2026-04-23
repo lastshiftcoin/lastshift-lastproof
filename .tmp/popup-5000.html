@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LASTPROOF — First 5,000 Popup v0.3</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-primary:#0a0b0f;
+    --bg-secondary:#12131a;
+    --bg-card:#161822;
+    --bg-card-hover:#1a1d2a;
+    --bg-input:#0e0f16;
+    --border:#1e2030;
+    --border-2:#2a2d42;
+    --text-primary:#e2e4ed;
+    --text-secondary:#8b8fa3;
+    --text-dim:#5a5e73;
+    --green:#00e676;
+    --green-dim:rgba(0,230,118,.12);
+    --green-glow:rgba(0,230,118,.25);
+    --orange:#ff9100;
+    --orange-dim:rgba(255,145,0,.12);
+    --accent:#ff9100;
+    --accent-glow:rgba(255,145,0,.15);
+    --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:Inter,-apple-system,system-ui,sans-serif;
+    --r-card:10px;
+    --r-btn:6px;
+    --r-pill:4px;
+    --r-sm:3px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg-primary);color:var(--text-primary);font-family:var(--sans);font-size:14px;line-height:1.5;min-height:100dvh}
+  a{color:inherit;text-decoration:none}
+
+  /* Same grid bg + radial glow as homepage */
+  body::before{
+    content:"";position:fixed;inset:0;
+    background-image:
+      linear-gradient(rgba(30,32,48,.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30,32,48,.3) 1px, transparent 1px);
+    background-size:60px 60px;
+    pointer-events:none;z-index:0;
+  }
+  body::after{
+    content:"";position:fixed;top:-200px;right:-200px;width:700px;height:700px;
+    background:radial-gradient(circle,var(--accent-glow) 0%,transparent 60%);
+    pointer-events:none;z-index:0;
+  }
+  .scanlines{position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.05) 2px,rgba(0,0,0,.05) 4px);pointer-events:none;z-index:9999}
+
+  .stage{position:relative;z-index:1;min-height:100dvh;padding:60px 20px;display:flex;align-items:center;justify-content:center}
+  .stage::before{content:"";position:fixed;inset:0;background:rgba(5,6,10,.82);backdrop-filter:blur(4px);z-index:2}
+
+  @keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,145,0,.35)}50%{box-shadow:0 0 0 10px rgba(255,145,0,0)}}
+  @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:.25}}
+
+  /* MODAL — matches how-cell gradient treatment */
+  .modal::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;z-index:1;border-radius:inherit}
+  .modal > *{position:relative;z-index:2}
+  .modal{
+    position:relative;z-index:3;width:100%;max-width:440px;
+    background:var(--bg-secondary);
+    border:1px solid var(--border);
+    border-radius:var(--r-card);
+    overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.02);
+    animation:popIn .35s ease;
+  }
+
+  /* Titlebar — same chrome as scan-grid-locked + terminal */
+  .titlebar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--border)}
+  .titlebar .left{display:flex;align-items:center;gap:8px}
+  .dots{display:flex;gap:5px}
+  .dots span{width:9px;height:9px;border-radius:50%}
+  .dots .r{background:#ff5f56}.dots .y{background:#ffbd2e}.dots .g{background:#27c93f}
+  .title{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-left:6px}
+  .title-right{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1.5px;display:flex;align-items:center;gap:6px}
+  .pulse{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px rgba(255,145,0,.6);animation:blink 1.2s infinite}
+
+  .close{position:absolute;top:10px;right:12px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-family:var(--mono);font-size:14px;cursor:pointer;z-index:5;border-radius:var(--r-sm);transition:all .15s}
+  .close:hover{color:var(--text-primary);background:rgba(255,255,255,.05)}
+
+  .body{padding:28px 28px 24px;text-align:center}
+
+  /* Eyebrow — matches affiliate landing */
+  .pain{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px}
+  .pain::before{content:">";color:var(--orange);margin-right:6px;opacity:.6}
+
+  h2.head{font-family:var(--sans);font-size:24px;font-weight:700;line-height:1.15;margin:0 0 22px;letter-spacing:-.3px;color:var(--text-primary)}
+  h2.head .accent{color:var(--accent)}
+
+  /* HERO number */
+  .hero-number{font-family:var(--mono);font-size:64px;font-weight:800;line-height:1;color:var(--accent);letter-spacing:-1px;text-shadow:0 0 22px rgba(255,145,0,.25);margin:0}
+  .hero-label{font-family:var(--mono);font-size:11px;color:var(--text-primary);letter-spacing:2px;text-transform:uppercase;margin:8px 0 20px}
+  .hero-label b{color:var(--accent)}
+
+  /* Bar track — matches homepage style */
+  .bar-track{width:100%;max-width:320px;height:5px;background:rgba(255,255,255,.04);border-radius:3px;overflow:hidden;margin:0 auto 22px;position:relative}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--accent) 0%,#ffb347 100%);border-radius:3px;box-shadow:0 0 10px rgba(255,145,0,.5);width:14.46%}
+
+  /* Price anchor — matches affiliate landing $0 card */
+  .price{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;margin-bottom:22px;padding:16px 18px;background:var(--bg-card);border:1px solid rgba(0,230,118,.45);border-radius:var(--r-btn);box-shadow:0 0 30px rgba(0,230,118,.06)}
+  .price .now{font-family:var(--mono);font-size:30px;font-weight:800;color:var(--green);letter-spacing:-.5px;text-shadow:0 0 14px var(--green-glow);line-height:1}
+  .price .was-note{font-family:var(--sans);font-size:12px;color:var(--text-secondary);margin-top:4px}
+
+  .loss{font-family:var(--sans);font-size:13px;color:var(--text-secondary);line-height:1.55;margin:0 0 16px;max-width:360px;margin-left:auto;margin-right:auto}
+  .loss b{color:var(--text-primary)}
+  .loss .accent{color:var(--accent);font-weight:600}
+
+  /* Preload comparison — head start framing */
+  .vs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 22px;font-family:var(--mono)}
+  .vs-cell{padding:12px 12px 11px;border-radius:var(--r-btn);border:1px solid var(--border);background:var(--bg-card);text-align:left}
+  .vs-cell.you{border-color:rgba(0,230,118,.3);background:linear-gradient(135deg,rgba(0,230,118,.05) 0%,var(--bg-card) 100%)}
+  .vs-cell .tag{font-size:9px;letter-spacing:1.5px;color:var(--text-dim);text-transform:uppercase;margin-bottom:6px}
+  .vs-cell.you .tag{color:var(--green)}
+  .vs-cell .stat{font-size:11px;color:var(--text-secondary);line-height:1.7}
+  .vs-cell .stat b{color:var(--text-primary);font-weight:600}
+  .vs-cell.you .stat b{color:var(--green)}
+  .vs-label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;text-align:center;margin:0 0 10px}
+  .vs-label .accent{color:var(--accent)}
+
+  /* CTA — matches wall-foot button exactly */
+  .cta{
+    display:block;width:100%;padding:15px 24px;
+    color:var(--orange);
+    background:var(--orange-dim);
+    border:1px solid var(--orange);
+    border-radius:var(--r-btn);
+    font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+    cursor:pointer;transition:all .15s;
+    animation:pulseGlow 2.2s infinite;
+  }
+  .cta:hover{background:var(--orange);color:#0a0b0f;box-shadow:0 0 24px var(--accent-glow);transform:translateY(-1px)}
+  .cta .sub{display:block;font-size:9px;font-weight:500;margin-top:5px;letter-spacing:1.5px;opacity:.85}
+
+  .no-thanks{display:inline-block;margin-top:12px;font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.5px;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:1px;transition:all .15s}.no-thanks:hover{color:var(--text-secondary)}
+  .fine{margin-top:14px;font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1px;text-transform:none}
+  .fine .warn{color:var(--text-dim)}
+</style>
+</head>
+<body>
+
+<div class="scanlines"></div>
+
+<div class="stage">
+  <div class="modal">
+    <div class="titlebar">
+      <div class="left">
+        <div class="dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <span class="title">lastproof — early access</span>
+      </div>
+      <div class="title-right"><span class="pulse"></span>CLOSING</div>
+    </div>
+
+    <div class="close" onclick="window.history.back()">&times;</div>
+
+    <div class="body">
+
+      <div class="pain">EARLY ACCESS — PROFILES ARE LIVE NOW</div>
+
+      <h2 class="head">Get verified<br><span class="accent">before everyone else.</span></h2>
+
+      <div class="hero-number" id="spots">4,277</div>
+      <div class="hero-label"><b>FREE SPOTS</b> LEFT OF 5,000</div>
+
+      <div class="bar-track"><div class="bar-fill" id="bar"></div></div>
+
+      <div class="price">
+        <span class="now">$0</span>
+        <span class="was-note">until 30 days after Grid launch &middot; then $10/mo</span>
+      </div>
+
+      <p class="loss">Build your rank <b>before</b> the Grid opens. When coin devs start hiring, you're already stacked.</p>
+
+      <button class="cta" onclick="location.href='#'">
+        &gt; BUILD YOUR PROFILE
+      </button>
+      <a class="no-thanks" href="#" onclick="this.closest('.stage').style.display='none';return false;">No, thanks</a>
+
+      <div class="fine">no credit card — no email — just your solana wallet</div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  let spots = 4277;
+  const spotsEl = document.getElementById('spots');
+  const bar = document.getElementById('bar');
+  function updateBar(){
+    const filled = ((5000 - spots)/5000)*100;
+    bar.style.width = filled.toFixed(2) + '%';
+    spotsEl.textContent = spots.toLocaleString();
+  }
+  updateBar();
+  function tick(){
+    if(spots > 4200){ spots -= 1; updateBar(); }
+    setTimeout(tick, 4000 + Math.random()*5000);
+  }
+  setTimeout(tick, 3000);
+</script>
+
+</body>
+</html>

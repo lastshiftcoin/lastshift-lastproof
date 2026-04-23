@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard FOMO Strip — Visual Preview</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700;800&display=swap');
+
+  :root {
+    --bg: #0a0b0f;
+    --bg-card: #161822;
+    --bg-input: #1a1c28;
+    --border: rgba(255,255,255,.06);
+    --border-2: rgba(255,255,255,.1);
+    --accent: #ff9100;
+    --orange: #ff9100;
+    --gold: #ffd700;
+    --purple: #a78bfa;
+    --green: #00e676;
+    --green-glow: rgba(0,230,118,.3);
+    --red: #ff5470;
+    --text-primary: rgba(255,255,255,.92);
+    --text-secondary: rgba(255,255,255,.55);
+    --text-dim: rgba(255,255,255,.3);
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+    --r-card: 10px;
+    --r-btn: 5px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    padding: 40px 20px;
+    min-height: 100vh;
+  }
+
+  .preview-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-left: 4px;
+  }
+
+  .preview-label span {
+    color: var(--accent);
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 48px 0;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  /* ─── EXISTING STATUS BAR (for context) ─── */
+  .status-bar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 22px;
+    background: linear-gradient(135deg, rgba(167,139,250,.04) 0%, rgba(255,215,0,.03) 100%), var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 22px;
+    overflow: hidden;
+  }
+  .status-bar::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, var(--gold), var(--purple));
+  }
+  .sb-left { display: flex; align-items: center; gap: 16px; }
+  .status-pill {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .status-pill.pending {
+    background: rgba(255,145,0,.1);
+    color: var(--accent);
+    border: 1px solid rgba(255,145,0,.25);
+  }
+  .sb-countdown {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-secondary);
+    letter-spacing: 1px;
+  }
+  .sb-countdown b { color: var(--text-primary); }
+  .btn-upgrade {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 22px;
+    color: #0a0b0f;
+    background: linear-gradient(135deg, var(--gold) 0%, #ffb84d 100%);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: 0 0 0 1px rgba(255,215,0,.4), 0 0 24px rgba(255,215,0,.25), 0 4px 14px rgba(0,0,0,.4);
+  }
+
+  /* ─── NEW: FOMO STRIP (below status bar) ─── */
+  .fomo-strip {
+    position: relative;
+    padding: 20px 22px;
+    background: linear-gradient(135deg, rgba(255,145,0,.04) 0%, rgba(255,84,112,.02) 100%), var(--bg-card);
+    border: 1px solid rgba(255,145,0,.2);
+    border-radius: 10px;
+    margin-bottom: 22px;
+    overflow: hidden;
+  }
+  .fomo-strip::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, var(--accent), var(--red));
+  }
+
+  .fomo-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .fomo-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .fomo-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px rgba(255,145,0,.6);
+    animation: blink 1.2s infinite;
+  }
+  @keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:.25} }
+
+  .fomo-price {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+  .fomo-price b {
+    color: var(--green);
+    font-size: 13px;
+    text-shadow: 0 0 10px var(--green-glow);
+  }
+
+  .fomo-counter-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .fomo-counter-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-secondary);
+    letter-spacing: 1.5px;
+  }
+  .fomo-counter-num {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  .fomo-counter-num span {
+    font-size: 18px;
+  }
+
+  .fomo-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,.04);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .fomo-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent) 0%, #ffb347 100%);
+    border-radius: 3px;
+    box-shadow: 0 0 8px rgba(255,145,0,.4);
+    transition: width 1s ease;
+  }
+
+  .fomo-foot {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-align: right;
+  }
+  .fomo-foot b {
+    color: var(--accent);
+  }
+
+  /* ─── SOLD OUT TRANSITION ─── */
+  .fomo-strip.sold-out {
+    border-color: rgba(255,84,112,.2);
+    background: linear-gradient(135deg, rgba(255,84,112,.04) 0%, rgba(255,84,112,.02) 100%), var(--bg-card);
+  }
+  .fomo-strip.sold-out::before {
+    background: var(--red);
+  }
+  .fomo-strip.sold-out .fomo-badge { color: var(--red); }
+  .fomo-strip.sold-out .fomo-dot { background: var(--red); box-shadow: 0 0 6px rgba(255,84,112,.6); }
+  .fomo-strip.sold-out .fomo-counter-num { color: var(--red); }
+  .fomo-strip.sold-out .fomo-bar-fill {
+    width: 100% !important;
+    background: linear-gradient(90deg, var(--red) 0%, #ff8a80 100%);
+    box-shadow: 0 0 8px rgba(255,84,112,.4);
+  }
+  .fomo-strip.sold-out .fomo-foot b { color: var(--red); }
+
+  .btn-upgrade.sold-out-btn {
+    background: linear-gradient(135deg, #ff5470, #ff8a80);
+    box-shadow: 0 0 0 1px rgba(255,84,112,.4), 0 0 24px rgba(255,84,112,.15), 0 4px 14px rgba(0,0,0,.4);
+    cursor: not-allowed;
+    opacity: .7;
+  }
+
+  /* ─── STATE 3: GONE (strip hidden, normal upgrade) ─── */
+  .btn-upgrade.normal {
+    background: linear-gradient(135deg, var(--gold) 0%, #ffb84d 100%);
+  }
+
+  .note {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  /* Animation for sold-out flash */
+  @keyframes soldOutFlash {
+    0% { opacity: 1; }
+    20% { opacity: .4; }
+    40% { opacity: 1; }
+    60% { opacity: .4; }
+    80% { opacity: 1; }
+    100% { opacity: 1; }
+  }
+  .flash { animation: soldOutFlash .8s ease; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ════════════════════════════════════════════════ -->
+  <!-- STATE 1: ACTIVE FOMO (normal 5000 counter running) -->
+  <!-- ════════════════════════════════════════════════ -->
+  <div class="preview-label">STATE 1 — <span>FOMO ACTIVE</span> (counter running, spots available)</div>
+
+  <div class="status-bar">
+    <div class="sb-left">
+      <div class="status-pill pending">
+        <span style="width:5px;height:5px;border-radius:50%;background:var(--accent)"></span>
+        PENDING
+      </div>
+      <div class="sb-countdown">EXPIRES · <b>--</b></div>
+    </div>
+    <button class="btn-upgrade">UPGRADE PROFILE</button>
+  </div>
+
+  <div class="fomo-strip">
+    <div class="fomo-top">
+      <div class="fomo-badge">
+        <span class="fomo-dot"></span>
+        EARLY ACCESS · FIRST 5,000 OPERATORS
+      </div>
+      <div class="fomo-price">UPGRADE NOW — <b>$0</b></div>
+    </div>
+    <div class="fomo-counter-row">
+      <span class="fomo-counter-label">FREE SPOTS REMAINING</span>
+      <span class="fomo-counter-num"><span>2,847</span> / 5,000</span>
+    </div>
+    <div class="fomo-bar">
+      <div class="fomo-bar-fill" style="width: 43%"></div>
+    </div>
+    <div class="fomo-foot">
+      <b>2,847</b> SPOTS LEFT BEFORE EARLY ACCESS CLOSES
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ════════════════════════════════════════════════ -->
+  <!-- STATE 1B: LOW STOCK (under 200, shuffling 30-80) -->
+  <!-- ════════════════════════════════════════════════ -->
+  <div class="preview-label">STATE 1B — <span>LOW STOCK</span> (counter shuffling 30-80, almost gone)</div>
+
+  <div class="status-bar">
+    <div class="sb-left">
+      <div class="status-pill pending">
+        <span style="width:5px;height:5px;border-radius:50%;background:var(--accent)"></span>
+        PENDING
+      </div>
+      <div class="sb-countdown">EXPIRES · <b>--</b></div>
+    </div>
+    <button class="btn-upgrade">UPGRADE PROFILE</button>
+  </div>
+
+  <div class="fomo-strip">
+    <div class="fomo-top">
+      <div class="fomo-badge">
+        <span class="fomo-dot"></span>
+        EARLY ACCESS · CLOSING SOON
+      </div>
+      <div class="fomo-price">UPGRADE NOW — <b>$0</b></div>
+    </div>
+    <div class="fomo-counter-row">
+      <span class="fomo-counter-label">FREE SPOTS REMAINING</span>
+      <span class="fomo-counter-num"><span>47</span> / 5,000</span>
+    </div>
+    <div class="fomo-bar">
+      <div class="fomo-bar-fill" style="width: 99.1%"></div>
+    </div>
+    <div class="fomo-foot">
+      <b>47</b> SPOTS LEFT BEFORE EARLY ACCESS CLOSES
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ════════════════════════════════════════════════ -->
+  <!-- STATE 2: SOLD OUT (caught mid-click, 15-20s before refresh) -->
+  <!-- ════════════════════════════════════════════════ -->
+  <div class="preview-label">STATE 2 — <span>SOLD OUT</span> (user caught mid-click · button disabled · auto-refresh in 15-20s)</div>
+
+  <div class="status-bar">
+    <div class="sb-left">
+      <div class="status-pill pending">
+        <span style="width:5px;height:5px;border-radius:50%;background:var(--accent)"></span>
+        PENDING
+      </div>
+      <div class="sb-countdown">EXPIRES · <b>--</b></div>
+    </div>
+    <button class="btn-upgrade sold-out-btn">SOLD OUT</button>
+  </div>
+
+  <div class="fomo-strip sold-out">
+    <div class="fomo-top">
+      <div class="fomo-badge">
+        <span class="fomo-dot"></span>
+        EARLY ACCESS · CLOSED
+      </div>
+      <div class="fomo-price" style="color:var(--red)">ALL 5,000 SPOTS CLAIMED</div>
+    </div>
+    <div class="fomo-counter-row">
+      <span class="fomo-counter-label">FREE SPOTS REMAINING</span>
+      <span class="fomo-counter-num"><span>0</span> / 5,000</span>
+    </div>
+    <div class="fomo-bar">
+      <div class="fomo-bar-fill" style="width: 100%"></div>
+    </div>
+    <div class="fomo-foot">
+      <b>0</b> SPOTS LEFT — EARLY ACCESS HAS CLOSED
+    </div>
+  </div>
+
+  <div class="note">↑ page auto-refreshes in 15-20 seconds → state 3 below ↓</div>
+
+  <hr class="divider" />
+
+  <!-- ════════════════════════════════════════════════ -->
+  <!-- STATE 3: POST-FOMO (strip gone, normal paid upgrade) -->
+  <!-- ════════════════════════════════════════════════ -->
+  <div class="preview-label">STATE 3 — <span>POST-FOMO</span> (strip gone · standard paid upgrade experience)</div>
+
+  <div class="status-bar">
+    <div class="sb-left">
+      <div class="status-pill pending">
+        <span style="width:5px;height:5px;border-radius:50%;background:var(--accent)"></span>
+        PENDING
+      </div>
+      <div class="sb-countdown">EXPIRES · <b>--</b></div>
+    </div>
+    <button class="btn-upgrade normal">UPGRADE PROFILE · $10</button>
+  </div>
+
+  <div class="note">↑ no fomo strip — clean standard experience</div>
+
+  <hr class="divider" />
+
+  <!-- ════════════════════════════════════════════════ -->
+  <!-- LEGEND PROFILE FOOTER (public-facing, for reference) -->
+  <!-- ════════════════════════════════════════════════ -->
+  <div class="preview-label">REFERENCE — <span>LEGEND PROFILE FOOTER</span> (public profile, same counter logic)</div>
+
+  <div style="padding:28px 22px;background:var(--bg-card);border:1px solid rgba(167,139,250,.2);border-radius:10px;text-align:center">
+    <div class="fomo-badge" style="justify-content:center;margin-bottom:16px;color:var(--purple)">
+      <span class="fomo-dot" style="background:var(--purple);box-shadow:0 0 6px rgba(167,139,250,.6)"></span>
+      EARLY ACCESS · FIRST 5,000 OPERATORS
+    </div>
+
+    <div style="font-family:var(--sans);font-size:20px;font-weight:700;margin-bottom:16px">
+      Get verified <span style="color:var(--purple)">before everyone else.</span>
+    </div>
+
+    <div style="display:inline-flex;flex-direction:column;align-items:center;padding:14px 24px;background:var(--bg-input);border:1px solid rgba(0,230,118,.3);border-radius:8px;margin-bottom:16px">
+      <span style="font-family:var(--mono);font-size:26px;font-weight:800;color:var(--green);text-shadow:0 0 14px var(--green-glow)">$0</span>
+      <span style="font-family:var(--sans);font-size:11px;color:var(--text-secondary);margin-top:4px">until 30 days after Grid launch · then $10/mo</span>
+    </div>
+
+    <div style="max-width:360px;margin:0 auto 16px">
+      <div class="fomo-counter-row">
+        <span class="fomo-counter-label">OPERATORS CLAIMED</span>
+        <span class="fomo-counter-num"><span>2,847</span> / 5,000</span>
+      </div>
+      <div class="fomo-bar">
+        <div class="fomo-bar-fill" style="width: 43%"></div>
+      </div>
+      <div class="fomo-foot">
+        <b>2,847</b> SPOTS LEFT BEFORE EARLY ACCESS CLOSES
+      </div>
+    </div>
+
+    <div style="display:inline-block;padding:14px 32px;background:rgba(255,145,0,.08);border:1px solid var(--accent);border-radius:5px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.5px;color:var(--accent);cursor:pointer">
+      &gt; BUILD YOUR PROFILE
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
