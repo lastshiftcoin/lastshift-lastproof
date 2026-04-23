@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.11.2",
+  "latest_version": "0.11.3",
   "entries": [
+    {
+      "version": "0.11.3",
+      "date": "2026-04-23",
+      "category": "improved",
+      "headline": "Connecting a new wallet to /manage now makes the next step obvious",
+      "copy": "If you connect a wallet that doesn't have a Terminal ID yet, the screen now leads with a clear CREATE TERMINAL ID action and a button to launch the Terminal (free, under a minute). If you've already been to the Terminal and have your ID, a separate BACK FROM THE TERMINAL? block is right there to paste it into — no more hunting. The failure lines also turned red so you immediately see what's missing, and the boot-line colors are consistent across every screen (green for success, orange for in-progress, red for failure).",
+      "source_commits": []
+    },
     {
       "version": "0.11.2",
       "date": "2026-04-23",
