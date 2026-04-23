@@ -103,87 +103,128 @@ layer, just the adapter.
 
 ---
 
-## Session protocol — multi-session / multi-machine coordination
+## Session protocol — multi-session coordination
 
-This repo is edited from multiple Claude sessions, sometimes across different
-machines (e.g. a MacBook Air + an iMac sharing files over iCloud). The
-`WORKLOG.md` file at the repo root is the authoritative hand-off log so
-sessions don't overwrite each other's context.
+This repo lives on an external APFS Encrypted drive mounted at
+`/Volumes/LASTSHIFT/`. The drive physically moves between two Macs (a
+MacBook Air for mobile work, a Mac mini at home). **Only one machine
+has the drive at a time.** There is no iCloud syncing of repo files —
+the drive is the single local source of truth, and GitHub is the
+authoritative remote.
+
+Multiple Claude sessions can run concurrently on whichever machine
+currently has the drive (typical roles: `coordinator`, `backend`,
+`frontend`, `fullstack`, plus ad-hoc task-specific sessions).
+Coordination between those concurrent same-machine sessions happens
+through git (`pull --rebase` before every push) and through
+`WORKLOG.md`, the perpetual append-only session log at the repo root.
 
 **At session start — before any substantive work:**
-1. Read `WORKLOG.md` top-to-bottom to at least the last 3 entries. "Open /
-   next" and "Gotchas for next session" from the previous entry are
-   non-negotiable context.
-2. Run `git log --oneline -20` to see what shipped recently — commit
-   messages are the ground truth for *what changed*; WORKLOG.md is the
-   ground truth for *why and what's still in flight*.
-3. Run `git status` to confirm the working tree is clean. If it isn't,
-   figure out which prior session left work uncommitted **before** starting
-   your own. iCloud syncs files across machines; git does not.
 
-**At the end of every substantive work block — before responding "done"
-to the user on a task that shipped code, ran migrations, changed
-architecture, or resolved an open item from a prior entry:**
-4. Append a new entry at the **top** of `WORKLOG.md` using the template at
-   the bottom of that file.
-5. Capture device + platform + model automatically — don't ask the user
-   for what the environment can tell you:
+1. cd to the repo on the drive:
+   ```
+   cd /Volumes/LASTSHIFT/lastproof-build
+   ```
+   If the path doesn't resolve, the drive isn't mounted. Plug it in,
+   confirm `/Volumes/LASTSHIFT/` is accessible, then cd in.
+
+2. Pull the latest main. Your in-memory context is likely stale.
+   ```
+   git fetch origin main
+   git pull origin main
+   ```
+   If pull fails with `fatal:`, missing objects, or unexplained errors,
+   STOP — see § **Broken git state — stop, don't improvise** below.
+
+3. Read the top 3 entries of `WORKLOG.md`. "Open / next" and "Gotchas
+   for next session" from the most recent entry are non-negotiable
+   context.
+
+4. Read `CLAUDE.md § Session protocol` (this section, including the
+   two sub-sections below) AND `CLAUDE.md § Updates feed — commit
+   convention`. Both govern how you commit, log, and coordinate.
+
+5. Run:
+   ```
+   git log --oneline -20
+   git status
+   git remote -v
+   cat VERSION
+   ```
+   If `git status` shows uncommitted changes you did not make this
+   session, STOP. Run `git diff HEAD -- <each file>` and report the
+   direction of drift before touching anything — another session on
+   this same machine may have left work in progress.
+
+**At the end of every substantive work block — before responding
+"done" to the user on a task that shipped code, ran migrations,
+changed architecture, or resolved an open item from a prior entry:**
+
+6. Append a new entry at the **top** of `WORKLOG.md` using the template
+   at the bottom of that file.
+
+7. Capture device + platform + model automatically — don't ask the
+   user for what the environment can tell you:
    - Device: `scutil --get ComputerName` + `hostname` + `sw_vers -productVersion`
-   - Platform: `$CLAUDE_CODE_ENTRYPOINT` (`claude-desktop` → Claude Desktop,
-     `claude-cli` → terminal CLI, `cowork` → Cowork) and `$__CFBundleIdentifier`
-     as a tiebreaker
+   - Platform: `$CLAUDE_CODE_ENTRYPOINT` (`claude-desktop`, `claude-cli`,
+     `cowork`); `$__CFBundleIdentifier` as a tiebreaker
    - Model: `$DEFAULT_LLM_MODEL`
    - Timestamp: `date "+%Y-%m-%d %H:%M %Z"`
-6. If the change impacts Terminal (e.g. you changed how you call Terminal's
-   `/api/license/validate`, changed the TID handshake, changed a shared
-   secret) note it on the `**Impacts:**` line so the next Terminal session
-   sees the pointer.
-7. If you changed architecture (new subsystem, new table, new contract
-   between services), **also update the relevant section of this file**.
-   CLAUDE.md always reflects current truth. WORKLOG.md always reflects
-   history. If they disagree later, CLAUDE.md wins — update it to match
-   reality and leave a pointer in the newest WORKLOG entry.
-8. Commit and push before signing off. Never leave uncommitted changes on
-   disk — iCloud will sync them to other machines but git won't, creating
-   exactly the divergence this protocol prevents.
-9. If any commit in your work block changes user-visible behavior
-   (dashboard, public profile, proof flow, payment flow, onboarding,
-   copy, pricing, notifications users receive), follow **§ Updates feed
-   — commit convention** below. That section governs commit subject
-   prefix, `VERSION` bump, and `data/updates.json` entry. Non-user-facing
-   work (protocol, WORKLOG, observability, internal refactors) is exempt.
 
-The sibling log lives at `lastshiftcoin/lastshift-terminal` → `WORKLOG.md`.
-When a Terminal change impacts this repo, the other session records it on
-its `**Impacts:**` line; read their entry before touching related code.
+8. If the change impacts Terminal (e.g. you changed how you call
+   Terminal's `/api/license/validate`, changed the TID handshake,
+   changed a shared secret), note it on the `**Impacts:**` line so the
+   next Terminal session sees the pointer. The sibling log lives at
+   `lastshiftcoin/lastshift-terminal` → `WORKLOG.md`.
+
+9. If you changed architecture (new subsystem, new table, new contract
+   between services), **also update the relevant section of this
+   file**. CLAUDE.md always reflects current truth. WORKLOG.md always
+   reflects history. If they disagree later, CLAUDE.md wins — update
+   it to match reality and leave a pointer in the newest WORKLOG entry.
+
+10. If any commit in your work block changes user-visible behavior
+    (dashboard, public profile, proof flow, payment flow, onboarding,
+    copy, pricing, notifications users receive, new pages, new
+    routes), follow **§ Updates feed — commit convention** below.
+    That section governs commit subject prefix, `VERSION` bump, and
+    `data/updates.json` entry. Non-user-facing work (protocol, WORKLOG,
+    observability, internal refactors) is exempt.
+
+11. Before `git push`, always:
+    ```
+    git pull --rebase origin main
+    ```
+    Other sessions on this same machine may have pushed while you were
+    working. If rebase hits conflicts, STOP and ask the user — don't
+    auto-resolve.
+
+12. Push before signing off. Never leave uncommitted work in the
+    drive's working tree when you close the session.
 
 **Never edit an older WORKLOG entry** except to mark an "Open" item as
 resolved with a `→ resolved YYYY-MM-DD in <newer entry title>` pointer.
 Append-only.
 
-**iCloud sync conflicts:** if `git status` shows
-`WORKLOG.md (conflicted copy …)`, merge both sets of entries in timestamp
-order and commit — never discard either side. Git is the source of truth
-for this repo; iCloud is incidental filesystem sync.
-
-**If the WORKLOG entry would be effectively empty** (you only read files,
-answered a question, nothing shipped or changed state), do not write an
-entry. Only log work that another session needs to know about.
+**If the WORKLOG entry would be effectively empty** (you only read
+files, answered a question, nothing shipped or changed state), do not
+write an entry. Only log work that another session needs to know
+about.
 
 ### Broken git state — stop, don't improvise
 
-If git itself is in a degraded state — `fatal:` on basic commands, a ref
-pointing at a missing object, staged changes you did not make, `.git/index N`
-iCloud duplicate files, or unexplained dangling commits — **stop and
-report before any recovery attempt**. The "never blind-commit" rule
-extends into the `.git/` directory itself.
+If git itself is in a degraded state — `fatal:` on basic commands, a
+ref pointing at a missing object, staged changes you did not make, or
+unexplained dangling commits — **stop and report before any recovery
+attempt**. The "never blind-commit" rule extends into the `.git/`
+directory itself.
 
 Minimum safe diagnostic pass before proposing any fix:
 
 ```
 git fsck --full 2>&1
 ls -la .git/objects/pack/
-ls .git/ | grep -E "^(index|HEAD|FETCH_HEAD|ORIG_HEAD)"
+git log origin/main..HEAD     # any unpushed local commits?
 ```
 
 Report the output verbatim, then propose a fix path (fetch + reset,
@@ -193,21 +234,23 @@ without inspecting dangling-commit content first — a dangling commit
 may be unpushed work from a prior session, and hard-resetting will
 destroy it silently.
 
-The first time this protocol handled a corrupt local repo (mac mini,
-2026-04-20, commit object for `d04e9e9` lost mid-iCloud-sync), the
-session correctly halted, ran diagnostics, identified that the
-"dangling commit" was a week-old abandoned stash with no rescue value,
-and only then executed the fix. That's the pattern.
+When the drive is the canonical working copy and GitHub holds the
+authoritative remote, the safest recovery for irrecoverable local
+state is almost always: rename the broken repo aside
+(`mv lastproof-build lastproof-build.broken`), `git clone` fresh from
+origin into a new directory, and only then reconcile uncommitted work
+by diffing the broken copy against the fresh one. The drive has plenty
+of space; a throwaway copy is cheap insurance.
 
 ### Task-specific sessions
 
 Sessions tied to a specific in-flight task (content writing, docs,
-feature work, debugging threads) follow the same protocol as the
-named specialist roles. A few adaptations:
+feature work, debugging threads) follow the same protocol as the named
+specialist roles. A few adaptations:
 
 - **Self-declare a role descriptor** that reflects the session's
-  current scope — e.g. `help-page`, `blog`, `payment-debug`,
-  `onboarding-copy`. Stamp it on every WORKLOG entry:
+  current scope — e.g. `help-page`, `status-page`, `blog`,
+  `payment-debug`, `onboarding-copy`. Stamp it on every WORKLOG entry:
   `**Role:** help-page`.
 - **Don't collide with the four persistent roles**: `coordinator`,
   `backend`, `frontend`, `fullstack`. Anything else is fair game.
@@ -217,39 +260,8 @@ named specialist roles. A few adaptations:
 - **First-time onboarding of a task session** uses the same prompt
   shape as a specialist session but asks the session to declare its
   own role and one-sentence-summarize its in-flight task before
-  continuing. Protocol onboarding is idempotent and won't disrupt
-  the task work.
-
-This convention was codified on 2026-04-20 after the help-page
-session (author of `wireframes/how-it-works-CONTENT.md`) onboarded
-cleanly without needing to fit into one of the four specialist
-buckets.
-
-### iCloud duplicates: hunt both files AND directories
-
-iCloud creates conflict copies in two shapes, and one find pattern
-catches only one of them:
-
-- **Files** → `foo 2.ts`, `README 2.md` — caught by `-name '* 2.*'`
-- **Directories** → `some-route 2/`, `components 2/` — caught by
-  `-name '* 2*'` (no dot)
-
-Hunt with both:
-
-```
-find . -path ./node_modules -prune -o -path ./.next -prune \
-     -o -name '* 2*' -print 2>/dev/null   # catches dirs + files
-find . -path ./node_modules -prune -o -path ./.next -prune \
-     -o -name '* 3*' -print 2>/dev/null   # 3rd-generation conflicts
-```
-
-For every duplicate found, diff against its canonical counterpart
-before deletion. 99% of the time they're byte-identical iCloud garbage.
-When they differ, the " 2" copy is usually a stale pre-refactor snapshot
-(same mechanism as the 2026-04-20 drift triage) — but occasionally it
-holds unique work that iCloud couldn't merge. Inspect. Then delete the
-stale side and preserve the canonical. **Never blanket-rm without the
-diff pass.**
+  continuing. Protocol onboarding is idempotent and won't disrupt the
+  task work.
 
 ---
 
