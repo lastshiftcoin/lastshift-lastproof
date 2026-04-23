@@ -20,6 +20,135 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-23 11:38 MST — /manage NO TERMINAL ID screen — unified redesign + boot-line consistency
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`, `com.anthropic.claudefordesktop`)
+**Model:** claude-opus-4-6
+**Role:** frontend
+**Commits:** `6db1a44` (redesign + VERSION + updates entry), plus this WORKLOG entry
+**Migrations run in prod Supabase:** none
+**Impacts:** none — pure frontend UI restructure, same `/api/auth/wallet-gate` + `/api/auth/register-tid` contracts, zero API changes
+**Status:** ✅ shipped, clean
+
+### Did
+
+User flagged a recurring support pattern: operators connecting a new
+wallet to `/manage` landed on the `enter-tid` screen staring at a
+Terminal ID input field they didn't have a value for, with the
+"LAUNCH TERMINAL" link buried below as a fallback. Many DM'd support
+asking where to go.
+
+Root cause on investigation: the wireframe
+`wireframes/manage-profile-no-terminal.html` had the correct design
+(CREATE hero first, paste field second), and the code even had a
+dedicated `no-terminal` phase for that render path — but
+`setPhase("no-terminal")` was never called anywhere. The only
+not-registered path (line 251 in `ManageTerminal.tsx`) went to
+`enter-tid`, which rendered the paste-first UI. The wireframe-
+matching render block at line 602 was dead code.
+
+Folded both paths into a single unified `enter-tid` render and
+shipped the wireframe design. One screen, two equally-visible
+blocks, OR divider between them:
+
+1. **Block A — CREATE** (primary hero for first-time operators)
+   - `>> LASTPROOF v1.0 REQUIREMENT` eyebrow
+   - `CREATE TERMINAL ID // LASTSHIFT TERMINAL` headline
+   - Context: *"First-time operator? The Terminal issues your
+     Terminal ID. Free, takes under a minute."*
+   - Green `LAUNCH TERMINAL` button (external link)
+
+2. **OR divider** — flex + flanking `border-top` rules, mono
+   `OR` label in text-dim color. New `.mg-or-divider` CSS class
+   added to `manage.css`.
+
+3. **Block B — BACK FROM THE TERMINAL?** (returning users)
+   - Same paste-input + `AUTHENTICATE` flow as before, just
+     demoted from primary to equal-weight secondary
+   - Option-2 copy per user approval: *"Paste your Terminal ID to
+     finish authentication."*
+   - Same `/api/auth/register-tid` call — no API change
+
+Plus boot-line copy + color audit across ALL phases. Found 5
+inconsistencies where failure events rendered in grey (no class)
+or orange (accent) when they should have been red. Fixed all 5:
+
+| Line | Before | After |
+|---|---|---|
+| "Verifying terminal ID..." | accent | → "Scanning operator registry..." (still accent; more accurate) |
+| "Your Terminal ID has been reset" | grey | **red** (failure event) |
+| "New wallet detected [NO REGISTRY MATCH]" | accent | removed |
+| "Operator not found in local registry" | grey | replaced with "No terminal ID bound to wallet" (**red**) + "Authentication failed [ERR 404]" (**red**) |
+| "Authentication process booting..." | accent | removed (wireframe drops it) |
+| "Terminal ID required for access" | grey | "Operator credentials required" (**accent**) |
+
+Consistent color rule now applied across every `/manage` phase:
+- `green` = success ("verified", "granted", "connected", "registered")
+- `accent` = in-progress / prompts ("...ing", "required", "awaiting")
+- `red` = failure ("failed", "expired", "reset", "not found")
+- `grey` (no class) = ambient system info only (v1.0 header, subsystem
+  init lines in the initial BOOT_LINES array)
+
+Plus two small sysTag / bottomLabel renames for precision:
+- `enter-tid`: `AUTHENTICATE` → `NO TERMINAL ID` (tells the user
+  exactly what's missing — this was a root cause signal being lost)
+- `registering`: `AUTHENTICATE` → `AUTHENTICATING` (in-progress
+  form more accurate than bare verb during the API call)
+
+Removed dead no-terminal render block (lines 602–630 pre-commit).
+Phase value kept in the `Phase` type union for future-proofing; no
+code path sets it today.
+
+### Current state
+
+- VERSION at `0.11.3`, `data/updates.json` has 62 entries, latest
+  `0.11.3`
+- HEAD `6db1a44`, up to date with origin/main
+- Working tree clean (only 2 untracked files — `.vercel/` and the
+  iCloud-legacy `wireframes/help images/` still sitting around from
+  previous drift)
+- `ManageTerminal.tsx` diff: +70/-52, restructured enter-tid block
+  into two cleanly-separated render paths (tid-reset stays isolated
+  with its "your previous TID is no longer valid" messaging; new
+  wallet / registering / unused no-terminal all share the unified
+  CREATE + RETURNING screen)
+
+### Open / next
+
+- **Flow B (auto-auth return from Terminal)** was discussed as the
+  ideal long-term UX — Terminal redirects back to `/manage` with
+  TID in session cookie or URL param, `/manage` auto-submits to
+  register-tid, user never needs to paste. Requires cross-domain
+  session handoff between `lastshift.app` and `lastproof.app`.
+  Scoped out for this commit; multi-session backend project for
+  later.
+- **Dead `no-terminal` phase value** still in the `Phase` type
+  union. Harmless, but a future cleanup could remove it entirely
+  (and eliminate the `phase === "no-terminal"` branch in the
+  unified render). Not worth a commit on its own.
+
+### Gotchas for next session
+
+- **The unified screen has two input blocks co-existing.** Both
+  `tid-reset` and `enter-tid` render an `<input id="tid-input">`
+  but in mutually exclusive branches — never mounted
+  simultaneously, so no duplicate-id DOM warning. If you add a
+  third phase that also renders the same input, extract the
+  duplicated input into a shared sub-component or unique the IDs
+  per phase.
+- **`npm install` has not been run on this drive clone.** Type-
+  checking via `npx tsc --noEmit` fails because `typescript` isn't
+  installed. Vercel builds still deploy green (CI runs install).
+  If a future session wants local tsc, run `npm install` first —
+  be aware it pulls ~800MB.
+- **Boot-line color rule is now ONE rule, documented above.** If
+  anyone adds a new `addLine(...)` call, match the rule. Success
+  = green, in-progress/prompt = accent, failure = red, ambient =
+  no class.
+
+---
+
 ## 2026-04-23 10:35 MST — production credential storage: hardened posture
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
