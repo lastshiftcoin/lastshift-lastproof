@@ -673,6 +673,31 @@
   }
 }
 
+/* ─── NO TERMINAL ID — OR divider (splits CREATE hero from RETURNING paste block) ─── */
+
+.mg-or-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 360px;
+  margin: 28px auto;
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  color: var(--text-dim, #5a5e73);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.mg-or-divider::before,
+.mg-or-divider::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--border, #1e2030);
+}
+.mg-or-divider span {
+  flex-shrink: 0;
+}
+
 /* ─── TID Input Screen ───────────────────────────────────────────────────── */
 
 .mg-tid-hint {

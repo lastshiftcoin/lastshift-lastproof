@@ -178,7 +178,7 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
     await delay(400);
     addLine(`Wallet connected -- ${shorten(walletAddress)}`, "green");
     await delay(600);
-    addLine("Verifying terminal ID...", "accent");
+    addLine("Scanning operator registry...", "accent");
 
     try {
       // First, check if we have a session already (page reload case)
@@ -233,20 +233,18 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
         // Returning user whose TID was regenerated on Terminal
         addLine("Terminal ID expired [TID REGENERATED]", "red");
         await delay(400);
-        addLine("Your Terminal ID has been reset", "");
+        addLine("Your Terminal ID has been reset", "red");
         await delay(300);
         addLine("Re-authentication required", "accent");
         setWalletAddr(walletAddress);
         setPhase("tid-reset");
       } else if (body.reason === "no_terminal" || body.reason === "wallet_not_registered") {
         // New wallet — not in operators table
-        addLine("New wallet detected [NO REGISTRY MATCH]", "accent");
+        addLine("No terminal ID bound to wallet", "red");
         await delay(400);
-        addLine("Operator not found in local registry", "");
+        addLine("Authentication failed [ERR 404]", "red");
         await delay(300);
-        addLine("Authentication process booting...", "accent");
-        await delay(300);
-        addLine("Terminal ID required for access", "");
+        addLine("Operator credentials required", "accent");
         setWalletAddr(walletAddress);
         setPhase("enter-tid");
       } else {
@@ -361,10 +359,10 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
   }, [disconnect]);
 
   // ─── Derive titlebar / sys-bar labels ───────────────────────────────────────
-  const sysTag = phase === "no-terminal"
+  const sysTag = phase === "no-terminal" || phase === "enter-tid"
     ? "LASTPROOF // NO TERMINAL ID"
-    : phase === "enter-tid" || phase === "registering"
-      ? "LASTPROOF // AUTHENTICATE"
+    : phase === "registering"
+      ? "LASTPROOF // AUTHENTICATING"
       : phase === "tid-reset"
         ? "LASTPROOF // TID CHANGED"
         : phase === "granted"
@@ -374,10 +372,10 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
   const titlebarTitle = "boot -- lastproof -- 80x24";
   const titlebarRight = phase === "granted" ? "PID 1" : "PID 1";
 
-  const bottomLabel = phase === "no-terminal"
+  const bottomLabel = phase === "no-terminal" || phase === "enter-tid"
     ? "MANAGE PROFILE // NO TERMINAL ID"
-    : phase === "enter-tid" || phase === "registering"
-      ? "MANAGE PROFILE // AUTHENTICATE"
+    : phase === "registering"
+      ? "MANAGE PROFILE // AUTHENTICATING"
       : phase === "tid-reset"
         ? "MANAGE PROFILE // TID CHANGED"
         : phase === "granted"
@@ -521,8 +519,8 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
             </>
           )}
 
-          {/* ─── Enter TID state (new wallet) ─────────────────── */}
-          {(phase === "enter-tid" || phase === "tid-reset" || phase === "registering") && (
+          {/* ─── TID Reset (returning user, regenerated TID) ──── */}
+          {phase === "tid-reset" && (
             <>
               {postLines.length > 0 && (
                 <div style={{ marginBottom: 16, textAlign: "center" }}>
@@ -538,24 +536,18 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
 
               <div className="mg-reveal visible">
                 <div className="mg-reveal-label">
-                  {">>"} {phase === "tid-reset" ? "TERMINAL ID CHANGED" : "TERMINAL ID AUTHENTICATION"}
+                  {">>"} TERMINAL ID CHANGED
                 </div>
                 <div className="mg-reveal-text">
-                  {phase === "tid-reset" ? (
-                    <>YOUR TERMINAL ID WAS <span className="accent">RESET</span></>
-                  ) : (
-                    <>ENTER YOUR <span className="accent">TERMINAL ID</span></>
-                  )}
+                  YOUR TERMINAL ID WAS <span className="accent">RESET</span>
                 </div>
-                {phase === "tid-reset" && (
-                  <div className="mg-tid-hint">
-                    Your previous Terminal ID is no longer valid.<br />
-                    Enter your new Terminal ID to continue.
-                  </div>
-                )}
+                <div className="mg-tid-hint">
+                  Your previous Terminal ID is no longer valid.<br />
+                  Enter your new Terminal ID to continue.
+                </div>
                 <div className="mg-tid-input-wrap">
                   <label className="mg-tid-label" htmlFor="tid-input">
-                    {phase === "tid-reset" ? "New Terminal ID" : "Terminal ID"}
+                    New Terminal ID
                   </label>
                   <input
                     id="tid-input"
@@ -565,7 +557,6 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
                     value={tidInput}
                     onChange={(e) => { setTidInput(e.target.value.toUpperCase()); setTidError(""); }}
                     onKeyDown={(e) => { if (e.key === "Enter") handleRegisterTid(); }}
-                    disabled={phase === "registering"}
                     autoFocus
                   />
                   {tidError && <div className="mg-tid-error">{tidError}</div>}
@@ -574,32 +565,17 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
                   type="button"
                   className="mg-cta-btn"
                   onClick={handleRegisterTid}
-                  disabled={phase === "registering"}
                 >
-                  {phase === "registering"
-                    ? "AUTHENTICATING..."
-                    : phase === "tid-reset"
-                      ? "RE-AUTHENTICATE"
-                      : "AUTHENTICATE"}
+                  RE-AUTHENTICATE
                 </button>
-                <div className="mg-connect-sub" style={{ marginTop: 14, color: "#fff", textShadow: "0 0 8px rgba(255,255,255,0.4)" }}>
-                  Don&apos;t have a Terminal ID?
-                </div>
-                <a
-                  href="https://lastshift.app/connect"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mg-safe-link"
-                  style={{ marginTop: 6, color: "#fff", textShadow: "0 0 8px rgba(255,255,255,0.4)" }}
-                >
-                  LAUNCH TERMINAL
-                </a>
               </div>
             </>
           )}
 
-          {/* ─── No Terminal ID state ───────────────────────── */}
-          {phase === "no-terminal" && (
+          {/* ─── No Terminal ID state (new wallet + registering) ─
+              Unified screen: CREATE hero + OR divider + RETURNING paste block.
+              Matches wireframes/manage-profile-no-terminal.html intent. */}
+          {(phase === "enter-tid" || phase === "registering" || phase === "no-terminal") && (
             <>
               {postLines.length > 0 && (
                 <div style={{ marginBottom: 16, textAlign: "center" }}>
@@ -613,10 +589,17 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
 
               <div className="mg-divider visible" />
 
+              {/* Block A — CREATE: primary hero for first-time operators */}
               <div className="mg-reveal visible">
-                <div className="mg-reveal-label">{">>"} LASTPROOF v1.0 REQUIREMENT</div>
+                <div className="mg-reveal-label">
+                  {">>"} LASTPROOF v1.0 REQUIREMENT
+                </div>
                 <div className="mg-reveal-text">
                   CREATE TERMINAL ID // <span className="accent">LASTSHIFT TERMINAL</span>
+                </div>
+                <div className="mg-tid-hint">
+                  First-time operator? The Terminal issues your Terminal ID.<br />
+                  Free, takes under a minute.
                 </div>
                 <a
                   href="https://lastshift.app/connect"
@@ -627,8 +610,47 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
                   LAUNCH TERMINAL
                 </a>
               </div>
+
+              {/* OR divider — separates CREATE from RETURNING */}
+              <div className="mg-or-divider"><span>OR</span></div>
+
+              {/* Block B — RETURNING: paste TID for users who already created one */}
+              <div className="mg-reveal visible">
+                <div className="mg-reveal-label">
+                  {">>"} BACK FROM THE TERMINAL?
+                </div>
+                <div className="mg-tid-hint">
+                  Paste your Terminal ID to finish authentication.
+                </div>
+                <div className="mg-tid-input-wrap">
+                  <label className="mg-tid-label" htmlFor="tid-input">
+                    Terminal ID
+                  </label>
+                  <input
+                    id="tid-input"
+                    type="text"
+                    className={`mg-tid-input${tidError ? " error" : ""}`}
+                    placeholder="XXXX-XXXX-XXXX-XXXX-XXXX"
+                    value={tidInput}
+                    onChange={(e) => { setTidInput(e.target.value.toUpperCase()); setTidError(""); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleRegisterTid(); }}
+                    disabled={phase === "registering"}
+                  />
+                  {tidError && <div className="mg-tid-error">{tidError}</div>}
+                </div>
+                <button
+                  type="button"
+                  className="mg-cta-btn"
+                  onClick={handleRegisterTid}
+                  disabled={phase === "registering"}
+                >
+                  {phase === "registering" ? "AUTHENTICATING..." : "AUTHENTICATE"}
+                </button>
+              </div>
             </>
           )}
+
+
 
           {/* ─── Error state ────────────────────────────────── */}
           {phase === "error" && (
