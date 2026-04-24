@@ -1,14 +1,6 @@
 {
-  "latest_version": "0.11.6",
+  "latest_version": "0.11.5",
   "entries": [
-    {
-      "version": "0.11.6",
-      "date": "2026-04-24",
-      "category": "improved",
-      "headline": "Ambassador referrals now survive a switch to a different browser",
-      "copy": "When you land on an ambassador's profile or campaign link, your browser's address bar now shows the referral tag automatically. That means if you copy the URL and paste it into a different browser — for example, leaving Telegram's in-app view to finish signing up in Chrome or Safari — your ambassador still gets credit. No action needed. No new link to remember.",
-      "source_commits": []
-    },
     {
       "version": "0.11.5",
       "date": "2026-04-24",

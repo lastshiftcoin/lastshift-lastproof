@@ -116,45 +116,12 @@ export function proxy(request: NextRequest, event: NextFetchEvent) {
     return NextResponse.next();
   }
 
-  const existingRefInUrl = request.nextUrl.searchParams.get("ref");
-
-  // ─── URL reflection: 307-redirect to the canonical `?ref=<slug>` form ──
-  //
-  // When a user lands on an ambassador surface without the ref in the URL,
-  // we redirect to the same path with `?ref=<slug>` appended. The browser
-  // follows, and now the address bar shows the attributed URL for the
-  // rest of the user's session.
-  //
-  // This is the critical cross-browser bridge. When a user is stuck in
-  // an in-app browser (Telegram, X, Discord — where wallet-connect is
-  // blocked) and decides to copy the URL from the address bar to paste
-  // into Chrome/Safari, that copy now includes the ambassador ref. The
-  // cookie doesn't cross cookie jars, but the URL does.
-  //
-  // Runs regardless of UA detection — no dependency on recognizing the
-  // in-app browser. Cookie existence is a deterministic server check.
-  //
-  // Idempotent: second pass (with `?ref=` already in URL) short-circuits
-  // this branch and proceeds to cookie + observability.
-  //
-  // If the URL already has a `?ref=` (any value — possibly user-typed or
-  // from a prior share that propagated), we respect it. The URL param is
-  // the explicit attribution signal; don't overwrite. register_tid will
-  // validate the slug against the ambassadors table and reject invalid.
-  if (!existingRefInUrl) {
-    const redirectUrl = new URL(request.nextUrl);
-    redirectUrl.searchParams.set("ref", slug);
-    return NextResponse.redirect(redirectUrl, 307);
-  }
-
-  // ─── Past the redirect: URL now has `?ref=`. Continue normally. ───────
-
   const response = NextResponse.next();
 
   // First-touch wins. If the user already has `lp_ref` from any prior
   // surface (campaign or profile), we don't overwrite.
-  const existingCookie = request.cookies.get(COOKIE_NAME)?.value;
-  const didSet = !existingCookie;
+  const existing = request.cookies.get(COOKIE_NAME)?.value;
+  const didSet = !existing;
 
   if (didSet) {
     response.cookies.set(COOKIE_NAME, slug, {
@@ -166,7 +133,14 @@ export function proxy(request: NextRequest, event: NextFetchEvent) {
     });
   }
 
-  // ─── Observability ────────────────────────────────────────────────────
+  // ─── Observability — the earliest server-visible signal that a user
+  // hit an ambassador surface at all. Without this, we're flying blind
+  // on profile-page visits (no landing_visit equivalent) and we can't
+  // distinguish "user never visited" from "user visited but cookie was
+  // lost / blocked / cleared before register_tid ran."
+  //
+  // Fire-and-forget via event.waitUntil so the DB write doesn't block
+  // the response. Failures log to stderr but never reach the user.
   const surface: "campaign_page" | "profile_page" = pathname.startsWith("/@")
     ? "profile_page"
     : "campaign_page";
@@ -175,15 +149,13 @@ export function proxy(request: NextRequest, event: NextFetchEvent) {
     logReferralEvent({
       type: "proxy_touch",
       campaignSlug: slug,
-      source: existingCookie ? "cookie" : "url",
+      source: existing ? "cookie" : "url", // "cookie" = returning; "url" = first touch via this path
       outcome: didSet ? "stamped" : "already_stamped",
       metadata: {
         surface,
         path: pathname,
-        url_ref: existingRefInUrl,
-        url_ref_matches_slug: existingRefInUrl === slug,
-        already_had_cookie: !!existingCookie,
-        existing_cookie_value: existingCookie ?? null,
+        already_had_cookie: !!existing,
+        existing_cookie_value: existing ?? null,
         user_agent: request.headers.get("user-agent") ?? null,
         referer: request.headers.get("referer") ?? null,
         accept_language: request.headers.get("accept-language") ?? null,
