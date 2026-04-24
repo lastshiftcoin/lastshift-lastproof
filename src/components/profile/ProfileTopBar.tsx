@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useTickerPrice } from "@/hooks/useTickerPrice";
 
 const REPORT_ICON = (
@@ -25,7 +26,12 @@ export function ProfileTopBar({ handle }: Props) {
 
   return (
     <div className="pp-topbar">
-      <div className="pp-topbar-left">
+      <Link
+        href="/"
+        className="pp-topbar-left"
+        style={{ textDecoration: "none", color: "inherit" }}
+        aria-label="LASTPROOF home"
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/shiftbot-logo.png" alt="SHIFTBOT" className="pp-topbar-logo" />
         <div>
@@ -35,7 +41,7 @@ export function ProfileTopBar({ handle }: Props) {
           </div>
           <div className="pp-topbar-sub">VERIFIED OPERATORS</div>
         </div>
-      </div>
+      </Link>
 
       <div className="pp-topbar-ticker">
         <span className="pp-topbar-sym">$LASTSHFT</span>
