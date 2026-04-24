@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.11.6",
+  "latest_version": "0.11.7",
   "entries": [
+    {
+      "version": "0.11.7",
+      "date": "2026-04-24",
+      "category": "improved",
+      "headline": "Referral tag now stays on the /manage screen too",
+      "copy": "When you land on /manage after visiting an ambassador's page, your browser's address bar now carries the referral through — not just while you're on the ambassador's page. So even if you get stuck connecting your wallet in an in-app browser and copy the URL from /manage to paste into Chrome or Safari, the ambassador still gets credit.",
+      "source_commits": []
+    },
     {
       "version": "0.11.6",
       "date": "2026-04-24",
