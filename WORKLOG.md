@@ -20,6 +20,120 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-24 09:42 MST — Attribution observability: proxy_touch events on every ambassador-surface hit
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** backend
+**Commits:** this commit (see git log)
+**Migrations run in prod Supabase:** none — `referral_events.event_type`
+is `text not null` with no CHECK constraint (verified migration 0019),
+so adding a new enum value is a code-only change
+**Impacts:** none — observability-only, no contract change
+**Status:** ✅ shipped
+
+### Did
+
+- **Problem:** three recent referrals (`@yuan`, `@ibrahimyafuz`,
+  `@emremerht`) were ALL directed to habilamar's profile from her
+  private group chat. All three landed with zero attribution signal
+  (no `landing_visit`, `register_tid.source = "none"`). After today's
+  proxy-profile fix (`1e97206`), the cookie set path is verified live
+  (Set-Cookie confirmed via direct curl) — so the proxy IS setting
+  cookies correctly when a profile URL is hit. Something else is
+  swallowing the signal between user click and our server.
+- **Blind spot:** the proxy had no observability. We could see
+  `landing_visit` events only when a campaign-slug page actually
+  rendered as a Server Component, and NOTHING at all when someone
+  hit an ambassador profile. So for cases where the cookie didn't
+  make it to `register_tid`, we couldn't tell whether the user:
+  a. Never visited an ambassador surface (cold signup)
+  b. Visited but cookie was never set (bug in proxy?)
+  c. Visited, cookie set, then lost before signup (in-app browser,
+     private mode, cookie cleared, cross-device switch)
+- **Fix:** added `"proxy_touch"` event_type to `referral-events.ts`.
+  Instrumented `src/proxy.ts` to emit a `proxy_touch` event on every
+  matched-path request, fire-and-forget via `event.waitUntil()` so
+  it doesn't block response time. Captures:
+  - `surface` — `campaign_page` or `profile_page`
+  - `path` — full pathname
+  - `already_had_cookie` — bool, so we can distinguish first touch
+    from returning visitor
+  - `existing_cookie_value` — lets us see cross-ambassador visits
+    (first-touch-wins resolution traceable in data)
+  - `user_agent` — catches Telegram in-app, X in-app, incognito
+    signatures
+  - `referer` — catches "came from t.me", "came from x.com", etc.
+  - `accept-language` — byproduct but sometimes useful for locale
+- **Paired signal at signup:** combined with existing `register_tid`
+  events, we can now reconstruct every funnel exit:
+  - `proxy_touch` present + `register_tid.source = "cookie"` → works
+  - `proxy_touch` present + `register_tid.source = "none"` → cookie
+    was lost between proxy and signup (likely UA-specific — look at
+    the `user_agent` field on the proxy_touch row)
+  - No `proxy_touch` + `register_tid.source = "none"` → user truly
+    never visited an ambassador surface; cold signup
+- **Classified as observability, NOT user-facing.** Per CLAUDE.md
+  § Updates feed — commit convention, observability changes are
+  exempt: no VERSION bump, no `data/updates.json` entry, no
+  `[update: X]` prefix on the commit subject.
+
+### Current state
+
+- `referral_events` table now receives a `proxy_touch` row for every
+  request to any of the 12 matched paths in `src/proxy.ts` (6
+  campaign + 6 profile).
+- Event volume estimate: bounded by ambassador-surface traffic. Low
+  for now; scales with organic traffic. No rate-limit concern.
+- Schema unchanged — `event_type` is free-text, no migration needed.
+- Existing `landing_visit` instrumentation from `(landing)/[campaignSlug]/page.tsx`
+  is retained for backward compat. `proxy_touch` is the more
+  authoritative signal (fires even if the page fails to render).
+
+### Open / next
+
+- **First query to run** once the deploy lands + next referral
+  comes through:
+  ```
+  SELECT created_at, event_type, campaign_slug, metadata
+  FROM referral_events
+  WHERE event_type = 'proxy_touch'
+  ORDER BY created_at DESC
+  LIMIT 50;
+  ```
+  Look at the `user_agent` and `referer` columns on rows where we
+  later see an unattributed `register_tid` for the same wallet /
+  close timestamp. That'll tell us what specifically is eating the
+  cookie — Telegram in-app browser is my top suspect given the
+  private-group-chat context.
+- **@yuan, @ibrahimyafuz, @emremerht already backfilled** via dual
+  UPDATE on `operators` + `profiles`. Their events trail retains
+  the original null-attribution evidence as a baseline for
+  compare-against-future-diagnostics.
+- **If proxy_touch volume turns out to be noisy**, easy follow-up to
+  log only when `!existing` (first-touch only), skipping returning
+  visitors. Leaving full logging on for now since the diagnostic
+  value is high while we're chasing this pattern.
+
+### Gotchas for next session
+
+- **`proxy_touch` fires on EVERY matched-path request**, not just
+  first-touch. If you're counting unique visitors, use
+  `metadata->>'already_had_cookie' = 'false'` to filter.
+- **`event.waitUntil()` is fire-and-forget.** The DB write
+  continues after the response ships. If it fails, the request
+  already returned OK — the user sees a success, the log silently
+  drops. Failures land in Vercel's function logs as stderr from
+  `logReferralEvent`. Check there if rows seem missing.
+- **`user_agent` in metadata is unsanitized.** If you ever render it
+  in an admin UI, escape it — arbitrary header values.
+- **The proxy now requires the `NextFetchEvent` param.** If anyone
+  refactors the proxy signature down to `(request)` alone,
+  `event.waitUntil` breaks. Keep both params.
+
+---
+
 ## 2026-04-24 08:51 MST — Ambassador attribution: cookie also stamps on profile-page visits
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
