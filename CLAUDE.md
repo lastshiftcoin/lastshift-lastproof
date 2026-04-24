@@ -1,26 +1,47 @@
-# LASTPROOF — architectural source of truth
+# LASTPROOF — architectural anchor
 
-This file is the top-level architectural anchor for the LASTPROOF codebase.
-It exists to stop drift between the plan, the wireframes, and the code.
+This file describes the current architectural state of LASTPROOF. It is
+not itself canon.
 
-**Visual + functional canon lives in the wireframes** (`wireframes/*.html`).
-They were designed with the builder down to the last detail. When the plan,
-this doc, or any code disagrees with the wireframes, **the wireframes win**.
+**Production is canon.** The live site at lastproof.app, the live database
+schema in Supabase, and the code in `src/**` are the only binding sources
+of truth for what the product is. When anything else — wireframes, handoff
+docs, even this file — disagrees with production, production wins.
 
-For the full per-screen mapping (which wireframe → which route, with all
-the design-token and tier details spelled out) see:
+Source-of-truth hierarchy, in descending order of authority:
 
-  → `LASTPROOF-BUILDER-HANDOFF.md`
+1. **Production** — live URL, live DB schema, live API behavior, live code
+   in `src/**`. Binding.
+2. **Frontend session's judgment** on visual consistency — Frontend is the
+   gatekeeper that polishes new work before it ships. When Frontend edits a
+   wireframe, it's aligning TO production's visual vocabulary, not away
+   from it.
+3. **Wireframes** (`wireframes/*.html`) — starting-point baselines for new
+   surfaces. Useful for builders hitting a coherent first draft. They get
+   edited during implementation. Not a contract; production reflects final
+   reality.
+4. **Handoff + plan docs** (including this one) — point-in-time session
+   notes. They decay fast. Verify a claim in live code before citing a doc
+   as authority.
 
-That doc is the companion to this one. Read both.
+**When building something new:** wireframe (baseline) → edits during build
+→ Frontend polish pass → production. The wireframe is scaffolding, not a
+spec to defend against reality.
+
+**If code and a wireframe disagree:** code wins. The wireframe catches up,
+not the code.
+
+For the full per-screen mapping (which wireframe → which route, with
+design-token and tier details spelled out) see `LASTPROOF-BUILDER-HANDOFF.md`
+— same caveat applies: baseline reference, not canon.
 
 ---
 
-## Tier system (locked to wireframes)
+## Tier system (LOCKED)
 
 **Four tiers, pure proof count, no gates.** The old T5/T1–T4 split from
-the original plan file is **dead** — replaced by the wireframe-canonical
-system below.
+the original plan file is **dead** — replaced by the system below,
+implemented in `src/lib/tier.ts` (`computeTier()`).
 
 | Tier   | Name        | Proof threshold | Color  |
 |--------|-------------|-----------------|--------|
@@ -179,9 +200,12 @@ changed architecture, or resolved an open item from a prior entry:**
 
 9. If you changed architecture (new subsystem, new table, new contract
    between services), **also update the relevant section of this
-   file**. CLAUDE.md always reflects current truth. WORKLOG.md always
-   reflects history. If they disagree later, CLAUDE.md wins — update
-   it to match reality and leave a pointer in the newest WORKLOG entry.
+   file**. CLAUDE.md tracks current architectural state; WORKLOG.md
+   tracks history. If they disagree, CLAUDE.md is the more-current
+   description — update it to match what's actually in production
+   and leave a pointer in the newest WORKLOG entry. Neither document
+   outranks production itself — see the source-of-truth hierarchy at
+   the top of this file.
 
 10. If any commit in your work block changes user-visible behavior
     (dashboard, public profile, proof flow, payment flow, onboarding,
@@ -456,7 +480,7 @@ Not built today; flagged for a quiet session.
 
 ## Priorities
 
-Wireframes drive implementation order. Current priority (set by user,
+Current priority order for new-work implementation (set by user,
 2026-04-08):
 
 1. **Public profile** (`lastproof-profile-public.html`) — the artifact
@@ -479,6 +503,8 @@ unit. Atomic unit ships first.
 ---
 
 ## Stale docs to ignore
-- The top-level "Final Plan" markdown in `~/.claude/plans/` — superseded
-  by the wireframes for anything UI-related, and superseded by this
-  doc + `LASTPROOF-BUILDER-HANDOFF.md` for tier definitions.
+- The top-level "Final Plan" markdown in `~/.claude/plans/` — superseded by
+  production code and by this doc's architecture sections. See the
+  source-of-truth hierarchy at the top of this file: production is canon
+  for everything, baseline references (wireframes, `LASTPROOF-BUILDER-HANDOFF.md`)
+  point at production-aligned state.

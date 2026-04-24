@@ -20,6 +20,109 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-24 00:33 MST — CLAUDE.md reframing: production is canon, wireframes are baselines
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`, `com.anthropic.claudefordesktop`)
+**Model:** claude-opus-4-6
+**Role:** grid
+**Commits:** this commit
+**Migrations run in prod Supabase:** none
+**Impacts:** none — internal doc reframing only. No production behavior
+change. Applies retroactively to how every session reads canon going
+forward. Updates feed explicitly exempt per § Updates feed convention
+("CLAUDE.md / protocol edits" is in the not-applicable list).
+**Status:** ✅ shipped
+
+### Did
+
+During the grid session, Kellen corrected a source-of-truth mental model
+I'd been operating on. I'd been treating wireframes as canonical and
+inferring "backend must do X" requirements from handoff docs. Two specific
+misses surfaced:
+
+1. Claimed the Grid card had an `EA` badge because `ResultCard.tsx` on the
+   homepage renders one — the actual Frontend-polished Grid wireframe had
+   dropped it.
+2. Asserted an "EA auto-flip cron" was critical-path Phase 2 work based on
+   a handoff doc claim that EA profiles "auto-convert to FREE at 2026-06-07" —
+   never checked whether `src/app/api/subscription/cron/` already handled it.
+
+Kellen: *"wireframes are never never never true representation of what is
+in production"* and *"production wins, frontend controls the consistency...
+wireframes are intended to help with the baseline build, things get edits,
+frontend puts final touches visually."*
+
+CLAUDE.md's opening premise said the opposite: *"Visual + functional canon
+lives in the wireframes... the wireframes win."* That framing made sense
+when the repo was being built bottom-up FROM wireframes, but the product
+has matured past that point. Production is canon now. Frontend session
+owns visual polish. Wireframes are starting-point baselines for NEW surfaces.
+
+Rewrote the relevant sections of `CLAUDE.md` to reflect current policy:
+
+- **Opening premise (lines 1-36):** retitled from `architectural source of
+  truth` → `architectural anchor` (the doc isn't canon; production is).
+  Replaced the intro with a 4-level source-of-truth hierarchy: Production
+  → Frontend judgment → Wireframes (baselines only) → Handoff docs (decay
+  fast). Added explicit "if code and wireframe disagree, code wins" rule.
+- **Tier system header:** `## Tier system (locked to wireframes)` → `##
+  Tier system (LOCKED)`. Dropped the "replaced by the wireframe-canonical
+  system" phrasing. Tier is locked because it's in `src/lib/tier.ts`, not
+  because it's in a wireframe.
+- **Session protocol rule #9:** updated from *"CLAUDE.md always reflects
+  current truth"* → *"CLAUDE.md tracks current architectural state... neither
+  document outranks production itself."*
+- **Priorities section:** dropped *"Wireframes drive implementation order"*
+  → *"Current priority order for new-work implementation."*
+- **Stale docs section:** reworded to cite production code as the
+  superseding source, not wireframes.
+
+Also saved a `feedback` memory at
+`/Users/tallada2023/.claude/projects/-Volumes-LASTSHIFT/memory/feedback_wireframes_not_production.md`
+so future Claude sessions inherit the hierarchy without having to
+re-discover it cold. `MEMORY.md` index created alongside (first memory
+file for this project).
+
+### Current state
+
+- `CLAUDE.md` reflects the new hierarchy. Grep confirms no stale
+  *"wireframes win"* or *"wireframe-canonical"* fragments remain.
+- `LASTPROOF-BUILDER-HANDOFF.md` is NOT edited in this commit. It has its
+  own wireframe-first framing that's still valid as a per-surface design
+  reference, but it inherits the same *"baseline, not canon"* caveat now
+  that CLAUDE.md makes explicit. If a future session wants to do a
+  similar reframing pass on `LASTPROOF-BUILDER-HANDOFF.md`, the
+  justification is already documented here.
+- Memory files at `~/.claude/projects/-Volumes-LASTSHIFT/memory/` created
+  for the first time on this project.
+
+### Open / next
+
+- `LASTPROOF-BUILDER-HANDOFF.md` could use a similar reframing pass — its
+  opening still asserts wireframes are canon. Flagged, not done tonight.
+- Phase 2 architecture MD for the Grid still to be written. It will be
+  grounded in verified live code, not wireframe/handoff inference.
+
+### Gotchas for next session
+
+- **Production is canon.** Don't cite CLAUDE.md as truth. Don't cite
+  wireframes as truth. Don't cite handoff docs as truth. When in doubt,
+  read the code and the live site.
+- **Frontend session owns visual consistency.** When Frontend polishes a
+  wireframe before shipping, Frontend's version is the one aligned to
+  production — that's the correct direction.
+- **The "EA auto-flip cron" claim in the grid-planning entry below** was
+  inference, not verified fact. Before any Phase 2 work that depends on
+  EA expiry behavior: read `src/app/api/subscription/cron/` to confirm
+  what's already handled.
+- **Concurrent chad-wireframes session landed `e0f5d4e` during this
+  block.** Its WORKLOG entry at 23:55 MST sits directly below this one.
+  No conflict — they're orthogonal work (chad feature wireframes vs
+  CLAUDE.md canon reframing). Just noting for chronological context.
+
+---
+
 ## 2026-04-23 23:55 MST — Chad Function — six wireframes shipped (modal + public + dashboard + BUILDER handoff)
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
