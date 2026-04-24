@@ -49,9 +49,17 @@
 }
 
 * { box-sizing: border-box; }
+/* Canvas bg lives on HTML, not body. If body has a solid background,
+   it paints at z-index 0 and occludes any body::before/::after pseudos
+   that use z-index: -1 — which is exactly the bug that was hiding the
+   global grid backdrop + orange glow on every page. Moving the bg to
+   html leaves body transparent so the pseudos render between html's
+   bg and body's content. */
+html {
+  background: var(--bg-primary);
+}
 html, body {
   margin: 0; padding: 0;
-  background: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--sans);
   font-size: 14px;
@@ -60,12 +68,14 @@ html, body {
 }
 a { color: inherit; text-decoration: none; }
 
-/* Global backdrop: grid + top-right orange glow */
+/* Global backdrop: grid + top-right orange glow.
+   Bumped gridline alpha 0.3 → 0.5 for better visibility on content-
+   dense pages. Still subtle enough to read as a backdrop, not content. */
 body::before {
   content: ""; position: fixed; inset: 0;
   background-image:
-    linear-gradient(rgba(30, 32, 48, 0.3) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(30, 32, 48, 0.3) 1px, transparent 1px);
+    linear-gradient(rgba(30, 32, 48, 0.5) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 32, 48, 0.5) 1px, transparent 1px);
   background-size: 60px 60px;
   pointer-events: none; z-index: -1;
 }
