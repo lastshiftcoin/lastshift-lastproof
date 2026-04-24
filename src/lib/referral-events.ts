@@ -14,7 +14,8 @@
 import { supabaseService } from "@/lib/db/client";
 
 export type ReferralEventType =
-  | "landing_visit"
+  | "landing_visit"    // campaign-slug page (e.g. /free-before-grid) rendered a Server Component
+  | "proxy_touch"      // proxy.ts saw a request on ANY ambassador surface (campaign OR profile); earliest observable signal
   | "wallet_gate"
   | "register_tid"
   | "campaign_claim"

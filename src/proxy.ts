@@ -35,7 +35,8 @@
  */
 
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import type { NextRequest, NextFetchEvent } from "next/server";
+import { logReferralEvent } from "@/lib/referral-events";
 
 /**
  * Active ambassador campaign slugs. Must match
@@ -105,8 +106,9 @@ function resolveSlugForPath(pathname: string): string | null {
   return null;
 }
 
-export function proxy(request: NextRequest) {
-  const slug = resolveSlugForPath(request.nextUrl.pathname);
+export function proxy(request: NextRequest, event: NextFetchEvent) {
+  const pathname = request.nextUrl.pathname;
+  const slug = resolveSlugForPath(pathname);
 
   // Safety fall-through — matcher config limits which paths reach us,
   // but if it broadens and a non-attribution path slips in, do nothing.
@@ -119,17 +121,47 @@ export function proxy(request: NextRequest) {
   // First-touch wins. If the user already has `lp_ref` from any prior
   // surface (campaign or profile), we don't overwrite.
   const existing = request.cookies.get(COOKIE_NAME)?.value;
-  if (existing) {
-    return response;
+  const didSet = !existing;
+
+  if (didSet) {
+    response.cookies.set(COOKIE_NAME, slug, {
+      path: "/",
+      maxAge: COOKIE_TTL_SECONDS,
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
   }
 
-  response.cookies.set(COOKIE_NAME, slug, {
-    path: "/",
-    maxAge: COOKIE_TTL_SECONDS,
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-  });
+  // ─── Observability — the earliest server-visible signal that a user
+  // hit an ambassador surface at all. Without this, we're flying blind
+  // on profile-page visits (no landing_visit equivalent) and we can't
+  // distinguish "user never visited" from "user visited but cookie was
+  // lost / blocked / cleared before register_tid ran."
+  //
+  // Fire-and-forget via event.waitUntil so the DB write doesn't block
+  // the response. Failures log to stderr but never reach the user.
+  const surface: "campaign_page" | "profile_page" = pathname.startsWith("/@")
+    ? "profile_page"
+    : "campaign_page";
+
+  event.waitUntil(
+    logReferralEvent({
+      type: "proxy_touch",
+      campaignSlug: slug,
+      source: existing ? "cookie" : "url", // "cookie" = returning; "url" = first touch via this path
+      outcome: didSet ? "stamped" : "already_stamped",
+      metadata: {
+        surface,
+        path: pathname,
+        already_had_cookie: !!existing,
+        existing_cookie_value: existing ?? null,
+        user_agent: request.headers.get("user-agent") ?? null,
+        referer: request.headers.get("referer") ?? null,
+        accept_language: request.headers.get("accept-language") ?? null,
+      },
+    }),
+  );
 
   return response;
 }
