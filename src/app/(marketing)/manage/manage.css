@@ -647,6 +647,110 @@
   background: rgba(255, 145, 0, 0.06);
 }
 
+/* ─── Trust block header (icon + title) — from safety wireframe ─── */
+
+.mg-trust-block-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.mg-trust-block-header .mg-trust-block-title {
+  margin-bottom: 0;
+}
+
+.mg-trust-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--accent, #ff9100);
+  background: rgba(255, 145, 0, 0.08);
+  color: var(--accent, #ff9100);
+}
+
+.mg-trust-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.mg-trust-icon.accent {
+  border-color: var(--accent, #ff9100);
+  background: rgba(255, 145, 0, 0.08);
+  color: var(--accent, #ff9100);
+}
+
+.mg-trust-icon.green {
+  border-color: var(--green, #00e676);
+  background: rgba(0, 230, 118, 0.08);
+  color: var(--green, #00e676);
+}
+
+/* Access card SVG icons (replaced HTML entities) */
+.mg-access-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ─── Stack section (tech chips + divided links) ─── */
+
+.mg-stack-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 12px;
+}
+
+.mg-stack-chip {
+  font-family: var(--mono, 'JetBrains Mono', monospace);
+  font-size: 10px;
+  color: var(--text-dim, #5a5e73);
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border: 1px solid var(--border, #1e2030);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.mg-stack-links {
+  font-family: var(--sans, Inter, sans-serif);
+  font-size: 11px;
+  color: var(--text-dim, #5a5e73);
+  line-height: 1.6;
+  margin-top: 4px;
+}
+
+.mg-stack-links a {
+  color: var(--accent, #ff9100);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 145, 0, 0.2);
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.mg-stack-links a:hover {
+  border-bottom-color: var(--accent, #ff9100);
+}
+
+.mg-stack-sep {
+  color: var(--border-2, #2a2d42);
+  margin: 0 8px;
+}
+
+/* ─── Noise overlay (subtle film grain) — from safety wireframe ─── */
+
+.mg-noise {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 996;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
 /* ─── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 600px) {
