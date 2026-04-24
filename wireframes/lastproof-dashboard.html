@@ -223,6 +223,41 @@ textarea.field-input{font-family:var(--sans);font-size:13px;resize:vertical;min-
 .btn-mini.green:hover{color:#fff;border-color:var(--green);background:rgba(0,230,118,.18)}
 .btn-mini.ghost{color:var(--text-2);border-color:var(--border)}
 .btn-mini.ghost:hover{color:var(--text);border-color:var(--border-2)}
+.btn-mini.red{color:var(--red);border-color:rgba(255,84,112,.4);background:rgba(255,84,112,.04)}
+.btn-mini.red:hover{color:#fff;border-color:var(--red);background:rgba(255,84,112,.18)}
+
+/* ═══ CHAD MANAGEMENT STRIP (per COWORK-BRIEF #5, simplified v3) ═══
+   Sits between STATUS BAR and IDENTITY. Inherits .edit-card chrome
+   exactly so it reads as a peer of the rest of the dashboard sections
+   (solid card bg, same border, same shadow, no left-edge accent).
+   Title uses the dashboard's "// SECTION" pattern: `//` in orange,
+   section name in white. Always renders — counts can both be 0.
+
+   FREE / LOCKED variant (.locked): same chrome, title stays the same,
+   counts area is replaced with a "PREMIUM FEATURE ONLY" notice, and
+   the right-side button becomes "UPGRADE PROFILE" (links to /manage
+   or wherever the upgrade flow lives). */
+.chad-mgmt-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:18px 22px;margin-bottom:18px;position:relative;z-index:1;box-shadow:0 1px 0 rgba(255,255,255,.02) inset, 0 8px 32px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.chad-mgmt-left{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
+.chad-mgmt-title{font-family:var(--mono);font-size:11px;color:#fff;letter-spacing:2px;text-transform:uppercase;font-weight:700}
+.chad-mgmt-title .slash{color:var(--accent);margin-right:6px}
+.chad-mgmt-counts{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--text-secondary);letter-spacing:.8px;align-items:baseline}
+.chad-mgmt-counts .num{color:var(--text-primary);font-weight:800;font-size:13px}
+.chad-mgmt-counts .pending .num{color:var(--gold)}
+.chad-mgmt-counts .label{color:var(--text-dim);text-transform:uppercase;letter-spacing:1.2px;margin-right:6px}
+.chad-mgmt-btn{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:10px 18px;border:1px solid var(--accent);color:var(--accent);background:var(--orange-dim);border-radius:6px;cursor:pointer;text-decoration:none;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.chad-mgmt-btn:hover{background:var(--accent);color:#0a0b0f;box-shadow:0 0 18px var(--accent-glow)}
+/* FREE / LOCKED variant — visible but greyed, with upgrade CTA */
+.chad-mgmt-card.locked .chad-mgmt-title{color:var(--text-dim)}
+.chad-mgmt-card.locked .chad-mgmt-title .slash{color:var(--text-dim)}
+.chad-mgmt-locked-note{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:1.2px;text-transform:uppercase;font-weight:600}
+.chad-mgmt-locked-note::before{content:"⚠ ";color:var(--gold);font-size:12px;margin-right:2px}
+.chad-mgmt-btn.upgrade{color:#0a0b0f;background:var(--gold);border-color:var(--gold);animation:none}
+.chad-mgmt-btn.upgrade:hover{background:#fff;border-color:#fff;color:#0a0b0f;box-shadow:0 0 22px rgba(255,215,0,.4)}
+@media (max-width:780px){
+  .chad-mgmt-card{flex-direction:column;align-items:stretch}
+  .chad-mgmt-btn{text-align:center}
+}
 
 /* SHIFTBOT inline strip */
 .bot-strip{display:flex;align-items:center;gap:12px;margin-top:14px;padding:11px 14px;background:rgba(255,145,0,.04);border:1px solid rgba(255,145,0,.25);border-radius:6px}
@@ -681,6 +716,37 @@ textarea.field-input{font-family:var(--sans);font-size:13px;resize:vertical;min-
         </div>
       </div>
       <button class="btn-upgrade">Upgrade Profile</button>
+    </div>
+
+    <!-- ═══ CHAD MANAGEMENT (per COWORK-BRIEF #5, simplified v3) ═══
+         Two render variants — frontend swaps based on profile.tier:
+
+         PREMIUM (tier 1+): full state, counts visible, MANAGE button
+         FREE: same chrome, greyed title + "PREMIUM FEATURE ONLY"
+               notice + UPGRADE PROFILE button (gold, action-oriented)
+
+         All real state-handling lives at /dashboard/chads (wireframe #6).
+    -->
+    <!-- PREMIUM variant -->
+    <div class="chad-mgmt-card">
+      <div class="chad-mgmt-left">
+        <div class="chad-mgmt-title"><span class="slash">//</span>CHAD MANAGEMENT</div>
+        <div class="chad-mgmt-counts">
+          <span class="pending"><span class="label">Pending</span><span class="num">2</span></span>
+          <span><span class="label">Your Chad Army</span><span class="num">200</span></span>
+        </div>
+      </div>
+      <a href="/dashboard/chads" class="chad-mgmt-btn">MANAGE →</a>
+    </div>
+    <!-- FREE / LOCKED variant — frontend renders this instead when
+         profile.tier === 'free'. Hidden in this wireframe by default;
+         remove style="display:none" to preview. -->
+    <div class="chad-mgmt-card locked" style="display:none">
+      <div class="chad-mgmt-left">
+        <div class="chad-mgmt-title"><span class="slash">//</span>CHAD MANAGEMENT</div>
+        <div class="chad-mgmt-locked-note">PREMIUM FEATURE ONLY</div>
+      </div>
+      <a href="/manage" class="chad-mgmt-btn upgrade">UPGRADE PROFILE</a>
     </div>
 
     <!-- IDENTITY -->
