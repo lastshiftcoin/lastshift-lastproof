@@ -108,56 +108,6 @@ function resolveSlugForPath(pathname: string): string | null {
 
 export function proxy(request: NextRequest, event: NextFetchEvent) {
   const pathname = request.nextUrl.pathname;
-  const existingRefInUrl = request.nextUrl.searchParams.get("ref");
-
-  // ─── /manage: reflect lp_ref cookie into the URL ───────────────────────
-  //
-  // If the user arrived on /manage already carrying an ambassador cookie
-  // from a prior ambassador-surface visit (e.g. /@habilamar_ibn earlier
-  // in this session), redirect to /manage?ref=<cookie-value> so the
-  // address bar shows the attribution.
-  //
-  // Critical for the in-app-browser → external-browser flow: users get
-  // stuck on /manage because wallet-connect is blocked in-app, then copy
-  // the URL from the address bar to paste in Chrome/Safari. Without this
-  // reflection, the copied URL is just `/manage` with no ambassador
-  // context — attribution evaporates at the browser-jar boundary.
-  //
-  // Runs regardless of UA — we don't need to detect in-app browsers
-  // because cookie existence is a deterministic server-side check.
-  //
-  // Idempotent: if URL already has `?ref=`, skip. If no cookie, skip.
-  if (pathname === "/manage") {
-    if (existingRefInUrl) {
-      return NextResponse.next();
-    }
-    const cookieRef = request.cookies.get(COOKIE_NAME)?.value;
-    if (!cookieRef) {
-      return NextResponse.next();
-    }
-
-    const redirectUrl = new URL(request.nextUrl);
-    redirectUrl.searchParams.set("ref", cookieRef);
-
-    event.waitUntil(
-      logReferralEvent({
-        type: "proxy_touch",
-        campaignSlug: cookieRef,
-        source: "cookie",
-        outcome: "already_stamped",
-        metadata: {
-          surface: "manage_reflection",
-          path: pathname,
-          user_agent: request.headers.get("user-agent") ?? null,
-          referer: request.headers.get("referer") ?? null,
-        },
-      }),
-    );
-
-    return NextResponse.redirect(redirectUrl, 307);
-  }
-
-  // ─── Ambassador surfaces: campaign slug or profile handle ───────────
   const slug = resolveSlugForPath(pathname);
 
   // Safety fall-through — matcher config limits which paths reach us,
@@ -165,6 +115,8 @@ export function proxy(request: NextRequest, event: NextFetchEvent) {
   if (!slug) {
     return NextResponse.next();
   }
+
+  const existingRefInUrl = request.nextUrl.searchParams.get("ref");
 
   // ─── URL reflection: 307-redirect to the canonical `?ref=<slug>` form ──
   //
@@ -259,8 +211,5 @@ export const config = {
     "/@habilamar_ibn",
     "/@joe_babs",
     "/@theleader",
-
-    // /manage — cookie→URL reflection for cross-browser survival
-    "/manage",
   ],
 };
