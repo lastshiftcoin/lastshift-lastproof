@@ -112,7 +112,10 @@
   .badge-5k{position:absolute;right:-6px;bottom:-2px;display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:800;color:var(--gold);letter-spacing:.3px;width:46px;height:54px;background:transparent;z-index:2}
   .badge-5k svg{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 0 10px rgba(255,215,0,.6))}
   .badge-5k .num{position:relative;z-index:1;margin-top:-6px;text-shadow:0 0 6px rgba(255,215,0,.6)}
-  .status-pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--green);padding:4px 9px;border:1px solid var(--green);border-radius:var(--r-pill);background:var(--green-dim);text-transform:uppercase}
+  /* Status pill sized to match the adjacent + ADD CHAD pill — same
+     padding, same font-size, same border-radius — so the two pills
+     sit at identical heights in the handle row. */
+  .status-pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--green);padding:7px 11px;border:1px solid var(--green);border-radius:var(--r-pill);background:var(--green-dim);text-transform:uppercase;line-height:1}
   .status-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 2s infinite}
   @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:.4}}
   .tier-pill{display:inline-flex;align-items:center;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1.2px;padding:4px 9px;border-radius:var(--r-pill);text-transform:uppercase}
@@ -154,8 +157,41 @@
   .btn-hire{display:inline-flex;align-items:center;gap:9px;padding:13px 26px;background:var(--blue-dim);color:var(--blue);border:1px solid var(--blue);border-radius:var(--r-btn);font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .15s;animation:pulseBlue 2.4s infinite}
   .btn-hire:hover{background:var(--blue);color:#fff;box-shadow:0 0 24px var(--blue-glow);transform:translateY(-1px)}
   .btn-hire svg{width:15px;height:15px}
+  /* ADD CHAD — `+` pill sitting inline in .id-handle-row next to the
+     ACTIVE status pill (per Kellen 2026-04-23). Style EXACTLY matches
+     the SEE ARMY pill in the chad-army section — filled orange-tint
+     bg + orange border + orange glyph — so users see a visual thread
+     between "adding a chad" here and "viewing the army" below. */
+  .btn-add-chad{display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--orange);letter-spacing:.8px;padding:7px 11px;border:1px solid var(--orange);border-radius:var(--r-pill);background:var(--orange-dim);cursor:pointer;transition:all .15s;flex-shrink:0;line-height:1}
+  .btn-add-chad:hover{color:#fff;background:var(--orange)}
   @keyframes pulseBlue{0%,100%{box-shadow:0 0 0 0 rgba(64,158,255,.45)}50%{box-shadow:0 0 0 10px rgba(64,158,255,0)}}
   @keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,145,0,.35)}50%{box-shadow:0 0 0 10px rgba(255,145,0,0)}}
+
+  /* ═══ CHAD ARMY (per Kellen 2026-04-23) — sits between TRUST TIER
+     and the TABS nav. Wrapped in <section class="section"> so it matches
+     the spacing rhythm of every other section on the page (THE PITCH,
+     PROOF OF WORK, etc). The auto `// ` orange prefix comes from
+     .section-title::before — same as every other section header.
+     No card chrome; the avatars float on the page background. Avatars
+     distribute evenly across the row using justify-content:space-between
+     until they reach the SEE FULL ARMY button. Hide entire section when
+     count = 0. */
+  .chad-army-row{display:flex;align-items:center;gap:18px;margin-top:6px}
+  .chad-army-avatars{display:flex;align-items:center;justify-content:space-between;flex:1;min-width:0}
+  .chad-av{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:18px;font-weight:800;color:#0a0b0f;flex-shrink:0;overflow:hidden;border:1px solid rgba(255,255,255,.06);transition:all .18s;text-decoration:none}
+  .chad-av:hover{transform:translateY(-3px);box-shadow:0 0 16px rgba(255,145,0,.45);border-color:var(--accent);z-index:2}
+  .chad-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+  /* Avatar gradient palette — varies so the row reads as "different
+     people" rather than "uniform set" at a glance. */
+  .chad-av.g0{background:linear-gradient(135deg,#ff7c2f,#ffb347)}
+  .chad-av.g1{background:linear-gradient(135deg,#5e3a8a,#a78bfa)}
+  .chad-av.g2{background:linear-gradient(135deg,#1e6dd6,#6ab1ff)}
+  .chad-av.g3{background:linear-gradient(135deg,#0d8e58,#4ade80)}
+  .chad-av.g4{background:linear-gradient(135deg,#b91c1c,#fb7185)}
+  /* SEE ARMY — matches the "ALL 9" pill in the LINKS section (.lk-tab-pub.active):
+     same 10px mono, 7px/11px padding, pill radius, orange filled-tint treatment. */
+  .chad-see-full{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--orange);letter-spacing:.8px;text-transform:uppercase;padding:7px 11px;border:1px solid var(--orange);border-radius:var(--r-pill);background:var(--orange-dim);transition:all .15s;flex-shrink:0}
+  .chad-see-full:hover{color:#fff;background:var(--orange)}
 
   /* ═══ TAB BAR ═══ */
   .tabs{display:flex;align-items:center;gap:0;border-bottom:1px solid var(--border);margin-bottom:30px;overflow-x:auto;scrollbar-width:none}
@@ -182,6 +218,12 @@
 
   /* ═══ SECTION TITLES — // ORANGE PREFIX ═══ */
   .section{margin-bottom:38px}
+  /* CHAD ARMY section sits directly after TRUST TIER (no tabs/tab-panes
+     between them). Trust tier only contributes 18px bottom margin, so
+     without this the chad army header reads visually too close to the
+     gold tier bar. Add matching top breathing room so the gap reads
+     the same ~38px rhythm the other sections use. */
+  .trust-tier + .section{margin-top:28px}
   .section-title{font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:10px;margin:0 0 18px;padding-bottom:12px;border-bottom:1px solid var(--border)}
   .section-title::before{content:"//";color:var(--accent);font-weight:700;margin-right:2px}
   .section-title .count{color:var(--text-dim);font-weight:400;letter-spacing:1px;margin-left:auto}
@@ -355,6 +397,14 @@
     .pf-tx{text-align:left}
     .cta-strip{padding:28px 22px}
     .cta-headline{font-size:21px}
+    /* Chad army on mobile: keep 5×2 if room, else collapse to 4 wide
+       and let row 3 wrap. Avatar size shrinks slightly. */
+    .chad-army-row{flex-direction:column;align-items:stretch;gap:14px}
+    .chad-av{width:42px;height:42px;font-size:14px}
+    .chad-army-avatars{flex-wrap:wrap;justify-content:flex-start;gap:8px}
+    .chad-see-full{align-self:center}
+    .id-actions{flex-direction:row;justify-content:center;gap:8px}
+    .btn-hire{padding:11px 18px;font-size:10px}
   }
 </style>
 </head>
@@ -406,6 +456,10 @@
         <div class="id-handle-row">
           <div class="id-handle">@cryptomark</div>
           <span class="status-pill" data-tip="Profile status — active & in good standing"><span class="dot"></span>ACTIVE</span>
+          <!-- ADD CHAD — `+` pill styled same as SEE ARMY in the
+               chad-army section, so the visual thread is clear: tap +
+               here → they appear in the SEE ARMY list below. -->
+          <button class="btn-add-chad" data-chad-target="@cryptomark" data-tip="Add Chad">+</button>
         </div>
         <p class="id-pitch">Web3 growth strategist. 3 years in crypto marketing.</p>
         <div class="id-meta">
@@ -461,6 +515,31 @@
           <div class="tt-tick" style="left:50%"><span>25+ EXPERIENCED</span></div>
           <div class="tt-tick" style="left:100%"><span>50+ LEGEND</span></div>
         </div>
+      </div>
+    </section>
+
+    <!-- ═══ CHAD ARMY (per Kellen 2026-04-23) — sits between TRUST TIER
+         and TABS. Wrapped in <section class="section"> to match the
+         rest of the page rhythm. Title `// CHAD ARMY` is auto-prefixed
+         by .section-title::before. Avatars distribute evenly across the
+         row using justify-content:space-between. SEE FULL ARMY → button
+         on the right when total > 10. Hide entire section if count = 0. -->
+    <section class="section">
+      <h2 class="section-title">CHAD ARMY</h2>
+      <div class="chad-army-row">
+        <div class="chad-army-avatars">
+          <a href="/@benfu" class="chad-av g0" title="@benfu">B</a>
+          <a href="/@lyra" class="chad-av g1" title="@lyra">L</a>
+          <a href="/@0xpaul" class="chad-av g2" title="@0xpaul">0x</a>
+          <a href="/@dyl" class="chad-av g3" title="@dyl">D</a>
+          <a href="/@raidqueen" class="chad-av g4" title="@raidqueen">R</a>
+          <a href="/@maple" class="chad-av g0" title="@maple">M</a>
+          <a href="/@zee" class="chad-av g1" title="@zee">Z</a>
+          <a href="/@sol_kid" class="chad-av g2" title="@sol_kid">S</a>
+          <a href="/@kira" class="chad-av g3" title="@kira">K</a>
+          <a href="/@anon7" class="chad-av g4" title="@anon7">A</a>
+        </div>
+        <a href="/@cryptomark/chads" class="chad-see-full">SEE ARMY</a>
       </div>
     </section>
 

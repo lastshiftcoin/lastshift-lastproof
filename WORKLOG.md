@@ -20,6 +20,101 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-23 23:55 MST — Chad Function — six wireframes shipped (modal + public + dashboard + BUILDER handoff)
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Cowork (`cowork`, claude-desktop family)
+**Model:** claude-opus-4-6
+**Role:** chad-wireframes
+**Commits:** wireframes-only; no `[update:]` prefix, no VERSION bump, no `data/updates.json` entry (per CLAUDE.md § Updates feed — internal canon, not user-visible behavior)
+**Migrations run in prod Supabase:** none
+**Impacts:** none yet — pure visual canon for the Chad Function feature. Backend pass will need new endpoints (`/api/chads/eligibility`, `/request`, `/respond`, `/list`, `/remove`) + a `chads` table; sketched in the brief and builder handoff, not implemented.
+**Status:** ✅ shipped, all 6 wireframes validate clean, BUILDER-HANDOFF.md written
+
+### Did
+
+Took `docs/features/chad/COWORK-BRIEF.md` and produced the six
+wireframes for the Chad Function (friends). Iterated heavily with
+Kellen across the session — the shipped state below reflects the
+final set of refinements, not my first pass.
+
+| # | File | Type | Notes |
+|---|------|------|-------|
+| 1 | `wireframes/lastproof-profile-public.html` | modified | `+` ADD CHAD pill in hero handle-row (same style as SEE ARMY for visual correlation); CHAD ARMY section between TRUST TIER and TABS (moved up from below VERIFICATIONS); avatars-only row with `justify-content:space-between`, no names/handles/tier badges; SEE ARMY pill matches the `ALL 9` LINKS tab style |
+| 2 | `wireframes/lastproof-profile-free.html` | **UNCHANGED** | **No chad-related UI on free profiles.** Free operators don't participate in the chad graph at all — no button, no section, no disabled state. This file is byte-identical to production. |
+| 3 | `wireframes/lastproof-add-chad-modal.html` | new | 10-phase state machine; wireframe-only phase toggle at bottom; phase 5 (success) disconnects wallet before returning; phase 8 (free) uses PURPLE theme matching upgrade-modal; phase 9 (no profile) leads with "Create a LASTPROOF profile" — chad army demoted to secondary benefit; info-card bullet alignment bug fixed universally |
+| 4 | `wireframes/lastproof-chad-army.html` | new | Orange background + orange `@handle` title; no owner mini-card; no tier badges on tiles; "ACTIVE CHADS" not "CONNECTIONS"; infinite scroll (no LOAD MORE, no count footer, no spinner) |
+| 5a | `wireframes/lastproof-dashboard.html` | modified | `// CHAD MANAGEMENT` summary card between STATUS BAR and IDENTITY; inherits `.edit-card` chrome exactly (no left-edge accent); Pending count in gold, army count in white, MANAGE → pill |
+| 5b | `wireframes/lastproof-dashboard-fresh.html` | modified | Same card, 0/0 for a fresh paid user |
+| 5c | both dashboards | — | FREE/LOCKED variant added (same chrome, greyed title, "PREMIUM FEATURE ONLY" notice, gold UPGRADE PROFILE button) — frontend toggles on `profile.tier === 'free'` |
+| 6 | `wireframes/lastproof-dashboard-chads.html` | new | ONE combined grid (no pending/army section split); pending cards get YELLOW/GOLD outline; 2-line summary at top (Pending N / Your Chad Army N); REMOVE is INSTANT (no undo, no countdown — stripped entirely per Kellen); empty state has no CTA button, counts flip to (0)/(0) |
+
+All six pass HTML structural validation (no orphaned tags, no
+mismatched close tags).
+
+Plus `docs/features/chad/BUILDER-HANDOFF.md` — 510-line recap
+capturing the wireframe set for the frontend builder. Covers
+universal mechanics, per-wireframe decisions, API contract sketch,
+open questions for coordinator, and gotchas.
+
+### Design decisions called out by Kellen mid-session
+
+Worth noting so future sessions can apply the same thinking:
+
+- **`+` button on public profile = static for every viewer.** No
+  state-aware render on the profile itself; all branching in the modal.
+  Keeps the profile cacheable and wallet-agnostic.
+- **`+` pill inline with ACTIVE badge, matching SEE ARMY style.**
+  Intentional visual thread: tap `+` here → they appear in the SEE
+  ARMY row below. Same orange filled-tint pill chrome both places.
+- **REMOVE is instant, no undo.** The earlier wireframe had a 5-second
+  countdown ring with UNDO. Kellen killed it — instant hard-delete on
+  `/api/chads/remove`. User lives with the consequence.
+- **Modal phase 5 (success) disconnects the wallet.** The request is
+  signed and recorded; the connection should release. CTA reads
+  `> DISCONNECT & BACK TO PROFILE` and does both.
+- **Modal phase 8 (free) uses PURPLE, not gold.** Matches
+  `lastproof-upgrade-modal.html` so the upgrade flow is visually
+  cohesive wherever it surfaces.
+- **Modal phase 9 (no profile) leads with profile creation.** The
+  earlier copy leaned "chad up" — Kellen wanted the pitch inverted so
+  the primary message is "Create a LASTPROOF profile and get
+  discovered." Chad army is folded in as one of several premium benefits.
+- **URL format is `/@handle`.** Not `/profile/handle`. Used throughout.
+
+### Flagged for coordinator
+
+- Grid planning artifacts (`docs/GRID-*.md`, `wireframes/_drafts/`,
+  `BACKEND-GRID-HANDOFF.md`) were in the tree at session start. I did
+  NOT touch them — confirmed with Kellen up front. They got committed
+  by Kellen's grid session (`d7d2ebc`) during my session.
+- Three design questions deferred to coordinator review, documented
+  in `docs/features/chad/BUILDER-HANDOFF.md § Open questions`.
+
+### Gotchas for next session
+
+- **`.chad-mgmt-*` CSS block is duplicated verbatim** in
+  `lastproof-dashboard.html` and `lastproof-dashboard-fresh.html`
+  (~50 lines each). Frontend should extract to a shared
+  `ChadManagementStrip.tsx` component when porting so the two
+  dashboards stay in sync.
+- **The 10-phase Add Chad modal state machine is the API contract.**
+  Backend pass needs to map all ten to `/api/chads/eligibility`
+  responses. The wireframe-only phase toggle at the bottom of the
+  modal page lets reviewers (and future QA) cycle all ten.
+- **Chad graph wallet-keyed identity.** Every chad node = wallet pair,
+  not profile IDs. Lapses (free/unpublished) HIDE chads from public
+  armies on both sides; reactivation reappears. Backend: primary key
+  is wallet pair, not profile/operator pairs.
+- **Chad Function and Grid (2026-05-08 launch) are independent
+  tracks.** Chad graph does NOT feed Grid discovery, ranking, or
+  scoring. Don't let them entangle in the architecture pass.
+- **Infinite scroll is on both the public army page and the dashboard
+  chads page.** IntersectionObserver implementation must dedupe —
+  fast scrolls can fire before the previous fetch resolves.
+
+---
+
 ## 2026-04-23 23:29 MST — /grid planning block — briefs + folder scaffolding + Cowork wireframe draft
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
