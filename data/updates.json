@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.11.3",
+  "latest_version": "0.11.4",
   "entries": [
+    {
+      "version": "0.11.4",
+      "date": "2026-04-24",
+      "category": "fixed",
+      "headline": "Pasting your Terminal ID works again",
+      "copy": "If you tried to authenticate with your Terminal ID and saw a \"Non-JSON response (status 404)\" error on the AUTHENTICATE button, that's resolved. Paste and authenticate now completes normally. Sorry if you hit that one earlier today.",
+      "source_commits": []
+    },
     {
       "version": "0.11.3",
       "date": "2026-04-23",
