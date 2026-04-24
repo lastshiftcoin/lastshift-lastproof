@@ -20,6 +20,114 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-24 07:05 MST — /manage authenticate: fix 404 from literal `\n` in TERMINAL_API_URL
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** backend
+**Commits:** this commit (see git log)
+**Migrations run in prod Supabase:** none
+**Impacts:** none — value-only fix on an env var and internal env-read
+plumbing; no Terminal contract change, no API signature change
+**Status:** ✅ shipped, verified live
+
+### Did
+
+- **Diagnosed** a user-reported 404 on /manage after pasting a
+  Terminal ID. Screenshot showed `"Non-JSON response (status 404)"`
+  on the AUTHENTICATE button. Frontend had shipped the new unified
+  CREATE / RETURNING screen (`6db1a44`) yesterday, which made this
+  code path trivially reachable — users who would previously give
+  up at the input hurdle now get to AUTHENTICATE and hit the
+  latent bug.
+- **Root cause:** `TERMINAL_API_URL` in production had a trailing
+  literal `\n` (two characters: backslash + n, not a real newline).
+  When `src/lib/terminal-client.ts` did
+  `new URL(`${base}/api/license/validate`)`, Node's URL constructor
+  normalized the backslash into a `/` path separator, so the POST
+  landed at `/n/api/license/validate` — Vercel served an HTML 404
+  page — `res.json()` threw — we returned the generic
+  `"Non-JSON response (status 404)"`. Confirmed by reproducing in
+  a local `node -e`:
+  ```
+  new URL("https://lastshift.app" + "\\n" + "/api/license/validate")
+    → https://lastshift.app/n/api/license/validate
+  ```
+- **Fix 1 (immediate):** removed `TERMINAL_API_URL` from production
+  and re-added it with a clean value `https://lastshift.app`, still
+  `--sensitive`. Triggered a `vercel deploy --prod` to roll the new
+  value into running production. Verified the fix by POSTing the
+  exact request the user's flow makes — response is now a proper
+  JSON `{"ok":false,"reason":"wallet_tid_mismatch",...}` (expected,
+  since the test wallet doesn't own that TID). No more 404.
+- **Fix 2 (defensive):** created `src/lib/env.ts` with three tiny
+  helpers — `envClean`, `envRequired`, `envWithDefault`. Each
+  strips trailing literal `\n` (the exact pattern that's bitten
+  this project multiple times — see 2026-04-21 on
+  `NEXT_PUBLIC_TREASURY_WALLET` and today's `TOKEN_RATE_SOURCE`
+  observation in the dev .env) and calls `.trim()`. Applied to
+  `terminal-client.ts` (the failure site); all four env reads there
+  (`TERMINAL_API_URL`, `INTER_TOOL_API_SECRET`, `INTER_TOOL_KEY_ID`,
+  `TOOL_SLUG`) now route through the helper.
+- **Updates feed convention applied** (user-visible recovery:
+  authentication stopped working for any user who reached
+  AUTHENTICATE):
+  - `VERSION` 0.11.3 → 0.11.4 (patch, category=fixed)
+  - `data/updates.json` entry at top, `latest_version` bumped
+  - `[update: fixed]` prefix on the commit subject
+  - Copy is user-facing ("Sorry if you hit that one earlier today")
+    — deliberately vague on mechanism
+
+### Current state
+
+- `TERMINAL_API_URL` in production is clean, sensitive, and serving
+  correctly. Live verification: POST to `/api/auth/register-tid`
+  returns JSON, not 404 HTML.
+- `src/lib/env.ts` is the canonical entry point for new server-side
+  env reads going forward.
+- `src/lib/terminal-client.ts` is defensive against any future `\n`
+  corruption on its four env vars.
+
+### Open / next
+
+- **Other env vars may still have the same `\n` corruption.** Can't
+  audit directly — they're sensitive now, values aren't pullable
+  back. Top suspects based on pattern history:
+  `NEXT_PUBLIC_TREASURY_WALLET` (previously found with `\n`),
+  `SESSION_HMAC_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, the `HELIUS_*`
+  URLs. A defensive sweep migrating every server-side env read to
+  `envClean()` would neutralize this whole class. Est. 2–3 hours
+  for all call sites; flagging for a future backend session.
+- Redeploy triggered via `vercel deploy --prod`
+  (id `dpl_4pTkjCaJbJq1ZzopbsQUhQenFSMk`, aliased to lastproof.app).
+  User should retry their original flow; proper error messages or
+  success will now surface.
+
+### Gotchas for next session
+
+- **Literal `\n` (2 chars: backslash + lowercase n) is this
+  project's #1 latent env-var corruption class.** Happens when
+  values were set via `echo "$VALUE"` (which appends a real newline
+  that gets serialized as `\n` in the Vercel storage format)
+  instead of `printf '%s' "$VALUE"`. Every new env var added via
+  CLI should go through `printf '%s'`. Never `echo`.
+- **Node's `URL` constructor silently normalizes backslashes to
+  slashes in the path portion.** If you concat an env var into a
+  fetch URL and that var is corrupt, you don't get a parse error —
+  you get a perfectly valid URL pointing at the wrong path. The
+  only way you notice is a 404 on the wrong-path request.
+- **Sensitive env vars are write-only.** If you need to diagnose
+  the actual value of a sensitive var, you can't pull it. Options:
+  (a) add a debug endpoint that echoes first-N-chars with length
+  info, ship briefly, delete; (b) regenerate from the upstream
+  source of truth and overwrite. Never log the full value.
+- **New server-side env reads should use `src/lib/env.ts`.** It
+  strips the `\n` pattern proactively and will save the next
+  session from diagnosing this same bug class on a different var.
+
+---
+
 ## 2026-04-24 00:33 MST — CLAUDE.md reframing: production is canon, wireframes are baselines
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)

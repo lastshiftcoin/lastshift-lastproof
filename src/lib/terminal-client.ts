@@ -15,6 +15,8 @@
  * before any gated action (publish, payment, profile edit).
  */
 
+import { envClean, envWithDefault } from "./env";
+
 // ─── Contract types (mirror docs/TERMINAL-CONTRACT.md §1–§2) ─────────────────
 
 export type SubscriptionStatus = "free_ea" | "active" | "past_due" | "canceled" | "none";
@@ -85,10 +87,15 @@ export type AffiliateConfirmResult = AffiliateConfirmSuccess | AffiliateConfirmF
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 function getConfig() {
-  const base = process.env.TERMINAL_API_URL;
-  const secret = process.env.INTER_TOOL_API_SECRET;
-  const keyId = process.env.INTER_TOOL_KEY_ID || "v1";
-  const toolSlug = process.env.TOOL_SLUG || "lastproof";
+  // Sanitize every read through envClean to strip a class of legacy
+  // corruption (trailing literal `\n`) that has bitten this project
+  // repeatedly. See src/lib/env.ts for the full history — the 404 on
+  // /manage authenticate (2026-04-24) was caused by exactly this
+  // pattern on TERMINAL_API_URL.
+  const base = envClean("TERMINAL_API_URL");
+  const secret = envClean("INTER_TOOL_API_SECRET");
+  const keyId = envWithDefault("INTER_TOOL_KEY_ID", "v1");
+  const toolSlug = envWithDefault("TOOL_SLUG", "lastproof");
   if (!base) throw new Error("TERMINAL_API_URL not set");
   if (!secret) throw new Error("INTER_TOOL_API_SECRET not set");
   return { base, secret, keyId, toolSlug };
