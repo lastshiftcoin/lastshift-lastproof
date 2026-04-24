@@ -91,14 +91,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title,
     description,
-    // Canonical anchors the clean `/@handle` URL as the indexed form,
-    // so search engines don't treat `/@handle?ref=<slug>` (our
-    // attribution reflection via proxy.ts) as a duplicate or competing
-    // page. Users get the ref in their address bar; Google indexes
-    // the clean URL.
-    alternates: {
-      canonical: profileUrl,
-    },
     openGraph: {
       type: "profile",
       title,
