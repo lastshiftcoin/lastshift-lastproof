@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.11.4",
+  "latest_version": "0.11.5",
   "entries": [
+    {
+      "version": "0.11.5",
+      "date": "2026-04-24",
+      "category": "improved",
+      "headline": "Ambassadors get credit when you find them through their profile, not just their campaign link",
+      "copy": "If an ambassador DMs you their profile link (like lastproof.app/@habilamar_ibn) instead of their campaign link, they now still get credit when you sign up. Visiting an ambassador's profile stamps the same server-side attribution cookie as visiting their campaign URL — first ambassador you came through wins, and it sticks for 30 days.",
+      "source_commits": []
+    },
     {
       "version": "0.11.4",
       "date": "2026-04-24",

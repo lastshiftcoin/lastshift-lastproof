@@ -20,6 +20,117 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-24 08:51 MST — Ambassador attribution: cookie also stamps on profile-page visits
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** backend
+**Commits:** this commit (see git log)
+**Migrations run in prod Supabase:** one manual backfill by Kellen in
+Supabase SQL Editor to stamp `@yuan`'s referral to `@habilamar_ibn` —
+required updates to BOTH `operators.referred_by` AND `profiles.referred_by`
+(the report at `/5k/<slug>-ops` reads from `profiles`, not `operators`).
+**Impacts:** none — proxy-layer additive change, no contract or schema
+change, no Terminal-side impact
+**Status:** ✅ shipped
+
+### Did
+
+- **Diagnosed** `@yuan` (operator_id
+  `4fe1073d-dc85-4d03-88e8-042cc58f44f6`) showing up as an
+  unattributed sign-up despite being `@habilamar_ibn`'s referral.
+  `referral_events` showed zero `landing_visit` on `/free-before-grid`
+  — user never hit habilamar's campaign URL. Most likely path: user
+  was DM'd habilamar's profile URL (`/@habilamar_ibn`) instead of the
+  campaign URL. Our proxy only matched the 6 campaign-slug paths, so
+  profile-link shares silently dropped.
+- **Extended `src/proxy.ts`** to also set the `lp_ref` cookie when a
+  visitor lands on an ambassador's profile page. Added a
+  handle→slug map for the 6 active ambassadors:
+  ```
+  investor_zerix    → early-access-free
+  goldnodesupreme   → limited-free-upgrade
+  monochizzy        → first-5000-free
+  habilamar_ibn     → free-before-grid
+  joe_babs          → claim-before-launch
+  theleader         → free-early-access
+  ```
+  Proxy matcher extended with the 6 `/@<handle>` paths in addition
+  to the 6 campaign slugs. Next's rewrite from `/@handle` →
+  `/profile/handle` happens AFTER the proxy runs, so matching
+  against the public-facing `/@handle` shape works.
+- **Semantics preserved end-to-end.** Same `lp_ref` cookie name,
+  same 30-day TTL, same HttpOnly / sameSite=lax, same first-touch
+  wins (won't overwrite). Downstream `wallet-gate` and `register-tid`
+  code paths unchanged — they read the cookie the same way whether
+  it came from a campaign page or a profile page.
+- **Each of the 6 handles verified to resolve** via HTTP 200 against
+  `lastproof.app/@<handle>` before baking into the matcher.
+- **Backfilled `@yuan`**: first tried
+  `UPDATE operators SET referred_by='free-before-grid'` but
+  `/5k/habilamar-ops` didn't reflect it. Re-read the report query
+  and found it selects from `profiles`, not `operators`. Second
+  UPDATE on `profiles.referred_by` landed the attribution.
+- **Updates feed convention applied:**
+  - VERSION 0.11.4 → 0.11.5 (patch, category=improved)
+  - `data/updates.json` entry added, `latest_version` bumped
+  - `[update: improved]` prefix on the commit subject
+  - Copy names the outcome from user's perspective ("Ambassadors get
+    credit when you find them through their profile") and spells
+    out the mechanism plainly without leaking jargon.
+
+### Current state
+
+- Ambassador attribution now has two entry surfaces:
+  1. Campaign landing pages (`/free-before-grid`, etc.) — primary
+  2. Ambassador profile pages (`/@habilamar_ibn`, etc.) — fallback
+- Both write the same `lp_ref` cookie. First-touch wins still applies
+  across both surfaces.
+- `@yuan`'s attribution to `@habilamar_ibn` is backfilled and visible
+  on the `/5k/habilamar-ops` report.
+
+### Open / next
+
+- **Other operators may have been lost the same way.** Pattern is
+  plausibly common — ambassadors sharing profile URLs in DMs. A
+  one-time audit would: `SELECT id, terminal_wallet, referred_by,
+  created_at FROM operators WHERE referred_by IS NULL AND created_at
+  > '<ambassadors-launched-date>'` and cross-reference with known
+  referral intent from each ambassador. Deferred; proactive
+  coverage now handles new sign-ups.
+- **Ambassador self-views still set the cookie.** First-touch wins
+  means the ambassador's own existing `referred_by` won't be
+  overwritten even if they view their own profile unauthenticated.
+  Still a wasted write; could be filtered but low priority.
+
+### Gotchas for next session
+
+- **`profiles.referred_by` and `operators.referred_by` are two
+  separate columns.** The `/5k/<slug>-ops` report reads from
+  `profiles`. Any manual backfill of a dropped referral must update
+  BOTH tables (operators is the first-touch capture, profiles is
+  what the report sees). The register-tid and profile-creation
+  flows are supposed to keep these in sync, but a backfill on
+  operators alone does NOT cascade to profiles.
+- **When adding or rotating an ambassador, update 4 places
+  atomically:** `ambassadors` table row, `AMBASSADOR_SLUGS` array
+  in `src/proxy.ts`, `AMBASSADOR_PROFILE_HANDLES` map in
+  `src/proxy.ts`, and the `matcher` config at the bottom of that
+  file (both the new campaign slug AND the new `/@handle`). Missing
+  any one silently breaks attribution for that ambassador.
+- **Next's URL rewrite runs AFTER the proxy.** The proxy sees the
+  original public `/@handle` shape; downstream server components
+  see the rewritten `/profile/handle` shape. Match against the
+  public shape in the proxy, not the internal rewrite target.
+- **Matcher paths must be literal strings per Next's static
+  analysis requirement.** Can't dynamically build the matcher from
+  the `AMBASSADOR_PROFILE_HANDLES` map — if you add an ambassador,
+  you hand-add their matcher entry too. Keep the constants visually
+  paired in the source to make drift obvious on review.
+
+---
+
 ## 2026-04-24 07:05 MST — /manage authenticate: fix 404 from literal `\n` in TERMINAL_API_URL
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
