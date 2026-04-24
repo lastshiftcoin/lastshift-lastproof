@@ -20,6 +20,227 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-23 23:29 MST — /grid planning block — briefs + folder scaffolding + Cowork wireframe draft
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`, `com.anthropic.claudefordesktop`)
+**Model:** claude-opus-4-6
+**Role:** grid
+**Commits:** none this session — planning artifacts only, no code shipped
+**Migrations run in prod Supabase:** none
+**Impacts:** none — internal docs + new `_drafts/` folder convention; no shared-contract changes, no Terminal touches, no user-visible surface changes (Updates feed convention explicitly skipped per Kellen)
+**Status:** ✅ planning block complete, standing by for Frontend verification pass on the wireframe before Phase 2 code kicks off
+
+### Did
+
+Ran the full Grid planning block end-to-end. Session pattern was: diligence → lock 20+ product decisions → write Cowork brief → Cowork drafts wireframe → Kellen overrides → write Frontend verification brief. No code touched.
+
+**Diligence pass (drive-read only):**
+- Read all three Grid handoffs (Frontend/Backend/Fullstack), both builder handoffs
+  (LASTPROOF-BUILDER-HANDOFF, FULLSTACK-BUILDER-HANDOFF), all 14 `docs/*.md`
+  (TERMINAL-CONTRACT, PRICING, NEXT-PUBLIC-PROFILE, PROOF-MODAL-SPEC*,
+  SECURITY-*, BLOG-SOURCE-MATERIAL), and the research subdir (FINDINGS,
+  WALLET-POLICY/COMPAT, TOKEN-REGISTRY, HELIUS + SOLANA-PAY verification).
+- Read CLAUDE.md in full + top ~15 WORKLOG entries.
+- Surveyed Grid-relevant code: `src/app/grid/page.tsx` (the current locked
+  placeholder), `src/lib/tier.ts`, `src/lib/constants.ts`,
+  `src/lib/subscription.ts`, `src/lib/projector/public-profile.ts`,
+  `src/lib/db/profiles-adapter.ts`, `src/lib/db/profile-categories-adapter.ts`,
+  `src/components/ResultCard.tsx`, `src/lib/homepage-data.ts`,
+  `src/app/(marketing)/page.tsx`, `src/app/sitemap.ts`, `src/proxy.ts`,
+  `supabase/seed/dev-categories.sql`.
+- Read the archived April Grid wireframe at
+  `/Volumes/LASTSHIFT/_archive/wireframes/lastproof-grid-wireframe.html` for
+  baseline reference.
+- No memory files existed at
+  `/Users/tallada2023/.claude/projects/-Volumes-LASTSHIFT/memory/` — system
+  is empty for this project.
+
+**Conflict catch during diligence** (worth flagging — all three Grid handoffs drifted against canon in small ways):
+- Backend handoff said "`GRID_LAUNCH_DATE` env var" — actually it's a hardcoded
+  `Date` in `src/lib/constants.ts` AND hardcoded AGAIN in `src/lib/subscription.ts`.
+  Triple-pinned with no single source of truth. Flagged for future cleanup.
+- Fullstack handoff listed 6 categories — actual seeded canon is **15** (see
+  `supabase/seed/dev-categories.sql`). The Grid filter must operate on 15, not 6.
+- Frontend handoff assumed Grid would live inside `(marketing)` inheriting
+  chrome — the current locked placeholder at `src/app/grid/page.tsx` deliberately
+  lives OUTSIDE marketing for its terminal chrome. Resolved: real Grid DOES
+  go inside `(marketing)` (Kellen's call — marketing-aesthetic, not terminal);
+  Phase 2 moves the file.
+- Live vocabulary conflict: `ResultCard.tsx` uses `EA` badge (current canon);
+  April wireframe + Backend-handoff references used `100` (deprecated
+  first-100 framing). Resolved on `EA`.
+
+**20+ product decisions locked (abridged):**
+- Chrome: marketing-aesthetic, inside `(marketing)`, inherits Topbar/Footer/ShiftbotStrip
+- Aesthetic: dark theme + sans body + mono for metrics; NO terminal chrome
+  (scanlines/titlebar-dots/CRT/boot-lines all killed)
+- Tier system: 4 tiers (T1 NEW / T2 VERIFIED / T3 EXPERIENCED / T4 LEGEND),
+  `TIER N · NAME` pairing, silver/bronze/gold/purple — April wireframe's
+  dead 5-tier system explicitly rejected
+- Visibility rule (locked): only ACTIVE profiles show on Grid
+  (`is_paid = true AND published_at IS NOT NULL AND variant != "free"`)
+- Category filter: all 15 categories listed, sorted by usage count descending
+- Sort: dropdown (per Kellen override) with 4 options — `Relevant` / `Most Trusted`
+  / `High Fee` / `Low Fee`. `New Profiles` explicitly dropped — visibility is earned
+- Relevance = `tier DESC → proofs DESC → is_verified DESC`
+- Most Trusted = `tier DESC → proofs DESC` (differs from Relevant only on verified tiebreaker)
+- Filter sidebar: 7 sections (Tier / Verified / DEV Proofs / # of Proofs / Fee /
+  Language / Timezone) with +/- collapse, independent sidebar scroll, sticky,
+  ~240px wide. Kellen reordered so Verified is at position #2 for discoverability
+- DEV Proofs filter: binary toggle (per Kellen override), not a range slider
+- `# of Proofs`: range slider, min threshold only (snap 0/10/25/50/100+)
+- Language/Timezone: list ALL unique values from profile data with counts; top 6
+  lang expanded by default, timezone full list
+- Mobile: sidebar collapses to `[Filters (N)]` button → slide-in drawer from right,
+  ecommerce-cart pattern
+- Card: single-column full-width (not 2-col), click → `target="_blank"` to /@handle;
+  HIRE lives on profile page, NOT on card
+- Card meta row packs timezone + language inline: `N proofs · N DEV · N projects · UTC-5 · EN`
+- LIVE ticker: 32px slim, top of page (lift CSS from April wireframe verbatim)
+- Grid Status widget: DROPPED (Kellen's call — cleaner sidebar)
+- Bookmark-to-save feature: DROPPED (rely on native browser bookmark)
+- SHIFTBOT: inherited from existing `ShiftbotStrip` bottom component — do NOT
+  design a new top-bar SHIFTBOT UI. Upgrade from canned placeholder to Groq-backed
+  functional is a Phase 2 sub-task
+- Pagination: infinite scroll
+
+**Cowork brief written:**
+`docs/GRID-COWORK-BRIEF.md` — complete, self-contained, two-audience structure
+(Kellen-facing intro + `═══ BRIEF CONTENT FOR COWORK ═══` divider → spec body).
+~350 lines covering IA, filter sidebar spec, card anatomy, design tokens, tier
+canon, visibility rule, non-negotiables, explicit out-of-scope list, deliverable
+format, mobile drawer pattern.
+
+**Folder scaffolding added:**
+- Created `lastproof-build/wireframes/_drafts/grid/`
+- Wrote `lastproof-build/wireframes/_drafts/README.md` explaining the
+  canonical-wireframes-stay-at-root convention, promotion-via-mv pattern when
+  a draft is approved, and the rule that external tools (Cowork, etc.) MUST
+  be given exact save paths — never let them pick.
+- **Did NOT move any of the 24 existing wireframes** at the root — they're
+  referenced across `docs/`, `CLAUDE.md`, and the WORKLOG; moving breaks history.
+  `_drafts/` is ADDITIVE, not a reorganization.
+- `_archive/` folder planned but not created yet (empty folders clutter the tree).
+
+**Cowork draft received + audited:**
+Cowork's wireframe landed at
+`wireframes/_drafts/grid/lastproof-grid.html` (2059 lines, 73KB, `.g-*`
+class prefix, 10 sample cards, all 15 categories + ALL, 4-tier canon correct,
+LIVE ticker CSS lifted, mobile drawer working, ShiftbotStrip shown as inherited
+reference only). Audit pass was 95% canon-compliant with three deviations from
+the Cowork brief that Kellen explicitly confirmed as intentional overrides:
+
+1. **Sort = dropdown** instead of pill row (space saver, cleaner on mobile)
+2. **DEV Proofs = binary toggle** instead of range slider (binary is the useful filter)
+3. **Filter section order: Verified promoted to position #2** instead of last
+
+These three are LOCKED per Kellen. Any future session that tries to "restore"
+them to the original brief is reverting his call.
+
+**Frontend verification handoff written:**
+`docs/GRID-TO-FRONTEND-HANDOFF.md` — same two-audience structure. Frontend's
+scope is narrow: brand/token/styling audit only. Explicitly NOT a redesign.
+Contains a 10-point audit checklist (tokens, tier rendering, brand elements,
+typography, accessibility, CSS prefix consistency, copy voice, card anatomy
+parity, filter interactions, ticker + chips). Kellen's 3 overrides called out
+twice in the doc so they can't be missed. Output path locked at
+`wireframes/_drafts/grid/lastproof-grid-fe-verified.html` (different filename
+so we preserve the Cowork → Frontend diff).
+
+**Starting message for Cowork** composed and captured in-chat (not saved to
+disk — Kellen copied it directly when dispatching). Explicit rules: read file
+at exact drive path, save file at exact drive path, don't improvise on the
+5 locked non-negotiables.
+
+### Current state
+
+- `docs/GRID-COWORK-BRIEF.md` — committed to disk, not to git
+- `docs/GRID-TO-FRONTEND-HANDOFF.md` — committed to disk, not to git
+- `wireframes/_drafts/grid/lastproof-grid.html` — Cowork's draft, committed to disk
+- `wireframes/_drafts/README.md` — folder convention doc, committed to disk
+- HEAD `8ada2a8` unchanged (no git commits this session)
+- VERSION `0.11.3` unchanged
+- `data/updates.json` unchanged (convention explicitly not invoked — no
+  user-visible behavior shipped yet)
+- Working tree carries the new files as untracked adds — Kellen's decision
+  whether/when to commit them
+
+### Phase 2 implementation challenges flagged (before coding)
+
+Before Phase 2 begins, these decisions need answers or the architecture will
+cascade the wrong way:
+
+1. **Faceted search counts — client-side or server-side?** (Filter option
+   counts update dynamically as other filters apply.) At ≤5K profile cap,
+   client-side (load full corpus, filter/count in JS) is simpler and faster.
+   Server-side = 7 aggregation queries per interaction. Rec: client-side.
+2. **SHIFTBOT upgrade scope** — the existing `ShiftbotStrip` is a canned
+   placeholder. Making it functional site-wide is bigger than just the Grid
+   (needs Groq wiring, intent router for handle-match vs keyword vs NLP,
+   cross-page routing to `/grid?q=<query>`, rate limiting, SHIFTBOT-ranked
+   mode rendering on the Grid). Should be a dedicated sub-task, not rolled
+   into Grid.
+3. **Rate limiting** (SECURITY-ASSESSMENT GAP 2) MUST land with Grid. Grid
+   listing + SHIFTBOT endpoint are both public free-text entry points.
+4. **EA→FREE auto-flip cron** — backend-owned, must run after 2026-06-07
+   or Grid keeps showing expired EA profiles past their 30-day window.
+5. **LIVE ticker: live-poll or static-at-pageload?** Smooth-prepend on new
+   proofs during an infinite scroll animation is non-trivial; static is
+   shippable in a day. Rec: static.
+
+### Open / next
+
+- Kellen hands `docs/GRID-TO-FRONTEND-HANDOFF.md` to a fresh Frontend session.
+  Frontend returns polished wireframe at
+  `wireframes/_drafts/grid/lastproof-grid-fe-verified.html`.
+- Kellen relays back to grid session for final canon adherence check.
+- On grid-session approval, Phase 2 begins:
+  - Move `/grid` route from `src/app/grid/page.tsx` →
+    `src/app/(marketing)/grid/page.tsx` (inherits marketing chrome)
+  - Build visual scaffold with typed mock (pattern matches
+    `docs/NEXT-PUBLIC-PROFILE.md` Step 1)
+  - Coordinate with backend on: `GridCardView` projector, Grid listing
+    endpoint(s), rate limiting, EA→FREE cron
+  - Ship rate limiting same commit as Grid
+  - `ShiftbotStrip` upgrade spun off as a separate sub-session (see challenge #2)
+- Grid promotion to root: when the Frontend-verified wireframe is approved,
+  promote via `mv wireframes/_drafts/grid/lastproof-grid.html
+  wireframes/lastproof-grid.html` — per the `_drafts/README.md` convention.
+
+### Gotchas for next session
+
+- **The three Kellen overrides are locked** — sort dropdown (not pills), DEV
+  binary toggle (not slider), Verified filter at sidebar position #2. If a
+  future session tries to "restore" them to the GRID-COWORK-BRIEF.md spec,
+  they're reverting Kellen's explicit call. Both the brief AND the Frontend
+  handoff warn about this; respect it.
+- **Wireframes/\_drafts/ is the ONLY correct save path for in-progress
+  wireframes.** Don't save anywhere else on the drive, and don't let any
+  external tool decide the path. The convention is documented in
+  `wireframes/_drafts/README.md`.
+- **No `data/updates.json` entry was added** — this work block is
+  pure planning/infrastructure, Updates feed convention doesn't apply. Don't
+  retroactively add one when Phase 2 ships; only the code-shipping commits
+  should carry `[update: added]` + VERSION bump + feed entry.
+- **The category count canon is 15, not 6.** The seeded list lives in
+  `supabase/seed/dev-categories.sql`. The old Fullstack handoff's
+  "X Growth / Raid Leading / Community Mgmt / Dev / Design / Content" 6-item
+  list was a spec-level simplification that does NOT match shipped canon.
+- **"New Profiles" is explicitly not a sort option.** Kellen's call: new
+  operators don't get visibility preference, they earn placement through proofs.
+  Don't add it back.
+- **Grid is marketing-aesthetic, not terminal.** The April wireframe in
+  `_archive/` is the old direction and is DEAD. Anyone looking at that as
+  reference should know that before using it.
+- **`GRID_LAUNCH_DATE` is triple-pinned** (src/lib/constants.ts,
+  src/lib/subscription.ts, Vercel env). If the launch date ever shifts,
+  update all three atomically or subscription math goes wrong.
+- **npm install still not run on this drive clone.** Local `tsc --noEmit`
+  still fails. Flagged in earlier WORKLOG entries; not addressed this session.
+
+---
+
 ## 2026-04-23 11:38 MST — /manage NO TERMINAL ID screen — unified redesign + boot-line consistency
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
