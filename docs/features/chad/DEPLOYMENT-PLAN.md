@@ -143,24 +143,47 @@ Day 0                Day 1                Day 2                 Day 3
 Lands a single Supabase migration. **No code change. No UI change.
 Zero risk to existing surfaces.**
 
-```sql
--- supabase/migrations/<timestamp>_chads.sql
-create table public.chads (
-  id            bigserial primary key,
-  requester     text not null,        -- wallet address
-  target        text not null,        -- wallet address
-  status        text not null check (status in ('pending','accepted')),
-  created_at    timestamptz not null default now(),
-  accepted_at   timestamptz,
-  unique (requester, target),
-  check (requester <> target)
-);
-create index idx_chads_target_status on public.chads (target, status);
-create index idx_chads_requester_status on public.chads (requester, status);
+The shipped migration is `supabase/migrations/0021_chads.sql`:
 
--- Notifications kind extension (additive, additive only)
--- (existing notifications.kind is text — no enum to alter)
+```sql
+create table if not exists chads (
+  id                 bigserial primary key,
+  requester_wallet   text not null,
+  target_wallet      text not null,
+  status             text not null check (status in ('pending', 'accepted')),
+  created_at         timestamptz not null default now(),
+  accepted_at        timestamptz,
+  unique (requester_wallet, target_wallet),
+  check (requester_wallet <> target_wallet)
+);
+
+create index if not exists chads_target_status_idx
+  on chads (target_wallet, status);
+
+create index if not exists chads_requester_status_idx
+  on chads (requester_wallet, status);
+
+alter table chads enable row level security;
 ```
+
+(Wallet columns follow the project's existing `<role>_wallet`
+convention from operators / proofs / quotes. RLS deny-all for anon
+is the default once enabled — no policies declared because all
+writes go through service-role API routes.)
+
+The notifications.kind column is plain `text` with no DB-level enum
+constraint, so adding chad-related kind values requires only a
+TypeScript union extension in `src/lib/notifications-store.ts` —
+no DB migration needed for that.
+
+**Migrations are NOT auto-applied by Vercel deploys.** Per
+`supabase/README.md`, apply via one of:
+- `supabase db push` (CLI; recommended)
+- Paste the SQL into the Supabase dashboard SQL Editor
+- Raw psql against the prod URL
+
+Apply between landing the file in the repo (this commit) and
+landing Deploy 2 (the first code that reads from the table).
 
 Commit subject: `chads: schema migration — chads table + indexes`
 (no `[update:]` prefix — schema-only, no user-visible surface).

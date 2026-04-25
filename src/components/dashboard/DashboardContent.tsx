@@ -19,6 +19,7 @@ import { TrustTierRow } from "./TrustTierRow";
 import { StatusBar } from "./StatusBar";
 import { CampaignFomoStrip } from "./CampaignFomoStrip";
 import { IdentityCard } from "./IdentityCard";
+import { ChadManagementStrip } from "@/components/chad/ChadManagementStrip";
 import { CategoriesCard } from "./CategoriesCard";
 import { VerifiedCard } from "./VerifiedCard";
 import { PitchCard } from "./PitchCard";
@@ -117,6 +118,9 @@ export function DashboardContent({ profile, primaryCategory, additionalCategorie
         campaignActive={!profile.isPaid}
         onProfileUpdate={onProfileUpdate}
       />
+
+      {/* ═══ CHAD MANAGEMENT — feature-flag-gated, self-fetches counts ═══ */}
+      <ChadManagementStrip />
 
       {/* ═══ CAMPAIGN FOMO STRIP — below status bar during 5000 campaign ═══ */}
       {!profile.isPaid && (

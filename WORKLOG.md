@@ -20,6 +20,206 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-25 02:00 MST — Chad Function — Deploy 2: full code behind CHADS_ENABLED flag
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`)
+**Model:** claude-opus-4-7 (1M context)
+**Role:** chad-backend
+**Commits:** this commit (Deploy 2 of 3 in the chad rollout)
+**Migrations run in prod Supabase:** `0021_chads.sql` was applied via Supabase
+  dashboard SQL Editor between Deploy 1 and this commit (Block 1 success
+  + row_count 0 verification confirmed)
+**Impacts:** none — every chad surface is gated by `CHADS_ENABLED` env
+  var; with the flag off, prod renders byte-identical to before
+**Status:** ✅ Deploy 2 ready for push
+
+### Did
+
+Phase B per `docs/features/chad/DEPLOYMENT-PLAN.md`. All chad code
+ships in this single commit, gated entirely behind the
+`CHADS_ENABLED` env flag (defaults to off in Vercel).
+
+**New foundations (`src/lib/chads/`):**
+- `feature-flag.ts` — `isChadsEnabled(wallet?)` reads `CHADS_ENABLED`
+  + per-wallet allowlist `CHADS_ENABLED_WALLETS` for prod testing.
+  `chadsNotificationsEnabled()` is the granular kill switch for the
+  notification fanout.
+- `resolve-phase.ts` — server-side eligibility resolver returning one
+  of six steady-state phases (eligible / already / pending / free /
+  no-profile / own). Returns null when target profile isn't active
+  (route maps to 404).
+- `profile-batch.ts` — wallet-array → ChadProfileSummary map via
+  operators FK; filters out free/unpublished profiles per the locked
+  rule (lapsed chads hide from public armies).
+- `format.ts` — display-name (24-char) + handle (15-char) cap helpers
+  applied at render per FRONTEND-NOTES truncation rule.
+
+**New adapter (`src/lib/db/chads-adapter.ts`):** supabase-direct (no
+memory/dual layer), matching the new-adapter pattern. Helpers for
+findChadshipBetween, listPendingForTarget, listAcceptedForWallet,
+countPending, countAccepted, insertPendingRequest, acceptPending,
+deleteChadship.
+
+**Five API routes** (each gated on `isChadsEnabled` first; 404 when off):
+- `GET /api/chads/eligibility?target=<handle>` → phase resolution
+- `POST /api/chads/request { target }` → insert pending row + fire
+  `chad_request` notification when `CHADS_NOTIFICATIONS=true`
+- `POST /api/chads/respond { requester, action }` → accept (flip +
+  notify back) or deny (hard delete, no notification per privacy-of-
+  deny). Strict — session wallet must be the target.
+- `GET /api/chads/list?type=<kind>&handle?&cursor?` → cursor pagination
+  for army (public, no auth), pending (session-auth), accepted
+  (session-auth)
+- `POST /api/chads/remove { chad }` → instant hard-delete of an
+  accepted relationship in either direction
+- Plus `GET /api/chads/counts` — used by ChadManagementStrip's
+  client-side fetch to avoid drilling props through DashboardShell
+
+**Eight React components** (`src/components/chad/`): ChadAvatar,
+ChadCard, ChadArmyStrip, ChadManagementStrip, AddChadButton,
+AddChadModal, InfiniteChadList, ChadEmptyState. Plus two thin client
+wrappers — ChadArmyClient (public army page) and ChadDashboardClient
+(dashboard chads page) — that own the fetcher closures and mutation
+handlers.
+
+**Two new page routes:**
+- `src/app/(marketing)/profile/[handle]/chads/page.tsx` — public army
+  list at `/@<handle>/chads`. Server-rendered initial page + client
+  IntersectionObserver for subsequent pages.
+- `src/app/(marketing)/manage/chads/page.tsx` — `/manage/chads`. Two
+  stacked InfiniteChadLists (pending + accepted) with the dashboard
+  client wrapper handling accept/deny/remove mutations.
+
+**Surface edits to existing files:**
+- `next.config.ts` — extended rewrite + redirect for `/@:handle/chads`
+  ↔ `/profile/:handle/chads`.
+- `src/components/profile/ProfileHero.tsx` — mounts `<AddChadButton />`
+  in `.pp-id-handle-row` next to the ACTIVE pill, gated by a new
+  `chadsEnabled` prop. Free profiles always render without the button
+  (existing `isFree` check + the new prop).
+- `src/app/(marketing)/profile/[handle]/page.tsx` — fetches initial
+  army page server-side, mounts `<ChadArmyStrip />` between TrustTierBar
+  and ProfileTabs, passes `chadsEnabled` to ProfileHero.
+- `src/components/dashboard/DashboardContent.tsx` — mounts
+  `<ChadManagementStrip />` between StatusBar and the campaign FOMO
+  strip. Strip self-fetches counts via /api/chads/counts so we don't
+  have to drill props through DashboardShell.
+- `src/lib/notifications-store.ts` — extended `NotificationKind` union
+  with `chad_request` and `chad_accepted`. No DB migration needed —
+  the `notifications.kind` column is plain text without a check
+  constraint.
+- `src/app/globals.css` — added `--purple-dim`, `--purple-glow`,
+  `--gold-dim`, `--gold-glow`, `--red-dim` tokens. Plus ~280 lines of
+  chad-component CSS at the bottom of the file, covering: + ADD CHAD
+  pill, chad army strip, chad avatars, chad cards (public + dashboard
+  variants), accept/deny/remove buttons, chad list grid, empty state,
+  ChadManagementStrip (premium + locked variants), public army /
+  dashboard chads page headers, chad dashboard summary lines, and the
+  full Add Chad modal (titlebar, phases, target/info cards, CTAs,
+  spinner, success check).
+
+**Doc updates:**
+- `docs/features/chad/DEPLOYMENT-PLAN.md` — Deploy 1 section corrected
+  to reflect actual schema (wallet_<role> column naming, RLS
+  convention) and clarified that migrations are NOT auto-applied by
+  Vercel — they apply manually via `supabase db push` or dashboard
+  SQL Editor between Deploy 1 and Deploy 2.
+
+### Locked decisions captured this session
+
+Chad CSS uses `--gold` semantically as "Tier 3 OR chad-surface
+attention" — pending counts, locked-strip warnings, dashboard-chads
+pending tile borders, and modal phase 9. Per Kellen, this is a
+chad-feature carve-out, NOT a global broadening of the gold semantic.
+`CLAUDE.md § Tier system` is unchanged. Other features should NOT
+extrapolate the gold-as-attention pattern.
+
+`.chad-army-avatars` uses flex `gap` + `margin-left: auto` on
+SEE ARMY pill so layout behaves the same at any chad count
+(2 chads or 10 chads — same left-aligned grid, pill floats right).
+
+### Auth model deviation from wireframe
+
+Cowork's wireframe has a `connect` phase showing wallet adapter
+picker inline. Production's auth model requires a session created
+via `/manage`'s wallet-gate flow — a wallet-adapter-level connection
+alone does NOT give the chad endpoints what they need. So the modal
+collapses "connect" with "no-session" — when eligibility returns 401
+(no session), the modal shows a "Sign in via /manage" CTA rather
+than an in-modal wallet picker. This is a deliberate divergence from
+the wireframe's literal phase set; Frontend can revisit during the
+next polish pass if a richer in-modal connect flow is wanted.
+
+### Random ordering in the army strip
+
+`ChadArmyStrip` does an in-render Fisher-Yates shuffle of the chads
+it receives. The underlying `listAcceptedForWallet` query is cache-
+friendly (no DB-level shuffle). This matches FRONTEND-NOTES'
+recommendation for a per-render shuffle that doesn't invalidate
+upstream caches.
+
+### Current state
+
+- VERSION still at `0.11.3` (no bump — Deploy 2 ships flag-OFF; the
+  `[update: added]` ship and minor bump to 0.12.0 lands at Deploy 3
+  with the flag flip)
+- HEAD will be this commit, expected on `main` after rebase + push
+- Working tree clean except an unrelated untracked file from another
+  session (`BACKEND-TERMINAL-SECURITY-HANDOFF.md`)
+- Local `npx tsc --noEmit` not run — `node_modules` isn't installed on
+  this drive clone (per the existing WORKLOG gotcha). Vercel CI will
+  catch any type errors at build time. If the deploy fails the
+  typecheck, the kill switch (`CHADS_ENABLED=false`) means no user-
+  visible regression — fix forward in a follow-up commit before
+  flipping the flag.
+
+### Open / next
+
+- **Verify Vercel build green** for this commit. If type errors
+  surface, fix forward — the flag is OFF so no user impact.
+- **Smoke test on prod with the per-wallet override.** Set
+  `CHADS_ENABLED_WALLETS=<my-wallet>` in Vercel env, walk all six
+  modal phases against test profiles, send a real chad request from
+  my wallet to a TEST_2 wallet, accept it, view armies. Then unset
+  `CHADS_ENABLED_WALLETS` and reverify the public profile renders
+  byte-identical to pre-chad.
+- **Deploy 3 — flag flip + VERSION bump.** Single commit:
+  `[update: added]` prefix, VERSION 0.11.3 → 0.12.0, new entry in
+  `data/updates.json`, latest_version updated, env var `CHADS_ENABLED=true`
+  set in Vercel.
+
+### Gotchas for next session
+
+- **Migrations applied via dashboard SQL editor are NOT recorded in
+  the Supabase CLI's migration history table.** If anyone later runs
+  `supabase db push`, it'll try to re-apply 0021. Harmless because the
+  SQL is idempotent (`create … if not exists`, `enable row level
+  security` is a no-op when already on), but be aware.
+- **`view.ownerWallet`** is what the profile page chad-gating logic
+  reads to fetch the army. If a future change to PublicProfileView
+  drops this field, the chad strip will silently render empty.
+- **Profile route is `/profile/[handle]` internally; public URL is
+  `/@<handle>`.** All chad routes follow suit:
+  - `/@<handle>/chads` → `/profile/<handle>/chads` (public army)
+  - `/manage/chads` (dashboard, no rewrite needed since /manage isn't aliased)
+- **`chad_request` and `chad_accepted` notification kinds** live in
+  `NotificationKind` union but the existing in-memory/Supabase
+  notifications-store doesn't have switch statements that branch on
+  kind, so adding new kinds is safe. If a future session adds
+  exhaustive switch handling on `kind`, audit for these two values.
+- **The `chads` table has no FK to `operators` or `profiles`.** When
+  joining for list views, use `resolveChadProfilesOrdered()` from
+  `src/lib/chads/profile-batch.ts` — it handles the wallet → operator
+  → profile resolution + active-filter in one batch call.
+- **AddChadModal "connect" phase** is collapsed with "no-session"
+  (the modal redirects to /manage). This diverges from the literal
+  wireframe but matches the auth model. If a future polish pass wants
+  in-modal wallet picker, it'd need to also wire session creation
+  (which is non-trivial — see ManageTerminal's wallet-gate flow).
+
+---
+
 ## 2026-04-24 19:38 MST — Chad Function — Deploy 1: schema migration + deployment plan
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ProfileVariant, PublicProfileView } from "@/lib/public-profile-view";
 import { prettyWebsiteLabel } from "@/lib/url-utils";
 import { ShareIconButton } from "./ShareIconButton";
+import { AddChadButton } from "@/components/chad/AddChadButton";
 
 const CHECK_ICON = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
@@ -64,7 +65,7 @@ type Props = Pick<
   | "tgHandle"
   | "website"
   | "hireTelegramHandle"
-> & { variant: ProfileVariant };
+> & { variant: ProfileVariant; chadsEnabled?: boolean };
 
 export function ProfileHero(props: Props) {
   const isFree = props.variant === "free";
@@ -108,6 +109,7 @@ export function ProfileHero(props: Props) {
               {props.statusLabel}
             </span>
           )}
+          {!isFree && props.chadsEnabled && <AddChadButton targetHandle={props.handle} />}
         </div>
 
         <p className="pp-id-pitch">{props.bioStatement || props.headline}</p>
