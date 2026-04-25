@@ -109,7 +109,13 @@ export function ProfileHero(props: Props) {
               {props.statusLabel}
             </span>
           )}
-          {!isFree && props.chadsEnabled && <AddChadButton targetHandle={props.handle} />}
+          {!isFree && props.chadsEnabled && (
+            <AddChadButton
+              targetHandle={props.handle}
+              targetDisplayName={props.displayName}
+              targetAvatarUrl={props.avatarUrl}
+            />
+          )}
         </div>
 
         <p className="pp-id-pitch">{props.bioStatement || props.headline}</p>
