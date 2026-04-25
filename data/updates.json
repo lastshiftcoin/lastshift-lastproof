@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.12.1",
+  "latest_version": "0.12.2",
   "entries": [
+    {
+      "version": "0.12.2",
+      "date": "2026-04-25",
+      "category": "improved",
+      "headline": "Chad asks are now one-way, like Instagram private profiles",
+      "copy": "When you click + ADD CHAD on someone's profile and they accept, they appear in your Chad Army. For them to also have you in their army, they'd need to send their own ask separately. Each direction is independent — your accept doesn't add you to their army, and theirs doesn't add them to yours. (The earlier description had this backwards.)",
+      "source_commits": ["cfc0c9c"]
+    },
     {
       "version": "0.12.1",
       "date": "2026-04-25",
