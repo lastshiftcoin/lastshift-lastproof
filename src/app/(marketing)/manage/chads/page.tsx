@@ -6,9 +6,9 @@ import { isChadsEnabled } from "@/lib/chads/feature-flag";
 import { readSession } from "@/lib/session";
 import { getProfileByWallet } from "@/lib/chads/resolve-phase";
 import {
-  countAcceptedForWallet,
+  countAcceptedByRequester,
   countPendingForTarget,
-  listAcceptedForWallet,
+  listAcceptedByRequester,
   listPendingForTarget,
 } from "@/lib/db/chads-adapter";
 import { resolveChadProfilesOrdered } from "@/lib/chads/profile-batch";
@@ -38,11 +38,12 @@ export default async function ManageChadsPage() {
     redirect("/manage");
   }
 
+  // Pending = incoming asks (target=me). Accepted = my army (requester=me).
   const [pendingRows, acceptedRows, pendingCount, acceptedCount] = await Promise.all([
     listPendingForTarget(wallet),
-    listAcceptedForWallet(wallet),
+    listAcceptedByRequester(wallet),
     countPendingForTarget(wallet),
-    countAcceptedForWallet(wallet),
+    countAcceptedByRequester(wallet),
   ]);
 
   const pendingWallets = pendingRows.map((r) => r.requesterWallet);
@@ -50,9 +51,7 @@ export default async function ManageChadsPage() {
   const initialPendingCursor =
     pendingRows.length > 0 ? pendingRows[pendingRows.length - 1]!.id : null;
 
-  const acceptedWallets = acceptedRows.map((r) =>
-    r.requesterWallet === wallet ? r.targetWallet : r.requesterWallet,
-  );
+  const acceptedWallets = acceptedRows.map((r) => r.targetWallet);
   const initialAccepted = await resolveChadProfilesOrdered(acceptedWallets);
   const initialAcceptedCursor =
     acceptedRows.length > 0 ? acceptedRows[acceptedRows.length - 1]!.id : null;

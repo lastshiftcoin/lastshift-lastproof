@@ -3,7 +3,7 @@ import { readSession } from "@/lib/session";
 import { isChadsEnabled } from "@/lib/chads/feature-flag";
 import { getProfileByWallet } from "@/lib/chads/resolve-phase";
 import {
-  countAcceptedForWallet,
+  countAcceptedByRequester,
   countPendingForTarget,
 } from "@/lib/db/chads-adapter";
 
@@ -31,9 +31,11 @@ export async function GET() {
   const profile = await getProfileByWallet(wallet);
   const tier = profile?.tier ?? 5;
 
+  // pending = incoming asks targeting me (directional, target=me)
+  // accepted = chads I've added (directional, requester=me)
   const [pending, accepted] = await Promise.all([
     countPendingForTarget(wallet),
-    countAcceptedForWallet(wallet),
+    countAcceptedByRequester(wallet),
   ]);
 
   return NextResponse.json({

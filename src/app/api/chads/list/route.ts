@@ -4,7 +4,7 @@ import { isChadsEnabled } from "@/lib/chads/feature-flag";
 import { getProfileByHandle } from "@/lib/db/profiles-adapter";
 import {
   listPendingForTarget,
-  listAcceptedForWallet,
+  listAcceptedByRequester,
 } from "@/lib/db/chads-adapter";
 import { resolveChadProfilesOrdered } from "@/lib/chads/profile-batch";
 
@@ -42,10 +42,11 @@ export async function GET(req: Request) {
     if (!profile?.terminalWallet || !profile.isPaid || !profile.publishedAt) {
       return NextResponse.json({ ok: false, reason: "target_not_active" }, { status: 404 });
     }
-    const rows = await listAcceptedForWallet(profile.terminalWallet, cursor);
-    const otherWallets = rows.map((r) =>
-      r.requesterWallet === profile.terminalWallet ? r.targetWallet : r.requesterWallet,
-    );
+    // Public army of profile X = chads X has successfully added.
+    // Directional: rows where requester=X, status=accepted; the other
+    // operator is always the target_wallet.
+    const rows = await listAcceptedByRequester(profile.terminalWallet, cursor);
+    const otherWallets = rows.map((r) => r.targetWallet);
     const profiles = await resolveChadProfilesOrdered(otherWallets);
     const lastId = rows.length > 0 ? rows[rows.length - 1]?.id ?? null : null;
     return NextResponse.json({ ok: true, items: profiles, nextCursor: lastId });
@@ -70,10 +71,9 @@ export async function GET(req: Request) {
   }
 
   if (type === "accepted") {
-    const rows = await listAcceptedForWallet(sessionWallet, cursor);
-    const otherWallets = rows.map((r) =>
-      r.requesterWallet === sessionWallet ? r.targetWallet : r.requesterWallet,
-    );
+    // Session user's own army = chads they've added.
+    const rows = await listAcceptedByRequester(sessionWallet, cursor);
+    const otherWallets = rows.map((r) => r.targetWallet);
     const profiles = await resolveChadProfilesOrdered(otherWallets);
     const lastId = rows.length > 0 ? rows[rows.length - 1]?.id ?? null : null;
     return NextResponse.json({ ok: true, items: profiles, nextCursor: lastId });

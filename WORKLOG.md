@@ -20,6 +20,168 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-25 09:00 MST — Chad Function — directional Instagram-private model rebuild
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`)
+**Model:** claude-opus-4-7 (1M context)
+**Role:** chad-backend
+**Commits:** this commit
+**Migrations run in prod Supabase:** none (schema unchanged)
+**Impacts:** none — feature still gated by CHADS_ENABLED, dark in prod
+**Status:** ✅ pushed; awaiting Kellen call on updates-feed entry + flag flip
+
+### Did
+
+Rebuilt chad-function semantics from "mutual" → "directional one-way"
+(Instagram-private style) per Kellen's locked instruction:
+
+  *"its suppose to work like instagram private profile... user ask
+  to be your friend, you get a ping on a request to be your friend
+  (deny/accept) thats it. one way street."*
+
+Plus three vocabulary changes Kellen specified:
+- Dashboard strip title: `CHAD MANAGEMENT` → `PENDING ASKS`
+- /manage/chads page summary: `Pending Requests (X)` → `Pending Asks (X)`
+- /manage/chads empty state: `No chads yet. Share your profile…`
+  → `No chads yet. Visit other operators profiles and add chads
+  to your army.`
+
+### Model now (locked)
+
+Each direction is an independent row with its own lifecycle. A→B
+and B→A are entirely separate. "My Chad Army" = chads I have
+asked to add who accepted = rows where requester=me AND
+status=accepted. The reverse direction is unrelated to my army.
+
+| Action | Effect |
+|---|---|
+| A clicks Add Chad on B → B accepts | B is in A's army. B's army unchanged. |
+| A clicks Add Chad on B → B denies | Row deleted; A can re-ask. B's army unchanged. |
+| A clicks Add Chad on B → B ignores | Row sits pending; A blocked from re-asking that direction. |
+| A removes B from A's army | Row (A→B accepted) deleted. Row (B→A, if any) untouched. |
+
+### Files changed
+
+**Spec docs:**
+- `docs/features/chad/COWORK-BRIEF.md` — rewrote § Locked
+  mechanics with new "Relationship model — Instagram-private style,
+  ONE-WAY DIRECTIONAL" subsection that explicitly notes the prior
+  mutual model was wrong. Updated § Lifecycle, § Ask flow,
+  § Remove sections to reflect directional semantics.
+- `docs/features/chad/BUILDER-HANDOFF.md` — rewrote the universal
+  rules section with directional semantics + dated note flagging
+  the prior mutual model as wrong.
+
+**Backend:**
+- `src/lib/db/chads-adapter.ts` — full rewrite of adapter:
+  - `findChadshipBetween(walletA, walletB)` (symmetric) →
+    `findChadInDirection(requester, target)` (directional)
+  - `listAcceptedForWallet(wallet)` (symmetric, returned both
+    directions) → `listAcceptedByRequester(requester)` (directional,
+    "chads requester has added")
+  - `countAcceptedForWallet(wallet)` (symmetric) →
+    `countAcceptedByRequester(requester)` (directional)
+  - `deleteChadship(walletA, walletB)` (symmetric) →
+    `deleteChadshipDirected(requester, target)` (directional)
+  - `listPendingForTarget`, `countPendingForTarget`,
+    `insertPendingRequest`, `acceptPending` were already directional
+    — unchanged
+- `src/lib/chads/resolve-phase.ts` — uses `findChadInDirection`;
+  modal phase only consults viewer→target direction. Reverse
+  direction (target→viewer, if any) is dashboard-only territory.
+
+**API routes:**
+- `src/app/api/chads/request/route.ts` — drops symmetric block.
+  `findChadInDirection(viewer, target)` only blocks if same
+  direction exists. Reverse-direction row no longer blocks the ask.
+- `src/app/api/chads/respond/route.ts` — `findChadInDirection` +
+  `deleteChadshipDirected` for deny path. Only the asker→session
+  row is touched on accept/deny.
+- `src/app/api/chads/list/route.ts` — type=army and type=accepted
+  both switch to `listAcceptedByRequester` (chads X has added).
+  type=pending unchanged (asks targeting session).
+- `src/app/api/chads/remove/route.ts` — `findChadInDirection` +
+  `deleteChadshipDirected`. Only my row in my direction is deleted;
+  the reverse-direction row (if the chad has me in their army) is
+  untouched.
+- `src/app/api/chads/counts/route.ts` — accepted count =
+  `countAcceptedByRequester` (army size = chads I've added).
+- `src/app/api/chads/eligibility/route.ts` — passes
+  `countAcceptedByRequester` as the army-counter to resolveChadPhase.
+
+**Page-level fetches:**
+- `src/app/(marketing)/profile/[handle]/page.tsx` — public profile
+  army strip uses `listAcceptedByRequester(view.ownerWallet)` +
+  `countAcceptedByRequester` so the strip shows chads the profile
+  owner has added.
+- `src/app/(marketing)/profile/[handle]/chads/page.tsx` — public
+  army full-list page same change.
+- `src/app/(marketing)/manage/chads/page.tsx` — pending list
+  unchanged (incoming asks); accepted list switches to
+  `listAcceptedByRequester` (my own army).
+
+**Visual:**
+- `src/components/chad/ChadManagementStrip.tsx` — title
+  "CHAD MANAGEMENT" → "PENDING ASKS" in both PREMIUM and LOCKED
+  variants. Both counts kept (per Kellen option a).
+- `src/components/chad/ChadDashboardClient.tsx` — summary line
+  "Pending Requests (X)" → "Pending Asks (X)". Army count line
+  unchanged.
+- `src/components/chad/ChadEmptyState.tsx` — dashboard context
+  copy now matches Kellen's spec; public context copy adjusted to
+  match directional semantics ("hasn't added anyone to their army
+  yet" instead of "hasn't connected with anyone yet").
+
+### What's NOT changed in this commit
+
+- Schema (`0021_chads.sql`) — unchanged. The directional model
+  was always supported by the schema; only read semantics needed
+  to change.
+- `VERSION` — Kellen's call whether the relaunch needs a new
+  user-visible feed entry (§ Updates feed convention). Not touching
+  data/updates.json without explicit instruction.
+- Modal copy — `pending` phase still says "Request already sent"
+  and "Request Pending". Kellen specified vocabulary changes for
+  three specific surfaces (strip, dashboard line, empty state)
+  but did not specify modal copy changes. Leaving as-is per the
+  no-silent-decisions rule.
+- `JOIN_CHAD_ARMY` modal titlebar text — unchanged.
+- The existing test row in prod
+  (`lastshiftfounder→bossvito, pending`) is semantically valid
+  under the new model (lastshiftfounder asked bossvito to be in
+  their army, awaiting bossvito's accept). Can stay or be wiped.
+
+### Open / next
+
+- **Kellen call: updates feed entry?** The 0.12.0 entry on
+  /status currently describes the wrong (mutual) chad model. It
+  shipped to the feed but the feature was disabled before users
+  could engage with it. Options: (a) leave 0.12.0 as-is and add a
+  new patch-bump entry with corrected directional copy on relaunch,
+  (b) bump major and treat this as a corrected re-launch, (c) do
+  nothing and let the 0.12.0 entry stand. Recommend (a) but
+  Kellen decides.
+- **Redeploy + flip CHADS_ENABLED=true** when Kellen is ready.
+  Vercel needs a redeploy to pick up the env var change since
+  SSG pages bake env at build time.
+
+### Gotchas for next session
+
+- **The directional model is now locked.** If a future session
+  reads the COWORK-BRIEF / BUILDER-HANDOFF and finds language that
+  hints at "mutual" or "both armies populate on one accept," that's
+  stale residue — the current shipped semantics are directional
+  per the headers in those docs.
+- **`findChadshipBetween` no longer exists.** Searches that match
+  it should use `findChadInDirection(requester, target)` and pass
+  the direction explicitly.
+- **Dashboard strip title is now `PENDING ASKS`** but the inline
+  count labels still say "Pending: X" + "Your Chad Army: Y".
+  This is intentional per Kellen's "option a" (keep both counts).
+
+---
+
 ## 2026-04-25 06:00 MST — Chad Function — disabled in prod; wrong model semantics surfaced
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)

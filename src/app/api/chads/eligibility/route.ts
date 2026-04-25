@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { readSession } from "@/lib/session";
 import { isChadsEnabled } from "@/lib/chads/feature-flag";
 import { resolveChadPhase } from "@/lib/chads/resolve-phase";
-import { countAcceptedForWallet } from "@/lib/db/chads-adapter";
+import { countAcceptedByRequester } from "@/lib/db/chads-adapter";
 
 /**
  * GET /api/chads/eligibility?target=<handle>
@@ -31,10 +31,11 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, reason: "target_required" }, { status: 400 });
   }
 
+  // Target's army count = chads target has added (directional).
   const resolution = await resolveChadPhase(
     wallet,
     target,
-    countAcceptedForWallet,
+    countAcceptedByRequester,
   );
   if (!resolution) {
     return NextResponse.json({ ok: false, reason: "target_not_active" }, { status: 404 });

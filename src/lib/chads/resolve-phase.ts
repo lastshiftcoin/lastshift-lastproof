@@ -37,7 +37,7 @@
 import { supabaseService } from "@/lib/db/client";
 import { getProfileByHandle, getProfileByOperatorId } from "@/lib/db/profiles-adapter";
 import type { ProfileRow } from "@/lib/profiles-store";
-import { findChadshipBetween } from "@/lib/db/chads-adapter";
+import { findChadInDirection } from "@/lib/db/chads-adapter";
 
 export type ChadPhase =
   | "eligible"
@@ -140,8 +140,11 @@ export async function resolveChadPhase(
     };
   }
 
-  // Viewer + target are both active; check relationship.
-  const existing = await findChadshipBetween(viewerWallet, targetWallet);
+  // Viewer + target are both active; check relationship in the
+  // viewer→target direction only. The reverse direction (if any) is
+  // a separate independent row and doesn't affect what the viewer
+  // sees in the modal — they can still send their own ask regardless.
+  const existing = await findChadInDirection(viewerWallet, targetWallet);
   if (existing) {
     if (existing.status === "accepted") {
       return {

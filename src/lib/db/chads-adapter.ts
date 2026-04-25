@@ -1,19 +1,27 @@
 /**
  * Chads — Supabase adapter (supabase-direct, no memory/dual layer).
  *
- * Wallet-keyed friend graph. One row per directional pair. See
- * supabase/migrations/0021_chads.sql for the schema and
- * docs/features/chad/COWORK-BRIEF.md for the locked mechanics:
+ * Wallet-keyed friend graph, **directional one-way** semantics
+ * (Instagram-private style — see COWORK-BRIEF.md § Relationship model).
+ * One row per `requester_wallet → target_wallet` direction. The reverse
+ * direction is a separate, independent row with its own state.
  *
- *   - status `pending` — requester sent, target hasn't responded
- *   - status `accepted` — target accepted; both are chads
- *   - deny == hard row delete (re-request automatic on re-ask)
- *   - ignore == no row mutation (sits forever, requester locked out)
- *   - remove == hard row delete on either side
+ *   pending  — requester asked, target hasn't responded
+ *   accepted — target accepted; target is now in requester's army
+ *   deny     — hard row delete (caller's responsibility; this adapter
+ *              just exposes the delete helper)
+ *   ignore   — no row mutation; row sits pending until acted on
  *
- * The adapter only enforces uniqueness, status enum, and self-chad
- * blocks via DB constraints. Higher-level rules (lapses, eligibility
- * branching) live in src/lib/chads/resolve-phase.ts.
+ * The adapter only enforces uniqueness per direction, status enum, and
+ * self-chad blocks via DB constraints. Higher-level rules (lapses,
+ * eligibility branching) live in src/lib/chads/resolve-phase.ts.
+ *
+ * "My army" semantics: my army = chads I've successfully added =
+ * rows where requester_wallet=me AND status=accepted. Their target
+ * wallets are the operators in my army. The reverse query (rows
+ * where target_wallet=me AND status=accepted — operators who have
+ * me in THEIR army) is not surfaced by any current product
+ * surface; if needed in the future, add a separate helper.
  */
 
 import { supabaseService } from "./client";
@@ -57,27 +65,25 @@ function rowFromDb(r: DbChad): ChadRow {
 
 // ─── Reads ──────────────────────────────────────────────────────────────────
 
-/** Lookup the row (if any) representing a pending or accepted relationship
- *  in either direction. Symmetric: chads are bidirectional once accepted, so
- *  callers checking "are these two chads?" want either direction. */
-export async function findChadshipBetween(
-  walletA: string,
-  walletB: string,
+/** Lookup the row (if any) in the requester→target direction only.
+ *  The reverse direction is a separate row and not consulted here. */
+export async function findChadInDirection(
+  requesterWallet: string,
+  targetWallet: string,
 ): Promise<ChadRow | null> {
   const { data, error } = await supabaseService()
     .from(TABLE)
     .select("*")
-    .or(
-      `and(requester_wallet.eq.${walletA},target_wallet.eq.${walletB}),and(requester_wallet.eq.${walletB},target_wallet.eq.${walletA})`,
-    )
+    .eq("requester_wallet", requesterWallet)
+    .eq("target_wallet", targetWallet)
     .limit(1)
     .returns<DbChad[]>();
-  if (error) throw new Error(`[chads-adapter] findBetween: ${error.message}`);
+  if (error) throw new Error(`[chads-adapter] findInDirection: ${error.message}`);
   const r = (data ?? [])[0];
   return r ? rowFromDb(r) : null;
 }
 
-/** Pending requests targeting a wallet (the dashboard pending queue). */
+/** Pending asks targeting a wallet (the dashboard pending-asks queue). */
 export async function listPendingForTarget(
   targetWallet: string,
   cursor?: number,
@@ -96,26 +102,29 @@ export async function listPendingForTarget(
   return (data ?? []).map(rowFromDb);
 }
 
-/** Accepted chadships in either direction for a wallet. */
-export async function listAcceptedForWallet(
-  wallet: string,
+/** Accepted chad rows where the given wallet is the requester.
+ *  These are the chads the wallet has successfully added — i.e. the
+ *  operator's army. Returns the rows; caller pulls target_wallet to
+ *  identify the actual chad operators. */
+export async function listAcceptedByRequester(
+  requesterWallet: string,
   cursor?: number,
   limit = 48,
 ): Promise<ChadRow[]> {
   let q = supabaseService()
     .from(TABLE)
     .select("*")
-    .or(`requester_wallet.eq.${wallet},target_wallet.eq.${wallet}`)
+    .eq("requester_wallet", requesterWallet)
     .eq("status", "accepted")
     .order("id", { ascending: false })
     .limit(limit);
   if (cursor) q = q.lt("id", cursor);
   const { data, error } = await q.returns<DbChad[]>();
-  if (error) throw new Error(`[chads-adapter] listAccepted: ${error.message}`);
+  if (error) throw new Error(`[chads-adapter] listAcceptedByRequester: ${error.message}`);
   return (data ?? []).map(rowFromDb);
 }
 
-/** Total pending count for a wallet (dashboard badge). */
+/** Total pending-asks count for a wallet (dashboard badge). */
 export async function countPendingForTarget(targetWallet: string): Promise<number> {
   const { count, error } = await supabaseService()
     .from(TABLE)
@@ -126,20 +135,20 @@ export async function countPendingForTarget(targetWallet: string): Promise<numbe
   return count ?? 0;
 }
 
-/** Total accepted-chadship count in either direction for a wallet. */
-export async function countAcceptedForWallet(wallet: string): Promise<number> {
+/** Total accepted-chad count where wallet is the requester (= army size). */
+export async function countAcceptedByRequester(requesterWallet: string): Promise<number> {
   const { count, error } = await supabaseService()
     .from(TABLE)
     .select("id", { count: "exact", head: true })
-    .or(`requester_wallet.eq.${wallet},target_wallet.eq.${wallet}`)
+    .eq("requester_wallet", requesterWallet)
     .eq("status", "accepted");
-  if (error) throw new Error(`[chads-adapter] countAccepted: ${error.message}`);
+  if (error) throw new Error(`[chads-adapter] countAcceptedByRequester: ${error.message}`);
   return count ?? 0;
 }
 
 // ─── Writes ─────────────────────────────────────────────────────────────────
 
-/** Insert a pending request. Throws on uniqueness/check violations. */
+/** Insert a pending ask. Throws on uniqueness/check violations. */
 export async function insertPendingRequest(
   requesterWallet: string,
   targetWallet: string,
@@ -172,16 +181,24 @@ export async function acceptPending(
   if (error) throw new Error(`[chads-adapter] accept: ${error.message}`);
 }
 
-/** Hard-delete a pending row (deny path) or accepted row (remove path).
- *  Symmetric on accepted: matches either direction so Remove works from
- *  whichever side initiates. */
-export async function deleteChadship(walletA: string, walletB: string): Promise<void> {
+/** Hard-delete the row in the requester→target direction.
+ *  Used by:
+ *  - the deny path (target denying an ask) — caller uses
+ *    (requester=asker, target=session) to delete the asker's row
+ *  - the remove path (operator removing a chad from their army) —
+ *    caller uses (requester=session, target=removed-chad) to delete
+ *    only their own row. The reverse-direction row (if any) is
+ *    untouched.
+ */
+export async function deleteChadshipDirected(
+  requesterWallet: string,
+  targetWallet: string,
+): Promise<void> {
   const { error } = await supabaseService()
     .from(TABLE)
     .delete()
-    .or(
-      `and(requester_wallet.eq.${walletA},target_wallet.eq.${walletB}),and(requester_wallet.eq.${walletB},target_wallet.eq.${walletA})`,
-    );
+    .eq("requester_wallet", requesterWallet)
+    .eq("target_wallet", targetWallet);
   if (error) throw new Error(`[chads-adapter] delete: ${error.message}`);
 }
 

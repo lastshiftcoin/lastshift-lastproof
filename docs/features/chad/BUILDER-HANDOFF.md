@@ -47,20 +47,31 @@ mismatched close tags).
 These come from `COWORK-BRIEF.md` and are non-negotiable — if any UI
 contradicts these, the UI is wrong:
 
-- **Wallet-keyed graph.** One wallet = one node = one army. No separate
-  "profile" identity; the wallet is the identity.
-- **Active = paid AND published.** Only active operators participate —
-  can send, can receive, appear in public armies. Lapses (free or
-  unpublished) **hide** the operator from public armies on both sides;
-  when both reactivate, the relationship reappears. No re-request needed.
-  Backend: persist the relationship through lapses.
-- **Deny = hard-delete.** No soft-delete, no "denied" status row. The
-  row is gone; the requester can re-send later.
+- **Directional one-way model (Instagram-private).** When A clicks
+  Add Chad on B's profile, A is asking to add B to A's army. If B
+  accepts, B appears in A's army; B's army is unchanged. For B to
+  also have A in B's army, B must separately ask A and A must
+  accept. Each direction is an independent row with its own
+  accept/deny lifecycle. (Updated 2026-04-25 — earlier draft of
+  this doc described a "mutual" model where one accept lit both
+  armies; that was wrong.)
+- **Wallet-keyed graph.** One wallet = one node. The wallet is the
+  identity; profile rows decorate the wallet for display.
+- **Active = paid AND published.** Only active operators participate
+  — can send asks, can receive asks, appear in armies. Lapses (free
+  or unpublished) **hide** the operator from any army that includes
+  them; when they reactivate, they reappear. Backend: persist rows
+  through lapses, filter at query time.
+- **Deny = hard-delete.** No soft-delete, no "denied" status row.
+  The row is gone in that direction; the requester can re-ask later.
+  The reverse-direction row, if any, is unaffected by a deny.
 - **No-action / Ignore = pending forever.** No block feature needed —
   inaction is the block.
-- **Remove = instant, no undo.** Kellen's explicit call (2026-04-23).
-  The early wireframe had a 5-second undo ring; that was cut. Frontend:
-  `/api/chads/remove` hard-deletes immediately. No soft-delete window.
+- **Remove = instant, no undo, directional only.** Kellen's explicit
+  call (2026-04-23). The early wireframe had a 5-second undo ring;
+  that was cut. `/api/chads/remove` hard-deletes only the row where
+  the session wallet is the requester. The reverse-direction row,
+  if any, is untouched (each operator manages their own army).
 - **Public profile button is static.** Same `+` label/treatment for
   every viewer, regardless of wallet or relationship. All state
   branching happens in the modal (after click). Keeps the public
