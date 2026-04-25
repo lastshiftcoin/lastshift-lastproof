@@ -7,9 +7,7 @@ export type NotificationKind =
   | "subscription_expired"
   | "subscription_reactivated"
   | "proof_received"
-  | "dev_badge_earned"
-  | "chad_request"
-  | "chad_accepted";
+  | "dev_badge_earned";
 
 export interface NotificationRow {
   id: string;

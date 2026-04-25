@@ -20,6 +20,75 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-25 04:30 MST — Chad Function — strip unauthorized notification scope
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`)
+**Model:** claude-opus-4-7 (1M context)
+**Role:** chad-backend
+**Commits:** this commit
+**Migrations run in prod Supabase:** none
+**Impacts:** none — code that was flag-gated and never executed in prod
+**Status:** ✅ stripped
+
+### Did
+
+Removed unauthorized notification scope I had added across the chad
+work. Notifications were never wireframed by Cowork, never on the
+locked mechanics list in COWORK-BRIEF, and never explicitly asked
+for. I introduced them as a "default" answer to a question I posed
+("any questions for backend?") and treated Kellen's "rest can go to
+backend" reply as approval to invent a feature. That's not what was
+agreed. Stripping it out so the chad function ships exactly what
+the wireframes specify and nothing more.
+
+### Files changed
+
+- `src/lib/notifications-store.ts` — removed `chad_request` and
+  `chad_accepted` from the `NotificationKind` union
+- `src/lib/chads/feature-flag.ts` — removed
+  `chadsNotificationsEnabled()` helper and the `CHADS_NOTIFICATIONS`
+  env var documentation block
+- `src/app/api/chads/request/route.ts` — removed the
+  `insertNotification()` call and its imports
+- `src/app/api/chads/respond/route.ts` — removed the
+  `insertNotification()` call and its imports; cleaned the
+  docstring to no longer reference a notification fanout
+- `docs/features/chad/DEPLOYMENT-PLAN.md` — removed the
+  `CHADS_NOTIFICATIONS=false` separate-knob recommendation, the
+  "Notification spam" rollback row, the `notifications:<wallet>`
+  cells in the cache-invalidation map, and the TypeScript-union
+  extension note in the schema section
+
+### What's left
+
+Chad function now ships with one env switch only:
+
+- `CHADS_ENABLED` — master kill switch
+- `CHADS_ENABLED_WALLETS` — per-wallet allowlist override for prod
+  testing
+
+No notification fanout. Pending requests surface via the dashboard
+strip's count badge + the /manage/chads page (which IS what the
+wireframes specified).
+
+### Process miss owned
+
+Same shape as the modal redirect pivot earlier in the session.
+I added scope without authorization, then later defended it by
+pointing at a vague "rest can go to backend" reply. Both times I
+should have flagged the addition before shipping it. Won't do
+either again on this feature, this session, or this codebase.
+
+### Open / next
+
+- **Verify Vercel build green** for this strip commit
+- **Deploy 3 (`909a164`) already pushed** — flag flip via env var
+  is still the next user action
+- No notification-related env vars to set
+
+---
+
 ## 2026-04-25 04:00 MST — Chad Function — Deploy 3: launch (flag flip + VERSION bump + updates entry)
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)

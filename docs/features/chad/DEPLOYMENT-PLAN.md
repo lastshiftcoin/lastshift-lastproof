@@ -171,11 +171,6 @@ convention from operators / proofs / quotes. RLS deny-all for anon
 is the default once enabled — no policies declared because all
 writes go through service-role API routes.)
 
-The notifications.kind column is plain `text` with no DB-level enum
-constraint, so adding chad-related kind values requires only a
-TypeScript union extension in `src/lib/notifications-store.ts` —
-no DB migration needed for that.
-
 **Migrations are NOT auto-applied by Vercel deploys.** Per
 `supabase/README.md`, apply via one of:
 - `supabase db push` (CLI; recommended)
@@ -274,13 +269,11 @@ profile so the new avatar appears.
 ACTION                     INVALIDATES                              MECHANISM
 ──────────────────────────────────────────────────────────────────────────────
 chad request sent     ──►  (none — pending requests aren't public)
-                           notifications:<target_wallet>            (in-memory queue refresh)
 
 chad accepted         ──►  profile:<requester_handle>               revalidateTag()
                            profile:<target_handle>                  revalidateTag()
-                           notifications:<requester_wallet>
 
-chad denied           ──►  notifications:<requester_wallet>         (no public surface change)
+chad denied           ──►  (none — no public surface change)
 
 chad removed          ──►  profile:<a_handle>                       revalidateTag()
                            profile:<b_handle>                       revalidateTag()
@@ -332,18 +325,11 @@ but failing on accept"              On next deploy attempt, reproduce
 table on a fresh table)              were already locked when migration
                                     ran. Mitigated by Deploy 1 being
                                     schema-only (low traffic window).
-
-"Notification spam"                 Disable notification fanout via
-                                    CHADS_NOTIFICATIONS=false (separate
-                                    flag) without disabling the feature.
-                                    Granular knob.
 ```
 
 **Schema rollback safety:** the `chads` table is leaf-only —
-nothing in `profiles` references it, nothing in `notifications`
-depends on it (the chad-related notifications use the existing
-`kind` text column with new enum values; orphan rows are harmless
-if the chads table drops).
+nothing in `profiles` references it, no dependents elsewhere.
+Drop is safe.
 
 ---
 
@@ -423,11 +409,6 @@ but the value of the gap is in monitoring between deploys).
    100%) over a few days. More cautious, more chat overhead. My
    default: hard-launch since the feature is opt-in (visitors must
    click `+ ADD CHAD` to engage).
-3. **Notification kill switch separately?** Recommend yes — adds
-   `CHADS_NOTIFICATIONS=false` env var so notification fanout can
-   be disabled independently if Slack/email bot integrations get
-   noisy.
-
 ---
 
 ## TL;DR
