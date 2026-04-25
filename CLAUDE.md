@@ -37,6 +37,82 @@ design-token and tier details spelled out) see `LASTPROOF-BUILDER-HANDOFF.md`
 
 ---
 
+## Builders ask before assuming — NON-NEGOTIABLE
+
+This rule applies to every builder on every session, every feature,
+every commit. There are no exceptions.
+
+**When the wireframes, locked mechanics, brief, or user instructions
+do not explicitly resolve a decision, STOP and ask the user. Do not
+proceed. Do not pick a "reasonable default." Do not "improve" the
+spec mid-build. Do not invent scope.**
+
+This applies whether the open question is:
+
+- A UX choice (how a screen renders, where a button goes, how a flow
+  branches, what happens after a click)
+- A scope addition (a new field, env flag, endpoint, helper, table
+  column, notification, error path, validation rule, fallback)
+- A semantic interpretation of the brief (what "mutual" or "either
+  party" or "default" or "active" means, what direction a graph
+  edge points, what state machine transitions are allowed)
+- A workaround for something that doesn't cleanly fit the existing
+  pattern (different wallet UX from /manage, different auth model,
+  different cache strategy)
+
+The wireframes ARE the spec. The locked mechanics in feature briefs
+ARE the spec. Kellen is the source of truth for both. Your job as
+builder is to implement them exactly, and to flag forks the spec
+doesn't cover.
+
+**Ambiguous user replies do not authorize design decisions.** Phrases
+like "rest can go to backend," "your call," "defaults are fine,"
+"figure it out" authorize *implementation choices* (e.g. which
+adapter pattern to use, what to name a variable, where to put a
+helper) — they do **not** authorize feature inventions, UX
+redesigns, or semantic reinterpretations. When the user is
+ambiguous, ask again with a precise question. The user always
+prefers a 30-second clarification to a 30-minute rebuild.
+
+**If you are uncertain whether something needs approval, the answer
+is yes — ask.** The cost of one extra question is trivial. The cost
+of guessing wrong is rework, lost trust, and a real risk of shipping
+the wrong thing to users.
+
+### Recorded failures (so this rule has receipts)
+
+The chad-function build (April 2026) produced three back-to-back
+failures of this rule, each requiring a follow-up commit to roll
+back or rebuild:
+
+1. **Modal connect screen redesigned without approval** — the
+   wireframe specified an in-modal wallet picker; the builder
+   shipped a /manage redirect "for simplicity" because the existing
+   auth model required a session. Should have been flagged as a
+   fork. Rolled back in a separate commit when Kellen called it out.
+
+2. **Notification fanout invented from thin air** — `chad_request`
+   and `chad_accepted` notification kinds + a `CHADS_NOTIFICATIONS`
+   env var were added during the build. None of these were in any
+   wireframe or brief. The builder treated Kellen's "rest can go
+   to backend" reply (which authorized implementation choices) as
+   approval to invent feature scope. Stripped in a separate commit
+   when Kellen called it out.
+
+3. **Wrong relationship model shipped** — the chad data model was
+   built as "mutual" (one row per pair, one accept lights both
+   armies). Kellen's actual intent was "directional independent"
+   (each side requests + accepts separately). Both Cowork's
+   wireframe and the builder's read of the brief assumed mutual
+   without verifying the semantic with Kellen. Surfaced when the
+   feature went live and Kellen smoke-tested it. Required a model
+   rebuild.
+
+Each was preventable by a single explicit question to Kellen before
+shipping. Read these and don't repeat them.
+
+---
+
 ## Tier system (LOCKED)
 
 **Four tiers, pure proof count, no gates.** The old T5/T1–T4 split from
