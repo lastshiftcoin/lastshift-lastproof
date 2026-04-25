@@ -83,7 +83,7 @@ export function ChadDashboardClient({
     <>
       <div className="chad-dash-summary">
         <div className="chad-dash-summary-line chad-dash-summary-pending">
-          <span className="chad-dash-dot" /> Pending Requests ({livePendingCount})
+          <span className="chad-dash-dot" /> Pending Asks ({livePendingCount})
         </div>
         <div className="chad-dash-summary-line">
           <span className="chad-dash-dot chad-dash-dot-neutral" /> Your Chad Army ({liveAcceptedCount})

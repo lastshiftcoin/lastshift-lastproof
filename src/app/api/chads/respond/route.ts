@@ -3,9 +3,9 @@ import { readSession } from "@/lib/session";
 import { isChadsEnabled } from "@/lib/chads/feature-flag";
 import { getProfileByHandle } from "@/lib/db/profiles-adapter";
 import {
-  findChadshipBetween,
+  findChadInDirection,
   acceptPending,
-  deleteChadship,
+  deleteChadshipDirected,
 } from "@/lib/db/chads-adapter";
 
 /**
@@ -48,24 +48,20 @@ export async function POST(req: Request) {
   }
   const requesterWallet = requesterProfile.terminalWallet;
 
-  // Verify a pending row exists in the requester→target direction. The
-  // session wallet must be the target; we never let a third party
-  // accept/deny on behalf of someone.
-  const existing = await findChadshipBetween(requesterWallet, wallet);
-  if (
-    !existing ||
-    existing.status !== "pending" ||
-    existing.requesterWallet !== requesterWallet ||
-    existing.targetWallet !== wallet
-  ) {
+  // Verify a pending row exists in the asker→session direction. The
+  // session wallet must be the target. The reverse direction (the
+  // session's own ask back to the asker, if any) is a separate row
+  // and is unaffected by this respond call.
+  const existing = await findChadInDirection(requesterWallet, wallet);
+  if (!existing || existing.status !== "pending") {
     return NextResponse.json({ ok: false, reason: "no_pending_request" }, { status: 404 });
   }
 
   if (action === "accept") {
     await acceptPending(requesterWallet, wallet);
   } else {
-    // Deny — hard-delete row.
-    await deleteChadship(requesterWallet, wallet);
+    // Deny — hard-delete only this directional row.
+    await deleteChadshipDirected(requesterWallet, wallet);
   }
 
   return NextResponse.json({ ok: true });

@@ -4,7 +4,7 @@ import { isChadsEnabled } from "@/lib/chads/feature-flag";
 import { getProfileByHandle } from "@/lib/db/profiles-adapter";
 import { getProfileByWallet } from "@/lib/chads/resolve-phase";
 import {
-  findChadshipBetween,
+  findChadInDirection,
   insertPendingRequest,
 } from "@/lib/db/chads-adapter";
 
@@ -55,7 +55,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, reason: "free_profile" }, { status: 403 });
   }
 
-  const existing = await findChadshipBetween(wallet, targetWallet);
+  // Only block if a row exists in this same direction (we're asking
+  // again before our prior ask was acted on, OR they already accepted).
+  // The reverse direction (target→viewer) is independent and does not
+  // block the viewer's ask under the directional model.
+  const existing = await findChadInDirection(wallet, targetWallet);
   if (existing) {
     return NextResponse.json({ ok: false, reason: "already_exists" }, { status: 409 });
   }

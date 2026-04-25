@@ -60,7 +60,7 @@ export function ChadManagementStrip() {
     return (
       <section className="edit-card chad-mgmt chad-mgmt-locked">
         <h2 className="chad-mgmt-title chad-mgmt-title-locked">
-          <span className="slash">//</span>CHAD MANAGEMENT
+          <span className="slash">//</span>PENDING ASKS
         </h2>
         <div className="chad-mgmt-row">
           <div className="chad-mgmt-locked-notice">
@@ -77,7 +77,7 @@ export function ChadManagementStrip() {
   return (
     <section className="edit-card chad-mgmt">
       <h2 className="chad-mgmt-title">
-        <span className="slash">//</span>CHAD MANAGEMENT
+        <span className="slash">//</span>PENDING ASKS
       </h2>
       <div className="chad-mgmt-row">
         <div className="chad-mgmt-counts">

@@ -3,8 +3,8 @@ import { readSession } from "@/lib/session";
 import { isChadsEnabled } from "@/lib/chads/feature-flag";
 import { getProfileByHandle } from "@/lib/db/profiles-adapter";
 import {
-  findChadshipBetween,
-  deleteChadship,
+  findChadInDirection,
+  deleteChadshipDirected,
 } from "@/lib/db/chads-adapter";
 
 /**
@@ -41,13 +41,19 @@ export async function POST(req: Request) {
   }
   const chadWallet = chadProfile.terminalWallet;
 
-  // Verify an accepted relationship exists. Refuse to delete a pending
-  // row — that goes through /api/chads/respond { action: "deny" }.
-  const existing = await findChadshipBetween(wallet, chadWallet);
+  // Verify an accepted row exists in MY direction (I'm the requester,
+  // chad is the target — the chad is in MY army). Refuse to delete a
+  // pending row here — denying a pending ask goes through
+  // /api/chads/respond { action: "deny" }.
+  //
+  // Directional remove: only the (session → chad) row is touched.
+  // The reverse-direction row (chad → session, if any) is left alone
+  // — that one belongs to the chad's own army management.
+  const existing = await findChadInDirection(wallet, chadWallet);
   if (!existing || existing.status !== "accepted") {
     return NextResponse.json({ ok: false, reason: "not_chads" }, { status: 404 });
   }
 
-  await deleteChadship(wallet, chadWallet);
+  await deleteChadshipDirected(wallet, chadWallet);
   return NextResponse.json({ ok: true });
 }

@@ -39,37 +39,67 @@
 ## Locked mechanics — non-negotiable state contract
 
 These are the rules the wireframes must design around. Any UI that
-contradicts these is wrong:
+contradicts these is wrong.
+
+### Relationship model — Instagram-private style, ONE-WAY DIRECTIONAL
+
+(Updated 2026-04-25: previous version of this brief described a
+"mutual" model where one accept lit both armies. That was wrong.
+Locked model is directional, like Instagram's private-profile follow
+flow.)
+
+- **"My Chad Army" = chads I have asked to add, who accepted.**
+  When I click `+ ADD CHAD` on B's profile, I am asking to add B to
+  MY army. If B accepts, B appears in my army. **B's army is
+  unchanged** — I am NOT auto-added to B's army.
+- For B to also have me in their army, B must separately click
+  `+ ADD CHAD` on my profile and I must accept.
+- Each direction is an independent request with its own accept /
+  deny / pending lifecycle. A→B and B→A are stored as separate
+  rows and resolved independently.
+- This means at any moment between two operators A and B, four
+  independent states can co-exist:
+    - 0 rows (no relationship)
+    - A→B pending (A asked, B hasn't acted)
+    - A→B accepted (B is in A's army)
+    - B→A pending (B asked, A hasn't acted)
+    - B→A accepted (A is in B's army)
+    - Any combination of A→B + B→A states
 
 ### Identity
 - Chad graph is **wallet-keyed**. Every node is a wallet with an
   **active** profile.
 - **Active** = paid AND published. Free / unpublished profiles do not
-  participate: cannot send requests, cannot receive requests, do not
+  participate: cannot send asks, cannot receive asks, do not
   appear in anyone's visible Chad Army.
 
 ### Lifecycle
-- Relationships persist in the DB through lapses. When either party
-  goes free/unpublished, they simply **hide** from public armies on
-  both sides; when both are active again, the relationship reappears.
-  No re-request needed.
+- Rows persist in the DB through lapses. When either party goes
+  free/unpublished, they simply **hide** from any army that includes
+  them; when they reactivate, they reappear. No re-ask needed.
 
-### Request flow
-- One request per `requester → target` pair at a time. The row in the
-  DB enforces this.
-- Target sees pending request in dashboard with two buttons:
+### Ask flow
+- One row per `requester → target` direction at a time. The DB
+  unique constraint on `(requester_wallet, target_wallet)` enforces
+  this. The reverse direction (`target_wallet → requester_wallet`)
+  is a separate row with its own state and is unaffected.
+- Target sees pending asks in their dashboard with two buttons:
   **[Accept]** and **[Deny]**. No "Ignore" button — ignore is
   inaction.
-- **Accept** → row status flips to accepted; both are now chads.
-- **Deny** → row is **hard-deleted**. "As if it never happened." The
-  requester can re-send a fresh request later.
-- **No action / Ignore** → row sits pending forever. Requester cannot
-  re-send while the row exists. This is the "Facebook-style" go-away-
-  forever option — no explicit block feature needed.
+- **Accept** → row status flips to accepted; the requester gains
+  the target in their (the requester's) army. The target's army
+  is unchanged.
+- **Deny** → row is **hard-deleted**. "As if it never happened."
+  The requester can re-ask later.
+- **No action / Ignore** → row sits pending forever. Requester
+  cannot re-ask while the row exists in this direction. (The
+  reverse direction is unaffected — target can still send their
+  own ask to the requester independently.)
 
 ### Remove (un-chad)
-- Either chad can **Remove** a connection from their dashboard chads
-  list. Remove hard-deletes the row.
+- Each chad row can be removed by **its requester** from their
+  dashboard. Remove hard-deletes only that row (one direction).
+  The reverse-direction row, if any, is unaffected.
 - Remove lives **only** in the dashboard. Not in the public-profile
   modal, not on the public army page.
 

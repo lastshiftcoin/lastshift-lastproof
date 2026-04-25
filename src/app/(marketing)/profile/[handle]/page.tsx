@@ -17,7 +17,7 @@ import { TrustTierBar } from "@/components/profile/TrustTierBar";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { ChadArmyStrip } from "@/components/chad/ChadArmyStrip";
 import { isChadsEnabled } from "@/lib/chads/feature-flag";
-import { listAcceptedForWallet, countAcceptedForWallet } from "@/lib/db/chads-adapter";
+import { listAcceptedByRequester, countAcceptedByRequester } from "@/lib/db/chads-adapter";
 import { resolveChadProfilesOrdered } from "@/lib/chads/profile-batch";
 import { StatStrip } from "@/components/profile/StatStrip";
 import { CategoryChips } from "@/components/profile/CategoryChips";
@@ -198,12 +198,11 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
   let chadInitialItems: Awaited<ReturnType<typeof resolveChadProfilesOrdered>> = [];
   let chadArmyCount = 0;
   if (chadsOn && view.variant !== "free" && view.ownerWallet) {
-    const rows = await listAcceptedForWallet(view.ownerWallet, undefined, 12);
-    const otherWallets = rows.map((r) =>
-      r.requesterWallet === view.ownerWallet ? r.targetWallet : r.requesterWallet,
-    );
+    // Profile owner's army = chads they've added (directional).
+    const rows = await listAcceptedByRequester(view.ownerWallet, undefined, 12);
+    const otherWallets = rows.map((r) => r.targetWallet);
     chadInitialItems = await resolveChadProfilesOrdered(otherWallets);
-    chadArmyCount = await countAcceptedForWallet(view.ownerWallet);
+    chadArmyCount = await countAcceptedByRequester(view.ownerWallet);
   }
 
   // ─── FREE variant: stripped layout (hero + CTA only) ──────────

@@ -6,8 +6,8 @@ import { isChadsEnabled } from "@/lib/chads/feature-flag";
 import { readSession } from "@/lib/session";
 import { getProfileByHandle } from "@/lib/db/profiles-adapter";
 import {
-  countAcceptedForWallet,
-  listAcceptedForWallet,
+  countAcceptedByRequester,
+  listAcceptedByRequester,
 } from "@/lib/db/chads-adapter";
 import { resolveChadProfilesOrdered } from "@/lib/chads/profile-batch";
 import { ChadArmyClient } from "@/components/chad/ChadArmyClient";
@@ -43,11 +43,10 @@ export default async function PublicChadArmyPage({ params }: PageProps) {
   }
 
   const targetWallet = profile.terminalWallet;
-  const armyCount = await countAcceptedForWallet(targetWallet);
-  const initialRows = await listAcceptedForWallet(targetWallet);
-  const otherWallets = initialRows.map((r) =>
-    r.requesterWallet === targetWallet ? r.targetWallet : r.requesterWallet,
-  );
+  // Profile X's public army = chads X has added (directional).
+  const armyCount = await countAcceptedByRequester(targetWallet);
+  const initialRows = await listAcceptedByRequester(targetWallet);
+  const otherWallets = initialRows.map((r) => r.targetWallet);
   const initialItems = await resolveChadProfilesOrdered(otherWallets);
   const initialCursor = initialRows.length > 0 ? initialRows[initialRows.length - 1]!.id : null;
 

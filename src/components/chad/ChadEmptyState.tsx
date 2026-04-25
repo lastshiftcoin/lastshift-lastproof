@@ -25,8 +25,8 @@ export function ChadEmptyState({ context }: Props) {
       <div className="chad-empty-title">NO CHADS YET</div>
       <div className="chad-empty-copy">
         {context === "public"
-          ? "This operator hasn't connected with anyone yet."
-          : "Share your profile to start your army."}
+          ? "This operator hasn't added anyone to their army yet."
+          : "Visit other operators profiles and add chads to your army."}
       </div>
     </div>
   );
