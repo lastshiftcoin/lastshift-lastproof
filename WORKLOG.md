@@ -20,6 +20,99 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-25 08:47 MST — Telegram verify: surface no_username + others to user
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** backend (cross-lane fix into frontend, scope note below)
+**Commits:** this commit (see git log)
+**Migrations run in prod Supabase:** none
+**Impacts:** none — frontend message map only, no contract change
+**Status:** ✅ shipped
+
+### Did
+
+- **Problem:** user @saint reported being stuck looping on the Telegram
+  verify screen on mobile. Pulled `debug_events` for `tg_auth`
+  category — pattern was unmistakable across ~22 failed attempts in
+  the last 24h:
+  - All failures had `payload.has_username = false` in
+    `callback_entry`
+  - All successes had `has_username = true`
+  - Backend correctly rejects with `outcome: no_username`
+  - The actual issue is user-side: their Telegram account has no
+    `@username` set (Telegram makes username optional; phone +
+    first name is enough for the account, but our verify needs
+    the `@handle`).
+- **Frontend bug compounding it:**
+  `src/components/dashboard/VerifiedCard.tsx` has TWO error-message
+  maps. The one used by the redirect flow (`/auth/telegram/callback`
+  → redirect to `/manage/profile?verify_error=tg&reason=no_username`)
+  was missing the `no_username` key. Users hitting that case got a
+  generic "Telegram verification failed." instead of actionable
+  guidance. They retried, same outcome, looped. The other map
+  (legacy postMessage flow) DID have the right message — but that
+  flow stopped firing months ago when we moved the widget to
+  lastproof.app domain.
+- **Fix:** added the missing keys to the redirect-flow map:
+  - `no_username` — "Open Telegram → Settings → Username and set one"
+  - `hash_mismatch`, `expired_auth`, `missing_params`,
+    `not_configured`, `network_error`
+  All correspond to real outcome strings the backend emits.
+- **Updates feed convention applied:**
+  - `VERSION` 0.12.0 → 0.12.1 (patch, category=fixed)
+  - `data/updates.json` entry, `latest_version` bumped
+  - `[update: fixed]` prefix on commit subject
+
+### Scope note
+
+Frontend-lane work. Crossed the lane with Kellen's explicit OK because:
+1. Real users blocked NOW (every Telegram-verify attempt from a
+   no-username user fails with no actionable message)
+2. 6-line addition to a TypeScript Record literal, minimal blast
+3. No frontend session running
+
+### Current state
+
+- Users without a Telegram username now see the specific guidance.
+- @saint, plus tg_ids 6851429769 / 5699075475 / 8292348575 from
+  today's events, all need to be told via DM to set a Telegram
+  username — the frontend fix only helps next attempt.
+- Successful verifies today (6 incl. @lui_fang, @kha_llidd,
+  @emre_merht, @ibrayimyafuz2, @paul989, @l_of_defi) confirm the
+  pipeline is healthy. Only failure mode in data is `no_username`.
+
+### Open / next
+
+- **DM affected users** with the username instruction. Frontend
+  fix isn't retroactive.
+- **Pre-flight warning** on the Telegram verify CTA — a one-liner
+  like "Make sure you have a Telegram username set first." would
+  catch users before they go through the failed flow. Frontend
+  work, deferred.
+
+### Gotchas for next session
+
+- **Two error-message maps in VerifiedCard.tsx.** One for the
+  redirect flow (`useEffect` parsing query params), one for the
+  legacy postMessage flow (`handleTelegramAuth` callback). The
+  redirect flow is the only one firing in production. If you add
+  a new backend outcome string, it MUST go in the redirect-flow
+  map; the postMessage map is dead code that should arguably be
+  removed.
+- **`no_username` is the #1 Telegram verify failure** by volume
+  right now. Telegram makes username optional, newer accounts
+  skip it. UX-layer fix (pre-flight warning) > error-message-layer
+  fix.
+- **`profiles` table has `telegram_handle` and `telegram_verified`
+  columns**, NOT `tg_handle` / `tg_verified`. The first SQL during
+  diagnosis used wrong column names — got the answer from
+  `debug_events` instead. Use `telegram_*` for future profile
+  queries.
+
+---
+
 ## 2026-04-25 09:00 MST — Chad Function — directional Instagram-private model rebuild
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
