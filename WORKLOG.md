@@ -20,6 +20,125 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-24 17:42 MST — Chad Function — frontend polish pass + handoff notes
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`, `com.anthropic.claudefordesktop`)
+**Model:** claude-opus-4-6
+**Role:** frontend
+**Commits:** this commit (wireframe polish + notes doc), plus this WORKLOG entry
+**Migrations run in prod Supabase:** none
+**Impacts:** none — wireframe-only canon edit + internal notes doc; no user-visible changes, no shared-contract changes, no Terminal touches. Per `CLAUDE.md § Updates feed`: wireframe polish is exempt (no `[update:]` prefix, no VERSION bump, no `data/updates.json` entry).
+**Status:** ✅ shipped, ready to hand to architecture for backend + React port
+
+### Did
+
+Frontend gatekeeper pass over the six Chad Function wireframes
+shipped by Cowork at `e0f5d4e` (wireframes-chad commit). Same
+pattern as the Grid handoff: walk the wireframes, polish drift
+against production's visual vocabulary, write a notes doc for
+the architecture session.
+
+**Polish edits — wireframe CSS only, no DOM/copy/structural changes:**
+
+- `wireframes/lastproof-add-chad-modal.html` — `.conn-pill`
+  border-radius `999px` → `var(--r-btn)` (6px rounded-rect).
+  Production convention is 4–8px on chromed pills (ticker, nav
+  buttons, status pills); the capsule shape was the outlier,
+  same way it was on the topbar ticker (`a2d4be4`) and grid
+  filter chips before they were aligned.
+
+That's the only structural change. Cowork's wireframe set is
+already aligned to production tokens — `--r-pill: 4px` matches
+`globals.css`, `--accent` is properly defined as alias of
+`--orange` (no Grid-style aliasing bug), platform body backdrop
+pseudos correctly set up across all new wireframes.
+
+**Notes doc — `docs/features/chad/FRONTEND-NOTES.md` (new, ~330 lines):**
+
+Covers in this order:
+
+1. **Polish edits** — surgical change list (one item)
+2. **Token deviations + extensions** — Cowork added 5 new tokens
+   (`--purple-dim`, `--purple-glow`, `--gold-dim`, `--gold-glow`,
+   `--red-dim`) that don't exist in `src/app/globals.css` yet;
+   architecture pass needs to add them to globals or replace with
+   inline `rgba()`
+3. **Color-reservation extensions** — Cowork extended gold from
+   "Tier 3 only" → "Tier 3 + attention/pending/upgrade-required."
+   Used consistently across all surfaces (pending counts, ⚠
+   warnings, UPGRADE PROFILE button, modal phase 9, dashboard
+   strip pending color, dashboard-chads pending tile borders).
+   Coordinator-level call: ratify the broadened semantic in
+   `CLAUDE.md § Tier system`, or push back and recolor. Flagged
+   alongside two smaller decorative gold uses (`.topbar-logo`
+   gradient, `.chad-av.g1` purple inside avatar palette).
+4. **Components to extract during React port** — 7 components
+   mapped: `<ChadArmyStrip />`, `<ChadAvatar />`, `<AddChadButton />`,
+   `<AddChadModal />`, `<ChadManagementStrip />`, `<ChadCard />`,
+   `<ChadEmptyState />`, plus a shared `<InfiniteChadList />`
+   wrapper. Notes the duplicated `.chad-mgmt-*` block (already
+   noted by Cowork) plus the `.chad-card` block now lives in 3
+   surfaces — extraction is non-negotiable to prevent drift
+5. **Production-side gaps for architecture** — new routes
+   (`/@<handle>/chads`, `/dashboard/chads`), API endpoint sketches,
+   `chads` table schema (wallet-pair PK), helpers/utils that
+   don't exist yet (`resolve-phase.ts`, random-shuffle for
+   ordering, avatar URL resolver), cache strategy open question
+6. **Notes that aren't blockers but matter** — phase-9 styling
+   call (depends on gold ratify), `.chad-army-avatars`
+   `space-between` edge case at low chad counts (degrades for
+   2-chad rows), modal `disconnect-on-success` async ordering,
+   wireframe-only modal phase toggle to strip from React port
+7. **Coordinator decisions to lock before React port** — 6
+   explicit decisions enumerated for handoff
+
+### Current state
+
+- `wireframes/lastproof-add-chad-modal.html` polished (1-line CSS edit)
+- `docs/features/chad/FRONTEND-NOTES.md` written (~330 lines)
+- All 7 wireframes pass HTML structural validation
+- HEAD on `e0585ae` (no commits landed during my pass)
+
+### Open / next
+
+- **Architecture pass next** — chads table + adapter, `/api/chads/*`
+  routes, React port of modal + strips + pages, wire to live data,
+  QA across all 10 modal phases + lapse/deny/remove edges
+- **Coordinator-level decisions** in `FRONTEND-NOTES § Coordinator
+  decisions to lock` are the gating items for the React port —
+  particularly the gold-reservation broadening question
+- **Token additions** to `globals.css` should land before any chad
+  component does
+
+### Gotchas for next session
+
+- **Don't duplicate `.chad-mgmt-*` and `.chad-card` CSS in React.**
+  Two of those classes already live in 2–3 wireframes verbatim.
+  Extract to components on first port; if you wait, you'll have
+  a divergence to chase.
+- **Wireframe-only phase toggle at the bottom of the add-chad modal
+  is reviewer-only.** Strip it from the React port — the state
+  machine drives phase from real eligibility responses, not a
+  manual toggle.
+- **`<AddChadModal />` and `<UpgradeModal />` share purple theme
+  CSS** (modal phase 8 = upgrade nudge, by Kellen's locked decision).
+  When you add `--purple-dim` / `--purple-glow` / `pulsePurple` to
+  `globals.css`, both components consume them. Don't fork into
+  modal-local copies.
+- **Avatar gradient palette `.chad-av.g0`–`.chad-av.g4` pattern was
+  rejected for Grid earlier** (per Kellen: use real user photos
+  with neutral fallback). Same call should apply to chad avatars
+  on the public profile and chad-army page. The wireframe palette
+  is acceptable wireframe placeholder; the React port should use
+  the homepage `<ChadAvatar avatarUrl={...} />` pattern.
+- **Gold-as-attention extension is a real platform-level question.**
+  Don't ship to production without coordinator ratification one way
+  or the other. If Cowork's gold semantic stands, `CLAUDE.md § Tier
+  system` should be updated to broaden the rule explicitly.
+
+---
+
 ## 2026-04-24 09:42 MST — Attribution observability: proxy_touch events on every ambassador-surface hit
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
