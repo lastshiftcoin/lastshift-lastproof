@@ -1,26 +1,23 @@
 import { NextResponse } from "next/server";
 import { readSession } from "@/lib/session";
-import { isChadsEnabled, chadsNotificationsEnabled } from "@/lib/chads/feature-flag";
+import { isChadsEnabled } from "@/lib/chads/feature-flag";
 import { getProfileByHandle } from "@/lib/db/profiles-adapter";
-import { getProfileByWallet } from "@/lib/chads/resolve-phase";
 import {
   findChadshipBetween,
   acceptPending,
   deleteChadship,
 } from "@/lib/db/chads-adapter";
-import { insertNotification } from "@/lib/notifications-store";
 
 /**
  * POST /api/chads/respond   body: { requester: "<handle>", action: "accept" | "deny" }
  *
  * The session wallet is the TARGET responding to a pending request.
  *
- *   accept → flips the row's status to accepted; fires "chad_accepted"
- *            notification back to the requester.
+ *   accept → flips the row's status to accepted.
  *   deny   → hard-deletes the row (re-request is then automatically
- *            possible). No notification fires on deny — the requester
- *            never learns they were denied (privacy-of-deny per the
- *            locked design).
+ *            possible). The requester never learns they were denied
+ *            (privacy-of-deny per the locked design — same end-state
+ *            UX as ignore).
  */
 export async function POST(req: Request) {
   const session = await readSession();
@@ -66,23 +63,8 @@ export async function POST(req: Request) {
 
   if (action === "accept") {
     await acceptPending(requesterWallet, wallet);
-
-    if (chadsNotificationsEnabled(wallet)) {
-      const targetProfile = await getProfileByWallet(wallet);
-      const targetDisplay =
-        targetProfile?.displayName || (targetProfile ? `@${targetProfile.handle}` : "An operator");
-      try {
-        insertNotification({
-          profileId: requesterProfile.id,
-          kind: "chad_accepted",
-          body: `${targetDisplay} accepted your chad request`,
-        });
-      } catch {
-        // Non-critical fanout — never fail the response.
-      }
-    }
   } else {
-    // Deny — hard-delete. No notification (privacy-of-deny).
+    // Deny — hard-delete row.
     await deleteChadship(requesterWallet, wallet);
   }
 

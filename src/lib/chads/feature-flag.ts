@@ -1,7 +1,7 @@
 /**
  * Chad Function — feature flag helpers.
  *
- * Three env switches govern the rollout (see
+ * Two env switches govern the rollout (see
  * docs/features/chad/DEPLOYMENT-PLAN.md):
  *
  *   CHADS_ENABLED            "true" | other → master kill switch.
@@ -14,11 +14,6 @@
  *                            test the live feature on prod against
  *                            our own wallet without exposing it to
  *                            users.
- *
- *   CHADS_NOTIFICATIONS      "true" | other → granular kill switch
- *                            for notification fanout on chad events.
- *                            Disable independently if bot/email gets
- *                            noisy without disabling the whole feature.
  *
  * All env reads happen per-call (no boot-time caching) so flipping
  * CHADS_ENABLED in Vercel takes effect on the next request without a
@@ -57,12 +52,3 @@ export function isChadsEnabled(wallet?: string | null): boolean {
   return false;
 }
 
-/**
- * Returns true if chad-related notifications should fire. Always
- * gated by isChadsEnabled — notifications never fire when the
- * feature itself is off, regardless of CHADS_NOTIFICATIONS.
- */
-export function chadsNotificationsEnabled(wallet?: string | null): boolean {
-  if (!isChadsEnabled(wallet)) return false;
-  return envIsTrue("CHADS_NOTIFICATIONS");
-}

@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { readSession } from "@/lib/session";
-import { isChadsEnabled, chadsNotificationsEnabled } from "@/lib/chads/feature-flag";
+import { isChadsEnabled } from "@/lib/chads/feature-flag";
 import { getProfileByHandle } from "@/lib/db/profiles-adapter";
 import { getProfileByWallet } from "@/lib/chads/resolve-phase";
 import {
   findChadshipBetween,
   insertPendingRequest,
 } from "@/lib/db/chads-adapter";
-import { insertNotification } from "@/lib/notifications-store";
 
 /**
  * POST /api/chads/request   body: { target: "<handle>" }
@@ -62,19 +61,6 @@ export async function POST(req: Request) {
   }
 
   await insertPendingRequest(wallet, targetWallet);
-
-  if (chadsNotificationsEnabled(wallet)) {
-    const requesterDisplay = viewerProfile.displayName || `@${viewerProfile.handle}`;
-    try {
-      insertNotification({
-        profileId: targetProfile.id,
-        kind: "chad_request",
-        body: `${requesterDisplay} wants to be your chad`,
-      });
-    } catch {
-      // Notifications are non-critical; never fail the request on a fanout error.
-    }
-  }
 
   return NextResponse.json({ ok: true });
 }
