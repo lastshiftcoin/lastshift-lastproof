@@ -20,6 +20,100 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-24 21:30 MST — Chad Function — wireframe-by-wireframe review pass
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`, `com.anthropic.claudefordesktop`)
+**Model:** claude-opus-4-6
+**Role:** frontend
+**Commits:** this commit (wireframe polish round 2 + truncation note)
+**Migrations run in prod Supabase:** none
+
+### What shipped
+
+Walked Kellen through wireframes #1–#6 of the Chad Function build one-by-one
+(`add-chad-modal`, `profile-public`, `profile-free`, `chad-army`, `dashboard` +
+`dashboard-fresh`, `dashboard-chads`). Polish edits applied as we went:
+
+**`lastproof-add-chad-modal.html`**
+- Glow consistency: phase 6 (already chads) and phase 7 (pending) lost their
+  CTA glow — they're informational dead-ends, matching phase 10's dim treatment.
+  Glow rule = "primary action awaits" (phases 3/5/8/9 keep glow).
+- Verb consistency: phase 8 CTA `> ACTIVATE PROFILE ↗` → `> UPGRADE TO PREMIUM ↗`
+  (matches Upgrade Modal). Phase 9 CTA + headline + sub: `Create` → `Build`
+  (matches site-wide `BUILD YOUR PROFILE` pattern, 10 pre-existing instances).
+- `.conn-pill` border-radius `999px` → `var(--r-btn)` (capsule → 6px) — already
+  shipped in commit `786f887`, noted here for completeness.
+
+**`lastproof-profile-public.html`**
+- Replaced 8 of 10 chad avatar circles with real images from `public/avatars/`
+  (SolRaider1, DegenDealer, PixelPriest, modqueen, ModCaptain, ThreadFox,
+  SpaceJax, NightKOL1). Left 2 (`@lyra`, `@anon7`) as gradient+monogram
+  fallbacks to demo both states the React port will support.
+- Path: `../public/avatars/...` (relative) so file:// renders in browser.
+
+**`lastproof-profile-free.html`**
+- Verified zero chad UI (no buttons, no avatars, no chad-army strip) —
+  confirms locked rule "free profiles don't participate in chad graph."
+
+**`lastproof-chad-army.html`**
+- Bulk URL fix: 25 instances of `/profile/<handle>` → `/@<handle>` (matches
+  locked URL convention from BUILDER-HANDOFF).
+- Added `.chad-card .avatar img { width:100%; height:100%; object-fit:cover }`.
+- Swapped 14 of 24 monogram avatars to real images.
+
+**`lastproof-dashboard.html` + `lastproof-dashboard-fresh.html`**
+- Reviewed only — no edits. Confirmed `// CHAD MANAGEMENT` strip is duplicated
+  verbatim across both files (~50 lines CSS + markup). Logged to FRONTEND-NOTES
+  as the #1 component-extraction priority for the React port:
+  `<ChadManagementStrip variant="premium|locked" pending={n} total={n} />`.
+
+**`lastproof-dashboard-chads.html`**
+- Swapped 12 of 17 monogram avatars to real images, matching the chad-army
+  page's mix (lyra/mox/orb/rye/pip stay as monogram fallbacks).
+- Added `.ch-id .avatar img` fill rule.
+- Left one tile (Ben Fu → `Benjamin Fukuyama-Smithson`, `@benfu_long_handle_test`)
+  intentionally over-long so CSS ellipsis truncation is visible against the
+  ACCEPT/DENY button column. Confirmed `min-width:0` on flex parents lets the
+  meta column actually shrink. REMOVE-no-confirm behavior left as locked.
+
+### Decisions confirmed in pass
+
+- Glow = primary-action-awaits only; informational phases stay flat.
+- Avatar pattern: real photos where available, gradient+monogram fallback
+  for unset profiles. Mix both in same row to demo both states.
+- Gold-as-attention extension (pending border, pending count, pending handle)
+  remains a coordinator-level question — flagged in FRONTEND-NOTES but
+  Kellen's call is "leave it as is" for now across all 6 wireframes.
+- REMOVE stays instant, no confirm dialog, no undo (re-confirmed locked).
+- Chads management page empty state stays descriptive-only (no SHARE CTA) —
+  user is already on dashboard, doesn't need a profile-build CTA.
+
+### Notes added to FRONTEND-NOTES.md
+
+- New section: **Display name + handle truncation rule (React port)**.
+  CSS ellipsis is the safety net; React port should also enforce a
+  JS-level cap (`display_name` ≤ 24, `handle` ≤ 15 to match X's limit) so
+  truncation is consistent across viewport widths. Includes `cap()` helper
+  snippet to drop into `ChadCard`, `ChadAvatar`, `AddChadModal`.
+
+### Files touched
+
+- `wireframes/lastproof-add-chad-modal.html`
+- `wireframes/lastproof-profile-public.html`
+- `wireframes/lastproof-chad-army.html`
+- `wireframes/lastproof-dashboard-chads.html`
+- `docs/features/chad/FRONTEND-NOTES.md`
+
+**Impacts:** none. Wireframes only — no production code, no API contract,
+no schema. Architecture pass owns the React port + chads table + API routes.
+
+**Updates feed:** intentionally NOT logged (`updates.json`, VERSION, no
+`[update:…]` prefix). Per existing convention, the user-visible chad ship
+lands when architecture commits the table + routes + connected UI together.
+
+---
+
 ## 2026-04-24 17:42 MST — Chad Function — frontend polish pass + handoff notes
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
