@@ -84,6 +84,21 @@ export function VerifiedCard({ profile, onProfileUpdate }: VerifiedCardProps) {
         no_session:
           "You're not logged in. Please connect your wallet first.",
         db_error: "Database error. Please try again.",
+        // Telegram-specific outcomes from /api/auth/telegram/callback. Without
+        // these keys, real users hitting these errors via the redirect flow
+        // get a generic "verification failed" with no actionable guidance.
+        no_username:
+          "Your Telegram account has no username. Open Telegram → Settings → Username and set one, then try again.",
+        hash_mismatch:
+          "Telegram verification failed — the signature didn't match. Please try again.",
+        expired_auth:
+          "That Telegram authorization expired. Please try again.",
+        missing_params:
+          "Telegram returned incomplete data. Please try again.",
+        not_configured:
+          "Telegram verification is temporarily unavailable. Please try again later.",
+        network_error:
+          "Network error reaching Telegram. Please check your connection and try again.",
       };
       setErrorMsg(
         messages[reason ?? ""] ?? `${platform} verification failed.`,
