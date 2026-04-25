@@ -9,12 +9,14 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       { source: "/@:handle", destination: "/profile/:handle" },
+      { source: "/@:handle/chads", destination: "/profile/:handle/chads" },
     ];
   },
   async redirects() {
     return [
       // If someone hits /profile/@handle directly, redirect to /@handle
       { source: "/profile/:handle", destination: "/@:handle", permanent: true },
+      { source: "/profile/:handle/chads", destination: "/@:handle/chads", permanent: true },
     ];
   },
 };

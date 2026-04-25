@@ -15,6 +15,10 @@ import { ProfileTopBar } from "@/components/profile/ProfileTopBar";
 import { LegendCtaSwitch } from "@/components/profile/LegendCtaSwitch";
 import { TrustTierBar } from "@/components/profile/TrustTierBar";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
+import { ChadArmyStrip } from "@/components/chad/ChadArmyStrip";
+import { isChadsEnabled } from "@/lib/chads/feature-flag";
+import { listAcceptedForWallet, countAcceptedForWallet } from "@/lib/db/chads-adapter";
+import { resolveChadProfilesOrdered } from "@/lib/chads/profile-batch";
 import { StatStrip } from "@/components/profile/StatStrip";
 import { CategoryChips } from "@/components/profile/CategoryChips";
 import { WorkItemList } from "@/components/profile/WorkItemList";
@@ -187,6 +191,21 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
     campaignSlug = "earlyaccess";
   }
 
+  // Chad function — gated. When the flag is off, every chad surface
+  // returns null and the page renders byte-identical to today.
+  const session = await readSession();
+  const chadsOn = isChadsEnabled(session?.walletAddress);
+  let chadInitialItems: Awaited<ReturnType<typeof resolveChadProfilesOrdered>> = [];
+  let chadArmyCount = 0;
+  if (chadsOn && view.variant !== "free" && view.ownerWallet) {
+    const rows = await listAcceptedForWallet(view.ownerWallet, undefined, 12);
+    const otherWallets = rows.map((r) =>
+      r.requesterWallet === view.ownerWallet ? r.targetWallet : r.requesterWallet,
+    );
+    chadInitialItems = await resolveChadProfilesOrdered(otherWallets);
+    chadArmyCount = await countAcceptedForWallet(view.ownerWallet);
+  }
+
   // ─── FREE variant: stripped layout (hero + CTA only) ──────────
   if (view.variant === "free") {
     return (
@@ -255,6 +274,7 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
           tgHandle={view.tgHandle}
           website={view.website}
           hireTelegramHandle={view.hireTelegramHandle}
+          chadsEnabled={chadsOn}
         />
 
         <TrustTierBar
@@ -262,6 +282,14 @@ export default async function PublicProfilePage({ params, searchParams }: PagePr
           tierBarFillPct={view.tierBarFillPct}
           tierSubtitle={view.tierSubtitle}
         />
+
+        {chadsOn && (
+          <ChadArmyStrip
+            handle={view.handle}
+            chads={chadInitialItems}
+            armyCount={chadArmyCount}
+          />
+        )}
 
         <ProfileTabs active="overview" />
 

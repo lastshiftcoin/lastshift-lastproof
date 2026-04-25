@@ -30,11 +30,16 @@
   --green: #00e676;
   --green-dim: rgba(0, 230, 118, 0.12);
   --green-glow: rgba(0, 230, 118, 0.25);
-  --gold: #ffd700;      /* Tier 3 — EXPERIENCED only */
+  --gold: #ffd700;      /* Tier 3 — EXPERIENCED. Also chad-surface attention (pending counts, locked-strip warnings, modal phase 9). */
+  --gold-dim: rgba(255, 215, 0, 0.10);
+  --gold-glow: rgba(255, 215, 0, 0.30);
   --purple: #a78bfa;    /* Tier 4 — LEGEND only */
+  --purple-dim: rgba(167, 139, 250, 0.10);
+  --purple-glow: rgba(167, 139, 250, 0.20);
   --silver: #9ca3af;    /* Tier 1 — NEW */
   --bronze: #cd7f32;    /* Tier 2 — VERIFIED */
   --red: #ff5470;
+  --red-dim: rgba(255, 84, 112, 0.10);
   --blue: #409eff;
 
   /* FONTS */
@@ -518,3 +523,529 @@ footer.lp-footer a:hover { color: var(--text-primary); }
   footer.lp-footer { flex-direction: column; gap: 14px; text-align: center; }
 }
 
+
+/* ================================================================
+   CHAD FUNCTION — feature-wide component styles
+   Gated entirely by CHADS_ENABLED env flag (server-side); when off,
+   no chad component renders anything so these classes never apply.
+   See docs/features/chad/DEPLOYMENT-PLAN.md.
+   ================================================================ */
+
+/* + ADD CHAD pill on the public profile, inline with the ACTIVE pill */
+.btn-add-chad {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  margin-left: 6px;
+  background: var(--orange-dim);
+  color: var(--orange);
+  border: 1px solid var(--orange);
+  border-radius: var(--r-pill);
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-add-chad:hover {
+  background: var(--orange);
+  color: #fff;
+}
+
+/* CHAD ARMY strip on the public profile */
+.chad-army-strip { margin: 28px 0 18px; }
+.chad-army-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+}
+.chad-army-avatars {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.chad-army-link { display: inline-flex; }
+.chad-see-army {
+  margin-left: auto;
+  padding: 7px 11px;
+  background: var(--orange-dim);
+  color: var(--orange);
+  border: 1px solid var(--orange);
+  border-radius: var(--r-pill);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.chad-see-army:hover {
+  background: var(--orange);
+  color: #fff;
+}
+
+/* Avatar tile — shared across army strip, army page, dashboard chads */
+.chad-av {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2a2d42, #161822);
+  color: var(--text-secondary);
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  user-select: none;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.chad-av-img {
+  background: transparent;
+  object-fit: cover;
+}
+
+/* Chad list (army page + dashboard chads) — grid of cards */
+.chad-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+.chad-list-sentinel { height: 1px; }
+
+/* Single chad card — public (link only) and dashboard (with actions) */
+.chad-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: background 0.15s, border-color 0.15s;
+}
+.chad-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-2);
+}
+.chad-card.pending {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold-glow);
+}
+.chad-card-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+.chad-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.chad-card-name {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chad-card-handle {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chad-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.chad-card-error {
+  width: 100%;
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--red);
+  letter-spacing: 0.5px;
+}
+.chad-btn {
+  padding: 5px 10px;
+  background: transparent;
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-pill);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.chad-btn:disabled { opacity: 0.5; cursor: default; }
+.chad-btn-accept { color: var(--green); border-color: var(--green); }
+.chad-btn-accept:hover:not(:disabled) { background: var(--green); color: #0a0b0f; }
+.chad-btn-deny { color: var(--red); border-color: var(--red); background: var(--red-dim); }
+.chad-btn-deny:hover:not(:disabled) { background: var(--red); color: #fff; }
+.chad-btn-remove { color: var(--text-secondary); }
+.chad-btn-remove:hover:not(:disabled) { color: var(--red); border-color: var(--red); }
+
+/* Empty state — shared between army page and dashboard chads */
+.chad-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 20px;
+  text-align: center;
+}
+.chad-empty-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--text-dim);
+}
+.chad-empty-icon svg { width: 100%; height: 100%; }
+.chad-empty-title {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+}
+.chad-empty-copy {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/* Dashboard ChadManagementStrip */
+.chad-mgmt {
+  display: block;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+}
+.chad-mgmt-title {
+  margin: 0 0 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--text-primary);
+}
+.chad-mgmt-title .slash { color: var(--accent); margin-right: 6px; }
+.chad-mgmt-title-locked .slash,
+.chad-mgmt-title-locked { color: var(--text-dim); }
+.chad-mgmt-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.chad-mgmt-counts {
+  display: flex;
+  gap: 22px;
+  flex: 1 1 auto;
+}
+.chad-mgmt-count { display: flex; align-items: baseline; gap: 8px; }
+.chad-mgmt-label {
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.chad-mgmt-value {
+  font-family: var(--mono);
+  font-size: 16px;
+  color: var(--text-primary);
+}
+.chad-mgmt-pending { color: var(--gold); }
+.chad-mgmt-cta {
+  margin-left: auto;
+  padding: 7px 12px;
+  background: var(--orange-dim);
+  color: var(--orange);
+  border: 1px solid var(--orange);
+  border-radius: var(--r-pill);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+.chad-mgmt-cta:hover { background: var(--orange); color: #fff; }
+.chad-mgmt-cta-upgrade {
+  background: var(--gold-dim);
+  color: var(--gold);
+  border-color: var(--gold);
+}
+.chad-mgmt-cta-upgrade:hover { background: var(--gold); color: #0a0b0f; }
+.chad-mgmt-locked-notice {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+}
+.chad-mgmt-warn-glyph { color: var(--gold); margin-right: 4px; }
+
+/* Public army page + dashboard chads page — header */
+.pp-chad-army-page { background: var(--bg-primary); }
+.chad-army-page-header { padding: 28px 0 18px; }
+.chad-army-back {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  margin-bottom: 12px;
+}
+.chad-army-back:hover { color: var(--accent); }
+.chad-army-eyebrow {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.chad-army-title {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 22px;
+  letter-spacing: 1.5px;
+  color: var(--text-primary);
+}
+.chad-army-handle { color: var(--accent); }
+.chad-army-subtitle {
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+}
+
+/* Dashboard chads page summary lines */
+.chad-dash-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 0 10px;
+}
+.chad-dash-summary-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-primary);
+}
+.chad-dash-summary-pending { color: var(--gold); }
+.chad-dash-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 6px var(--gold-glow);
+}
+.chad-dash-dot-neutral {
+  background: var(--text-dim);
+  box-shadow: none;
+}
+
+/* Add Chad modal — chrome modeled on lastproof-mint-modal.html */
+.add-chad-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+.add-chad-modal {
+  width: 100%;
+  max-width: 600px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-card);
+  overflow: hidden;
+}
+.acm-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+.acm-dot { width: 10px; height: 10px; border-radius: 50%; }
+.acm-dot-r { background: var(--red); }
+.acm-dot-y { background: var(--gold); }
+.acm-dot-g { background: var(--green); }
+.acm-title {
+  margin-left: 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+}
+.acm-close {
+  margin-left: auto;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 18px;
+  cursor: pointer;
+  line-height: 1;
+}
+.acm-close:hover { color: var(--text-primary); }
+.acm-body { padding: 28px 24px; }
+.acm-phase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+}
+.acm-spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border-2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: acm-spin 0.8s linear infinite;
+}
+@keyframes acm-spin { to { transform: rotate(360deg); } }
+.acm-line {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+}
+.acm-eyebrow {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--accent);
+}
+.acm-eyebrow-red { color: var(--red); }
+.acm-eyebrow-gold { color: var(--gold); }
+.acm-eyebrow-purple { color: var(--purple); }
+.acm-headline {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.acm-copy {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-width: 460px;
+}
+.acm-copy-dim { color: var(--text-dim); }
+.acm-target-card,
+.acm-info-card {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--r-btn);
+  text-align: left;
+}
+.acm-target-label,
+.acm-info-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.acm-target-name {
+  font-family: var(--sans);
+  font-size: 16px;
+  color: var(--text-primary);
+}
+.acm-target-handle {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  margin-top: 2px;
+}
+.acm-info-body {
+  margin: 4px 0 0;
+  padding-left: 20px;
+  text-align: left;
+}
+.acm-info-body li {
+  margin: 4px 0;
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+.acm-cta {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 9px 18px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-btn);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.acm-cta:hover { color: var(--text-primary); border-color: var(--text-secondary); }
+.acm-cta-primary {
+  background: var(--green-dim);
+  color: var(--green);
+  border-color: var(--green);
+}
+.acm-cta-primary:hover { background: var(--green); color: #0a0b0f; }
+.acm-cta-purple {
+  background: var(--purple-dim);
+  color: var(--purple);
+  border-color: var(--purple);
+}
+.acm-cta-purple:hover { background: var(--purple); color: #0a0b0f; }
+.acm-done-check {
+  width: 56px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--green-dim);
+  color: var(--green);
+  font-size: 28px;
+  border: 2px solid var(--green);
+  box-shadow: 0 0 24px var(--green-glow);
+}
+.acm-done-check-soft {
+  background: transparent;
+  box-shadow: none;
+  border-color: var(--green-dim);
+}
