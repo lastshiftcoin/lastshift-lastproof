@@ -20,6 +20,115 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-25 06:00 MST — Chad Function — disabled in prod; wrong model semantics surfaced
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`)
+**Model:** claude-opus-4-7 (1M context)
+**Role:** chad-backend
+**Commits:** none — this entry is documentation only
+**Migrations run in prod Supabase:** none
+**Impacts:** none — feature is dark
+**Status:** ⏸️ paused for tomorrow's session
+
+### What happened
+
+Kellen launched chad in prod (CHADS_ENABLED=true), did a real smoke
+test (lastshiftfounder requested @bossvito), then ran into a
+fundamental design semantic mismatch and disabled the feature:
+
+- The current implementation is **mutual** — one row per pair, one
+  accept makes both parties appear in each other's Chad Army. Built
+  to match COWORK-BRIEF + BUILDER-HANDOFF.
+- Kellen's actual intent is **directional independent** — A→B and
+  B→A are separate, independently-accepted requests. One accept
+  does NOT auto-list both sides.
+
+Kellen's quote: *"i request him and he request me should never be
+tied. why? well one can deny each other. just because i say yes,
+doesnt mean he says yes. they should not be tied."*
+
+Wrong model is on me — I (and Cowork's wireframe) baked in
+"mutual." The COWORK-BRIEF "When either party goes free… reappears
+on both sides" line and the BUILDER-HANDOFF "If [target] accepts,
+[requester]+[target] both appear in each other's Chad Army" both
+reflect the wrong assumption. Locked mechanics need to be rewritten
+to reflect directional model, then code rebuilt to match.
+
+### Current production state
+
+- `CHADS_ENABLED` env var is set to something other than `true`
+  (verified `/api/chads/counts` → 404, feature dark)
+- All chad code still in repo on main (commits 1bc4692, e8ba633,
+  e3a6014, 909a164, a44516f) — gated, harmless
+- One real chad row in prod Supabase: `(lastshiftfounder,
+  bossvito, pending)` — Kellen's test request. Bossvito hasn't
+  acted on it. Row can be left as-is or wiped:
+  `delete from chads where id = 1;`
+- VERSION in repo = `0.12.0` and data/updates.json has the chad
+  entry at the top — but the feature is dark, so the /status page
+  is technically lying ("0.12.0: chads added") while the feature
+  is unreachable. **If the feature stays dark longer than a day,
+  consider a follow-up `[update: fixed]` rollback entry per
+  CLAUDE.md § Updates feed §"What about reverts" — it documents
+  the temporary disable for users who saw the original entry.**
+
+### Open / next (for tomorrow's session)
+
+1. **Lock the directional-independent model.** Confirm Option 1
+   semantics with Kellen before any code touches:
+   - "My army" = chads I've added (their request_wallet=me,
+     status=accepted, target_wallet → their army entry)
+   - Each direction independent. A→B accept doesn't grant A's
+     entry on B's army.
+   - Each side's Remove only deletes their own direction.
+   - Modal `pending`/`already` phases check ONLY viewer→target
+     direction. The target→viewer side is dashboard-only.
+
+2. **Update COWORK-BRIEF.md + BUILDER-HANDOFF.md** to reflect the
+   correct directional model. These docs currently describe the
+   wrong "mutual" semantics.
+
+3. **Code rebuild scope (no schema change needed — directional
+   constraint already in 0021):**
+   - `chads-adapter.ts`: `findChadshipBetween` → drop or replace
+     with directional `findChadInDirection(requester, target)`.
+     `listAcceptedForWallet` + `countAcceptedForWallet` switch
+     from symmetric to `where requester_wallet=wallet AND
+     status=accepted`.
+   - `/api/chads/request`: drop the symmetric `findChadshipBetween`
+     block. Insertion already directional via unique constraint.
+   - `/api/chads/remove`: `deleteChadship` → directional delete in
+     viewer-as-requester direction only.
+   - `/api/chads/list`: semantic change. `army` query (public
+     profile X's army) = `where requester_wallet=X AND
+     status=accepted`. `accepted` (session user's army) = same with
+     wallet=session. `pending` (incoming requests) = unchanged
+     (`where target_wallet=session AND status=pending`).
+   - `resolve-phase.ts`: phase resolution on viewer→target only.
+   - `ChadArmyStrip` on profile X: query for chads X has added.
+
+4. **After rebuild, redeploy + flip `CHADS_ENABLED=true`** for
+   re-launch. Same dark-test-then-flip pattern as before. The
+   existing chad row from tonight's test can stay or be wiped
+   — semantically still valid under the new model
+   (lastshiftfounder→bossvito pending, awaiting bossvito's accept;
+   bossvito would need to separately request lastshiftfounder for
+   reciprocity).
+
+### Why this happened (process note)
+
+This is the third design miss I owe Kellen on this feature. First:
+modal /manage redirect. Second: invented notification scope. Third:
+shipped the wrong relationship model. The first two were process
+errors (unilateral decisions); this third one is a deeper miss —
+both the wireframe and my read of the brief assumed mutual, and
+neither I nor Cowork explicitly verified with Kellen what "Chad
+Army" means semantically. Tomorrow's first action: confirm the
+locked model in writing with Kellen, update the brief, then build.
+
+---
+
 ## 2026-04-25 04:30 MST — Chad Function — strip unauthorized notification scope
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
