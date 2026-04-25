@@ -20,6 +20,89 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-25 04:00 MST — Chad Function — Deploy 3: launch (flag flip + VERSION bump + updates entry)
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`)
+**Model:** claude-opus-4-7 (1M context)
+**Role:** chad-backend
+**Commits:** this commit (Deploy 3 of 3 — the user-visible ship)
+**Migrations run in prod Supabase:** none (0021 was already applied between Deploy 1 and 2)
+**Impacts:** none — chad function is independent of Terminal
+**Status:** ✅ pushed; user toggles `CHADS_ENABLED=true` in Vercel env to flip live
+
+### Did
+
+The launch commit. Pure announcement — no code change beyond the
+VERSION bump and the data/updates.json entry.
+
+- `VERSION`: 0.11.5 → 0.12.0 (minor bump, category = added)
+- `data/updates.json`: new entry at top, `latest_version` updated
+  to match. Headline: "Add Chad — connect with other operators".
+  source_commits = [1bc4692, e8ba633, e3a6014] (schema, code,
+  in-modal connect fix)
+- Commit subject prefixed `[update: added]` per § Updates feed
+  convention
+
+### Launch sequence
+
+1. This commit lands on main → Vercel rebuilds with new VERSION
+   baked into SSG pages
+2. Kellen sets `CHADS_ENABLED=true` in Vercel env (Production scope)
+3. Vercel re-evaluates env on next request to serverless functions
+   (immediate); SSG pages serve with the flag honored on the next
+   build (this commit's build is enough since `CHADS_ENABLED` is
+   read at request time even on SSG via the API endpoints, and the
+   profile page's chad data is fetched server-side per-request)
+
+If Kellen flips the env var BEFORE this commit's deploy lands, no
+issue — the Deploy 2.1 build already running in prod also reads
+the env at request time. Either order works.
+
+### Rollback
+
+Single env var flip: `CHADS_ENABLED=false`. Reverts the chad UI
+across all surfaces in seconds. The `[update: added]` entry on
+the /status feed would lie about the current state until reverted
+(would need a follow-up `[update: fixed]` entry per § Updates
+feed §"What about reverts"). No DB damage in any rollback path —
+the chads table is leaf-only with no FKs into it.
+
+### Current state
+
+- VERSION at `0.12.0`
+- HEAD will be this commit, expected on `main` after rebase + push
+- Working tree clean except unrelated untracked file
+  (`BACKEND-TERMINAL-SECURITY-HANDOFF.md`)
+- Three chad-related commits in the trail:
+  - `1bc4692` — schema migration
+  - `e8ba633` — full code behind flag
+  - `e3a6014` — in-modal connect (process correction)
+  - `<this commit>` — launch
+
+### Open / next
+
+- **Set `CHADS_ENABLED=true` in Vercel env** (Production scope) —
+  this is the actual flip
+- **Optional** `CHADS_NOTIFICATIONS=true` if you want the in-app
+  notification fanout on chad request received / accepted
+- **Monitor for 24h** — error rate on /api/chads/*, p95 latency on
+  the public profile page, notification queue depth, DB connection
+  pool. If any signal drifts: flip `CHADS_ENABLED=false`.
+
+### Gotchas for next session
+
+- **The /status page reads `latest_version` from data/updates.json
+  AND VERSION file separately.** They MUST match. This commit
+  updated both. If a future commit touches one and forgets the
+  other, /status will lie about what version users are on.
+- **Chad-feature carve-out for `--gold`** is documented in the
+  Deploy 2 WORKLOG entry — gold is allowed as attention semantic
+  ONLY in chad-surface contexts. Other features should not
+  extrapolate that pattern.
+
+---
+
 ## 2026-04-25 03:30 MST — Chad Function — Deploy 2.1: in-modal wallet connect (kill /manage redirect)
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
