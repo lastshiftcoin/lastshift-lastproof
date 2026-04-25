@@ -20,6 +20,116 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-24 19:38 MST — Chad Function — Deploy 1: schema migration + deployment plan
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** chad-backend
+**Commits:** this commit (Deploy 1 of 3 in the chad rollout)
+**Migrations run in prod Supabase:** none yet — `0021_chads.sql` lands on next deploy
+**Impacts:** none — additive table only; no code reads/writes it yet
+**Status:** ✅ Deploy 1 ready for push
+
+### Did
+
+Architecture pass, stage 1 of 3 per `docs/features/chad/DEPLOYMENT-PLAN.md`.
+Schema-only commit — no code changes, no UI changes, no env changes.
+
+- Added `supabase/migrations/0021_chads.sql`:
+  - `chads` table: `(id, requester_wallet, target_wallet, status,
+    created_at, accepted_at)`
+  - `unique (requester_wallet, target_wallet)` enforces one row per
+    directional pair (deny path hard-deletes the row, so re-request
+    is automatic without a soft-tombstone)
+  - `check (requester_wallet <> target_wallet)` blocks self-chad
+  - Status enum check: `'pending' | 'accepted'` only
+  - Indexes on `(target_wallet, status)` and
+    `(requester_wallet, status)` — the two hot read paths (target's
+    pending queue / requester's pending check)
+  - RLS enabled, deny-all for anon (default with no policies — matches
+    the project's existing convention from `0001_init.sql`)
+  - No FK to `operators` or `profiles` — the brief specifies a
+    wallet-keyed graph that persists through profile lapses, so
+    coupling via FK with cascade-delete would defeat the design
+
+- Added `docs/features/chad/DEPLOYMENT-PLAN.md`:
+  - Three-stage rollout (schema → code-with-flag-OFF → flag-flip)
+  - Feature flag `CHADS_ENABLED` gates every UI/API/page surface so
+    the dark-deploy stage renders byte-identical to today
+  - Per-wallet test override `CHADS_ENABLED_WALLETS=<csv>` for prod
+    smoke testing without exposing the feature to users
+  - Cache invalidation map showing the only loop ("invalidate each
+    chad's profile when one party goes free/active") is bounded by
+    army size, not all 5000 profiles
+  - Rollback playbook: flag flip is the entire rollback for code;
+    `drop table chads` is the schema rollback (clean since no FKs)
+  - Random ordering implemented as in-component shuffle on a cached
+    list, not a per-request DB shuffle (preserves cacheability)
+
+### Locked decisions captured this session
+
+- **Gold-as-attention is a chad-surface-only exception.** Pending
+  counts, locked-strip warnings, dashboard-chads pending tile borders,
+  modal phase 9 stay gold. Not a global broadening of `--gold`
+  semantic — `CLAUDE.md § Tier system` is NOT being edited.
+- **`.chad-army-avatars` uses `gap` + left-align**, SEE ARMY pill
+  floats right at all counts via `margin-left: auto`.
+- **Notifications:** yes-on-pending, yes-on-accept, nothing-on-deny
+  (preserves the privacy-of-deny per design).
+- **Rate limits / army cap:** v1 ships uncapped, no per-wallet limit,
+  no army size cap. Revisit if abuse appears.
+- **Modal phase 9 (no-profile) → `/manage`** for the "create profile"
+  CTA navigation target.
+- **Hard launch.** No percentage rollout — feature is opt-in by click,
+  doesn't justify the chat overhead of a staged ramp.
+- **Separate `CHADS_NOTIFICATIONS=false` knob ships** alongside
+  `CHADS_ENABLED` — granular kill switch if notification fanout gets
+  noisy without disabling the whole feature.
+
+### Current state
+
+- VERSION still at `0.11.3` (no bump — Deploy 1 is internal schema
+  only; the `[update: added]` ship lands at Deploy 3 with the flag
+  flip)
+- HEAD will be this commit, expected on `main` after rebase + push
+- Working tree clean except an unrelated untracked file from another
+  session (`BACKEND-TERMINAL-SECURITY-HANDOFF.md`) which is left alone
+- The migration has NOT been run against prod Supabase yet — that
+  happens at deploy time when the next deploy promotes to prod
+
+### Open / next
+
+- **Deploy 2 — code with flag OFF.** All chad code lands behind
+  `CHADS_ENABLED=false`. Includes: adapter, phase resolver, 5 API
+  routes, 8 React components, 2 page routes, 3 edits to existing
+  surfaces (ProfileHero, profile page composition, dashboard), 1
+  `next.config.ts` rewrite extension, globals.css token additions
+  (`--purple-dim`, `--purple-glow`, `--gold-dim`, `--gold-glow`,
+  `--red-dim`).
+- **Deploy 3 — flag flip + VERSION bump + updates entry.** Single
+  commit with `[update: added]` prefix, VERSION 0.11.3 → 0.12.0
+  (minor for "added"), `data/updates.json` entry.
+
+### Gotchas for next session
+
+- **Do NOT run the migration against prod Supabase manually.**
+  Migrations apply via the project's existing deploy pipeline; running
+  one out-of-band would put the recorded migration list out of sync
+  with the actual schema.
+- **The `chads` table has no FK to `operators` or `profiles`.** This
+  is intentional. When you write the adapter or any join queries,
+  resolve `wallet → operator/profile` via the existing profile loader
+  rather than expecting referential integrity. Orphan rows (wallet has
+  no profile) are filtered at query-time by joining; the table itself
+  doesn't enforce.
+- **`status` is text with a check constraint, not an enum type.**
+  Adding more states later (e.g. `archived`) means updating the check
+  constraint, not creating a Postgres enum. Consistent with existing
+  migrations' style (no enums declared anywhere yet).
+
+---
+
 ## 2026-04-24 21:30 MST — Chad Function — wireframe-by-wireframe review pass
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
