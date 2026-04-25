@@ -379,7 +379,7 @@ function PhaseBody({
     return (
       <div className="acm-phase acm-phase-submitting">
         <div className="acm-spinner" aria-hidden="true" />
-        <div className="acm-line">Sending chad request…</div>
+        <div className="acm-line">Sending ask…</div>
       </div>
     );
   }
@@ -388,10 +388,10 @@ function PhaseBody({
     return (
       <div className="acm-phase acm-phase-success">
         <div className="acm-done-check" aria-hidden="true">✓</div>
-        <h3 className="acm-headline">Request sent.</h3>
+        <h3 className="acm-headline">Ask sent.</h3>
         <p className="acm-copy">
           {targetDisplay} can accept or deny from their dashboard. If they accept,
-          you'll appear in each other's Chad Army.
+          they'll appear in your Chad Army.
         </p>
         <button type="button" className="acm-cta acm-cta-primary" onClick={onFinish}>
           &gt; DISCONNECT &amp; BACK TO PROFILE
@@ -405,20 +405,20 @@ function PhaseBody({
       return (
         <div className="acm-phase acm-phase-eligible">
           <div className="acm-target-card">
-            <div className="acm-target-label">CHAD REQUEST TARGET</div>
+            <div className="acm-target-label">CHAD ASK TARGET</div>
             <div className="acm-target-name">{targetDisplay}</div>
             <div className="acm-target-handle">@{target.handle}</div>
           </div>
           <div className="acm-info-card">
             <div className="acm-info-title">WHAT HAPPENS NEXT</div>
             <ul className="acm-info-body">
-              <li>Your request goes to {targetDisplay}'s dashboard.</li>
-              <li>If they accept, you both appear in each other's Chad Army.</li>
+              <li>Your ask goes to {targetDisplay}'s dashboard.</li>
+              <li>If they accept, they appear in your Chad Army.</li>
               <li>If they ignore or deny, nothing changes on your profile.</li>
             </ul>
           </div>
           <button type="button" className="acm-cta acm-cta-primary" onClick={onSubmit}>
-            &gt; SEND CHAD REQUEST
+            &gt; SEND ASK
           </button>
         </div>
       );
@@ -426,9 +426,9 @@ function PhaseBody({
       return (
         <div className="acm-phase acm-phase-already">
           <div className="acm-done-check acm-done-check-soft" aria-hidden="true">✓</div>
-          <h3 className="acm-headline">Already in their Chad Army.</h3>
+          <h3 className="acm-headline">Already in your Chad Army.</h3>
           <p className="acm-copy">
-            You and {targetDisplay} are connected. To remove the connection, head to your dashboard.
+            {targetDisplay} is in your Chad Army. To remove them, head to your dashboard.
           </p>
           <button type="button" className="acm-cta" onClick={onClose}>&gt; CLOSE</button>
         </div>
@@ -436,10 +436,10 @@ function PhaseBody({
     case "pending":
       return (
         <div className="acm-phase acm-phase-pending">
-          <div className="acm-eyebrow acm-eyebrow-gold">&gt; REQUEST PENDING</div>
-          <h3 className="acm-headline">Request already sent.</h3>
+          <div className="acm-eyebrow acm-eyebrow-gold">&gt; ASK PENDING</div>
+          <h3 className="acm-headline">Ask already sent.</h3>
           <p className="acm-copy">
-            There's already a request between you and {targetDisplay}. Check your dashboard.
+            Awaiting their response. Check your dashboard.
           </p>
           <button type="button" className="acm-cta" onClick={onClose}>&gt; CLOSE</button>
         </div>
@@ -448,7 +448,7 @@ function PhaseBody({
       return (
         <div className="acm-phase acm-phase-free">
           <div className="acm-eyebrow acm-eyebrow-purple">&gt; PREMIUM REQUIRED</div>
-          <h3 className="acm-headline">Activate your profile to send chad requests.</h3>
+          <h3 className="acm-headline">Activate your profile to send chad asks.</h3>
           <p className="acm-copy">
             Chad connections are part of the premium operator profile. Upgrade to send and receive requests.
           </p>
