@@ -1049,3 +1049,56 @@ footer.lp-footer a:hover { color: var(--text-primary); }
   box-shadow: none;
   border-color: var(--green-dim);
 }
+
+/* ── Add Chad modal: connect screen (screen 1) ───────────────────── */
+.acm-phase-connect {
+  gap: 16px;
+}
+.acm-target-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.acm-target-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: linear-gradient(135deg, #2a2d42, #161822);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.acm-target-avatar-fallback {
+  font-family: var(--mono);
+  font-size: 18px;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+.acm-connect-prompt {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.acm-connect-btn {
+  min-width: 240px;
+}
+.acm-connect-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.acm-safe-link {
+  font-family: var(--sans);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-decoration: underline;
+}
+.acm-safe-link:hover { color: var(--text-secondary); }

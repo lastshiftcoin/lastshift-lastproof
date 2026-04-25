@@ -1,32 +1,41 @@
 "use client";
 
 /**
- * AddChadModal — the entire Add Chad experience. Opens from the static
- * `+ ADD CHAD` button on every public profile.
+ * AddChadModal — the entire Add Chad experience, in-modal from start to
+ * finish. Opens from the static `+ ADD CHAD` button on every public
+ * profile. The user never leaves the profile page.
  *
- * Phases (server-side resolved via /api/chads/eligibility):
+ * 10 wireframe phases (matches `wireframes/lastproof-add-chad-modal.html`):
+ *
+ *   connect    — no wallet attached. Render single CONNECT WALLET button
+ *                (UX mirrors /manage's open screen — wallet-adapter
+ *                handles which wallet the user picks via the wallet's
+ *                own popup; we don't render a tile picker).
+ *   checking   — wallet connecting OR wallet-gate in flight OR
+ *                eligibility resolving. One spinner screen for the whole
+ *                resolve sequence (wireframe collapses connecting +
+ *                checking into one phase).
  *   eligible   — paid+published viewer, no relationship → submit CTA
+ *   submitting — /api/chads/request in flight
+ *   success    — request recorded → "DISCONNECT & BACK TO PROFILE"
  *   already    — chads exist; view-state, no Remove (Remove lives in dashboard)
  *   pending    — request already in flight (either direction); no resend
- *   free       — viewer's own profile is free → purple upgrade nudge
+ *   free       — viewer's profile is free → purple upgrade nudge → /manage
  *   no-profile — viewer's wallet has no profile → /manage CTA
+ *                (also covers wallet-gate's no_terminal / wallet_not_registered
+ *                / tid_reset responses — all map to "you don't have a usable
+ *                profile yet, go onboard via /manage")
  *   own        — viewer is the target → soft dead-end
  *
- * Pure client-side transients:
- *   connect    — no session yet → /manage CTA (we collapse "connect" with
- *                "no-profile" in this implementation, since the existing
- *                auth model requires a session created via /manage's wallet
- *                gate, not just a wallet-adapter connection).
- *   checking   — eligibility request in flight
- *   submitting — /api/chads/request in flight
- *   success    — request recorded; "DISCONNECT & BACK TO PROFILE"
- *
- * On success we trigger wallet-adapter disconnect + close. If the chad
- * accepts later, the requester sees the relationship reappear next time
- * they land on the profile.
+ * Auth model: after the user connects their wallet in-modal, we call
+ * /api/auth/wallet-gate (the same endpoint /manage uses) to create a
+ * session cookie. Once the session exists, /api/chads/eligibility and
+ * subsequent chad endpoints work as normal. No redirect. Profile page
+ * is wrapped in WalletProvider via (marketing)/layout.tsx so useWallet()
+ * is available here.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import type { ChadPhase } from "@/lib/chads/resolve-phase";
 
@@ -51,36 +60,119 @@ interface PhaseResolution {
   relationshipSince: string | null;
 }
 
-type ClientPhase =
-  | { kind: "checking" }
-  | { kind: "no-session" } // collapsed "connect" phase
+type ClientState =
+  | { kind: "connect" }
+  | { kind: "checking"; line: string }
   | { kind: "resolved"; resolution: PhaseResolution }
   | { kind: "submitting"; resolution: PhaseResolution }
   | { kind: "success"; resolution: PhaseResolution }
+  | { kind: "no-profile-from-gate" } // wallet-gate failure that should land on no-profile UI
   | { kind: "error"; reason: string };
 
 interface Props {
   targetHandle: string;
+  /** Pre-known target preview, shown on the connect screen before
+   *  eligibility resolves (the public profile page knows this already). */
+  targetDisplayName: string;
+  targetAvatarUrl: string | null;
   onClose: () => void;
 }
 
-export function AddChadModal({ targetHandle, onClose }: Props) {
-  const [state, setState] = useState<ClientPhase>({ kind: "checking" });
-  const { disconnect } = useWallet();
+export function AddChadModal({
+  targetHandle,
+  targetDisplayName,
+  targetAvatarUrl,
+  onClose,
+}: Props) {
+  const { select, wallets, publicKey, connected, connecting, disconnect } = useWallet();
+  const [state, setState] = useState<ClientState>({ kind: "connect" });
+  const resolveOnce = useRef(false);
 
-  // Initial eligibility resolve.
+  // ESC closes.
   useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  // If a wallet is already connected when the modal opens, skip the
+  // connect screen and go straight into the resolve sequence.
+  useEffect(() => {
+    if (state.kind !== "connect") return;
+    if (connected && publicKey) {
+      setState({ kind: "checking", line: "Scanning operator registry…" });
+    }
+  }, [state.kind, connected, publicKey]);
+
+  // While wallet adapter is in the "connecting" state, show checking screen.
+  useEffect(() => {
+    if (connecting && state.kind === "connect") {
+      setState({ kind: "checking", line: "Awaiting wallet confirmation…" });
+    }
+  }, [connecting, state.kind]);
+
+  // After connecting completes, advance the spinner into the resolve sequence.
+  useEffect(() => {
+    if (state.kind === "checking" && state.line === "Awaiting wallet confirmation…" && connected && publicKey) {
+      setState({ kind: "checking", line: "Scanning operator registry…" });
+    }
+  }, [state, connected, publicKey]);
+
+  // Run the resolve sequence: wallet-gate → eligibility. Triggered the
+  // first time we land on "checking" with a "Scanning…" line and a
+  // connected wallet.
+  useEffect(() => {
+    if (state.kind !== "checking") return;
+    if (state.line !== "Scanning operator registry…") return;
+    if (!connected || !publicKey) return;
+    if (resolveOnce.current) return;
+    resolveOnce.current = true;
+
     let cancelled = false;
     (async () => {
+      const wallet = publicKey.toBase58();
+
+      // 1) Establish a session cookie via wallet-gate (same endpoint /manage uses).
+      try {
+        const gate = await fetch("/api/auth/wallet-gate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ walletAddress: wallet }),
+        });
+        const gateBody = (await gate.json().catch(() => null)) as
+          | { ok: boolean; reason?: string }
+          | null;
+        if (cancelled) return;
+        if (!gate.ok || !gateBody?.ok) {
+          // Wallet-gate failed — could be no_terminal / wallet_not_registered /
+          // tid_reset. From the chad modal's perspective, all three mean
+          // "this wallet doesn't have a usable LASTPROOF profile yet" → land on
+          // the no-profile screen which points the user at /manage to onboard.
+          const reason = gateBody?.reason ?? "gate_failed";
+          if (
+            reason === "no_terminal" ||
+            reason === "wallet_not_registered" ||
+            reason === "tid_reset"
+          ) {
+            setState({ kind: "no-profile-from-gate" });
+          } else {
+            setState({ kind: "error", reason });
+          }
+          return;
+        }
+      } catch {
+        if (!cancelled) setState({ kind: "error", reason: "network" });
+        return;
+      }
+
+      // 2) Session exists — resolve chad eligibility.
       try {
         const res = await fetch(
           `/api/chads/eligibility?target=${encodeURIComponent(targetHandle)}`,
         );
         if (cancelled) return;
-        if (res.status === 401) {
-          setState({ kind: "no-session" });
-          return;
-        }
         if (!res.ok) {
           const body = (await res.json().catch(() => null)) as { reason?: string } | null;
           setState({ kind: "error", reason: body?.reason ?? "unknown" });
@@ -96,19 +188,30 @@ export function AddChadModal({ targetHandle, onClose }: Props) {
         if (!cancelled) setState({ kind: "error", reason: "network" });
       }
     })();
+
     return () => {
       cancelled = true;
     };
-  }, [targetHandle]);
+  }, [state, connected, publicKey, targetHandle]);
 
-  // ESC closes.
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
+  const handleConnect = useCallback(async () => {
+    if (state.kind !== "connect") return;
+    if (wallets.length === 0) {
+      setState({ kind: "error", reason: "no_wallet_adapter" });
+      return;
+    }
+    try {
+      // select() sets the active adapter, then connect() triggers the
+      // wallet popup. autoConnect is false in the WalletBoundary so
+      // connect() must be called explicitly. Same pattern as ManageTerminal.
+      select(wallets[0]!.adapter.name);
+      await new Promise((r) => setTimeout(r, 100));
+      await wallets[0]!.adapter.connect();
+    } catch {
+      // User rejected the wallet popup or the adapter errored. Stay on
+      // the connect screen so they can retry.
+    }
+  }, [state.kind, wallets, select]);
 
   const submit = useCallback(async () => {
     if (state.kind !== "resolved") return;
@@ -160,8 +263,14 @@ export function AddChadModal({ targetHandle, onClose }: Props) {
         <div className="acm-body">
           <PhaseBody
             state={state}
+            targetHandle={targetHandle}
+            targetDisplayName={targetDisplayName}
+            targetAvatarUrl={targetAvatarUrl}
+            connecting={connecting}
+            onConnect={handleConnect}
             onSubmit={submit}
-            onClose={finishAndClose}
+            onClose={onClose}
+            onFinish={finishAndClose}
           />
         </div>
       </div>
@@ -171,35 +280,69 @@ export function AddChadModal({ targetHandle, onClose }: Props) {
 
 function PhaseBody({
   state,
+  targetHandle,
+  targetDisplayName,
+  targetAvatarUrl,
+  connecting,
+  onConnect,
   onSubmit,
   onClose,
+  onFinish,
 }: {
-  state: ClientPhase;
+  state: ClientState;
+  targetHandle: string;
+  targetDisplayName: string;
+  targetAvatarUrl: string | null;
+  connecting: boolean;
+  onConnect: () => void;
   onSubmit: () => void;
   onClose: () => void;
+  onFinish: () => void;
 }) {
+  // ── Screen 1: connect ──────────────────────────────────────────────
+  if (state.kind === "connect") {
+    return (
+      <div className="acm-phase acm-phase-connect">
+        <div className="acm-target-preview">
+          {targetAvatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className="acm-target-avatar" src={targetAvatarUrl} alt={`@${targetHandle}`} />
+          ) : (
+            <div className="acm-target-avatar acm-target-avatar-fallback">
+              {(targetDisplayName || targetHandle).slice(0, 2).toUpperCase()}
+            </div>
+          )}
+          <div className="acm-target-name">{targetDisplayName}</div>
+          <div className="acm-target-handle">@{targetHandle}</div>
+        </div>
+        <div className="acm-connect-prompt">Connect Solana Wallet</div>
+        <button
+          type="button"
+          className="acm-cta acm-cta-primary acm-connect-btn"
+          onClick={onConnect}
+          disabled={connecting}
+        >
+          {connecting ? "CONNECTING…" : "CONNECT WALLET"}
+        </button>
+        <div className="acm-connect-sub">Phantom, Solflare, Backpack</div>
+        <a className="acm-safe-link" href="/manage/safety">
+          Is it safe to connect my wallet?
+        </a>
+      </div>
+    );
+  }
+
+  // ── Screen 2: checking ─────────────────────────────────────────────
   if (state.kind === "checking") {
     return (
       <div className="acm-phase acm-phase-checking">
         <div className="acm-spinner" aria-hidden="true" />
-        <div className="acm-line">Scanning operator registry…</div>
+        <div className="acm-line">{state.line}</div>
       </div>
     );
   }
 
-  if (state.kind === "no-session") {
-    return (
-      <div className="acm-phase acm-phase-no-session">
-        <div className="acm-eyebrow">&gt; SIGN IN REQUIRED</div>
-        <h3 className="acm-headline">Connect to LASTPROOF first.</h3>
-        <p className="acm-copy">
-          You'll need to sign in with your operator wallet before sending chad requests.
-        </p>
-        <a className="acm-cta acm-cta-primary" href="/manage">&gt; SIGN IN</a>
-      </div>
-    );
-  }
-
+  // ── Errors ──────────────────────────────────────────────────────────
   if (state.kind === "error") {
     return (
       <div className="acm-phase acm-phase-error">
@@ -211,7 +354,23 @@ function PhaseBody({
     );
   }
 
-  // Resolved phases — read from state.resolution.
+  // Wallet-gate failure that means "no usable profile" → render the
+  // no-profile screen using the pre-known target name (eligibility was
+  // never reached so we don't have a resolution object).
+  if (state.kind === "no-profile-from-gate") {
+    return (
+      <div className="acm-phase acm-phase-no-profile">
+        <div className="acm-eyebrow acm-eyebrow-gold">&gt; PROFILE REQUIRED</div>
+        <h3 className="acm-headline">Create a LASTPROOF profile.</h3>
+        <p className="acm-copy acm-copy-dim">
+          Connecting with other operators is one of several premium benefits.
+        </p>
+        <a className="acm-cta acm-cta-primary" href="/manage">&gt; CREATE PROFILE</a>
+      </div>
+    );
+  }
+
+  // From here on we have a resolution.
   const { resolution } = state;
   const target = resolution.target;
   const targetDisplay = target.displayName || `@${target.handle}`;
@@ -234,14 +393,13 @@ function PhaseBody({
           {targetDisplay} can accept or deny from their dashboard. If they accept,
           you'll appear in each other's Chad Army.
         </p>
-        <button type="button" className="acm-cta acm-cta-primary" onClick={onClose}>
+        <button type="button" className="acm-cta acm-cta-primary" onClick={onFinish}>
           &gt; DISCONNECT &amp; BACK TO PROFILE
         </button>
       </div>
     );
   }
 
-  // resolution.phase branches
   switch (resolution.phase) {
     case "eligible":
       return (

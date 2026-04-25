@@ -20,6 +20,133 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-25 03:30 MST — Chad Function — Deploy 2.1: in-modal wallet connect (kill /manage redirect)
+
+**Device:** the operator's Mac mini (`the operators-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`)
+**Model:** claude-opus-4-7 (1M context)
+**Role:** chad-backend
+**Commits:** this commit (correction to Deploy 2 before flag flip)
+**Migrations run in prod Supabase:** none — no schema change
+**Impacts:** none — still gated by CHADS_ENABLED, still pre-launch
+**Status:** ✅ pushed, awaiting Vercel build
+
+### Did
+
+Reverted my unilateral pivot from earlier in the session. The Deploy
+2 modal had collapsed the wireframe's `connect` phase with a
+no-session redirect to `/manage` — wrong UX for the primary use
+case (cold-share profile links). User correctly called this out:
+"users are presented these profile links cold in most cases. when
+a user is logged in… there is no experience to browse users to add
+chads."
+
+Rebuilt the AddChadModal so the experience is fully in-modal,
+matching the wireframe's 10 phases:
+
+1. **connect** — single CONNECT WALLET button (mirrors /manage's
+   open-screen UX exactly: one button, "Phantom, Solflare, Backpack"
+   subtitle text, safety link). Wallet adapter handles which wallet
+   the user picks via the wallet's own popup.
+2. **checking** — one spinner screen covering wallet-connecting +
+   wallet-gate session creation + eligibility resolution. Wireframe
+   collapses these into a single phase; we follow that.
+3. **eligible** / **submitting** / **success** / **already** /
+   **pending** / **free** / **no-profile** / **own** — all unchanged
+   from the prior Deploy 2 build.
+
+After the user clicks CONNECT WALLET and approves in their wallet
+popup, the modal:
+
+- Calls `select(wallets[0].adapter.name)` + `await wallets[0].adapter.connect()`
+  (same code path as ManageTerminal.handleConnect)
+- Once `connected && publicKey`, fires `POST /api/auth/wallet-gate`
+  with the connected wallet — same endpoint /manage uses, creates
+  the session cookie inline
+- Then fires `GET /api/chads/eligibility?target=<handle>` against
+  the now-valid session
+- Branches into one of the six resolution phases
+
+Edge cases:
+- **wallet-gate returns `no_terminal` / `wallet_not_registered` /
+  `tid_reset`** → modal lands on the no-profile screen (gold theme,
+  "Create a LASTPROOF profile" → /manage). The /manage CTA only
+  appears for users who genuinely don't have a usable profile yet
+  — never as a redirect for "sign in".
+- **Wallet already connected when modal opens** (e.g. user came
+  from /manage in the same session) → skip the connect screen,
+  go straight to checking + resolve.
+- **User rejects wallet popup** → modal stays on connect screen so
+  they can retry. Same fallback ManageTerminal uses.
+
+### Architecture verified
+
+- **WalletProvider** wraps `(marketing)/layout.tsx` → covers both
+  /manage AND /@<handle>. `useWallet()` works in the modal from
+  the public profile.
+- **/api/auth/wallet-gate** contract: POST `{ walletAddress, ref? }`
+  → `{ ok: true, session }` or `{ ok: false, reason }`. Reuses
+  existing endpoint, no auth model changes.
+- **No new API routes, no new components, no new architecture.**
+  Single-file rewrite of AddChadModal.tsx + small prop additions
+  on AddChadButton + ProfileHero to thread target preview
+  (displayName, avatarUrl) into the connect screen so the user
+  sees who they're chad-ing before any API call.
+
+### Process miss owned
+
+This correction was needed because I made an unilateral design
+pivot during the original Phase B build, then surfaced it post-ship
+in my summary message. User's framing was right: collapsing the
+wireframe's `connect` phase with a `/manage` redirect was a real
+design change, not an implementation detail. Should have flagged
+it as a fork before committing. Won't happen again on locked
+wireframe decisions.
+
+### Files changed
+
+- `src/components/chad/AddChadModal.tsx` — full rewrite of state
+  machine (connect → checking → resolved phases), useWallet hook
+  integration, wallet-gate call before eligibility, target preview
+  on connect screen
+- `src/components/chad/AddChadButton.tsx` — added
+  targetDisplayName + targetAvatarUrl props
+- `src/components/profile/ProfileHero.tsx` — passes target preview
+  fields to AddChadButton
+- `src/app/globals.css` — added connect-screen styles
+  (.acm-target-preview, .acm-target-avatar(-fallback),
+  .acm-connect-prompt, .acm-connect-btn, .acm-connect-sub,
+  .acm-safe-link)
+
+### Current state
+
+- VERSION still at `0.11.3` (no bump — Deploy 2.1 is still pre-flag-flip)
+- HEAD will be this commit, expected on `main` after rebase + push
+- Working tree clean except unrelated untracked files from other
+  sessions
+
+### Open / next
+
+- **Verify Vercel build green** for this commit
+- **Smoke test on prod with `CHADS_ENABLED_WALLETS=<my-wallet>`** —
+  this time the smoke test matters more than usual because the
+  connect-flow is the path that prior Deploy 2 didn't exercise
+- **Deploy 3** flips `CHADS_ENABLED=true` for everyone
+
+### Gotchas for next session
+
+- **WalletProvider's autoConnect is false** (per WalletBoundary).
+  The modal calls `adapter.connect()` explicitly after `select()`.
+  Don't change the WalletProvider config thinking auto-connect is
+  off by mistake — it's intentional to avoid surprise wallet
+  popups.
+- **`disconnect()` on the wallet adapter is async** but we don't
+  await its result on success-screen close because the modal closes
+  visually first; if the adapter happens to error during disconnect
+  the user is already off the modal.
+
+---
+
 ## 2026-04-25 02:00 MST — Chad Function — Deploy 2: full code behind CHADS_ENABLED flag
 
 **Device:** the operator's Mac mini (`the operators-Mac-mini.local`, macOS 15.3.1)
