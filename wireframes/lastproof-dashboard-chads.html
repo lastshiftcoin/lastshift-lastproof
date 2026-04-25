@@ -132,6 +132,7 @@
   /* The link region: avatar + name + handle. Click → open profile. */
   .ch-id{display:flex;align-items:center;gap:12px;flex:1;min-width:0;text-decoration:none;color:inherit}
   .ch-id .avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:800;color:#0a0b0f;flex-shrink:0;overflow:hidden}
+  .ch-id .avatar img{width:100%;height:100%;object-fit:cover;display:block}
   .ch-id .meta{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
   .ch-id .name{font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text-primary);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .ch-id .handle{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:.5px;line-height:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -255,8 +256,8 @@
       <!-- ═══ PENDING (2) — yellow outline ═══ -->
       <div class="chad-card pending">
         <a class="ch-id" href="/@benfu" target="_blank" rel="noreferrer">
-          <div class="avatar av g0">B</div>
-          <div class="meta"><div class="name">Ben Fu</div><div class="handle">@benfu</div></div>
+          <div class="avatar"><img src="../public/avatars/SolRaider1.jpg" alt="@benfu"></div>
+          <div class="meta"><div class="name">Benjamin Fukuyama-Smithson</div><div class="handle">@benfu_long_handle_test</div></div>
         </a>
         <div class="ch-actions">
           <button class="ch-btn green">ACCEPT</button>
@@ -277,7 +278,7 @@
       <!-- ═══ ACCEPTED ARMY — standard outline, REMOVE button ═══ -->
       <div class="chad-card">
         <a class="ch-id" href="/@dyl" target="_blank" rel="noreferrer">
-          <div class="avatar av g3">D</div>
+          <div class="avatar"><img src="../public/avatars/DegenDealer.jpg" alt="@dyl"></div>
           <div class="meta"><div class="name">Dyl</div><div class="handle">@dyl</div></div>
         </a>
         <div class="ch-actions">
@@ -286,7 +287,7 @@
       </div>
       <div class="chad-card">
         <a class="ch-id" href="/@raidqueen" target="_blank" rel="noreferrer">
-          <div class="avatar av g4">R</div>
+          <div class="avatar"><img src="../public/avatars/modqueen.jpg" alt="@raidqueen"></div>
           <div class="meta"><div class="name">RaidQueen</div><div class="handle">@raidqueen</div></div>
         </a>
         <div class="ch-actions">
@@ -295,7 +296,7 @@
       </div>
       <div class="chad-card">
         <a class="ch-id" href="/@sol_kid" target="_blank" rel="noreferrer">
-          <div class="avatar av g2">S</div>
+          <div class="avatar"><img src="../public/avatars/PixelPriest.jpg" alt="@sol_kid"></div>
           <div class="meta"><div class="name">SolKid</div><div class="handle">@sol_kid</div></div>
         </a>
         <div class="ch-actions">
@@ -304,7 +305,7 @@
       </div>
       <div class="chad-card">
         <a class="ch-id" href="/@maple" target="_blank" rel="noreferrer">
-          <div class="avatar av g0">M</div>
+          <div class="avatar"><img src="../public/avatars/ModCaptain.jpg" alt="@maple"></div>
           <div class="meta"><div class="name">Maple</div><div class="handle">@maple</div></div>
         </a>
         <div class="ch-actions">
@@ -313,7 +314,7 @@
       </div>
       <div class="chad-card">
         <a class="ch-id" href="/@kira" target="_blank" rel="noreferrer">
-          <div class="avatar av g3">K</div>
+          <div class="avatar"><img src="../public/avatars/ThreadFox.jpg" alt="@kira"></div>
           <div class="meta"><div class="name">Kira</div><div class="handle">@kira</div></div>
         </a>
         <div class="ch-actions">
@@ -322,7 +323,7 @@
       </div>
       <div class="chad-card">
         <a class="ch-id" href="/@leah" target="_blank" rel="noreferrer">
-          <div class="avatar av g0">L</div>
+          <div class="avatar"><img src="../public/avatars/SpaceJax.jpg" alt="@leah"></div>
           <div class="meta"><div class="name">Leah</div><div class="handle">@leah</div></div>
         </a>
         <div class="ch-actions">
@@ -340,7 +341,7 @@
       </div>
       <div class="chad-card">
         <a class="ch-id" href="/@fin" target="_blank" rel="noreferrer">
-          <div class="avatar av g2">F</div>
+          <div class="avatar"><img src="../public/avatars/NightKOL1.jpg" alt="@fin"></div>
           <div class="meta"><div class="name">Fin</div><div class="handle">@fin</div></div>
         </a>
         <div class="ch-actions">
@@ -358,7 +359,7 @@
       </div>
       <div class="chad-card">
         <a class="ch-id" href="/@jaz" target="_blank" rel="noreferrer">
-          <div class="avatar av g4">J</div>
+          <div class="avatar"><img src="../public/avatars/Chaingrowth.jpg" alt="@jaz"></div>
           <div class="meta"><div class="name">Jaz</div><div class="handle">@jaz</div></div>
         </a>
         <div class="ch-actions">
@@ -376,7 +377,7 @@
       </div>
       <div class="chad-card">
         <a class="ch-id" href="/@nyx" target="_blank" rel="noreferrer">
-          <div class="avatar av g1">N</div>
+          <div class="avatar"><img src="../public/avatars/CryptoMark1.jpg" alt="@nyx"></div>
           <div class="meta"><div class="name">Nyx</div><div class="handle">@nyx</div></div>
         </a>
         <div class="ch-actions">
@@ -394,7 +395,7 @@
       </div>
       <div class="chad-card">
         <a class="ch-id" href="/@qix" target="_blank" rel="noreferrer">
-          <div class="avatar av g3">Q</div>
+          <div class="avatar"><img src="../public/avatars/newbgrind.jpg" alt="@qix"></div>
           <div class="meta"><div class="name">Qix</div><div class="handle">@qix</div></div>
         </a>
         <div class="ch-actions">
@@ -403,7 +404,7 @@
       </div>
       <div class="chad-card">
         <a class="ch-id" href="/@sky" target="_blank" rel="noreferrer">
-          <div class="avatar av g4">S</div>
+          <div class="avatar"><img src="../public/avatars/nightKOL.jpg" alt="@sky"></div>
           <div class="meta"><div class="name">Sky</div><div class="handle">@sky</div></div>
         </a>
         <div class="ch-actions">

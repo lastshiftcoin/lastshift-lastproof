@@ -413,6 +413,40 @@ chads table + `/api/chads/*` routes + the connected React UI together.
 
 ---
 
+## Display name + handle truncation rule (React port)
+
+Chad tiles share row space with action buttons (`ACCEPT/DENY` or
+`REMOVE`), so the meta column is narrow — especially on the 2-col
+mobile grid. CSS ellipsis already truncates by pixel-width
+(`overflow:hidden; text-overflow:ellipsis; white-space:nowrap` with
+`min-width:0` on the flex parents), but pixel-based truncation gives
+inconsistent cut points across viewports.
+
+**React port rule** — enforce a JS-level character cap at render so
+truncation is consistent regardless of column width:
+
+- **`display_name`**: max **24 chars**, slice with `…` suffix
+- **`handle`**: max **15 chars** (matches X's username limit; longer
+  values shouldn't exist in practice but guard anyway)
+
+```ts
+const cap = (s: string, n: number) => s.length > n ? s.slice(0, n - 1) + "…" : s;
+// <div className="name">{cap(profile.display_name, 24)}</div>
+// <div className="handle">@{cap(profile.handle, 15)}</div>
+```
+
+Apply everywhere chad tiles render: `ChadCard` on dashboard chads page,
+`ChadAvatar` on the public army page, `AddChadModal` operator preview.
+
+CSS ellipsis stays as the second line of defense for unusually wide
+glyphs or when the parent column shrinks below the cap's pixel width.
+
+The `lastproof-dashboard-chads.html` wireframe has one tile (Ben Fu →
+Benjamin Fukuyama-Smithson, `@benfu_long_handle_test`) intentionally
+left long so the ellipsis behavior is visible in the wireframe.
+
+---
+
 ## Handoff status
 
 **Ready for architecture.** Wireframes polished, deviations and

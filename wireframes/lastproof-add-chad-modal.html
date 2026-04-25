@@ -493,18 +493,20 @@
       </div>
 
       <!-- ═══ PHASE 9 — NO PROFILE (ONBOARDING NUDGE) ═══
-           Reframed: lead with "Create a LASTPROOF profile and get
+           Reframed: lead with "Build a LASTPROOF profile and get
            discovered." Profile creation is the primary message; the
            Chad Army opportunity is folded in as one of several benefits
-           that come with a premium profile, not the entire push. -->
+           that come with a premium profile, not the entire push.
+           Verb is "Build" not "Create" to match site-wide CTA pattern
+           ("BUILD YOUR PROFILE" on every landing page). -->
       <div class="step" data-step="no-profile" style="display:none">
         <div class="done-wrap">
           <div class="done-check gold small">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
           </div>
           <div class="pain gold">NO PROFILE ON THIS WALLET</div>
-          <h2 class="head">Create a <span class="gold">LASTPROOF profile.</span></h2>
-          <p class="sub">This wallet (<span style="color:var(--text-primary);font-family:var(--mono);font-size:11px">F7k2…9xMp</span>) hasn't created a LASTPROOF profile yet. Set one up and get discovered by hirers across the LASTPROOF grid.</p>
+          <h2 class="head">Build a <span class="gold">LASTPROOF profile.</span></h2>
+          <p class="sub">This wallet (<span style="color:var(--text-primary);font-family:var(--mono);font-size:11px">F7k2…9xMp</span>) hasn't built a LASTPROOF profile yet. Build one and get discovered by hirers across the LASTPROOF grid.</p>
           <div class="info-card gold">
             <div class="info-head">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
@@ -597,18 +599,26 @@
       { label:'> DISCONNECT &amp; BACK TO PROFILE', klass:'cta', action:'disconnectAndClose' }
     ],
     'already':     [
-      { label:'> BACK TO PROFILE',       klass:'cta',       action:'close' }
+      /* Informational dead-end — no primary action, so no glow.
+         Matches phase 10 (own) treatment. */
+      { label:'> BACK TO PROFILE',       klass:'cta dim',  action:'close' }
     ],
     'pending':     [
-      { label:'> BACK TO PROFILE',       klass:'cta accent', action:'close' }
+      /* Informational dead-end — no primary action, so no glow.
+         Matches phase 10 (own) treatment. */
+      { label:'> BACK TO PROFILE',       klass:'cta dim',  action:'close' }
     ],
     'free':        [
       { label:'CANCEL',                  klass:'btn-back', action:'close' },
-      { label:'> ACTIVATE PROFILE ↗',    klass:'cta purple', action:'upgrade' }
+      /* Verb matches lastproof-upgrade-modal.html — "UPGRADE TO PREMIUM"
+         is the canon forward-action CTA across the site. */
+      { label:'> UPGRADE TO PREMIUM ↗',  klass:'cta purple', action:'upgrade' }
     ],
     'no-profile':  [
       { label:'CANCEL',                  klass:'btn-back', action:'close' },
-      { label:'> CREATE PROFILE ↗',      klass:'cta gold', action:'onboard' }
+      /* Verb matches site-wide CTA pattern ("BUILD YOUR PROFILE" appears
+         on every landing page, how-it-works, campaigns). */
+      { label:'> BUILD YOUR PROFILE ↗',  klass:'cta gold', action:'onboard' }
     ],
     'own':         [
       { label:'COPY PROFILE LINK',       klass:'cta dim',  action:'copy' },
