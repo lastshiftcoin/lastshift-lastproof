@@ -199,11 +199,11 @@ phase toggle at the bottom of the page lets you cycle all ten.
 |---|-------|-------|---------|---------|
 | 1 | `connect` | green | no wallet attached | shows wallet picker (Phantom/Solflare/Backpack) |
 | 2 | `checking` | orange (accent) | wallet connected, resolving relationship | spinner + log |
-| 3 | `eligible` | green | paid+published viewer, no relationship yet | target card + "WHAT HAPPENS NEXT" info card + green `> SEND CHAD REQUEST` CTA |
+| 3 | `eligible` | green | paid+published viewer, no relationship yet | target card + "WHAT HAPPENS NEXT" info card + green `> SEND ASK` CTA |
 | 4 | `submitting` | orange | signed, persisting | spinner + log |
-| 5 | `success` | green | request recorded | green check + status summary; CTA `> DISCONNECT & BACK TO PROFILE` (see note below) |
-| 6 | `already` | green | viewer is already chads with target | info view; points to `/dashboard/chads` for Remove |
-| 7 | `pending` | orange | viewer already sent a request, not yet responded | info view; re-send locked |
+| 5 | `success` | green | ask recorded | green check + status summary; CTA `> DISCONNECT & BACK TO PROFILE` (see note below) |
+| 6 | `already` | green | target is already in viewer's army | info view; points to `/manage/chads` for Remove |
+| 7 | `pending` | orange | viewer already sent an ask, not yet responded | info view; re-send locked |
 | 8 | `free` | **purple** | viewer has a free profile | purple-themed upgrade nudge (see note below) |
 | 9 | `no-profile` | gold | viewer's wallet has no profile at all | "Create a LASTPROOF profile" leading message, chad army mentioned as secondary benefit |
 | 10 | `own` | text-dim | viewer is the target (own profile) | soft dead-end |
@@ -381,7 +381,7 @@ wireframe, removed per Kellen. Now:
 - Page header: same `CHADS OF @[handle]` title treatment as the public
   army page (orange @handle)
 - **2-line summary** under the title:
-  - `● Pending Requests (2)` — yellow dot + **yellow** number
+  - `● Pending Asks (2)` — yellow dot + **yellow** number
   - `● Your Chad Army (200)` — neutral dot + standard number
 - **One big grid** — 4-col, same `.chad-card` tile shape as the public
   army page
@@ -501,7 +501,7 @@ wireframes: chad function — add-chad modal + public profile + dashboard chads
 
 When the backend + frontend PR lands with the actual user-visible
 feature, THAT commit triggers the updates-feed convention (headline:
-something like "You can now send chad requests to other operators.").
+something like "You can now send chad asks to other operators.").
 
 ---
 

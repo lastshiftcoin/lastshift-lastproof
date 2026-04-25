@@ -450,7 +450,7 @@ function PhaseBody({
           <div className="acm-eyebrow acm-eyebrow-purple">&gt; PREMIUM REQUIRED</div>
           <h3 className="acm-headline">Activate your profile to send chad asks.</h3>
           <p className="acm-copy">
-            Chad connections are part of the premium operator profile. Upgrade to send and receive requests.
+            Chad connections are part of the premium operator profile. Upgrade to send and receive asks.
           </p>
           <a className="acm-cta acm-cta-purple" href="/manage">&gt; UPGRADE PROFILE</a>
         </div>

@@ -14,7 +14,7 @@
 
 - **Chad** = friend / connection
 - **Chad Army** = a user's list of chads (their friends list)
-- **Add Chad** = send a friend request
+- **Add Chad** = send a friend ask
 - Purpose: social proof on the public profile. Cold visitors see the
   operator's network at a glance — "LEGEND × VERIFIED × EXPERIENCED"
   flex on the artifact operators paste into DMs.
@@ -150,7 +150,7 @@ through the design.
 - **Type:** modification of `wireframes/lastproof-profile-free.html`
 - **Purpose:** decide how the static `+ ADD CHAD` button renders on a
   free profile being viewed by anyone. Free profiles **cannot
-  receive** chad requests.
+  receive** chad asks.
 - **Must answer one of:**
   - **Hide entirely** — no button, no army section. Cleanest; matches
     how free profiles already strip the tier bar and hire button.
@@ -177,17 +177,17 @@ through the design.
      reads the connected wallet and resolves relationship to this
      target.
   3. **Branch outcomes** (one of):
-     - ✅ **Eligible** → "Join Chad Army Request" CTA → submit →
+     - ✅ **Eligible** → "SEND ASK" CTA → submit →
        success screen → back-to-profile exit
      - ❌ **No profile on this wallet** → "Create a profile first"
        + link to onboarding
      - ❌ **Free profile on this wallet** → "Activate your profile
-       to send chad requests" + upgrade nudge
+       to send chad asks" + upgrade nudge
      - ❌ **Own profile** → "That's your profile" dead-end
-     - ℹ️ **Already chads** → view-state: "Already in their Chad
+     - ℹ️ **Already chads** → view-state: "Already in your Chad
        Army" — **no Remove button here** (Remove lives only in
        the dashboard)
-     - ℹ️ **Request pending** → "Request Pending" confirmation
+     - ℹ️ **Ask pending** → "ASK PENDING" confirmation
        screen, no action
 - **Open questions:**
   - Modal chrome — same shell as `lastproof-mint-modal.html` or
@@ -215,28 +215,26 @@ through the design.
     sizes at launch. Default I'd propose: single list with lazy-load
     beyond first 50. Cowork picks.
 
-### 5. Dashboard inline — Chad Requests strip
+### 5. Dashboard inline — PENDING ASKS strip
 
 - **Type:** modification of `wireframes/lastproof-dashboard.html` and
   `wireframes/lastproof-dashboard-fresh.html`
-- **Purpose:** a compact Instagram-style strip embedded in the edit-
-  profile dashboard, showing pending chad requests inline.
+- **Purpose:** a compact summary card on the edit-profile dashboard
+  showing pending chad asks count + army count + MANAGE → button.
 - **Must include:**
-  - Section title `CHAD REQUESTS` with count, e.g. `CHAD REQUESTS (3)`
-  - **Renders only when pending count > 0**. Zero pending = section
-    hides entirely. No empty state.
-  - First N inline request rows (Cowork picks N — 3–5 feels right).
-    Each row:
-    - Avatar + display name (both link → requester's public profile
-      in a **new tab**)
-    - `[Accept]` `[Deny]` buttons
-  - `SEE ALL REQUESTS →` link at the bottom if pending count > N
-- **Open questions:**
-  - Placement within the dashboard — where exactly does the strip
-    sit relative to existing sections?
-  - Count badge style — inline parens `(3)`, or a separate pill/dot?
-  - Any visual "new requests since last visit" highlight, or just
-    treat all pending identically?
+  - Section title `PENDING ASKS` (`//` slash prefix in accent orange)
+  - "Pending: X" count (gold; chad-surface attention exception per
+    Kellen, see CLAUDE.md note)
+  - "Your Chad Army: Y" count (white)
+  - `MANAGE →` pill linking to `/manage/chads`
+  - **LOCKED variant** when `tier === 5` (free): title greyed,
+    counts replaced with `⚠ PREMIUM FEATURE ONLY` notice, pill
+    becomes `UPGRADE PROFILE` linking to `/manage`
+- **Note (2026-04-25):** an earlier draft of this section asked for
+  inline Instagram-style accept/deny rows for the first N pending.
+  Kellen overrode during build — at scale (100+ pending) inline
+  rows make the dashboard unusable. Summary card with click-through
+  to `/manage/chads` is the locked design.
 
 ### 6. Dashboard Chads management — full page
 
