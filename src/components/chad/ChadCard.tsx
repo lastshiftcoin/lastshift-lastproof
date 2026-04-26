@@ -113,7 +113,7 @@ export function ChadCard({ chad, actions = "none", status, onAction }: Props) {
           </>
         )}
         {actions === "remove" && effectiveStatus === "pending" && (
-          <span className="chad-card-pending-caption">ASK PENDING</span>
+          <span className="chad-card-pending-caption">PENDING</span>
         )}
         {actions === "remove" && effectiveStatus !== "pending" && (
           <button

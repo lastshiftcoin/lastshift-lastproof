@@ -635,10 +635,10 @@ footer.lp-footer a:hover { color: var(--text-primary); }
   background: var(--bg-card-hover);
   border-color: var(--border-2);
 }
-.chad-card.pending {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 1px var(--gold-glow);
-}
+/* Pending outgoing cards in the dashboard "Your Chad Army" view
+   render with the SAME chrome as accepted cards — only the action-
+   slot label differs (PENDING vs REMOVE). Per Kellen: pending
+   doesn't need to stand out; the label alone communicates state. */
 .chad-card-link {
   display: flex;
   align-items: center;
@@ -708,18 +708,19 @@ footer.lp-footer a:hover { color: var(--text-primary); }
 
 /* Non-interactive caption that occupies the action slot when an
    outgoing chad card is in pending state (the user has asked, target
-   hasn't responded). View-state only — no Cancel button v1. */
+   hasn't responded). Visually IDENTICAL to a non-hovered .chad-btn —
+   pending shouldn't stand out, label communicates the state. */
 .chad-card-pending-caption {
   display: inline-flex;
   align-items: center;
   padding: 5px 10px;
-  border: 1px solid var(--gold);
+  background: transparent;
+  border: 1px solid var(--border-2);
   border-radius: var(--r-pill);
-  background: var(--gold-dim);
-  color: var(--gold);
+  color: var(--text-secondary);
   font-family: var(--mono);
   font-size: 9px;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   white-space: nowrap;
 }
 
