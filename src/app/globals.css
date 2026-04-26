@@ -1145,11 +1145,14 @@ footer.lp-footer a:hover { color: var(--text-primary); }
    Copy is intentionally rewritten in the JSX to respect the
    asymmetric one-direction rule (see component file). */
 
-/* Backdrop blur + heavier scrim */
+/* Backdrop blur + heavy scrim — must fully obscure the page content
+   behind. Previous 0.82 alpha let cards/images bleed through. Now nearly
+   opaque with a strong blur fallback for browsers that ignore alpha
+   compositing on top of GPU layers. */
 .add-chad-modal-backdrop {
-  background: rgba(5, 6, 10, 0.82);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(12px) saturate(0.6);
+  -webkit-backdrop-filter: blur(12px) saturate(0.6);
 }
 
 /* Modal shell — pop-in animation, scanline texture, shadow */
