@@ -112,12 +112,15 @@ export default function GridCard({ card }: { card: GridCardView }) {
  * Fee display: filled glyphs for the operator's fee tier, dim glyphs for
  * the remaining "unused" range. e.g. "$$$" with feeRange="$$" renders as
  * `$$<dim>$$</dim>`.
+ *
+ * The `data-fee` attribute lets the CSS color $$$$ in gold (premium tier
+ * highlight) without needing a separate component variant.
  */
 function FeeDisplay({ fee }: { fee: "$" | "$$" | "$$$" | "$$$$" }) {
   const filled = fee.length;
   const dim = 4 - filled;
   return (
-    <span className="g-card-fee">
+    <span className="g-card-fee" data-fee={fee}>
       {"$".repeat(filled)}
       {dim > 0 && <span className="dim">{"$".repeat(dim)}</span>}
     </span>
