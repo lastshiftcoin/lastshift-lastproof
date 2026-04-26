@@ -70,7 +70,7 @@ export default async function ManageChadsPage() {
     outgoingRows.length > 0 ? outgoingRows[outgoingRows.length - 1]!.id : null;
 
   return (
-    <div className="pp-page pp-page-bg pp-chad-army-page">
+    <div className="pp-page pp-page-bg pp-chad-army-page pp-manage-chads-page">
       <div className="pp-container">
         <div className="chad-army-page-header">
           <Link href="/manage/profile" className="chad-army-back">&lt; BACK TO DASHBOARD</Link>
