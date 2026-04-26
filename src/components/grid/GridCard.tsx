@@ -37,9 +37,18 @@ export default function GridCard({ card }: { card: GridCardView }) {
       rel="noopener"
     >
       <div className="g-card-grid">
-        <div className="g-avatar" data-av={av}>
-          {card.avatarMonogram}
-        </div>
+        {card.avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            className="g-avatar g-avatar-img"
+            src={card.avatarUrl}
+            alt={card.displayName}
+          />
+        ) : (
+          <div className="g-avatar" data-av={av}>
+            {card.avatarMonogram}
+          </div>
+        )}
         <div className="g-card-main">
           <div className="g-card-topline">
             <span className="g-card-name">{card.displayName}</span>
