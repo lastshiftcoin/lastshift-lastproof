@@ -47,7 +47,14 @@ export interface GridCardView {
   // Categories — first entry is the primary (orange-filled chip)
   categories: GridCategory[];
 
-  pitch: string;
+  /**
+   * Short bio — the one-liner identity statement that goes on the card.
+   * NOT the long-form Pitch tab body (that lives on the profile page).
+   * Sourced from `bio_statement` with `headline` as a legacy fallback —
+   * matches the profile hero's `bioStatement || headline` rendering
+   * (src/components/profile/ProfileHero.tsx).
+   */
+  shortBio: string;
 
   /** ISO timestamp. Used by sort logic (eventually) and ranking. */
   publishedAt: string;

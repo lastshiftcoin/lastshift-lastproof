@@ -30,7 +30,7 @@ interface GridOperatorRow {
   language: string | null;
   secondary_language: string | null;
   fee_range: string | null;
-  pitch: string | null;
+  short_bio: string | null;
   published_at: string;
   proofs_confirmed: number;
   dev_proofs_confirmed: number;
@@ -89,7 +89,7 @@ function transformRow(r: GridOperatorRow): GridCardView {
     language: formatLanguage(r.language, r.secondary_language),
     feeRange: clampFee(r.fee_range),
     categories: r.categories ?? [],
-    pitch: r.pitch ?? "",
+    shortBio: r.short_bio ?? "",
     publishedAt: r.published_at,
   };
 }

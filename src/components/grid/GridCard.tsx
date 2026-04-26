@@ -73,7 +73,7 @@ export default function GridCard({ card }: { card: GridCardView }) {
             <span className="sep">·</span>
             <span className="m">{card.language}</span>
           </div>
-          <p className="g-card-pitch">{card.pitch}</p>
+          <p className="g-card-pitch">{card.shortBio}</p>
           <div className="g-card-cats">
             {card.categories.map((c, i) => (
               <span
