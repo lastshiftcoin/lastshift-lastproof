@@ -730,6 +730,14 @@
   box-shadow: 0 0 18px rgba(255,145,0,.2);
   flex-shrink: 0;
   overflow: hidden;
+  object-fit: cover;
+}
+/* When the operator has uploaded an avatar, drop the gradient + glow so
+   the photo isn't tinted. Photo fills the circle, cropped center. */
+img.g-avatar.g-avatar-img {
+  background: none;
+  box-shadow: none;
+  display: block;
 }
 @media (max-width: 768px) {
   .g-avatar { width: 48px; height: 48px; font-size: 15px; }
