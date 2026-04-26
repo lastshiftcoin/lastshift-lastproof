@@ -215,16 +215,16 @@ through the design.
     sizes at launch. Default I'd propose: single list with lazy-load
     beyond first 50. Cowork picks.
 
-### 5. Dashboard inline — PENDING ASKS strip
+### 5. Dashboard inline — CHAD MANAGEMENT strip
 
 - **Type:** modification of `wireframes/lastproof-dashboard.html` and
   `wireframes/lastproof-dashboard-fresh.html`
 - **Purpose:** a compact summary card on the edit-profile dashboard
-  showing pending chad asks count + army count + MANAGE → button.
+  showing pending asks count + army count + MANAGE → button.
 - **Must include:**
-  - Section title `PENDING ASKS` (`//` slash prefix in accent orange)
-  - "Pending: X" count (gold; chad-surface attention exception per
-    Kellen, see CLAUDE.md note)
+  - Section title `CHAD MANAGEMENT` (`//` slash prefix in accent orange)
+  - "Pending Asks: X" count (gold; chad-surface attention exception
+    per Kellen, see CLAUDE.md note)
   - "Your Chad Army: Y" count (white)
   - `MANAGE →` pill linking to `/manage/chads`
   - **LOCKED variant** when `tier === 5` (free): title greyed,
