@@ -20,6 +20,102 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-26 00:07 MST — Blog post 13 (chad loop social-proof piece) + parser FAQ-format tolerance
+
+**Device:** Tallada's MacBook Air (`Talladas-MacBook-Air.local`, macOS 26.4.1)
+**Platform:** Claude Desktop (`claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** blog
+**Commits:** this commit (see git log)
+**Migrations run in prod Supabase:** none
+**Impacts:** none — fully scoped to /blog
+**Status:** ✅ shipped (commit local, push pending — see open/next)
+
+### Did
+
+- **Added blog post 13** at
+  `content/blog/13-chad-loop-social-proof/` — "why social proof beats
+  screenshots in web3". Cornerstone piece for the chad loop feature,
+  ~2,460 words (longer than the 1,500–1,800 of posts 01–12 by design,
+  per wireframer). Cluster: operators. Slug:
+  `social-proof-beats-screenshots-web3`. Featured image (1731×909,
+  same OG-safe shape as the existing 12) mirrored to
+  `public/blog/social-proof-beats-screenshots-web3/featured.png` via
+  the existing `prebuild`/`predev` script. HowTo JSON-LD extracted
+  from the article's `json howto` fenced block (4-step "how an
+  operator builds a chad army" section).
+- **Parser tolerance fix.** Post 13 used `**bold question?**` Q&A
+  format for its 7 FAQ entries; posts 01–12 use `### question?`. The
+  parser only matched `### `. Updated `extractFaq` regex in
+  `src/lib/blog/parse.ts` to accept BOTH formats — wireframer can
+  use whichever convention they prefer going forward, parser
+  tolerates the variance. All 13 articles now parse with correct
+  FAQ counts (post 13 = 7, posts 01–12 = 5 each).
+- **Smoke + dev-server verified.**
+  - Smoke loader: 13 posts parse cleanly, post 13 reports faq=7,
+    howto=Y, 11 min read, sorted to top by publishedISO.
+  - `/blog` index: 13 cards (was 12).
+  - `/blog/social-proof-beats-screenshots-web3`: 200, FAQ section
+    renders 7 Q&As, JSON-LD emits BlogPosting + BreadcrumbList +
+    FAQPage + HowTo as expected.
+  - `/blog/category/operators`: 200, post 13 in the grid.
+  - `/blog/rss.xml`: 13 items (was 12).
+  - Typecheck clean on `src/lib/blog/*` and
+    `src/app/(marketing)/blog/*`.
+- **Updates feed entry** added at `0.13.0` (minor bump, category=added)
+  per § Updates feed convention. VERSION 0.12.2 → 0.13.0.
+
+### Current state
+
+- 13 articles live in `content/blog/`. 13th post slotted into the
+  operators cluster.
+- Parser now accepts `## FAQ` heading + EITHER `### Q` or
+  `**Q?**` Q&A markers. Documented inline in
+  `src/lib/blog/parse.ts` → `extractFaq`.
+
+### Open / next
+
+- **Push policy decision pending.** Local main is ahead of origin by
+  3 commits after this one lands:
+  - `9154021 grid: visual scaffold for /operators — Stage 1 of Phase 2`
+  - `93f7914 docs: GRID-PHASE-2-ARCHITECTURE.md`
+  - this commit (post 13 + parser tolerance)
+  The first two were already on disk when I arrived this session and
+  belong to a grid specialist session, NOT mine. A normal `git push`
+  would silently ship that grid WIP alongside post 13. **I committed
+  but did not push.** Coordinator needs to decide:
+  - (a) Confirm grid commits are ready → I push all three
+  - (b) Hold the push until grid session resolves → I leave commit
+    local, coordinator pushes when ready
+  - (c) Cherry-pick / partial push of just my commit (only viable
+    if the grid commits become a separate branch first)
+- **Updates feed integration into /status page** still requires the
+  feed page to re-fetch from `data/updates.json` on next deploy —
+  same as every prior `[update: …]` commit, no extra wiring.
+
+### Gotchas for next session
+
+- **FAQ Q&A format is now polymorphic by parser design.** Future
+  articles can use `### question?` (posts 01–12 convention) or
+  `**question?**` (post 13 convention). Both are detected. Single
+  regex supports both. Don't "standardize" by collapsing to one
+  format unless the wireframer asks — the polymorphism is the
+  feature.
+- **Dual paths still exist for the repo:** the iCloud-synced
+  `~/Documents/Claude/Projects/LASTSHIFT/lastproof-build/` is now
+  an empty husk (only `node_modules/` from a prior session). The
+  REAL repo lives at `/Volumes/LASTSHIFT/lastproof-build/` on the
+  external drive. If `git status` reports "not a git repository",
+  you're at the wrong path — `cd /Volumes/LASTSHIFT/lastproof-build`.
+- **Wireframer's stated conventions don't always match what's in
+  the file.** Round 1 (post 01–12 launch): wireframer said `## faqs`
+  but articles used `## FAQ`. Round 2 (post 13): wireframer said
+  the FAQ heading was `## faqs` again, then corrected to `## FAQ`,
+  but didn't mention the inner `**bold**` Q format change. Always
+  verify the actual file before trusting the handoff message.
+
+---
+
 ## 2026-04-25 08:47 MST — Telegram verify: surface no_username + others to user
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)

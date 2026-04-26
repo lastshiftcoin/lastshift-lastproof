@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.12.2",
+  "latest_version": "0.13.0",
   "entries": [
+    {
+      "version": "0.13.0",
+      "date": "2026-04-26",
+      "category": "added",
+      "headline": "New blog post: why social proof beats screenshots in web3",
+      "copy": "An anon crypto operator's strongest claim isn't a portfolio screenshot — it's a public network of operators backing them. The first long-form piece on how the chad loop works and why it scales trust the way reach never could. Read at lastproof.app/blog.",
+      "source_commits": []
+    },
     {
       "version": "0.12.2",
       "date": "2026-04-25",

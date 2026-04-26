@@ -189,15 +189,19 @@ function extractFaq(renderable: string): BlogFaqEntry[] | null {
   const nextH2 = /\n## /.exec(after);
   const faqSection = nextH2 ? after.slice(0, nextH2.index) : after;
 
-  // Each Q is `### <question?>`. The A is everything up to the next `### `
-  // or end of section. Allow multi-paragraph answers by collapsing them
-  // into a single string preserving inner newlines.
+  // Each Q is either `### <question?>` (posts 01–12 convention) or
+  // `**<question?>**` on its own line (post 13 convention). Both are
+  // accepted so the wireframer can use either format; parser
+  // tolerates the variance. The A is everything up to the next Q
+  // marker or end of section. Multi-paragraph answers are preserved
+  // with inner newlines intact.
   const entries: BlogFaqEntry[] = [];
-  const qRe = /### (.+?)\n([\s\S]*?)(?=\n### |$)/g;
+  const qRe =
+    /(?:^|\n)(?:### (.+?)|\*\*(.+?)\*\*)\s*\n([\s\S]*?)(?=\n(?:### |\*\*[^*\n]+\*\*\s*\n)|$)/g;
   let m: RegExpExecArray | null;
   while ((m = qRe.exec(faqSection)) !== null) {
-    const question = m[1].trim();
-    const answer = m[2].trim();
+    const question = (m[1] ?? m[2] ?? "").trim();
+    const answer = (m[3] ?? "").trim();
     if (question && answer) {
       entries.push({ question, answer });
     }
