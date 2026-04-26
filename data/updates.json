@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.13.0",
+  "latest_version": "0.13.1",
   "entries": [
+    {
+      "version": "0.13.1",
+      "date": "2026-04-26",
+      "category": "improved",
+      "headline": "Handle picker now blocks impersonation attempts and slurs",
+      "copy": "When you pick (or change) your handle, the picker now rejects names that try to impersonate the platform — anything containing \"lastshift\", \"lastproof\", \"lastshft\", or any of our other product names — plus close variants of the founder's handle. Hardcore profanity and slurs are also blocked. Helps keep search results clean and stops fake-official accounts from showing up.",
+      "source_commits": []
+    },
     {
       "version": "0.13.0",
       "date": "2026-04-26",

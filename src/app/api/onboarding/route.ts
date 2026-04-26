@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { readSession } from "@/lib/session";
 import { upsertProfileByOperator } from "@/lib/profiles-store";
 import type { ProfileRow } from "@/lib/profiles-store";
+import {
+  validateHandle,
+  HANDLE_REJECTION_MESSAGE,
+} from "@/lib/handle-validation";
 
 /**
  * POST /api/onboarding
@@ -48,6 +52,20 @@ export async function POST(request: Request) {
 
   if (!/^[a-z0-9_]{3,20}$/.test(handle)) {
     return NextResponse.json({ error: "invalid_handle" }, { status: 400 });
+  }
+
+  // Reserved-word, brand-protection, profanity, founder-spoof checks.
+  // See src/lib/handle-validation.ts for rules. Internal `reason` is
+  // logged for observability; user only ever sees the generic message.
+  const handleCheck = validateHandle(handle);
+  if (!handleCheck.ok) {
+    console.log(
+      `[onboarding] handle rejected: handle=${handle.slice(0, 32)} reason=${handleCheck.reason}`,
+    );
+    return NextResponse.json(
+      { error: "handle_not_acceptable", message: HANDLE_REJECTION_MESSAGE },
+      { status: 400 },
+    );
   }
 
   if (displayName.trim().length < 2 || displayName.length > 30) {

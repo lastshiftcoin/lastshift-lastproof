@@ -26,6 +26,7 @@ import { recordHandleChange } from "./handle-history-store";
 import { checkHandleCooldown } from "./handle-cooldown";
 import { listProfiles } from "./profiles-store";
 import { listQuotes, markQuoteExpired } from "./quotes-store";
+import { validateHandle } from "./handle-validation";
 
 export interface DispatchResult {
   handled: boolean;
@@ -152,6 +153,19 @@ async function handleHandleChange(row: PaymentRow): Promise<DispatchResult> {
       handled: false,
       kind: "handle_change",
       note: `invalid_new_handle:${newHandle}`,
+    };
+  }
+
+  // Reserved-word / brand / profanity / founder-spoof gate (defense in
+  // depth — pre-flight POST already validates, but this catches anyone
+  // who skipped the POST and submitted payment directly with a
+  // hand-crafted metadata.refId).
+  const handleCheck = validateHandle(newHandle);
+  if (!handleCheck.ok) {
+    return {
+      handled: false,
+      kind: "handle_change",
+      note: `handle_not_acceptable:${handleCheck.reason}:${newHandle}`,
     };
   }
 
