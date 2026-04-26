@@ -3,6 +3,10 @@ import { readSession } from "@/lib/session";
 import { getProfileByOperatorId } from "@/lib/profiles-store";
 import { checkHandleCooldown } from "@/lib/handle-cooldown";
 import { BASE_PRICES_USD, LASTSHFT_DISCOUNT, HANDLE_CHANGE_COOLDOWN_DAYS } from "@/lib/pricing";
+import {
+  validateHandle,
+  HANDLE_REJECTION_MESSAGE,
+} from "@/lib/handle-validation";
 
 /**
  * GET  /api/dashboard/handle-change — check cooldown eligibility + pricing
@@ -67,6 +71,20 @@ export async function POST(request: Request) {
   const clean = newHandle.toLowerCase().trim();
   if (!/^[a-z0-9_]{3,20}$/.test(clean)) {
     return NextResponse.json({ error: "invalid_handle" }, { status: 400 });
+  }
+
+  // Reserved-word, brand-protection, profanity, founder-spoof checks.
+  // See src/lib/handle-validation.ts for rules. Internal `reason` is
+  // logged for observability; user only ever sees the generic message.
+  const handleCheck = validateHandle(clean);
+  if (!handleCheck.ok) {
+    console.log(
+      `[handle-change] handle rejected: handle=${clean.slice(0, 32)} reason=${handleCheck.reason} profileId=${profile.id}`,
+    );
+    return NextResponse.json(
+      { error: "handle_not_acceptable", message: HANDLE_REJECTION_MESSAGE },
+      { status: 400 },
+    );
   }
 
   if (clean === profile.handle.toLowerCase()) {

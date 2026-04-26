@@ -20,6 +20,123 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-26 09:36 MST — Handle validation: brand / founder-spoof / profanity rules
+
+**Device:** the operator's Mac mini (`the operators-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** backend
+**Commits:** this commit (see git log)
+**Migrations run in prod Supabase:** none — pure code-side validation,
+no schema change
+**Impacts:** none — server-side handle gate only, no Terminal contract
+or shared-secret change
+**Status:** ✅ shipped
+
+### Did
+
+- **New module: `src/lib/handle-validation.ts`** — single source of
+  truth for what handles users can pick. Three rules, applied in
+  order, first failure wins:
+  1. **Founder-spoof guard** — Levenshtein distance ≤ 2 against
+     `lastshiftfounder` after normalization (lowercase + strip
+     non-alphanum + leetspeak inversion: 0→o, 1→i, 3→e, 4→a, 5→s).
+     Catches `lastshfitfounder`, `1astshiftfounder`, `last5hift…`,
+     etc.
+  2. **Reserved brand terms** — substring match against the
+     LASTSHIFT-ecosystem product list. Path A enforcement: brand
+     substrings are *never* allowed in user handles, regardless of
+     surrounding context. Reserved list (per the operator's spec):
+     `lastshift, lastproof, lastshft, shiftbot, shiftagent,
+     shiftcourse, shiftmail, shiftraid, lasttrade, agenticsocial`.
+  3. **Profanity** — substring match against a deliberately narrow
+     list of hardcore-only terms: `fuck, shit, cunt, nigger,
+     faggot, retard, whore, slut`. Calibrated to avoid common-word
+     false positives (`Cunningham`, `class`, `assess` all safe).
+- **Wired into 3 server entry points** for defense in depth:
+  - `src/app/api/onboarding/route.ts` — initial handle claim during
+    profile creation
+  - `src/app/api/dashboard/handle-change/route.ts` — pre-flight
+    POST validation before payment quote is issued
+  - `src/lib/payment-events.ts → handleHandleChange()` — the
+    payment-confirm executor; also re-runs validation in case
+    someone bypassed the pre-flight POST and submitted a payment
+    with a hand-crafted `metadata.refId`. Returns the dispatch as
+    `not handled` with `note: handle_not_acceptable:<reason>:<handle>`.
+- **User-facing rejection message is generic and identical for all
+  failure modes:** *"Handle is not acceptable. Please try again."*
+  Per the operator's spec — don't tell attackers which rule blocked them
+  (they'd just keep tweaking until they slip past) and don't
+  promise customer support (the system runs on its own).
+- **Internal `reason` codes are logged** at all three integration
+  points — `invalid_format`, `founder_spoof`, `reserved_brand`,
+  `profanity` — so we can see in logs which rule fires most often
+  and tune the lists if needed.
+- **Updates feed convention applied** (handle picker is user-visible,
+  rejection message is new behavior):
+  - `VERSION` 0.13.0 → 0.13.1 (patch, category=improved)
+  - `data/updates.json` entry, `latest_version` bumped
+  - `[update: improved]` prefix on commit subject
+  - Copy frames it as user-protective (clean search results, no
+    fake-official accounts) without listing the specific terms
+
+### Current state
+
+- All three handle-creation paths now apply the same validation. New
+  signups picking impersonation handles get rejected with the
+  generic message; legitimate handles flow through unchanged.
+- Existing handle audit pending — the operator will run
+  `SELECT handle FROM profiles ORDER BY handle;` and paste back
+  for me to validate each against the new rules. Expected zero
+  hits (current 30+ profiles all look legitimate from prior
+  inspection), but worth confirming.
+
+### Open / next
+
+- **Audit existing handles** — paste the SELECT output back, I'll
+  run validateHandle on each in my response. Any flagged handles
+  need a manual decision: grandfather (whitelist override) or
+  force-rename (admin SQL update + tell the operator).
+- **Client-side preview / real-time feedback** — current setup is
+  server-only. A frontend session can add an `/api/handle/check`
+  endpoint that wraps the same validator for live UI feedback as
+  the user types. Out of scope for this commit; deferred to
+  whoever picks up the onboarding UX next.
+- **Slur list reviews** — eight terms is a starting point. If real
+  users report false positives or the operator wants to tighten further
+  (e.g. add `nazi`, `kkk`), edit `PROFANITY_TERMS` array in
+  `src/lib/handle-validation.ts`.
+- **New product launches** — when a new LASTSHIFT tool ships
+  (Grid, Chad-as-product, etc.), add its name to
+  `RESERVED_BRAND_TERMS` in the same file. Single point of update.
+
+### Gotchas for next session
+
+- **The validator does NOT run in stub/mock mode**. There's no
+  bypass for development. If you're testing onboarding locally
+  with a profanity-laden handle for some reason, it'll be
+  rejected. Use `tester1` or similar.
+- **`@lastshiftfounder` — the operator's own handle — would itself be
+  rejected by the new founder-spoof rule** (distance 0). Doesn't
+  matter in practice because the operator already owns it; he won't
+  re-claim. But if for any operational reason that handle ever
+  needs to be re-issued (e.g. profile rebuild), the validator
+  blocks it. Workaround: direct SQL update bypassing the API.
+  Per the operator's spec, no admin override path was added — system
+  is intentionally locked.
+- **Leetspeak normalization is selective**. We invert 0/1/3/4/5
+  back to letters before checking. We don't invert `@→a`, `$→s`,
+  `7→t`, etc. — they're rarer and would broaden false-positive
+  surface. If you see clear evidence of those evasion patterns,
+  add to `leetNormalize()` in the validation module.
+- **The user-facing message is hardcoded as a constant**:
+  `HANDLE_REJECTION_MESSAGE` in `handle-validation.ts`. If a
+  frontend session translates copy or the UX team wants a
+  different tone, change it there — it's exported and used by
+  both API endpoints.
+
+---
+
 ## 2026-04-26 00:07 MST — Blog post 13 (chad loop social-proof piece) + parser FAQ-format tolerance
 
 **Device:** the operator's MacBook Air (`the operators-MacBook-Air.local`, macOS 26.4.1)
