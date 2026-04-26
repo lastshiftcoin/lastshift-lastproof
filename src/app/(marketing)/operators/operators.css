@@ -719,7 +719,7 @@
 
 .g-avatar {
   width: 60px; height: 60px;
-  border-radius: 12px;
+  border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-family: var(--mono);
   font-size: 18px;
@@ -732,7 +732,7 @@
   overflow: hidden;
 }
 @media (max-width: 768px) {
-  .g-avatar { width: 48px; height: 48px; font-size: 15px; border-radius: 10px; }
+  .g-avatar { width: 48px; height: 48px; font-size: 15px; }
 }
 .g-avatar[data-av="2"]  { background: linear-gradient(135deg, #a78bfa, #7c3aed 60%, #5b21b6); color: #fff; }
 .g-avatar[data-av="3"]  { background: linear-gradient(135deg, #60a5fa, #2563eb 60%, #1e40af); color: #fff; }
@@ -1020,12 +1020,16 @@
 
 /* ---- MOBILE FILTER DRAWER -------------------------------------------- */
 
+/* Drawer is portal'd to <body>, so z-index here is global, not scoped to
+   .wrap's stacking context. Above all other fixed UI (Topbar 100,
+   .shiftbot 50). 9990/9991 leaves headroom under modals if any land at
+   9999 in the future. */
 .g-drawer-overlay {
   position: fixed;
   inset: 0;
   background: rgba(5,6,10,.75);
   backdrop-filter: blur(2px);
-  z-index: 90;
+  z-index: 9990;
   opacity: 0;
   pointer-events: none;
   transition: opacity .2s ease;
@@ -1041,7 +1045,7 @@
   max-width: 360px;
   background: var(--bg-primary);
   border-left: 1px solid var(--border);
-  z-index: 100;
+  z-index: 9991;
   transform: translateX(100%);
   transition: transform .22s ease;
   display: flex;

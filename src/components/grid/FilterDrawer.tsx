@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import type { GridFilters } from "@/lib/grid/grid-view";
 import FilterSections from "./FilterSections";
 
@@ -17,8 +18,13 @@ interface Props {
  * Mobile slide-in filter drawer — full height, slides in from the right,
  * Apply / Clear actions pinned at the bottom.
  *
- * Body scroll locked while drawer is open. Escape key closes. Backdrop
- * click closes.
+ * Portaled to `document.body` to escape the `.wrap` stacking context
+ * (which sits at z-index: 1). Without the portal, the inherited
+ * `.shiftbot` strip (rendered as a sibling of `.wrap`) layers on top of
+ * the drawer's bottom area and hides the Apply button.
+ *
+ * Body scroll locked while drawer is open. Escape closes. Backdrop click
+ * closes.
  */
 export default function FilterDrawer({
   open,
@@ -28,6 +34,13 @@ export default function FilterDrawer({
   onUpdateFilter,
   onClearAll,
 }: Props) {
+  // SSR guard — `document` doesn't exist server-side. Mount on first
+  // client render, then enable the portal.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Body scroll lock + escape-key handler while open
   useEffect(() => {
     if (!open) return;
@@ -42,7 +55,9 @@ export default function FilterDrawer({
     };
   }, [open, onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  const drawer = (
     <>
       <button
         type="button"
@@ -82,4 +97,6 @@ export default function FilterDrawer({
       </aside>
     </>
   );
+
+  return createPortal(drawer, document.body);
 }
