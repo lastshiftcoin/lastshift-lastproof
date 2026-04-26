@@ -237,9 +237,7 @@ function FeeSection({ filters, onUpdateFilter }: FilterSectionsProps) {
         >
           <span className="cb" />
           <span className="label">
-            <span className="fee-glyph" data-fee={fee}>
-              {fee}
-            </span>
+            <span className="fee-glyph">{fee}</span>
           </span>
           <span />
         </button>
