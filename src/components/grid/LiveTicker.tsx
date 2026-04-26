@@ -1,16 +1,16 @@
 "use client";
 
-import type { MockTickerProof } from "@/lib/mock/grid-mock";
+import type { TickerProof } from "@/lib/grid/recent-proofs";
 
 /**
  * Slim 32px proof scroller pinned at the top of /operators (under the
- * marketing topbar). Static-per-pageload — no polling. Stage 2 will swap
- * the mock array for `getRecentProofs(20)` server-rendered into the page.
+ * marketing topbar). Static-per-pageload — no polling. SSR fetches the
+ * last 20 confirmed proofs via getRecentProofs() and embeds them here.
  *
  * The track is duplicated so the CSS animation can scroll forever without
  * a visible "jump" when the cycle resets.
  */
-export default function LiveTicker({ proofs }: { proofs: MockTickerProof[] }) {
+export default function LiveTicker({ proofs }: { proofs: TickerProof[] }) {
   return (
     <div className="g-ticker">
       <span className="live-label">
@@ -32,7 +32,7 @@ export default function LiveTicker({ proofs }: { proofs: MockTickerProof[] }) {
   );
 }
 
-function TickerItem({ p }: { p: MockTickerProof }) {
+function TickerItem({ p }: { p: TickerProof }) {
   return (
     <span className="item">
       <span className="t-wallet">{p.shortWallet}</span>
