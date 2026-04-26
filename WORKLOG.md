@@ -113,6 +113,104 @@ Frontend-lane work. Crossed the lane with Kellen's explicit OK because:
 
 ---
 
+## 2026-04-25 11:30 MST — Chad Function — default-chad seeding (Tom-from-MySpace)
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`claude-desktop`)
+**Model:** claude-opus-4-7 (1M context)
+**Role:** chad-backend
+**Commits:** this commit
+**Migrations run in prod Supabase:** none — uses existing 0021 schema
+**Impacts:** none — additive behavior gated by CHADS_ENABLED
+**Status:** ✅ pushed; awaiting Kellen to run the one-time backfill SQL
+
+### Did
+
+Implemented the "Tom-from-MySpace" default-chad pattern: every
+paid+published operator starts with `@lastshiftfounder` in their
+Chad Army so the CHAD MANAGEMENT section on the dashboard reads as
+a populated surface (which makes the feature self-explanatory)
+rather than empty. User can Remove anytime; if they re-add later,
+it's a normal ask flow (no auto-accept).
+
+Locked decisions per Kellen this session:
+- Default chad is hardcoded to `lastshiftfounder` (no env var)
+- Re-adds go through the normal ask flow — Kellen accepts
+  manually in the founder's dashboard
+- Hook fires on first **publish** (when profile becomes paid+
+  published), not at operator creation
+- Test fixtures (cryptomark, shipfast, newbuilder) are wireframes
+  that don't exist in production Supabase, so the backfill
+  physically can't touch them — left alone
+
+### Files changed
+
+- `src/lib/chads/default-chad.ts` — new `tryAddDefaultChad(wallet)`
+  helper. Skips silently when chads disabled, founder unresolved,
+  wallet IS founder, or row already exists. Fire-and-forget —
+  errors never fail publish.
+- `src/app/api/profile/publish/route.ts` — calls
+  `tryAddDefaultChad(session.walletAddress)` after a successful
+  first paid+published publish, gated additionally on `derivedPaid`.
+- `docs/features/chad/COWORK-BRIEF.md` — new "Default chad —
+  Tom-from-MySpace pattern" subsection under § Locked mechanics.
+
+### Backfill SQL (one-time, Kellen runs in Supabase dashboard)
+
+Idempotent via `ON CONFLICT DO NOTHING`. Skips @lastshiftfounder
+themselves. Skips operators whose profile isn't currently paid+
+published (they'll get auto-seeded via the publish hook when they
+activate).
+
+```sql
+INSERT INTO chads (requester_wallet, target_wallet, status, accepted_at)
+SELECT op.terminal_wallet, founder_op.terminal_wallet, 'accepted', now()
+FROM operators op
+INNER JOIN profiles p ON p.operator_id = op.id
+INNER JOIN profiles founder_p ON founder_p.handle = 'lastshiftfounder'
+INNER JOIN operators founder_op ON founder_op.id = founder_p.operator_id
+WHERE op.terminal_wallet <> founder_op.terminal_wallet
+  AND p.is_paid = true
+  AND p.published_at IS NOT NULL
+ON CONFLICT (requester_wallet, target_wallet) DO NOTHING;
+```
+
+Verification:
+
+```sql
+select count(*)
+from chads c
+where c.target_wallet = (
+  select op.terminal_wallet
+  from operators op
+  inner join profiles p on p.operator_id = op.id
+  where p.handle = 'lastshiftfounder'
+)
+and c.status = 'accepted';
+```
+
+### Current state
+
+- VERSION still at `0.12.2` — Kellen's call whether to add a new
+  updates.json entry for "@lastshiftfounder shows up in your army
+  by default" or treat as silent onboarding behavior
+- No prod schema change
+
+### Gotchas for next session
+
+- **Hook fires only on FIRST publish.** Re-publish (toggling
+  published off then on) sets `firstPublish=false`, so the
+  auto-seed doesn't fire again. If a user Removes Tom and then
+  unpublishes/re-publishes, Tom does NOT come back. They'd have
+  to Add Chad manually.
+- **Auto-seed bypasses Tom's consent** — inserting status=accepted
+  directly. Intentional per the locked design. Normal Add Chad
+  asks (re-adds after a Remove) still go through the proper
+  accept flow in Tom's dashboard.
+- **Backfill is idempotent.** Re-running is safe.
+
+---
+
 ## 2026-04-25 09:00 MST — Chad Function — directional Instagram-private model rebuild
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
