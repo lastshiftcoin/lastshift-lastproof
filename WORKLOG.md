@@ -20,6 +20,99 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-26 16:05 MST — SHIFTBOT: 2-mode Grid search + 4-layer security (pre-launch, no /status entry)
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** coordinator (Grid build, SHIFTBOT integration)
+**Commits:** `9b446fd` (build), prior `c2bca10` (jailbreak catalog + security plan)
+**Migrations run in prod Supabase:** `0024_shiftbot_refusals.sql` (applied earlier this session per Kellen confirmation)
+**Impacts:** none on Terminal; new Vercel env var required at launch — `IP_HASH_SALT` (graceful NULL fallback if unset)
+**Status:** ✅ shipped to repo, gated behind Grid launch (2026-05-08); no /status entry per pre-launch rule
+
+### Did
+
+- **Functional SHIFTBOT endpoint** at `POST /api/shiftbot/search`. Wires
+  all four defense layers from `docs/SHIFTBOT-SECURITY-PLAN.md`:
+    L1 — system prompt with explicit CANNOT list (in `src/lib/shiftbot/prompt.ts`)
+    L2 — `validateShiftbotResponse()` strict allowlist parser; coerces anything
+         malformed to `{type:"refuse", reason:"off_topic"}`. No hallucinated
+         handles can leak in via Groq output OR via URL `?ranked=` manipulation
+         (validated against the same visibility predicate as `grid_operators`).
+    L3 — Groq llama-3.3-70b-versatile with temp 0.2, max_tokens 400,
+         response_format json_object.
+    L4 — IP rate limiter (5/min/IP, anti-abuse) + cookie counter
+         (`shiftbot_count`, max 10/session, refusals count too) + input
+         sanitization (control chars, zero-width unicode, 200-char cap)
+         + refusal logging to `shiftbot_refusals` (sha256(ip + IP_HASH_SALT)).
+- **Two functional modes on `/operators`:**
+    A. **filter** — Groq maps query → `GridFilters`; `ShiftbotStrip` navigates
+       to `/operators?category=...&tier=...&q=...`. Standard filter engine
+       takes over from there.
+    B. **ranked** — Groq picks + orders matching handles; URL becomes
+       `/operators?ranked=h1,h2,...&q=...`. `OperatorsClient` short-circuits
+       the filter/sort engine in this mode and renders cards in Groq's exact
+       order (filter sidebar still works for further narrowing — actually no,
+       it doesn't; ranked mode bypasses filters entirely. Re-confirm in smoke
+       test before launch).
+    + **fallback** — when Groq can't rank usefully, `?fallback=1&q=...` shows
+       all operators with a "couldn't find specific matches" banner.
+- **`ShiftbotBanner`** renders above card list whenever `?q=` is in URL.
+  Three modes: filter / search / fallback, each with distinct copy. `[Reset]`
+  button → `router.push('/operators')` strips all SHIFTBOT params.
+- **Off-Grid pages:** `ShiftbotStrip` returns canned panel routing to `/grid`
+  (the boot door). No API hit on these pages — pre-empts wasted Groq calls
+  + sidesteps the rate limit for users who haven't entered the Grid yet.
+- **Mode B content scope:** `getOperatorsForSearch()` joins `profiles +
+  profile_categories + work_items` so Groq sees richer searchable content
+  than the slim `grid_operators` view (pitch, about, work_items.ticker/role/
+  description, plus shortBio and category labels). Visibility predicate
+  matches `grid_operators` exactly: is_paid AND published_at IS NOT NULL
+  AND tier != 5.
+- **URL params extension:** `parseGridParams()` now returns `{filters,
+  sort, query, ranked, fallback}`. `OperatorsClient` reads all five from URL
+  on mount (URL-as-source-of-truth pattern preserved).
+
+### Pre-launch caveats
+
+- **No `data/updates.json` entry, no VERSION bump.** Per Kellen pre-launch
+  decision: SHIFTBOT search is gated behind the Grid (launches 2026-05-08).
+  No public users see this commit's behavior change today, so the updates-
+  feed convention does not apply yet.
+- **`IP_HASH_SALT` env var on Vercel — TODO.** Refusal log table accepts
+  NULL `ip_hash` and warns to console in production if salt is unset, so
+  this isn't a launch blocker. Set it before /grid opens to users.
+- **Smoke test pending.** Six scenarios from operational runbook
+  (functional filter, functional search, fallback, off-Grid canned, rate
+  limit, prompt injection refusal). Will verify next session or before
+  launch dress rehearsal.
+
+### Open / next
+
+- Smoke test the 6 SHIFTBOT scenarios end-to-end against staging
+- Set `IP_HASH_SALT` on Vercel (production + preview)
+- Stage 3: Grid boot screen ENTER GRID button + cookie gate (`/grid` is
+  the door SHIFTBOT canned response routes to — it has to actually work)
+- Stage 4: Launch (remove noindex, sitemap, VERSION bump to 1.0.0,
+  updates feed entry: "the Grid is live")
+
+### Gotchas for next session
+
+- The `ranked` URL param can't contain handles that aren't currently
+  Grid-eligible — `validateShiftbotResponse()` filters against the
+  candidate-handle set BEFORE the URL is built, so this is enforced
+  server-side. But if a user pastes a stale `?ranked=` link (e.g.
+  operator unpublished since), the missing handles are dropped silently
+  and the visible card list shrinks. Acceptable behavior (no 404, no
+  error), but worth knowing during smoke tests.
+- `BACKEND-TERMINAL-SECURITY-HANDOFF.md` was sitting untracked in the
+  working tree at session start — not authored this session, deliberately
+  left untracked. If a Terminal session is expecting it committed, that's
+  for them to do.
+
+---
+
 ## 2026-04-26 10:02 MST — Display name validation + reserved personal-name list (founder identity)
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
