@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.13.1",
+  "latest_version": "0.13.2",
   "entries": [
+    {
+      "version": "0.13.2",
+      "date": "2026-04-26",
+      "category": "improved",
+      "headline": "Display names get the same anti-impersonation rules as handles",
+      "copy": "The display name on your profile (the big name at the top) now follows the same rules as your handle — no platform brand terms, no founder identity, no slurs, no invisible characters, and no emoji-only names. Length is capped at 40 characters. The rules apply both when you create your profile and when you edit it later.",
+      "source_commits": []
+    },
     {
       "version": "0.13.1",
       "date": "2026-04-26",

@@ -4,7 +4,9 @@ import { upsertProfileByOperator } from "@/lib/profiles-store";
 import type { ProfileRow } from "@/lib/profiles-store";
 import {
   validateHandle,
+  validateDisplayName,
   HANDLE_REJECTION_MESSAGE,
+  DISPLAY_NAME_REJECTION_MESSAGE,
 } from "@/lib/handle-validation";
 
 /**
@@ -68,8 +70,18 @@ export async function POST(request: Request) {
     );
   }
 
-  if (displayName.trim().length < 2 || displayName.length > 30) {
-    return NextResponse.json({ error: "invalid_display_name" }, { status: 400 });
+  // Display name validation — length, invisible-char block, brand /
+  // founder / personal-name / profanity checks. See
+  // src/lib/handle-validation.ts for full rules.
+  const displayNameCheck = validateDisplayName(displayName);
+  if (!displayNameCheck.ok) {
+    console.log(
+      `[onboarding] display_name rejected: reason=${displayNameCheck.reason}`,
+    );
+    return NextResponse.json(
+      { error: "display_name_not_acceptable", message: DISPLAY_NAME_REJECTION_MESSAGE },
+      { status: 400 },
+    );
   }
 
   // Verify operatorId belongs to session wallet
