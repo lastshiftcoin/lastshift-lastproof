@@ -73,6 +73,25 @@ const RESERVED_BRAND_TERMS: readonly string[] = [
 ];
 
 /**
+ * Reserved personal-identity terms — protects the founder (and any
+ * other LASTSHIFT-team members later added) from impersonation by
+ * blocking their distinctive surname/name from appearing in user
+ * handles or display names.
+ *
+ * Surname-only because first names like "Kellen" are too common to
+ * blanket-block. Surname "Tallada" is uncommon enough that
+ * false-positive risk is low. Anyone legitimately named Tallada will
+ * need to use an alternate spelling or contact the team — accepted
+ * cost vs. the protection it provides.
+ *
+ * Add new entries when team members or other protected identities
+ * need similar protection.
+ */
+const RESERVED_PERSONAL_NAMES: readonly string[] = [
+  "tallada",
+];
+
+/**
  * Hardcore-profanity terms. Intentionally narrow — only obvious
  * slurs and vulgarities. Substring match after normalization, so
  * `fucker`, `shitlord`, `slutface` all match.
@@ -102,10 +121,17 @@ export interface HandleValidationResult {
   ok: boolean;
   /**
    * Internal reason code for logs / observability. Never shown to users.
-   * One of: 'invalid_format', 'founder_spoof', 'reserved_brand',
-   * 'profanity'.
    */
-  reason?: "invalid_format" | "founder_spoof" | "reserved_brand" | "profanity";
+  reason?:
+    | "invalid_format"
+    | "founder_spoof"
+    | "reserved_brand"
+    | "reserved_personal_name"
+    | "profanity"
+    | "invisible_chars"
+    | "no_alphanum"
+    | "too_short"
+    | "too_long";
 }
 
 /**
@@ -115,6 +141,20 @@ export interface HandleValidationResult {
  */
 export const HANDLE_REJECTION_MESSAGE =
   "Handle is not acceptable. Please try again.";
+
+export const DISPLAY_NAME_REJECTION_MESSAGE =
+  "Display name is not acceptable. Please try again.";
+
+const DISPLAY_NAME_MIN_LEN = 2;
+const DISPLAY_NAME_MAX_LEN = 40;
+
+/**
+ * Zero-width and bidirectional-control characters used in homoglyph
+ * and right-to-left override attacks. Real users never need these;
+ * impersonators use them to spoof identical-looking handles
+ * (e.g. `kellen` vs. `kel‎len` with an invisible joiner).
+ */
+const INVISIBLE_CHAR_REGEX = /[​-‏‪-‮⁦-⁩﻿]/;
 
 /**
  * Run the full validation pipeline. Returns `{ ok: true }` if the
@@ -143,7 +183,92 @@ export function validateHandle(candidate: string): HandleValidationResult {
     }
   }
 
-  // 3. Profanity check
+  // 3. Reserved personal-name check (founder/team identity protection)
+  for (const term of RESERVED_PERSONAL_NAMES) {
+    if (normalized.includes(term)) {
+      return { ok: false, reason: "reserved_personal_name" };
+    }
+  }
+
+  // 4. Profanity check
+  for (const term of PROFANITY_TERMS) {
+    if (normalized.includes(term)) {
+      return { ok: false, reason: "profanity" };
+    }
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Validate a display name. Display names are freer than handles —
+ * spaces, mixed case, unicode, symbols are all allowed. So the
+ * normalization step strips ALL non-alphanumeric characters (including
+ * unicode punctuation, emoji, whitespace) before applying the same
+ * brand / founder / profanity / personal-name checks as handles.
+ *
+ * Additional display-name-specific rules:
+ *   - Length 2–40 chars (counted on the trimmed input, before normalization)
+ *   - Must contain at least one alphanumeric character of any script
+ *     (blocks emoji-only, punctuation-only, whitespace-only)
+ *   - Block zero-width / bidirectional-control characters (homoglyph
+ *     and RTL-override attack surface)
+ */
+export function validateDisplayName(candidate: string): HandleValidationResult {
+  const trimmed = candidate.trim();
+
+  // Length checks (on raw trimmed input)
+  if (trimmed.length < DISPLAY_NAME_MIN_LEN) {
+    return { ok: false, reason: "too_short" };
+  }
+  if (trimmed.length > DISPLAY_NAME_MAX_LEN) {
+    return { ok: false, reason: "too_long" };
+  }
+
+  // Block invisible / control / RTL-override characters
+  if (INVISIBLE_CHAR_REGEX.test(trimmed)) {
+    return { ok: false, reason: "invisible_chars" };
+  }
+
+  // Require at least one alphanumeric character of any script.
+  // \p{L} = letters in any script, \p{N} = numbers in any script.
+  // Blocks emoji-only, symbol-only, punctuation-only display names.
+  if (!/[\p{L}\p{N}]/u.test(trimmed)) {
+    return { ok: false, reason: "no_alphanum" };
+  }
+
+  // Normalize for substring checks: lowercase, strip everything that
+  // isn't a-z0-9, then leetspeak-invert. Strips spaces, $, !, emoji,
+  // unicode letters that aren't a-z (so an attacker can't dodge with
+  // Cyrillic-lookalike letters either — those get stripped, and the
+  // remaining ASCII content gets checked).
+  const normalized = leetNormalize(stripNonAlphanum(trimmed.toLowerCase()));
+
+  // 1. Founder spoof — display name normalized to "GENERAL$LASTSHFT" →
+  // "generallastshft" → distance to "lastshiftfounder" is large, but
+  // the brand check below catches it. We still run founder-spoof for
+  // display names like "Last Shift Founder" → "lastshiftfounder" →
+  // distance 0 → blocked.
+  const founderDistance = levenshtein(normalized, FOUNDER_HANDLE);
+  if (founderDistance <= FOUNDER_DISTANCE_THRESHOLD) {
+    return { ok: false, reason: "founder_spoof" };
+  }
+
+  // 2. Reserved brand terms
+  for (const term of RESERVED_BRAND_TERMS) {
+    if (normalized.includes(term)) {
+      return { ok: false, reason: "reserved_brand" };
+    }
+  }
+
+  // 3. Reserved personal-name check
+  for (const term of RESERVED_PERSONAL_NAMES) {
+    if (normalized.includes(term)) {
+      return { ok: false, reason: "reserved_personal_name" };
+    }
+  }
+
+  // 4. Profanity check
   for (const term of PROFANITY_TERMS) {
     if (normalized.includes(term)) {
       return { ok: false, reason: "profanity" };

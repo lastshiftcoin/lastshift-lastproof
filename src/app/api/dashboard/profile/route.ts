@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { readSession } from "@/lib/session";
 import { updateProfile, getProfileByOperatorId } from "@/lib/profiles-store";
+import {
+  validateDisplayName,
+  DISPLAY_NAME_REJECTION_MESSAGE,
+} from "@/lib/handle-validation";
 
 /**
  * PATCH /api/dashboard/profile
@@ -72,6 +76,26 @@ export async function PATCH(request: Request) {
 
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "no_valid_fields" }, { status: 400 });
+  }
+
+  // Display-name validation — same rules as onboarding (brand /
+  // founder / personal-name / profanity / invisible chars / length).
+  // Only runs when displayName is being changed; other field edits
+  // pass through unaffected. See src/lib/handle-validation.ts.
+  if (typeof patch.displayName === "string") {
+    const check = validateDisplayName(patch.displayName);
+    if (!check.ok) {
+      console.log(
+        `[dashboard/profile] display_name rejected: reason=${check.reason} profileId=${profile.id}`,
+      );
+      return NextResponse.json(
+        {
+          error: "display_name_not_acceptable",
+          message: DISPLAY_NAME_REJECTION_MESSAGE,
+        },
+        { status: 400 },
+      );
+    }
   }
 
   try {

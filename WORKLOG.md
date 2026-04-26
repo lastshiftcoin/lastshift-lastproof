@@ -20,6 +20,129 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-26 10:02 MST — Display name validation + reserved personal-name list (founder identity)
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** backend
+**Commits:** this commit (see git log)
+**Migrations run in prod Supabase:** none
+**Impacts:** none — server-side validation extension, no contract change
+**Status:** ✅ shipped
+
+### Did
+
+- **Added `validateDisplayName()`** to `src/lib/handle-validation.ts`,
+  alongside the existing `validateHandle()`. Display name rules:
+  1. **Length 2–40 chars** (raw trimmed input). Up from the prior
+     30-char limit on onboarding — picked 40 to fit long real
+     names like `Hassan Abdulaziz Al-Rashid Jr.` (31 chars) plus
+     occasional honorifics, while still walling off paragraph-style
+     names that'd break profile layout.
+  2. **Block invisible / RTL-override / control characters** —
+     zero-width joiners, BiDi overrides, BOMs. Real users never need
+     these; impersonators use them for homoglyph spoofs (e.g.
+     `kellen` vs. `kel‎len` with an invisible joiner).
+  3. **Require at least one alphanumeric of any script** — uses
+     `\p{L}\p{N}` Unicode property escapes. Blocks emoji-only,
+     punctuation-only, whitespace-only display names. Allows
+     unicode letters from any script (Arabic, Cyrillic, CJK, etc.).
+  4. **Founder-spoof, brand-term, profanity, personal-name checks**
+     — same lists as handle validation, applied after a stricter
+     normalization that strips ALL non-ASCII-alphanumerics. So
+     `Last Shift Founder` → `lastshiftfounder` → distance 0 →
+     blocked. `GENERAL $LASTSHFT` → `generallastshft` → contains
+     `lastshft` → blocked.
+- **Added `RESERVED_PERSONAL_NAMES` list** in the same module —
+  blocks founder/team identity from being used in handles OR
+  display names. Currently seeded with `tallada` (Kellen's
+  surname; uncommon enough that false-positive risk is low,
+  identity-distinctive enough that it cleanly catches
+  impersonation attempts). First name `kellen` deliberately NOT
+  added — too common across the population to blanket-block.
+- **Wired `validateDisplayName()` into both display-name entry
+  points** for defense in depth:
+  - `POST /api/onboarding/route.ts` — initial profile creation
+    (replaced the simpler 2–30 char length check)
+  - `PATCH /api/dashboard/profile/route.ts` — dashboard editor
+    edits. Validation runs only when `displayName` is in the
+    patch; other field edits flow through unaffected.
+- **Wired `RESERVED_PERSONAL_NAMES` into `validateHandle()`** —
+  surnames are now blocked in handles too, not just display
+  names. Single source of truth, single substring check loop.
+- **Updates feed convention applied:**
+  - `VERSION` 0.13.1 → 0.13.2 (patch, category=improved)
+  - `data/updates.json` entry, `latest_version` bumped
+  - `[update: improved]` prefix on commit subject
+  - Copy frames it as anti-impersonation protection for users
+
+### Current state
+
+- Display name picker now has parity with handle picker on the
+  three core rules (brand, founder, profanity) plus two
+  display-specific rules (length, no-invisible-chars + no-emoji-only).
+- Personal-name protection is bidirectional: a user can't pick
+  `tallada` as either their handle OR their display name, can't
+  contain it as a substring either.
+- Generic user-facing rejection messages — `HANDLE_REJECTION_MESSAGE`
+  for handles, `DISPLAY_NAME_REJECTION_MESSAGE` for display names.
+  Internal reason codes logged (`reserved_personal_name`,
+  `invisible_chars`, `no_alphanum`, etc.) for observability.
+- Existing 32 profiles audited yesterday — Kellen's own profile
+  has display name `General $LASTSHFT` which would now fail the
+  validator (contains `lastshft`). Already-stored, unaffected.
+  Same situation as `lastshiftfounder` handle — protected from
+  re-creation but he already owns it.
+
+### Open / next
+
+- **Audit existing display names** — Kellen said skip but worth
+  knowing if any current user's display name happens to contain
+  blocked terms. They'd be unaffected today (rule only fires on
+  create/update), but they'd be locked out of editing other
+  fields if they ever change displayName too. Run
+  `SELECT handle, display_name FROM profiles ORDER BY handle;`
+  if you want a sweep later.
+- **First-name founder protection** — currently I only added
+  `tallada` to `RESERVED_PERSONAL_NAMES`. If `kellen` alone
+  becomes a problem (e.g. someone picks `kellen_lastshift`-style
+  but with brand term swapped to evade), add it too. Tradeoff
+  is real Kellens get blocked. Defer until evidence of need.
+- **Multi-language profanity** — current list is English-only.
+  Multi-language slurs are a separate (much harder) problem
+  best solved with a curated library if it ever becomes a
+  reported issue.
+
+### Gotchas for next session
+
+- **`validateDisplayName()` strips non-ASCII before checking
+  brand/profanity terms.** This means an attacker can't dodge by
+  using Cyrillic-lookalikes (`раssword` with Cyrillic а) — those
+  characters get stripped before substring matching. But it also
+  means a display name like `测试 LASTSHFT` (CJK + brand term)
+  is rejected for the brand reason, not the CJK content. The
+  rule is "after stripping to ASCII alphanum, what's left can't
+  contain banned terms" — straightforward and language-agnostic.
+- **Length is on the RAW trimmed input**, not on the normalized
+  form. `测试 测试 测试` is 7 chars including spaces, well under
+  40 — passes length. The alphanum check would ALSO pass
+  (Chinese characters are `\p{L}` letters). What might fail is
+  if all those CJK characters happen to map to brand-term
+  Romanization — vanishingly unlikely.
+- **`tallada` is the only personal name in the list right now.**
+  When adding more team members or other protected identities,
+  edit `RESERVED_PERSONAL_NAMES` in the validation module —
+  single point of update, both validators consume it.
+- **Dashboard PATCH only validates displayName when it's
+  changing.** If the patch is `{ headline: "..." }` (no
+  displayName), validator doesn't run. This is intentional —
+  no need to re-validate untouched fields. If a future field
+  gets content-rules (e.g. `pitch` or `about`), wire its own
+  validator the same way.
+
+---
+
 ## 2026-04-26 09:36 MST — Handle validation: brand / founder-spoof / profanity rules
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
