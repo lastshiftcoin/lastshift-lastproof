@@ -24,7 +24,11 @@
 -- Idempotent — safe to re-run.
 -- =============================================================================
 
-CREATE OR REPLACE VIEW grid_operators AS
+-- DROP + CREATE because the column list has changed across versions
+-- (`pitch` was replaced with `headline`). CREATE OR REPLACE VIEW would
+-- reject the column-list change in Postgres.
+DROP VIEW IF EXISTS grid_operators;
+CREATE VIEW grid_operators AS
 SELECT
   p.id,
   p.handle,
@@ -38,7 +42,11 @@ SELECT
   p.language,
   p.secondary_language,
   p.fee_range,
-  p.pitch,
+  -- Card "Short Bio" — same field hierarchy as the profile hero
+  -- (src/components/profile/ProfileHero.tsx:121 renders bioStatement || headline).
+  -- bio_statement is the canonical short identity line; headline is the
+  -- legacy "id-pitch" fallback for older profiles.
+  COALESCE(p.bio_statement, p.headline) AS short_bio,
   p.published_at,
 
   -- Proof aggregations — both kinds live in `proofs` (per migration 0002).

@@ -36,7 +36,7 @@ export const GRID_MOCK: GridCardView[] = [
       { slug: "raid-leader", label: "Raid Leader" },
       { slug: "community-manager", label: "Community Manager" },
     ],
-    pitch:
+    shortBio:
       "Three years in the trenches of web3 marketing. Taken projects from zero to 15K organic followers on X through cold-start raid ops and a ruthless reply-guy rotation. Prefer long-haul positions with founders who ship.",
     publishedAt: "2026-02-12T00:00:00Z",
   },
@@ -58,7 +58,7 @@ export const GRID_MOCK: GridCardView[] = [
       { slug: "shiller", label: "Shiller" },
       { slug: "kol-influencer", label: "KOL / Influencer" },
     ],
-    pitch:
+    shortBio:
       "Legendary raid coordinator. Ran the pushes behind three of the five biggest Solana memecoin rotations of Q1. Squads are trained, consistent, and don't require hand-holding — handoff protocol included.",
     publishedAt: "2025-11-01T00:00:00Z",
   },
@@ -80,7 +80,7 @@ export const GRID_MOCK: GridCardView[] = [
       { slug: "shiller", label: "Shiller" },
       { slug: "community-manager", label: "Community Manager" },
     ],
-    pitch:
+    shortBio:
       "Asia-timezone vibes + long-form threads. Specialize in narrative framing and visual content that holds attention past the 3-second mark. Bilingual writes land cleanly on both EN and JP sides of the market.",
     publishedAt: "2026-01-08T00:00:00Z",
   },
@@ -101,7 +101,7 @@ export const GRID_MOCK: GridCardView[] = [
       { slug: "brand-creative", label: "Brand / Creative" },
       { slug: "vibe-coder-builder", label: "Vibe Coder / Builder" },
     ],
-    pitch:
+    shortBio:
       "Brand + creative for degens. Logos, mint assets, meme packs, pitch decks, and campaign visuals that actually convert. Turnaround measured in hours, not days.",
     publishedAt: "2026-02-22T00:00:00Z",
   },
@@ -122,7 +122,7 @@ export const GRID_MOCK: GridCardView[] = [
       { slug: "shiller", label: "Shiller" },
       { slug: "alpha-caller", label: "Alpha Caller" },
     ],
-    pitch:
+    shortBio:
       "Reply-guy operator across EU hours. Volume-first, quality second-but-close. Best deployed on cold-start projects needing trench presence before a community forms.",
     publishedAt: "2026-03-04T00:00:00Z",
   },
@@ -143,7 +143,7 @@ export const GRID_MOCK: GridCardView[] = [
       { slug: "alpha-caller", label: "Alpha Caller" },
       { slug: "kol-influencer", label: "KOL / Influencer" },
     ],
-    pitch:
+    shortBio:
       "Early-stage alpha caller running a private 4K-seat TG group. On-chain breakdowns before the front-runs. Deep Solana + mid-cap EVM coverage.",
     publishedAt: "2025-12-15T00:00:00Z",
   },
@@ -164,7 +164,7 @@ export const GRID_MOCK: GridCardView[] = [
       { slug: "mod", label: "Mod" },
       { slug: "community-manager", label: "Community Manager" },
     ],
-    pitch:
+    shortBio:
       "Moderation specialist. Set up scam-filter bots, automod rules, raid-defense playbooks. The person a CM hires when the chat doubles overnight.",
     publishedAt: "2026-02-01T00:00:00Z",
   },
@@ -185,7 +185,7 @@ export const GRID_MOCK: GridCardView[] = [
       { slug: "space-host-ama-host", label: "Space Host / AMA Host" },
       { slug: "kol-influencer", label: "KOL / Influencer" },
     ],
-    pitch:
+    shortBio:
       "Host 3–5 AMAs a week across X Spaces and TG voice. Booked out six weeks, ticker-slot discounts for devs with working product, full recording + clip-pack delivered 24h post.",
     publishedAt: "2025-09-20T00:00:00Z",
   },
@@ -207,7 +207,7 @@ export const GRID_MOCK: GridCardView[] = [
       { slug: "collab-manager", label: "Collab Manager" },
       { slug: "pr-comms", label: "PR / Comms" },
     ],
-    pitch:
+    shortBio:
       "BD operator embedded in the APAC circuit. Exchange intros, co-marketing sit-downs, whitelist swaps with KR + JP communities most western teams can't warm up on their own.",
     publishedAt: "2025-10-30T00:00:00Z",
   },
@@ -225,7 +225,7 @@ export const GRID_MOCK: GridCardView[] = [
     language: "PT / EN",
     feeRange: "$",
     categories: [{ slug: "community-manager", label: "Community Manager" }],
-    pitch:
+    shortBio:
       "Fresh LASTPROOF profile — no proofs yet, building from zero. Background in Discord community ops outside web3. Open to small trial engagements on seed-stage projects.",
     publishedAt: "2026-04-18T00:00:00Z",
   },
