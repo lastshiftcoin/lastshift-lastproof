@@ -40,7 +40,7 @@ export function ChadArmyStrip({ handle, chads, armyCount }: Props) {
 
   return (
     <section className="chad-army-strip">
-      <h2 className="section-title">CHAD ARMY</h2>
+      <h2 className="pp-section-title">CHAD ARMY</h2>
       <div className="chad-army-row">
         <div className="chad-army-avatars">
           {display.map((c) => (
