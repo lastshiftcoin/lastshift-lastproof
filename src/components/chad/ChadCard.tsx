@@ -6,12 +6,19 @@
  *
  * Action variants:
  *   - "none"        — public army page; the whole tile is a link to /@<handle>
- *   - "accept-deny" — dashboard pending row; two buttons stacked on the right
- *   - "remove"      — dashboard accepted row; single REMOVE button on the right
+ *   - "accept-deny" — dashboard pending row (incoming ask); two buttons
+ *                     stacked on the right
+ *   - "remove"      — dashboard outgoing row. If the row's effective status
+ *                     is "accepted", renders a REMOVE button. If status
+ *                     is "pending" (an outgoing ask the user sent that
+ *                     hasn't been responded to), renders a non-interactive
+ *                     ASK PENDING caption in the action slot — view-state
+ *                     only, per locked design (no Cancel button v1).
  *
- * For action variants, the name+avatar region is a separate link that opens
- * the chad's public profile in a new tab — clicking the action buttons does
- * NOT bubble into the link region (e.stopPropagation in handlers).
+ * Effective status: chad.status (per-row) takes precedence over the
+ * status prop. Lets a single list mix pending + accepted cards (the
+ * dashboard outgoing view) while keeping all-pending or all-accepted
+ * lists working via the prop.
  */
 
 import { useState, useTransition } from "react";
@@ -39,7 +46,10 @@ export function ChadCard({ chad, actions = "none", status, onAction }: Props) {
   const tier = chad.tier;
   const initials = initialsForHandle(chad.displayName || chad.handle);
   const profileHref = `/@${chad.handle}`;
-  const statusModifier = status === "pending" ? " pending" : "";
+  // Per-row status (chad.status) overrides the per-list prop so a
+  // single list can mix pending + accepted cards (dashboard outgoing).
+  const effectiveStatus = chad.status ?? status;
+  const statusModifier = effectiveStatus === "pending" ? " pending" : "";
 
   const callAction = (action: "accept" | "deny" | "remove") => {
     if (!onAction) return;
@@ -102,7 +112,10 @@ export function ChadCard({ chad, actions = "none", status, onAction }: Props) {
             </button>
           </>
         )}
-        {actions === "remove" && (
+        {actions === "remove" && effectiveStatus === "pending" && (
+          <span className="chad-card-pending-caption">ASK PENDING</span>
+        )}
+        {actions === "remove" && effectiveStatus !== "pending" && (
           <button
             type="button"
             className="chad-btn chad-btn-remove"

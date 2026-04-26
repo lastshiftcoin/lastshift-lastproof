@@ -3,7 +3,7 @@ import { readSession } from "@/lib/session";
 import { isChadsEnabled } from "@/lib/chads/feature-flag";
 import { getProfileByWallet } from "@/lib/chads/resolve-phase";
 import {
-  countAcceptedByRequester,
+  countOutgoingByRequester,
   countPendingForTarget,
 } from "@/lib/db/chads-adapter";
 
@@ -31,11 +31,16 @@ export async function GET() {
   const profile = await getProfileByWallet(wallet);
   const tier = profile?.tier ?? 5;
 
-  // pending = incoming asks targeting me (directional, target=me)
-  // accepted = chads I've added (directional, requester=me)
+  // pending = incoming asks targeting me (target=me, status=pending)
+  // accepted (dashboard) = my full outgoing list — chads I've added
+  //   plus asks I've sent that haven't been responded to yet. The
+  //   "Your Chad Army" sidenote on the dashboard reflects this.
+  //   Public surfaces (modal target preview, public army strip) use
+  //   countAcceptedByRequester instead — accepted-only — so visitors
+  //   don't see the operator's pending outgoing state.
   const [pending, accepted] = await Promise.all([
     countPendingForTarget(wallet),
-    countAcceptedByRequester(wallet),
+    countOutgoingByRequester(wallet),
   ]);
 
   return NextResponse.json({

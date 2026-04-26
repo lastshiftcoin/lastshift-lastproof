@@ -31,6 +31,11 @@ export interface ChadProfileSummary {
   displayName: string;
   avatarUrl: string | null;
   tier: number;
+  /** Optional per-row status, attached when the consumer needs to
+   *  distinguish cards within a single list (e.g. dashboard
+   *  "Your Chad Army" mixes pending outgoing asks + accepted chads,
+   *  with pending rendering ASK PENDING caption). */
+  status?: "pending" | "accepted";
 }
 
 interface OperatorRow {
