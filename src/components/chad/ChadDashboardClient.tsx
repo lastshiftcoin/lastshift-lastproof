@@ -84,9 +84,11 @@ export function ChadDashboardClient({
       <div className="chad-dash-summary">
         <div className="chad-dash-summary-line chad-dash-summary-pending">
           <span className="chad-dash-dot" /> Pending Asks ({livePendingCount})
+          <span className="chad-dash-summary-note">operators who want you in their Chad Army</span>
         </div>
         <div className="chad-dash-summary-line">
           <span className="chad-dash-dot chad-dash-dot-neutral" /> Your Chad Army ({liveAcceptedCount})
+          <span className="chad-dash-summary-note">operators you've added who accepted</span>
         </div>
       </div>
 
