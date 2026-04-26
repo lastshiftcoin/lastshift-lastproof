@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import type { GridCardView } from "@/lib/grid/grid-view";
 import type { GridFilters, GridSort } from "@/lib/grid/grid-view";
-import type { MockTickerProof, MockCategoryChip } from "@/lib/mock/grid-mock";
+import type { TickerProof } from "@/lib/grid/recent-proofs";
+import type { CategoryChip } from "@/lib/grid/category-chips";
 import { applyFilters, hasActiveFilters, activeFilterChips } from "@/lib/grid/filter";
 import type { ActiveFilterChip } from "@/lib/grid/filter";
 import { applySort } from "@/lib/grid/sort";
@@ -23,8 +24,8 @@ import EmptyState from "@/components/grid/EmptyState";
 
 interface Props {
   cards: GridCardView[];
-  ticker: MockTickerProof[];
-  categoryChips: MockCategoryChip[];
+  ticker: TickerProof[];
+  categoryChips: CategoryChip[];
 }
 
 const PAGE_SIZE = 30;

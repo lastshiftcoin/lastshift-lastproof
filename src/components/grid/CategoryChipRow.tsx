@@ -1,10 +1,10 @@
 "use client";
 
-import type { MockCategoryChip } from "@/lib/mock/grid-mock";
+import type { CategoryChip } from "@/lib/grid/category-chips";
 
 interface Props {
-  /** Categories sorted by usage count descending. Stage 2 reads `categories.operator_count`. */
-  chips: MockCategoryChip[];
+  /** Categories sorted by usage count descending — reads `categories.operator_count`. */
+  chips: CategoryChip[];
   /** Currently selected category slug, or "all". */
   active: string;
   /** Click handler — receives the category slug, "all" for the leftmost chip. */

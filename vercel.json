@@ -12,6 +12,10 @@
     {
       "path": "/api/proof/verify-tx/process",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/grid/categories-cron",
+      "schedule": "10 0 * * *"
     }
   ]
 }
