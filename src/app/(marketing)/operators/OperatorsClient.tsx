@@ -21,6 +21,7 @@ import FilterDrawer from "@/components/grid/FilterDrawer";
 import GridCard from "@/components/grid/GridCard";
 import ActiveFilterChips from "@/components/grid/ActiveFilterChips";
 import EmptyState from "@/components/grid/EmptyState";
+import ShiftbotBanner from "@/components/grid/ShiftbotBanner";
 
 interface Props {
   cards: GridCardView[];
@@ -54,6 +55,20 @@ export default function OperatorsClient({ cards, ticker, categoryChips }: Props)
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // SHIFTBOT-driven URL state — read once on mount. The strip handles its
+  // own navigation; this client just renders what the URL says.
+  const shiftbot = useMemo(() => {
+    const sp = searchParams
+      ? new URLSearchParams(searchParams.toString())
+      : new URLSearchParams();
+    const parsed = parseGridParams(sp);
+    return {
+      query: parsed.query,
+      ranked: parsed.ranked,
+      fallback: parsed.fallback,
+    };
+  }, [searchParams]);
+
   // Push filter+sort to URL whenever local state changes. `replace` (not
   // push) so the back-button isn't a history of filter toggles.
   const syncUrl = useCallback(
@@ -75,12 +90,38 @@ export default function OperatorsClient({ cards, ticker, categoryChips }: Props)
   }, [filters, sort, syncUrl]);
 
   // ─── Derive visible cards ──────────────────────────────────────
-  const filtered = useMemo(() => applyFilters(cards, filters), [cards, filters]);
-  const sorted = useMemo(() => applySort(filtered, sort), [filtered, sort]);
+  // SHIFTBOT Mode B (?ranked= present): restrict to those handles, in that
+  // order. Drops the standard filter/sort engine entirely for these cards
+  // — Groq decided the order, we honor it.
+  const filtered = useMemo(() => {
+    if (shiftbot.ranked.length > 0) {
+      const cardByHandle = new Map(cards.map((c) => [c.handle, c]));
+      return shiftbot.ranked
+        .map((h) => cardByHandle.get(h))
+        .filter((c): c is GridCardView => Boolean(c));
+    }
+    return applyFilters(cards, filters);
+  }, [cards, filters, shiftbot.ranked]);
+
+  // Skip sort if we're in ranked mode — Groq's order is the order.
+  const sorted = useMemo(
+    () =>
+      shiftbot.ranked.length > 0 ? filtered : applySort(filtered, sort),
+    [filtered, sort, shiftbot.ranked.length],
+  );
   const visible = useMemo(() => sorted.slice(0, visibleCount), [sorted, visibleCount]);
   const totalCount = filtered.length;
   const chips = useMemo(() => activeFilterChips(filters), [filters]);
   const showActive = hasActiveFilters(filters);
+
+  // SHIFTBOT banner mode for rendering
+  const shiftbotMode: "filter" | "search" | "fallback" | null = shiftbot.query
+    ? shiftbot.fallback
+      ? "fallback"
+      : shiftbot.ranked.length > 0
+      ? "search"
+      : "filter"
+    : null;
 
   // ─── Handlers ──────────────────────────────────────────────────
 
@@ -170,6 +211,10 @@ export default function OperatorsClient({ cards, ticker, categoryChips }: Props)
               <SortDropdown active={sort} onChange={onChangeSort} />
             </div>
           </div>
+
+          {shiftbotMode && shiftbot.query && (
+            <ShiftbotBanner query={shiftbot.query} mode={shiftbotMode} />
+          )}
 
           {visible.length === 0 ? (
             <EmptyState onReset={onClearAll} />

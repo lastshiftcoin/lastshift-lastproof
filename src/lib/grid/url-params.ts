@@ -43,6 +43,8 @@ export function parseGridParams(params: URLSearchParams): {
   filters: GridFilters;
   sort: GridSort;
   query: string | null;
+  ranked: string[];
+  fallback: boolean;
 } {
   // Category — single value.
   const category = params.get("category") ?? "all";
@@ -87,8 +89,21 @@ export function parseGridParams(params: URLSearchParams): {
     ? (sortRaw as GridSort)
     : "relevant";
 
-  // SHIFTBOT query passthrough (Phase 2 will use this).
+  // SHIFTBOT-driven query — populated when ShiftbotStrip routed the user here.
   const query = params.get("q");
+
+  // SHIFTBOT Mode B — comma-delimited handles in display order.
+  // Validated downstream against the actual card list (no hallucinated handles
+  // can leak in via URL manipulation).
+  const rankedRaw = params.get("ranked") ?? "";
+  const ranked = rankedRaw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  // SHIFTBOT fallback flag — set when Groq couldn't rank usefully and we
+  // showed all operators with a "couldn't find specific matches" notice.
+  const fallback = params.get("fallback") === "1";
 
   const filters: GridFilters = {
     category,
@@ -101,7 +116,7 @@ export function parseGridParams(params: URLSearchParams): {
     onlyVerified,
   };
 
-  return { filters, sort, query };
+  return { filters, sort, query, ranked, fallback };
 }
 
 /**
@@ -142,6 +157,18 @@ export function buildGridParams(
 /**
  * Initial-state factory — defaults all filters off, sort = relevant.
  */
-export function defaultGridState(): { filters: GridFilters; sort: GridSort; query: string | null } {
-  return { filters: { ...EMPTY_FILTERS }, sort: "relevant", query: null };
+export function defaultGridState(): {
+  filters: GridFilters;
+  sort: GridSort;
+  query: string | null;
+  ranked: string[];
+  fallback: boolean;
+} {
+  return {
+    filters: { ...EMPTY_FILTERS },
+    sort: "relevant",
+    query: null,
+    ranked: [],
+    fallback: false,
+  };
 }
