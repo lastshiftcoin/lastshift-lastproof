@@ -110,6 +110,23 @@ flow.)
   fully cacheable and wallet-agnostic.
 - All state branching happens **in the modal**, after click.
 
+### Default chad — Tom-from-MySpace pattern
+- Every paid+published operator starts with **@lastshiftfounder** in
+  their Chad Army by default. This is so the CHAD MANAGEMENT section
+  on the dashboard reads as a populated surface for new users — the
+  feature is self-explanatory once you see one chad already there.
+- Mechanically: a single row `(requester=user, target=lastshiftfounder,
+  status=accepted)` is auto-inserted on first paid+published publish.
+- The user can **Remove** at any time via `/manage/chads` — that
+  hard-deletes the row, and @lastshiftfounder is gone from their army.
+- If a user later re-asks @lastshiftfounder via Add Chad, it's a
+  **normal ask flow** — @lastshiftfounder must accept manually in
+  their dashboard. No auto-accept policy.
+- Existing operators are seeded via a one-time backfill SQL (see the
+  WORKLOG entry for the commit that ships this rule).
+- @lastshiftfounder publishing their own profile does NOT seed a
+  self-chad — the helper skips when user wallet == founder wallet.
+
 ### Grid coupling
 - None. The Chad graph does not feed Grid discovery or ranking. Grid
   launch (2026-05-08) and Chad Function are independent tracks.

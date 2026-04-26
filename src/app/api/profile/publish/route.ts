@@ -8,6 +8,7 @@ import {
 import { eaPublishExpiry, isPaidNow } from "@/lib/subscription";
 import { recalcProfileTier } from "@/lib/tier-recalc";
 import { enqueueAffiliateConfirm } from "@/lib/affiliate-queue";
+import { tryAddDefaultChad } from "@/lib/chads/default-chad";
 
 /**
  * POST /api/profile/publish
@@ -97,6 +98,14 @@ export async function POST(req: NextRequest) {
       terminalId: session.terminalId,
       profileUrl: `https://lastproof.app/${handle}`,
     });
+
+    // Tom-from-MySpace: seed @lastshiftfounder into the new operator's
+    // Chad Army on first paid+published publish so they encounter the
+    // CHAD MANAGEMENT section as a populated surface. User can Remove
+    // anytime via /manage/chads. Fire-and-forget; never fail publish.
+    if (derivedPaid) {
+      tryAddDefaultChad(session.walletAddress).catch(() => {});
+    }
   }
 
   const final = (await updateProfile(profile.id, {}))!;
