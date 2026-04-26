@@ -334,6 +334,14 @@
   letter-spacing: 0.5px;
 }
 .g-fopt.checked .fee-glyph { color: var(--orange); }
+/* $$$$ — the premium fee tier — always rendered in gold. Overrides the
+   default text color and the "checked" orange, signaling premium pricing
+   visually wherever the glyph appears. */
+.g-fopt .fee-glyph[data-fee="$$$$"] { color: var(--gold); }
+.g-fopt.checked .fee-glyph[data-fee="$$$$"] {
+  color: var(--gold);
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
 
 /* Range slider mock — # of Proofs */
 .g-slider { padding: 4px 2px 2px; }
@@ -919,6 +927,12 @@
   color: var(--text-secondary);
 }
 .g-card-fee .dim { color: var(--text-dim); }
+/* Premium fee tier ($$$$) — always rendered in gold on cards. Matches
+   the filter sidebar treatment so the visual stays consistent. */
+.g-card-fee[data-fee="$$$$"] {
+  color: var(--gold);
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.3);
+}
 
 .g-card-view {
   font-family: var(--mono);
@@ -1074,7 +1088,12 @@
 
 .g-drawer-body {
   flex: 1;
+  /* min-height: 0 fixes the flexbox overflow trap — without it, flex
+     children with overflow:auto expand to content height instead of
+     constraining and scrolling on mobile. */
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 6px 18px 14px;
 }
 .g-drawer-foot {
