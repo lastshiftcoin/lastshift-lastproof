@@ -5,8 +5,9 @@ import { getProfileByHandle } from "@/lib/db/profiles-adapter";
 import {
   listPendingForTarget,
   listAcceptedByRequester,
+  listOutgoingByRequester,
 } from "@/lib/db/chads-adapter";
-import { resolveChadProfilesOrdered } from "@/lib/chads/profile-batch";
+import { resolveChadProfiles, resolveChadProfilesOrdered } from "@/lib/chads/profile-batch";
 
 /**
  * GET /api/chads/list?type=<kind>&handle=<handle?>&cursor=<id?>
@@ -71,12 +72,27 @@ export async function GET(req: Request) {
   }
 
   if (type === "accepted") {
-    // Session user's own army = chads they've added.
-    const rows = await listAcceptedByRequester(sessionWallet, cursor);
+    // Session user's own army view on the dashboard = chads they've
+    // added (accepted) PLUS asks they've sent that haven't been
+    // responded to yet (pending). Pending rows render with the
+    // ASK PENDING caption client-side. Sort: id desc (= created_at
+    // desc) across both states so the most recent activity is up top.
+    //
+    // Note: public army surfaces (type=army above) intentionally
+    // remain accepted-only — pending is private until the target
+    // responds.
+    const rows = await listOutgoingByRequester(sessionWallet, cursor);
     const otherWallets = rows.map((r) => r.targetWallet);
-    const profiles = await resolveChadProfilesOrdered(otherWallets);
+    const summaryByWallet = await resolveChadProfiles(otherWallets);
+    const items = rows
+      .map((r) => {
+        const summary = summaryByWallet.get(r.targetWallet);
+        if (!summary) return null;
+        return { ...summary, status: r.status };
+      })
+      .filter((x): x is NonNullable<typeof x> => Boolean(x));
     const lastId = rows.length > 0 ? rows[rows.length - 1]?.id ?? null : null;
-    return NextResponse.json({ ok: true, items: profiles, nextCursor: lastId });
+    return NextResponse.json({ ok: true, items, nextCursor: lastId });
   }
 
   return NextResponse.json({ ok: false, reason: "bad_type" }, { status: 400 });

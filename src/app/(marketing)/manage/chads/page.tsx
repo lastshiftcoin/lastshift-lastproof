@@ -6,12 +6,12 @@ import { isChadsEnabled } from "@/lib/chads/feature-flag";
 import { readSession } from "@/lib/session";
 import { getProfileByWallet } from "@/lib/chads/resolve-phase";
 import {
-  countAcceptedByRequester,
+  countOutgoingByRequester,
   countPendingForTarget,
-  listAcceptedByRequester,
+  listOutgoingByRequester,
   listPendingForTarget,
 } from "@/lib/db/chads-adapter";
-import { resolveChadProfilesOrdered } from "@/lib/chads/profile-batch";
+import { resolveChadProfiles, resolveChadProfilesOrdered } from "@/lib/chads/profile-batch";
 import { ChadDashboardClient } from "@/components/chad/ChadDashboardClient";
 
 export const metadata: Metadata = {
@@ -38,12 +38,15 @@ export default async function ManageChadsPage() {
     redirect("/manage");
   }
 
-  // Pending = incoming asks (target=me). Accepted = my army (requester=me).
-  const [pendingRows, acceptedRows, pendingCount, acceptedCount] = await Promise.all([
+  // Pending = incoming asks (target=me, status=pending).
+  // Accepted (dashboard view) = full outgoing list — accepted chads
+  //   PLUS pending asks I've sent. Pending rows render with the
+  //   ASK PENDING caption on the client. Sort: id desc across both.
+  const [pendingRows, outgoingRows, pendingCount, acceptedCount] = await Promise.all([
     listPendingForTarget(wallet),
-    listAcceptedByRequester(wallet),
+    listOutgoingByRequester(wallet),
     countPendingForTarget(wallet),
-    countAcceptedByRequester(wallet),
+    countOutgoingByRequester(wallet),
   ]);
 
   const pendingWallets = pendingRows.map((r) => r.requesterWallet);
@@ -51,10 +54,20 @@ export default async function ManageChadsPage() {
   const initialPendingCursor =
     pendingRows.length > 0 ? pendingRows[pendingRows.length - 1]!.id : null;
 
-  const acceptedWallets = acceptedRows.map((r) => r.targetWallet);
-  const initialAccepted = await resolveChadProfilesOrdered(acceptedWallets);
+  // Build the outgoing list with per-row status attached so the client
+  // knows which cards render as Remove (accepted) vs ASK PENDING caption
+  // (pending).
+  const outgoingWallets = outgoingRows.map((r) => r.targetWallet);
+  const outgoingByWallet = await resolveChadProfiles(outgoingWallets);
+  const initialAccepted = outgoingRows
+    .map((r) => {
+      const summary = outgoingByWallet.get(r.targetWallet);
+      if (!summary) return null;
+      return { ...summary, status: r.status };
+    })
+    .filter((x): x is NonNullable<typeof x> => Boolean(x));
   const initialAcceptedCursor =
-    acceptedRows.length > 0 ? acceptedRows[acceptedRows.length - 1]!.id : null;
+    outgoingRows.length > 0 ? outgoingRows[outgoingRows.length - 1]!.id : null;
 
   return (
     <div className="pp-page pp-page-bg pp-chad-army-page">

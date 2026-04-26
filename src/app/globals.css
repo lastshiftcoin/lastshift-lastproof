@@ -706,6 +706,23 @@ footer.lp-footer a:hover { color: var(--text-primary); }
 .chad-btn-remove { color: var(--text-secondary); }
 .chad-btn-remove:hover:not(:disabled) { color: var(--red); border-color: var(--red); }
 
+/* Non-interactive caption that occupies the action slot when an
+   outgoing chad card is in pending state (the user has asked, target
+   hasn't responded). View-state only — no Cancel button v1. */
+.chad-card-pending-caption {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border: 1px solid var(--gold);
+  border-radius: var(--r-pill);
+  background: var(--gold-dim);
+  color: var(--gold);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+}
+
 /* Empty state — shared between army page and dashboard chads */
 .chad-empty {
   display: flex;

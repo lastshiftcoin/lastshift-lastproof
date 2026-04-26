@@ -135,7 +135,11 @@ export async function countPendingForTarget(targetWallet: string): Promise<numbe
   return count ?? 0;
 }
 
-/** Total accepted-chad count where wallet is the requester (= army size). */
+/** Total accepted-chad count where wallet is the requester (= army size).
+ *  Used for the public army count that appears on /@<handle> and the
+ *  modal target preview — accepted only. The dashboard's "Your Chad
+ *  Army" count uses countOutgoingByRequester instead, which includes
+ *  pending asks the user has sent. */
 export async function countAcceptedByRequester(requesterWallet: string): Promise<number> {
   const { count, error } = await supabaseService()
     .from(TABLE)
@@ -143,6 +147,44 @@ export async function countAcceptedByRequester(requesterWallet: string): Promise
     .eq("requester_wallet", requesterWallet)
     .eq("status", "accepted");
   if (error) throw new Error(`[chads-adapter] countAcceptedByRequester: ${error.message}`);
+  return count ?? 0;
+}
+
+/** Outgoing chad rows (pending + accepted) where the wallet is the
+ *  requester. Used for the dashboard's "Your Chad Army" view, which
+ *  shows the user's full outgoing list — accepted chads + asks they
+ *  haven't received a response on yet. Pending rows render with the
+ *  ASK PENDING caption; accepted rows render with the Remove button. */
+export async function listOutgoingByRequester(
+  requesterWallet: string,
+  cursor?: number,
+  limit = 48,
+): Promise<ChadRow[]> {
+  let q = supabaseService()
+    .from(TABLE)
+    .select("*")
+    .eq("requester_wallet", requesterWallet)
+    .in("status", ["pending", "accepted"])
+    .order("id", { ascending: false })
+    .limit(limit);
+  if (cursor) q = q.lt("id", cursor);
+  const { data, error } = await q.returns<DbChad[]>();
+  if (error) throw new Error(`[chads-adapter] listOutgoingByRequester: ${error.message}`);
+  return (data ?? []).map(rowFromDb);
+}
+
+/** Outgoing chad count (pending + accepted) where wallet is the
+ *  requester. Powers the dashboard's "Your Chad Army (Y)" count line.
+ *  Public surfaces still use countAcceptedByRequester (accepted only)
+ *  so visitors don't see pending/private state from the operator's
+ *  outgoing list. */
+export async function countOutgoingByRequester(requesterWallet: string): Promise<number> {
+  const { count, error } = await supabaseService()
+    .from(TABLE)
+    .select("id", { count: "exact", head: true })
+    .eq("requester_wallet", requesterWallet)
+    .in("status", ["pending", "accepted"]);
+  if (error) throw new Error(`[chads-adapter] countOutgoingByRequester: ${error.message}`);
   return count ?? 0;
 }
 
