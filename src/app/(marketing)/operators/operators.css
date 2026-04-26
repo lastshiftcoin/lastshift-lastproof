@@ -683,6 +683,85 @@
   padding: 0;
 }
 
+/* ---- SHIFTBOT BANNER ------------------------------------------------- */
+/* Renders above the card list on /operators when ?q= is in URL (i.e.
+   SHIFTBOT routed the user here). Mirrors the orange-tinted vocabulary
+   of .g-afchip but at banner scale so the user sees it as a transient
+   AI-applied state, not a chrome filter. */
+
+.g-shiftbot-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px 0;
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  color: var(--orange);
+  background: rgba(255, 145, 0, 0.08);
+  border: 1px solid var(--orange);
+  border-radius: 8px;
+}
+.g-shiftbot-banner .sbb-icon {
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+.g-shiftbot-banner .sbb-label {
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.g-shiftbot-banner .sbb-sep {
+  opacity: 0.65;
+  text-transform: lowercase;
+  font-weight: 500;
+}
+.g-shiftbot-banner .sbb-query {
+  color: var(--text-primary);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  text-transform: none;
+}
+.g-shiftbot-banner .sbb-note {
+  flex-basis: 100%;
+  color: var(--text-dim);
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  text-transform: none;
+}
+.g-shiftbot-banner .sbb-reset {
+  margin-left: auto;
+  padding: 5px 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: var(--orange);
+  background: rgba(255, 145, 0, 0.12);
+  border: 1px solid var(--orange);
+  border-radius: 6px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background 0.15s ease;
+}
+.g-shiftbot-banner .sbb-reset:hover {
+  background: rgba(255, 145, 0, 0.22);
+}
+
+@media (max-width: 600px) {
+  .g-shiftbot-banner {
+    font-size: 10px;
+    padding: 9px 11px;
+  }
+  .g-shiftbot-banner .sbb-reset {
+    margin-left: 0;
+    width: 100%;
+    text-align: center;
+  }
+}
+
 /* ---- CARDS ----------------------------------------------------------- */
 
 .g-cardlist { display: flex; flex-direction: column; gap: 12px; }
