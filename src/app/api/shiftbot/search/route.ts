@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     console.error("[shiftbot/search] LASTPROOF_GROQ_API_KEY not set");
     return errResponse(
       "service_unavailable",
-      "SHIFTBOT is temporarily unavailable.",
+      "SHIFTBOT is temporarily unavailable due to high traffic. Use the filters in the sidebar to keep exploring, or try again in a minute.",
     );
   }
 
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
       console.error("[shiftbot/search] Groq error:", groqRes.status, text);
       return errResponse(
         "service_unavailable",
-        "SHIFTBOT is temporarily unavailable.",
+        "SHIFTBOT is temporarily unavailable due to high traffic. Use the filters in the sidebar to keep exploring, or try again in a minute.",
       );
     }
 
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
     console.error("[shiftbot/search] fetch error:", err);
     return errResponse(
       "service_unavailable",
-      "SHIFTBOT is temporarily unavailable.",
+      "SHIFTBOT is temporarily unavailable due to high traffic. Use the filters in the sidebar to keep exploring, or try again in a minute.",
     );
   }
 
