@@ -20,6 +20,136 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-27 11:45 MST — Grid foundation rebuild: URL-as-truth + canonical lang/tz lists (pre-launch)
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** coordinator (Grid build, foundation rebuild before launch)
+**Commits:** `5e6b6f8`
+**Migrations run in prod Supabase:** `0025_normalize_profile_timezone.sql` — **NOT auto-run; Kellen applies manually before smoke test**
+**Impacts:** none on Terminal
+**Status:** ✅ shipped to repo, smoke test pending. Grid still gated behind 2026-05-08 launch — no /status entry.
+
+### Why this happened
+
+Yesterday's SHIFTBOT smoke test surfaced bugs that on first read looked
+small (banner [Reset] needs multiple clicks, sidebar shows filters URL
+doesn't have, etc). Kellen flagged: "are you quick fixing or putting
+real thought into solutions?" — fair call. Re-reading the code with that
+prompt revealed the issues weren't isolated bugs but a half-built URL
+sync pattern: `useState(() => parseGridParams(...))` initialized from
+URL once, useEffect wrote state→URL on changes, but nothing ever read
+URL→state when the URL changed externally (ShiftbotStrip nav, browser
+back, deep links). Pre-launch is the right time to fix this before
+thousands of users hit it. So we did a foundation rebuild.
+
+### Did
+
+- **Architecture: URL-as-truth in `OperatorsClient.tsx`.** Removed
+  `useState(filters)` + `useState(sort)` + the useEffect that synced
+  state→URL. Filter/sort/SHIFTBOT state now derives every render from
+  `useSearchParams()` via a single `useMemo`. State cannot drift from
+  URL because it isn't stored separately.
+
+- **Race-safe URL writes.** `updateUrl(transform)` reads
+  `window.location.search` inside the callback (not `useSearchParams`'s
+  render snapshot) so two rapid clicks compose against the truly-current
+  URL. Each handler uses `updateUrl((current) => patch)` form — no
+  closure capture of derived `filters`. The pattern handles
+  drawer-toggle-spam without losing state.
+
+- **Banner [Reset] semantics.** `ShiftbotBanner` is now a controlled
+  component — takes `onReset` prop instead of using `useRouter`
+  internally. OperatorsClient owns the action: `router.push("/operators")`
+  for full clean slate (filters + sort + SHIFTBOT params atomic clear).
+  Single click works.
+
+- **SHIFTBOT-ranked mode lock.** When `?ranked=h1,h2,…` is in URL
+  (Mode B / "search"), the filter sidebar, mobile drawer, sort
+  dropdown, and category chip row all render with a `g-locked` class
+  (faded opacity + pointer-events: none) and `disabled` HTML attr on
+  every button. Filter mode and fallback mode keep the sidebar live —
+  only ranked mode locks. Per Kellen: "[Flag 2 = (a)] disable but
+  show, the banner is the messaging."
+
+- **Canonical lang/tz lists in `src/lib/grid/options.ts`.** New module
+  with 16 languages (full English names) and 26 timezones (ASCII
+  hyphen, U+002D). Pre-rebuild there were FOUR competing lists
+  (Onboarding 8 langs + city-annotated tz, IdentityCard 16 langs +
+  bare tz with Unicode minus U+2212, FilterSections 6 langs + 9 tz
+  with hyphen, grid-adapter's LANGUAGE_CODES 17-entry translation
+  map). Now one canonical source.
+
+- **Latent timezone bug fixed.** Pre-rebuild filter values were
+  effectively broken: DB stored `UTC−5` (Unicode minus from
+  IdentityCard editor) but FilterSections sent `UTC-5` (ASCII hyphen).
+  `["UTC-5"].includes("UTC−5")` → false. Selecting any timezone
+  filter eliminated every result. Nobody noticed because timezone
+  filter wasn't smoke-tested. Now: ASCII hyphen everywhere, plus
+  `normalizeTimezone()` rescues legacy Unicode-minus rows defensively.
+
+- **Migration `0025_normalize_profile_timezone.sql`** — strips
+  ` · City (TZ)` annotations (legacy Onboarding rows) and replaces
+  U+2212 with `-` in `profiles.timezone`. Idempotent. Two `UPDATE`
+  statements in a transaction. **Kellen applies manually before
+  smoke test.**
+
+- **Card meta row split.** Per Kellen: full language names on cards
+  ("English / Spanish") in their own row beneath the counts row
+  (`UTC-5 · English / Spanish`). New `.g-card-meta-locale` class with
+  -4px top margin to group visually with the counts row above.
+
+- **SHIFTBOT validator + prompt updated.** Validator drops
+  `LANG_CODE_RE` / `TZ_OFFSET_RE` regex checks in favor of allowlist
+  via `normalizeLanguage` / `normalizeTimezone` (stricter and shares
+  source of truth). Prompt language spec lists all 16 names; timezone
+  spec lists all 26 with `UTC+5:30` half-hour noted. Spanish example
+  changed `["ES"]` → `["Spanish"]`.
+
+- **Onboarding modal** language list expanded 8 → 16 (now matches
+  IdentityCard); timezone dropdown stores bare `UTC-5` value but
+  shows `UTC-5 · New York (EST)` as the user-facing label.
+
+- **Dashboard editor (IdentityCard)** timezone dropdown gains the
+  same city-annotation labels as Onboarding (Kellen's call: "yes just
+  for the dashboard"). Stored value remains bare offset.
+
+### Open / next
+
+- **Kellen applies migration `0025` in Supabase**, then runs smoke
+  test (Scenarios 1–6 from the runbook in `9b446fd` notes; plus three
+  new ones for the rebuild: browser back after SHIFTBOT submit, deep
+  link, filter-while-banner-showing).
+- **Set `IP_HASH_SALT`** on Vercel before /grid opens to users.
+- **Stage 3:** `/grid` boot screen ENTER GRID button + cookie gate.
+- **Stage 4 (2026-05-08):** Launch — remove noindex, sitemap, VERSION
+  to 1.0.0, /status announcement.
+
+### Gotchas for next session
+
+- **Do NOT add a `useState` mirror back to OperatorsClient.** Any state
+  that mirrors URL needs to derive via `useMemo([searchParams])`. If
+  you add new URL params, extend `parseGridParams` / `buildGridParams`
+  in `src/lib/grid/url-params.ts` — that's the only place.
+
+- **`updateUrl` reads `window.location.search` directly.** This is
+  intentional, not a hack. `useSearchParams` returns a render-snapshot
+  that lags behind rapid interactions. If you copy this pattern
+  elsewhere, do the same.
+
+- **`g-locked` CSS uses `pointer-events: none` AND each button gets
+  `disabled` attr.** Both needed: pointer-events handles mouse, the
+  disabled attr handles keyboard tab/enter. Don't remove one for
+  brevity — accessibility.
+
+- **Onboarding now stores bare offset.** Old rows had ` · city`
+  appended. Migration 0025 cleans those. If you ever change Onboarding
+  to store full annotation again, re-evaluate `shortTimezone()` in
+  grid-adapter and `normalizeTimezone()` in options.
+
+---
+
 ## 2026-04-26 16:05 MST — SHIFTBOT: 2-mode Grid search + 4-layer security (pre-launch, no /status entry)
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
