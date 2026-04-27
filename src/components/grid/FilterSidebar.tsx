@@ -8,6 +8,12 @@ interface Props {
   hasActiveFilters: boolean;
   onUpdateFilter: (patch: Partial<GridFilters>) => void;
   onClearAll: () => void;
+  /**
+   * When true, all filter inputs are visually faded and non-interactive.
+   * Used in SHIFTBOT-ranked mode where Groq's order is the answer and
+   * any user filter would be ignored anyway.
+   */
+  locked?: boolean;
 }
 
 /**
@@ -19,18 +25,32 @@ export default function FilterSidebar({
   hasActiveFilters,
   onUpdateFilter,
   onClearAll,
+  locked = false,
 }: Props) {
   return (
-    <aside className="g-sidebar" aria-label="Filters">
+    <aside
+      className={`g-sidebar${locked ? " g-locked" : ""}`}
+      aria-label="Filters"
+      aria-disabled={locked || undefined}
+    >
       <div className="g-sb-head">
         <div className="title">Filters</div>
         {hasActiveFilters && (
-          <button type="button" className="clear" onClick={onClearAll}>
+          <button
+            type="button"
+            className="clear"
+            onClick={onClearAll}
+            disabled={locked}
+          >
             Clear all
           </button>
         )}
       </div>
-      <FilterSections filters={filters} onUpdateFilter={onUpdateFilter} />
+      <FilterSections
+        filters={filters}
+        onUpdateFilter={onUpdateFilter}
+        locked={locked}
+      />
     </aside>
   );
 }

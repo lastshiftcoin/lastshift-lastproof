@@ -9,21 +9,24 @@ interface Props {
   active: string;
   /** Click handler — receives the category slug, "all" for the leftmost chip. */
   onSelect: (slug: string) => void;
+  /** When true, all chips are disabled. Used in SHIFTBOT-ranked mode. */
+  locked?: boolean;
 }
 
 /**
  * Horizontal row of 16 chips: ALL + 15 operator categories. Single-select.
  * Wraps to multiple lines on narrow viewports.
  */
-export default function CategoryChipRow({ chips, active, onSelect }: Props) {
+export default function CategoryChipRow({ chips, active, onSelect, locked = false }: Props) {
   return (
-    <div className="g-cat-strip">
+    <div className={`g-cat-strip${locked ? " g-locked" : ""}`}>
       <div className="section-label">BROWSE BY OPERATOR TYPE</div>
       <div className="inner">
         <button
           type="button"
           className={`g-chip${active === "all" ? " active" : ""}`}
           onClick={() => onSelect("all")}
+          disabled={locked}
         >
           All
         </button>
@@ -33,6 +36,7 @@ export default function CategoryChipRow({ chips, active, onSelect }: Props) {
             key={c.slug}
             className={`g-chip${active === c.slug ? " active" : ""}`}
             onClick={() => onSelect(c.slug)}
+            disabled={locked}
           >
             {c.label}
           </button>

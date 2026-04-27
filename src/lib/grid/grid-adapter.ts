@@ -130,44 +130,20 @@ function monogramFor(displayName: string): string {
 
 /**
  * Combine primary + secondary language into the inline display form:
- *   "EN"          (single language)
- *   "EN / DE"     (primary + secondary)
+ *   "English"            (single language)
+ *   "English / Spanish"  (primary + secondary)
  *
- * The DB stores either full names ("English") or 2-char codes. We normalize
- * to 2-char codes for the card meta row.
+ * Languages are stored AND displayed as full English names — no code
+ * translation. If both fields are null, returns "—" so the card meta
+ * row never collapses to an empty span.
  */
 function formatLanguage(primary: string | null, secondary: string | null): string {
-  const p = languageCode(primary);
-  const s = secondary ? languageCode(secondary) : null;
-  if (s && s !== p) return `${p} / ${s}`;
-  return p;
-}
-
-const LANGUAGE_CODES: Record<string, string> = {
-  ENGLISH: "EN",
-  SPANISH: "ES",
-  PORTUGUESE: "PT",
-  GERMAN: "DE",
-  FRENCH: "FR",
-  ITALIAN: "IT",
-  RUSSIAN: "RU",
-  TURKISH: "TR",
-  ARABIC: "AR",
-  CHINESE: "CN",
-  JAPANESE: "JP",
-  KOREAN: "KR",
-  HINDI: "HI",
-  VIETNAMESE: "VI",
-  THAI: "TH",
-  INDONESIAN: "ID",
-  TAGALOG: "TL",
-};
-
-function languageCode(raw: string | null): string {
-  if (!raw) return "EN";
-  const upper = raw.trim().toUpperCase();
-  if (upper.length <= 3) return upper; // already a code
-  return LANGUAGE_CODES[upper] ?? upper.slice(0, 2);
+  if (!primary && !secondary) return "—";
+  // Dedupe: if secondary equals primary, show only one.
+  const out: string[] = [];
+  if (primary) out.push(primary);
+  if (secondary && secondary !== primary) out.push(secondary);
+  return out.join(" / ");
 }
 
 /**

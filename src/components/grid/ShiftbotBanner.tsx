@@ -1,7 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-
 interface Props {
   /** The user's original query — surfaced in the banner copy. */
   query: string;
@@ -12,6 +10,12 @@ interface Props {
    *   "fallback" — Mode B fallback: no specific matches; default ordering
    */
   mode: "filter" | "search" | "fallback";
+  /**
+   * Called when the user clicks [Reset]. Owner clears all SHIFTBOT params
+   * AND filter state from URL — ShiftbotBanner doesn't navigate itself,
+   * it's a controlled component so state can't drift.
+   */
+  onReset: () => void;
 }
 
 /**
@@ -19,11 +23,7 @@ interface Props {
  * of the current view (i.e. ?q= is in URL). Click [Reset] to drop all
  * SHIFTBOT params and return to a clean Grid.
  */
-export default function ShiftbotBanner({ query, mode }: Props) {
-  const router = useRouter();
-
-  const onReset = () => router.push("/operators");
-
+export default function ShiftbotBanner({ query, mode, onReset }: Props) {
   const label =
     mode === "search"
       ? "SHIFTBOT results"

@@ -12,6 +12,12 @@ interface Props {
   onClose: () => void;
   onUpdateFilter: (patch: Partial<GridFilters>) => void;
   onClearAll: () => void;
+  /**
+   * When true, all filter inputs are faded + non-interactive. Used in
+   * SHIFTBOT-ranked mode. Close + Apply buttons stay live so the user
+   * can still dismiss the drawer.
+   */
+  locked?: boolean;
 }
 
 /**
@@ -33,6 +39,7 @@ export default function FilterDrawer({
   onClose,
   onUpdateFilter,
   onClearAll,
+  locked = false,
 }: Props) {
   // SSR guard — `document` doesn't exist server-side. Mount on first
   // client render, then enable the portal.
@@ -67,10 +74,11 @@ export default function FilterDrawer({
         tabIndex={open ? 0 : -1}
       />
       <aside
-        className={`g-drawer${open ? " open" : ""}`}
+        className={`g-drawer${open ? " open" : ""}${locked ? " g-locked" : ""}`}
         role="dialog"
         aria-label="Filters"
         aria-hidden={!open}
+        aria-disabled={locked || undefined}
       >
         <div className="g-drawer-head">
           <div className="title">Filters</div>
@@ -84,10 +92,19 @@ export default function FilterDrawer({
           </button>
         </div>
         <div className="g-drawer-body">
-          <FilterSections filters={filters} onUpdateFilter={onUpdateFilter} />
+          <FilterSections
+            filters={filters}
+            onUpdateFilter={onUpdateFilter}
+            locked={locked}
+          />
         </div>
         <div className="g-drawer-foot">
-          <button type="button" className="clear" onClick={onClearAll}>
+          <button
+            type="button"
+            className="clear"
+            onClick={onClearAll}
+            disabled={locked}
+          >
             Clear all
           </button>
           <button type="button" className="apply" onClick={onClose}>

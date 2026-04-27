@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { GridFilters, GridTier, GridFee } from "@/lib/grid/grid-view";
+import { LANGUAGES, TIMEZONES } from "@/lib/grid/options";
 
 /**
  * Shared filter UI rendered inside both the desktop sidebar and the
@@ -20,39 +21,23 @@ import type { GridFilters, GridTier, GridFee } from "@/lib/grid/grid-view";
 export interface FilterSectionsProps {
   filters: GridFilters;
   onUpdateFilter: (patch: Partial<GridFilters>) => void;
+  /** When true, every interactive control is disabled. Section
+   *  collapse/expand stays live since it's not a filter action. */
+  locked?: boolean;
 }
 
 const PROOF_BUCKETS = [0, 10, 25, 50, 100];
-const LANGUAGES = [
-  { code: "EN", label: "English" },
-  { code: "ES", label: "Spanish" },
-  { code: "JP", label: "Japanese" },
-  { code: "DE", label: "German" },
-  { code: "TR", label: "Turkish" },
-  { code: "PT", label: "Portuguese" },
-];
-const TIMEZONES = [
-  "UTC-8",
-  "UTC-5",
-  "UTC-4",
-  "UTC-3",
-  "UTC+0",
-  "UTC+1",
-  "UTC+2",
-  "UTC+8",
-  "UTC+9",
-];
 
-export default function FilterSections({ filters, onUpdateFilter }: FilterSectionsProps) {
+export default function FilterSections({ filters, onUpdateFilter, locked = false }: FilterSectionsProps) {
   return (
     <>
-      <TierSection filters={filters} onUpdateFilter={onUpdateFilter} />
-      <VerifiedSection filters={filters} onUpdateFilter={onUpdateFilter} />
-      <DevProofsSection filters={filters} onUpdateFilter={onUpdateFilter} />
-      <MinProofsSection filters={filters} onUpdateFilter={onUpdateFilter} />
-      <FeeSection filters={filters} onUpdateFilter={onUpdateFilter} />
-      <LanguageSection filters={filters} onUpdateFilter={onUpdateFilter} />
-      <TimezoneSection filters={filters} onUpdateFilter={onUpdateFilter} />
+      <TierSection filters={filters} onUpdateFilter={onUpdateFilter} locked={locked} />
+      <VerifiedSection filters={filters} onUpdateFilter={onUpdateFilter} locked={locked} />
+      <DevProofsSection filters={filters} onUpdateFilter={onUpdateFilter} locked={locked} />
+      <MinProofsSection filters={filters} onUpdateFilter={onUpdateFilter} locked={locked} />
+      <FeeSection filters={filters} onUpdateFilter={onUpdateFilter} locked={locked} />
+      <LanguageSection filters={filters} onUpdateFilter={onUpdateFilter} locked={locked} />
+      <TimezoneSection filters={filters} onUpdateFilter={onUpdateFilter} locked={locked} />
     </>
   );
 }
@@ -107,7 +92,7 @@ const TIER_OPTIONS: Array<{ tier: GridTier; label: string; color: string }> = [
   { tier: 1, label: "TIER 1 · NEW", color: "var(--silver)" },
 ];
 
-function TierSection({ filters, onUpdateFilter }: FilterSectionsProps) {
+function TierSection({ filters, onUpdateFilter, locked = false }: FilterSectionsProps) {
   function toggle(tier: GridTier) {
     const next = filters.tiers.includes(tier)
       ? filters.tiers.filter((t) => t !== tier)
@@ -122,6 +107,7 @@ function TierSection({ filters, onUpdateFilter }: FilterSectionsProps) {
           key={o.tier}
           className={`g-fopt${filters.tiers.includes(o.tier) ? " checked" : ""}`}
           onClick={() => toggle(o.tier)}
+          disabled={locked}
         >
           <span className="cb" />
           <span className="label">
@@ -137,7 +123,7 @@ function TierSection({ filters, onUpdateFilter }: FilterSectionsProps) {
 
 /* ─── 2. Verified ─────────────────────────────────────────────── */
 
-function VerifiedSection({ filters, onUpdateFilter }: FilterSectionsProps) {
+function VerifiedSection({ filters, onUpdateFilter, locked = false }: FilterSectionsProps) {
   const suffix = <span className="g-check-inline" />;
   return (
     <Section title="Verified" titleSuffix={suffix}>
@@ -145,6 +131,7 @@ function VerifiedSection({ filters, onUpdateFilter }: FilterSectionsProps) {
         type="button"
         className={`g-toggle-row${filters.onlyVerified ? " on" : ""}`}
         onClick={() => onUpdateFilter({ onlyVerified: !filters.onlyVerified })}
+        disabled={locked}
       >
         <span className="g-switch" />
         <span className="check-hint">Only verified operators (✓)</span>
@@ -155,7 +142,7 @@ function VerifiedSection({ filters, onUpdateFilter }: FilterSectionsProps) {
 
 /* ─── 3. DEV Proofs ───────────────────────────────────────────── */
 
-function DevProofsSection({ filters, onUpdateFilter }: FilterSectionsProps) {
+function DevProofsSection({ filters, onUpdateFilter, locked = false }: FilterSectionsProps) {
   return (
     <Section title="DEV Proofs">
       <button
@@ -164,6 +151,7 @@ function DevProofsSection({ filters, onUpdateFilter }: FilterSectionsProps) {
         onClick={() =>
           onUpdateFilter({ onlyDevProofs: !filters.onlyDevProofs })
         }
+        disabled={locked}
       >
         <span className="g-switch" />
         <span className="check-hint">Only operators with DEV proofs</span>
@@ -174,7 +162,7 @@ function DevProofsSection({ filters, onUpdateFilter }: FilterSectionsProps) {
 
 /* ─── 4. # of Proofs ──────────────────────────────────────────── */
 
-function MinProofsSection({ filters, onUpdateFilter }: FilterSectionsProps) {
+function MinProofsSection({ filters, onUpdateFilter, locked = false }: FilterSectionsProps) {
   // Visual position of the thumb on the slider track (0-100%)
   const idx = PROOF_BUCKETS.indexOf(filters.minProofs);
   const thumbPct = idx >= 0
@@ -193,10 +181,15 @@ function MinProofsSection({ filters, onUpdateFilter }: FilterSectionsProps) {
             <span
               key={b}
               className={filters.minProofs === b ? "active" : ""}
-              onClick={() => onUpdateFilter({ minProofs: b })}
+              onClick={() => {
+                if (locked) return;
+                onUpdateFilter({ minProofs: b });
+              }}
               role="button"
-              tabIndex={0}
+              tabIndex={locked ? -1 : 0}
+              aria-disabled={locked || undefined}
               onKeyDown={(e) => {
+                if (locked) return;
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
                   onUpdateFilter({ minProofs: b });
@@ -219,7 +212,7 @@ function MinProofsSection({ filters, onUpdateFilter }: FilterSectionsProps) {
 
 const FEE_OPTIONS: GridFee[] = ["$", "$$", "$$$", "$$$$"];
 
-function FeeSection({ filters, onUpdateFilter }: FilterSectionsProps) {
+function FeeSection({ filters, onUpdateFilter, locked = false }: FilterSectionsProps) {
   function toggle(fee: GridFee) {
     const next = filters.fees.includes(fee)
       ? filters.fees.filter((f) => f !== fee)
@@ -234,6 +227,7 @@ function FeeSection({ filters, onUpdateFilter }: FilterSectionsProps) {
           key={fee}
           className={`g-fopt${filters.fees.includes(fee) ? " checked" : ""}`}
           onClick={() => toggle(fee)}
+          disabled={locked}
         >
           <span className="cb" />
           <span className="label">
@@ -248,37 +242,35 @@ function FeeSection({ filters, onUpdateFilter }: FilterSectionsProps) {
 
 /* ─── 6. Language ─────────────────────────────────────────────── */
 
-function LanguageSection({ filters, onUpdateFilter }: FilterSectionsProps) {
-  function toggle(code: string) {
-    const next = filters.languages.includes(code)
-      ? filters.languages.filter((l) => l !== code)
-      : [...filters.languages, code];
+function LanguageSection({ filters, onUpdateFilter, locked = false }: FilterSectionsProps) {
+  function toggle(name: string) {
+    const next = filters.languages.includes(name)
+      ? filters.languages.filter((l) => l !== name)
+      : [...filters.languages, name];
     onUpdateFilter({ languages: next });
   }
   return (
     <Section title="Language">
-      {LANGUAGES.map((l) => (
+      {LANGUAGES.map((name) => (
         <button
           type="button"
-          key={l.code}
-          className={`g-fopt${filters.languages.includes(l.code) ? " checked" : ""}`}
-          onClick={() => toggle(l.code)}
+          key={name}
+          className={`g-fopt${filters.languages.includes(name) ? " checked" : ""}`}
+          onClick={() => toggle(name)}
+          disabled={locked}
         >
           <span className="cb" />
-          <span className="label">{l.label}</span>
+          <span className="label">{name}</span>
           <span />
         </button>
       ))}
-      <button type="button" className="g-more-link">
-        + More languages
-      </button>
     </Section>
   );
 }
 
 /* ─── 7. Timezone ─────────────────────────────────────────────── */
 
-function TimezoneSection({ filters, onUpdateFilter }: FilterSectionsProps) {
+function TimezoneSection({ filters, onUpdateFilter, locked = false }: FilterSectionsProps) {
   function toggle(tz: string) {
     const next = filters.timezones.includes(tz)
       ? filters.timezones.filter((t) => t !== tz)
@@ -293,15 +285,13 @@ function TimezoneSection({ filters, onUpdateFilter }: FilterSectionsProps) {
           key={tz}
           className={`g-fopt${filters.timezones.includes(tz) ? " checked" : ""}`}
           onClick={() => toggle(tz)}
+          disabled={locked}
         >
           <span className="cb" />
           <span className="label">{tz}</span>
           <span />
         </button>
       ))}
-      <button type="button" className="g-more-link">
-        + More timezones
-      </button>
     </Section>
   );
 }

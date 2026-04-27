@@ -10,7 +10,7 @@ import type { CategoryChip } from "@/lib/grid/category-chips";
 import { applyFilters, hasActiveFilters, activeFilterChips } from "@/lib/grid/filter";
 import type { ActiveFilterChip } from "@/lib/grid/filter";
 import { applySort } from "@/lib/grid/sort";
-import { parseGridParams, buildGridParams, defaultGridState } from "@/lib/grid/url-params";
+import { parseGridParams, buildGridParams } from "@/lib/grid/url-params";
 import { EMPTY_FILTERS } from "@/lib/grid/grid-view";
 
 import LiveTicker from "@/components/grid/LiveTicker";
@@ -31,68 +31,114 @@ interface Props {
 
 const PAGE_SIZE = 30;
 
+type ParsedParams = ReturnType<typeof parseGridParams>;
+
+type UrlPatch = {
+  filters?: GridFilters;
+  sort?: GridSort;
+  /** undefined preserves current URL value, null clears, string sets */
+  q?: string | null;
+  /** undefined preserves, null clears, array sets */
+  ranked?: string[] | null;
+  /** undefined preserves, null/false clears, true sets */
+  fallback?: boolean | null;
+};
+
+type UrlTransform = (current: ParsedParams) => UrlPatch;
+
 /**
- * Top-level Grid client component. Owns filter / sort / drawer state.
+ * Top-level Grid client component.
  *
- * The URL is the source of truth — we serialize filter state to query
- * params on every change and re-read on mount. This makes Grid views
- * shareable, back-button-friendly, and refresh-stable.
+ * URL-as-truth architecture: filter / sort / SHIFTBOT state is NOT
+ * mirrored in React state. It's parsed fresh from the URL on every
+ * render via useMemo([searchParams]). All user interactions update the
+ * URL via router.replace / router.push; the URL change feeds the next
+ * render and state automatically follows. State and URL cannot drift.
+ *
+ * Genuine UI state — visibleCount, drawerOpen — stays in useState
+ * because it doesn't belong in the URL.
+ *
+ * Why this matters: ShiftbotStrip navigates with router.push from
+ * outside this component, browser back/forward navigates without our
+ * knowledge, deep links land users mid-flow. With useState mirrors of
+ * the URL these all caused state drift. With this pattern, every URL
+ * source is the same source: the URL.
+ *
+ * Race safety: updateUrl reads window.location.search inside the
+ * callback (not from a render-snapshot of useSearchParams) so two rapid
+ * clicks compose against the truly-current URL — the second click sees
+ * the first click's effect.
  */
 export default function OperatorsClient({ cards, ticker, categoryChips }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Initial state from URL on first render. We don't re-derive from URL on
-  // every render because the local state is what user interactions mutate.
-  const [filters, setFilters] = useState<GridFilters>(() => {
-    const sp = searchParams ? new URLSearchParams(searchParams.toString()) : new URLSearchParams();
-    return parseGridParams(sp).filters;
-  });
-  const [sort, setSort] = useState<GridSort>(() => {
-    const sp = searchParams ? new URLSearchParams(searchParams.toString()) : new URLSearchParams();
-    return parseGridParams(sp).sort;
-  });
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-
-  // SHIFTBOT-driven URL state — read once on mount. The strip handles its
-  // own navigation; this client just renders what the URL says.
-  const shiftbot = useMemo(() => {
+  // ─── Derive everything from URL (single source of truth) ─────────
+  const parsed = useMemo<ParsedParams>(() => {
     const sp = searchParams
       ? new URLSearchParams(searchParams.toString())
       : new URLSearchParams();
-    const parsed = parseGridParams(sp);
-    return {
-      query: parsed.query,
-      ranked: parsed.ranked,
-      fallback: parsed.fallback,
-    };
+    return parseGridParams(sp);
   }, [searchParams]);
 
-  // Push filter+sort to URL whenever local state changes. `replace` (not
-  // push) so the back-button isn't a history of filter toggles.
-  const syncUrl = useCallback(
-    (nextFilters: GridFilters, nextSort: GridSort) => {
+  const { filters, sort } = parsed;
+  const shiftbot = {
+    query: parsed.query,
+    ranked: parsed.ranked,
+    fallback: parsed.fallback,
+  };
+
+  // ─── Genuine UI state (not URL-worthy) ───────────────────────────
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Reset paging whenever the URL (and therefore the result set) changes.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [searchParams]);
+
+  // ─── URL update primitive ────────────────────────────────────────
+  // Reads window.location.search at call time (not searchParams from
+  // a render snapshot) so rapid handlers compose correctly. The
+  // transform receives the truly-current parsed URL and returns the
+  // patch to apply.
+  const updateUrl = useCallback(
+    (transform: UrlTransform, method: "replace" | "push" = "replace") => {
+      const sp = new URLSearchParams(window.location.search);
+      const current = parseGridParams(sp);
+      const patch = transform(current);
+
+      const nextFilters = patch.filters ?? current.filters;
+      const nextSort = patch.sort ?? current.sort;
+
       const params = buildGridParams(nextFilters, nextSort);
+
+      // SHIFTBOT params: undefined preserves, null clears, value sets.
+      const q = patch.q !== undefined ? patch.q : current.query;
+      if (q) params.set("q", q);
+
+      const ranked = patch.ranked !== undefined ? patch.ranked : current.ranked;
+      if (ranked && ranked.length > 0) params.set("ranked", ranked.join(","));
+
+      const fb = patch.fallback !== undefined ? patch.fallback : current.fallback;
+      if (fb) params.set("fallback", "1");
+
       const qs = params.toString();
       const url = qs ? `/operators?${qs}` : "/operators";
-      router.replace(url, { scroll: false });
+
+      if (method === "push") {
+        router.push(url, { scroll: false });
+      } else {
+        router.replace(url, { scroll: false });
+      }
     },
     [router],
   );
 
-  // Sync URL on filter/sort change, debounced via effect (microtask)
-  useEffect(() => {
-    syncUrl(filters, sort);
-    // Reset visible count when filters change so users see the top of the
-    // newly-filtered set rather than scrolling through stale offsets.
-    setVisibleCount(PAGE_SIZE);
-  }, [filters, sort, syncUrl]);
-
-  // ─── Derive visible cards ──────────────────────────────────────
-  // SHIFTBOT Mode B (?ranked= present): restrict to those handles, in that
-  // order. Drops the standard filter/sort engine entirely for these cards
-  // — Groq decided the order, we honor it.
+  // ─── Derive visible cards ────────────────────────────────────────
+  // SHIFTBOT Mode B (?ranked= present): restrict to those handles in
+  // that order. Drops the standard filter/sort engine — Groq decided
+  // the order, we honor it. The sidebar is locked in this mode.
   const filtered = useMemo(() => {
     if (shiftbot.ranked.length > 0) {
       const cardByHandle = new Map(cards.map((c) => [c.handle, c]));
@@ -103,10 +149,8 @@ export default function OperatorsClient({ cards, ticker, categoryChips }: Props)
     return applyFilters(cards, filters);
   }, [cards, filters, shiftbot.ranked]);
 
-  // Skip sort if we're in ranked mode — Groq's order is the order.
   const sorted = useMemo(
-    () =>
-      shiftbot.ranked.length > 0 ? filtered : applySort(filtered, sort),
+    () => (shiftbot.ranked.length > 0 ? filtered : applySort(filtered, sort)),
     [filtered, sort, shiftbot.ranked.length],
   );
   const visible = useMemo(() => sorted.slice(0, visibleCount), [sorted, visibleCount]);
@@ -114,7 +158,6 @@ export default function OperatorsClient({ cards, ticker, categoryChips }: Props)
   const chips = useMemo(() => activeFilterChips(filters), [filters]);
   const showActive = hasActiveFilters(filters);
 
-  // SHIFTBOT banner mode for rendering
   const shiftbotMode: "filter" | "search" | "fallback" | null = shiftbot.query
     ? shiftbot.fallback
       ? "fallback"
@@ -123,54 +166,94 @@ export default function OperatorsClient({ cards, ticker, categoryChips }: Props)
       : "filter"
     : null;
 
-  // ─── Handlers ──────────────────────────────────────────────────
+  // Filter / sort / category UI is locked when Groq has picked specific
+  // operators (Mode B / "search"). In filter and fallback modes the
+  // sidebar is still useful — user can refine SHIFTBOT's filter result
+  // or browse the default-ordered fallback.
+  const locked = shiftbotMode === "search";
 
-  const onUpdateFilter = useCallback((patch: Partial<GridFilters>) => {
-    setFilters((prev) => ({ ...prev, ...patch }));
-  }, []);
+  // ─── Handlers ────────────────────────────────────────────────────
+  // All handlers compose via updateUrl(transform). The transform
+  // receives the truly-current parsed URL (not a stale render snapshot)
+  // so rapid clicks compose correctly.
 
+  const onUpdateFilter = useCallback(
+    (patch: Partial<GridFilters>) => {
+      updateUrl((current) => ({ filters: { ...current.filters, ...patch } }));
+    },
+    [updateUrl],
+  );
+
+  // Sidebar / EmptyState "Clear all" — clears filters, keeps sort,
+  // keeps SHIFTBOT params. SHIFTBOT context is independent; user
+  // resets it via the banner [Reset], not the sidebar.
   const onClearAll = useCallback(() => {
-    setFilters({ ...EMPTY_FILTERS });
-  }, []);
+    updateUrl(() => ({ filters: { ...EMPTY_FILTERS } }));
+  }, [updateUrl]);
 
-  const onSelectCategory = useCallback((slug: string) => {
-    setFilters((prev) => ({ ...prev, category: slug }));
-  }, []);
+  const onSelectCategory = useCallback(
+    (slug: string) => {
+      updateUrl((current) => ({
+        filters: { ...current.filters, category: slug },
+      }));
+    },
+    [updateUrl],
+  );
 
-  const onChangeSort = useCallback((next: GridSort) => {
-    setSort(next);
-  }, []);
+  const onChangeSort = useCallback(
+    (next: GridSort) => {
+      updateUrl(() => ({ sort: next }));
+    },
+    [updateUrl],
+  );
 
-  const onRemoveChip = useCallback((chip: ActiveFilterChip) => {
-    setFilters((prev) => {
-      switch (chip.kind) {
-        case "category":
-          return { ...prev, category: "all" };
-        case "tier":
-          return { ...prev, tiers: prev.tiers.filter((t) => t !== chip.value) };
-        case "fee":
-          return { ...prev, fees: prev.fees.filter((f) => f !== chip.value) };
-        case "language":
-          return { ...prev, languages: prev.languages.filter((l) => l !== chip.value) };
-        case "timezone":
-          return { ...prev, timezones: prev.timezones.filter((t) => t !== chip.value) };
-        case "minProofs":
-          return { ...prev, minProofs: 0 };
-        case "onlyDevProofs":
-          return { ...prev, onlyDevProofs: false };
-        case "onlyVerified":
-          return { ...prev, onlyVerified: false };
-        default:
-          return prev;
-      }
-    });
-  }, []);
+  const onRemoveChip = useCallback(
+    (chip: ActiveFilterChip) => {
+      updateUrl((current) => {
+        const next: GridFilters = { ...current.filters };
+        switch (chip.kind) {
+          case "category":
+            next.category = "all";
+            break;
+          case "tier":
+            next.tiers = next.tiers.filter((t) => t !== chip.value);
+            break;
+          case "fee":
+            next.fees = next.fees.filter((f) => f !== chip.value);
+            break;
+          case "language":
+            next.languages = next.languages.filter((l) => l !== chip.value);
+            break;
+          case "timezone":
+            next.timezones = next.timezones.filter((t) => t !== chip.value);
+            break;
+          case "minProofs":
+            next.minProofs = 0;
+            break;
+          case "onlyDevProofs":
+            next.onlyDevProofs = false;
+            break;
+          case "onlyVerified":
+            next.onlyVerified = false;
+            break;
+        }
+        return { filters: next };
+      });
+    },
+    [updateUrl],
+  );
+
+  // Banner [Reset] — full clean slate. Filters, sort, AND SHIFTBOT
+  // params all cleared. Push (not replace) so back button returns to
+  // the SHIFTBOT-driven view.
+  const onShiftbotReset = useCallback(() => {
+    router.push("/operators");
+  }, [router]);
 
   const onLoadMore = useCallback(() => {
     setVisibleCount((c) => c + PAGE_SIZE);
   }, []);
 
-  // Active-filter count for the mobile filters button badge
   const activeCount = chips.length;
 
   return (
@@ -180,6 +263,7 @@ export default function OperatorsClient({ cards, ticker, categoryChips }: Props)
         chips={categoryChips}
         active={filters.category}
         onSelect={onSelectCategory}
+        locked={locked}
       />
 
       <div className="g-layout">
@@ -188,6 +272,7 @@ export default function OperatorsClient({ cards, ticker, categoryChips }: Props)
           hasActiveFilters={showActive}
           onUpdateFilter={onUpdateFilter}
           onClearAll={onClearAll}
+          locked={locked}
         />
 
         <section className="g-feed">
@@ -198,6 +283,7 @@ export default function OperatorsClient({ cards, ticker, categoryChips }: Props)
                 className="g-filters-btn"
                 onClick={() => setDrawerOpen(true)}
                 aria-label="Open filters"
+                disabled={locked}
               >
                 Filters
                 {activeCount > 0 && <span className="ct">{activeCount}</span>}
@@ -208,12 +294,16 @@ export default function OperatorsClient({ cards, ticker, categoryChips }: Props)
               <span className="g-result-count">
                 <b>{totalCount}</b> Profiles
               </span>
-              <SortDropdown active={sort} onChange={onChangeSort} />
+              <SortDropdown active={sort} onChange={onChangeSort} locked={locked} />
             </div>
           </div>
 
           {shiftbotMode && shiftbot.query && (
-            <ShiftbotBanner query={shiftbot.query} mode={shiftbotMode} />
+            <ShiftbotBanner
+              query={shiftbot.query}
+              mode={shiftbotMode}
+              onReset={onShiftbotReset}
+            />
           )}
 
           {visible.length === 0 ? (
@@ -246,10 +336,8 @@ export default function OperatorsClient({ cards, ticker, categoryChips }: Props)
         onClose={() => setDrawerOpen(false)}
         onUpdateFilter={onUpdateFilter}
         onClearAll={onClearAll}
+        locked={locked}
       />
     </>
   );
 }
-
-// Suppress unused-import warning when default state is needed externally
-void defaultGridState;

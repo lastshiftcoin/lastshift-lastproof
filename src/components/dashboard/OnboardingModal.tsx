@@ -17,6 +17,11 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { Session } from "@/lib/session";
 import type { ProfileRow } from "@/lib/profiles-store";
+import {
+  LANGUAGES,
+  TIMEZONES,
+  TIMEZONE_CITY_LABELS,
+} from "@/lib/grid/options";
 import "./onboarding.css";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -37,46 +42,6 @@ const CATEGORIES = [
   "PR / Comms",
   "Vibe Coder / Builder",
   "Token Dev / Tokenomics",
-] as const;
-
-const TIMEZONES = [
-  "UTC−12 · Baker Island",
-  "UTC−11 · Pago Pago",
-  "UTC−10 · Honolulu (HST)",
-  "UTC−9 · Anchorage (AKST)",
-  "UTC−8 · Los Angeles (PST)",
-  "UTC−7 · Denver (MST)",
-  "UTC−6 · Mexico City (CST)",
-  "UTC−5 · New York (EST)",
-  "UTC−4 · Caracas / Halifax",
-  "UTC−3 · São Paulo / Buenos Aires",
-  "UTC−2 · South Georgia",
-  "UTC−1 · Azores",
-  "UTC+0 · London (GMT)",
-  "UTC+1 · Berlin / Paris (CET)",
-  "UTC+2 · Athens / Cairo (EET)",
-  "UTC+3 · Moscow / Istanbul",
-  "UTC+4 · Dubai",
-  "UTC+5 · Karachi / Islamabad",
-  "UTC+5:30 · Mumbai / Delhi (IST)",
-  "UTC+6 · Dhaka / Almaty",
-  "UTC+7 · Bangkok / Jakarta / HCMC",
-  "UTC+8 · Singapore / HK / Beijing",
-  "UTC+9 · Tokyo / Seoul",
-  "UTC+10 · Sydney / Melbourne",
-  "UTC+11 · Solomon Islands",
-  "UTC+12 · Auckland / Fiji",
-] as const;
-
-const LANGUAGES = [
-  "English",
-  "Spanish",
-  "Mandarin",
-  "Japanese",
-  "Korean",
-  "French",
-  "German",
-  "Portuguese",
 ] as const;
 
 const HANDLE_RE = /^[a-zA-Z0-9_]{3,20}$/;
@@ -112,7 +77,7 @@ export function OnboardingModal({ session, operatorId, onComplete, onDisconnect 
   const [category, setCategory] = useState<string | null>(null);
 
   // Step 3 — region
-  const [timezone, setTimezone] = useState("UTC−5 · New York (EST)");
+  const [timezone, setTimezone] = useState<string>("UTC-5");
   const [language, setLanguage] = useState("English");
   const [oneLiner, setOneLiner] = useState("");
 
@@ -453,7 +418,9 @@ export function OnboardingModal({ session, operatorId, onComplete, onDisconnect 
                     onChange={(e) => setTimezone(e.target.value)}
                   >
                     {TIMEZONES.map((tz) => (
-                      <option key={tz} value={tz}>{tz}</option>
+                      <option key={tz} value={tz}>
+                        {tz} · {TIMEZONE_CITY_LABELS[tz]}
+                      </option>
                     ))}
                   </select>
                 </div>
