@@ -77,7 +77,8 @@ export default function GridCard({ card }: { card: GridCardView }) {
             <span className="m">
               <b>{card.projectsCount}</b> projects
             </span>
-            <span className="sep">·</span>
+          </div>
+          <div className="g-card-meta-locale">
             <span className="m">{card.timezone}</span>
             <span className="sep">·</span>
             <span className="m">{card.language}</span>

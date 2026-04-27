@@ -7,6 +7,9 @@ import { SORT_LABELS } from "@/lib/grid/sort";
 interface Props {
   active: GridSort;
   onChange: (sort: GridSort) => void;
+  /** When true, the trigger button is disabled and the menu can't open.
+   *  Used in SHIFTBOT-ranked mode where Groq's order is the answer. */
+  locked?: boolean;
 }
 
 /**
@@ -15,7 +18,7 @@ interface Props {
  * Per Kellen's override: this is a dropdown, not a pill row. Saves
  * horizontal real estate on the feed-top row, especially on mobile.
  */
-export default function SortDropdown({ active, onChange }: Props) {
+export default function SortDropdown({ active, onChange, locked = false }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -40,14 +43,16 @@ export default function SortDropdown({ active, onChange }: Props) {
   }, [open]);
 
   return (
-    <div className={`g-sort-dd${open ? " open" : ""}`} ref={ref}>
+    <div className={`g-sort-dd${open ? " open" : ""}${locked ? " g-locked" : ""}`} ref={ref}>
       <button
         type="button"
         className="g-sort-dd-btn"
         onClick={(e) => {
           e.stopPropagation();
+          if (locked) return;
           setOpen((v) => !v);
         }}
+        disabled={locked}
       >
         <span className="lbl">
           Sort: <b>{SORT_LABELS[active]}</b>

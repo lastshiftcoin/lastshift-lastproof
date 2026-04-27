@@ -11,6 +11,8 @@
  */
 
 import type { GridFilters, GridTier, GridFee } from "@/lib/grid/grid-view";
+import { normalizeLanguage, normalizeTimezone } from "@/lib/grid/options";
+import type { Language, Timezone } from "@/lib/grid/options";
 import type { ShiftbotResponse, ShiftbotRefuseReason } from "./types";
 
 // ─── Allowlists ──────────────────────────────────────────────────────
@@ -42,10 +44,8 @@ const VALID_REFUSE_REASONS = new Set<string>([
   "prompt_injection",
 ]);
 
-// 2-3 letter language codes, alphabetic only
-const LANG_CODE_RE = /^[A-Z]{2,3}$/i;
-// UTC offset format, e.g. "UTC-5", "UTC+12"
-const TZ_OFFSET_RE = /^UTC[+-]\d{1,2}$/i;
+// (Languages and timezones validated via the shared normalize* helpers
+// in @/lib/grid/options — single source of truth for what's selectable.)
 
 // Default fallback — used by every validation failure path
 const REFUSE_OFF_TOPIC: ShiftbotResponse = {
@@ -108,14 +108,14 @@ export function validateShiftbotResponse(
 
     if (Array.isArray(f.languages)) {
       out.languages = f.languages
-        .filter((s): s is string => typeof s === "string" && LANG_CODE_RE.test(s))
-        .map((s) => s.toUpperCase());
+        .map((s) => (typeof s === "string" ? normalizeLanguage(s) : null))
+        .filter((l): l is Language => l !== null);
     }
 
     if (Array.isArray(f.timezones)) {
-      out.timezones = f.timezones.filter(
-        (s): s is string => typeof s === "string" && TZ_OFFSET_RE.test(s),
-      );
+      out.timezones = f.timezones
+        .map((s) => (typeof s === "string" ? normalizeTimezone(s) : null))
+        .filter((t): t is Timezone => t !== null);
     }
 
     if (

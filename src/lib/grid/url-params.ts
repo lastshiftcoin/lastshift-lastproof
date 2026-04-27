@@ -9,7 +9,7 @@
  *   /operators?category=shiller
  *   /operators?category=shiller&tier=3,4&fee=2,3
  *   /operators?minProofs=10&onlyVerified=1&sort=trusted
- *   /operators?lang=EN,ES&tz=UTC-5,UTC+1
+ *   /operators?lang=English,Spanish&tz=UTC-5,UTC+1
  *
  * Empty / default values are omitted from the URL. Multi-value params use
  * comma-delimited lists. Booleans are `1` / absent.
@@ -17,6 +17,8 @@
 
 import type { GridFilters, GridSort, GridTier, GridFee } from "./grid-view";
 import { EMPTY_FILTERS } from "./grid-view";
+import { normalizeLanguage, normalizeTimezone } from "./options";
+import type { Language, Timezone } from "./options";
 
 const VALID_TIERS: GridTier[] = [1, 2, 3, 4];
 const VALID_FEES: GridFee[] = ["$", "$$", "$$$", "$$$$"];
@@ -63,17 +65,20 @@ export function parseGridParams(params: URLSearchParams): {
     .map(feeFromUrl)
     .filter((f): f is GridFee => f !== null);
 
-  // Languages — comma-delimited 2-char codes.
+  // Languages — comma-delimited full English names. Case-insensitive
+  // match against the canonical 16-name list. Unknown values dropped.
   const languages: string[] = (params.get("lang") ?? "")
     .split(",")
-    .map((s) => s.trim().toUpperCase())
-    .filter(Boolean);
+    .map(normalizeLanguage)
+    .filter((l): l is Language => l !== null);
 
-  // Timezones — comma-delimited UTC offsets.
+  // Timezones — comma-delimited UTC offsets. Allowlist check via
+  // normalizeTimezone, which also rescues legacy Unicode-minus and
+  // "· city" rows that may still exist in shared URLs.
   const timezones: string[] = (params.get("tz") ?? "")
     .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+    .map(normalizeTimezone)
+    .filter((t): t is Timezone => t !== null);
 
   // Minimum proofs.
   const minProofsRaw = parseInt(params.get("minProofs") ?? "0", 10);

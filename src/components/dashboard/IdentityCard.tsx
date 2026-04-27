@@ -23,6 +23,12 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import type { ProfileRow } from "@/lib/profiles-store";
 import { HandleChangeModal } from "@/components/handle-change-modal/HandleChangeModal";
 import { useDebugLog } from "@/lib/debug/useDebugLog";
+import {
+  LANGUAGES,
+  TIMEZONES,
+  TIMEZONE_CITY_LABELS,
+  normalizeTimezone,
+} from "@/lib/grid/options";
 
 // ─── Option lists ────────────────────────────────────────────────────────────
 
@@ -42,42 +48,6 @@ const CATEGORIES = [
   { value: "pr-comms", label: "PR / Comms" },
   { value: "vibe-coder-builder", label: "Vibe Coder / Builder" },
   { value: "token-dev-tokenomics", label: "Token Dev / Tokenomics" },
-] as const;
-
-const TIMEZONES = [
-  "UTC−12",
-  "UTC−11",
-  "UTC−10",
-  "UTC−9",
-  "UTC−8",
-  "UTC−7",
-  "UTC−6",
-  "UTC−5",
-  "UTC−4",
-  "UTC−3",
-  "UTC−2",
-  "UTC−1",
-  "UTC+0",
-  "UTC+1",
-  "UTC+2",
-  "UTC+3",
-  "UTC+4",
-  "UTC+5",
-  "UTC+5:30",
-  "UTC+6",
-  "UTC+7",
-  "UTC+8",
-  "UTC+9",
-  "UTC+10",
-  "UTC+11",
-  "UTC+12",
-] as const;
-
-const LANGUAGES = [
-  "English", "Spanish", "Mandarin", "Japanese", "Korean",
-  "French", "German", "Portuguese", "Russian", "Arabic",
-  "Turkish", "Vietnamese", "Tagalog", "Hindi", "Indonesian",
-  "Thai",
 ] as const;
 
 const FEE_RANGES = ["$", "$$", "$$$", "$$$$"] as const;
@@ -101,10 +71,9 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate, handle
   // ─── Local form state ─────────────────────────────────────────────────────
   const [displayName, setDisplayName] = useState(profile.displayName ?? "");
   const [category, setCategory] = useState(primaryCategory ?? "");
-  const [timezone, setTimezone] = useState(() => {
-    const raw = profile.timezone ?? "UTC−5";
-    return raw.includes(" · ") ? raw.split(" · ")[0] : raw;
-  });
+  const [timezone, setTimezone] = useState<string>(
+    () => normalizeTimezone(profile.timezone) ?? "UTC-5",
+  );
   const [feeRange, setFeeRange] = useState(profile.feeRange ?? "$$$");
   const [language, setLanguage] = useState(profile.language ?? "English");
   const [secondaryLang, setSecondaryLang] = useState(profile.secondaryLanguage ?? "");
@@ -324,7 +293,9 @@ export function IdentityCard({ profile, primaryCategory, onProfileUpdate, handle
               onChange={(e) => setTimezone(e.target.value)}
             >
               {TIMEZONES.map((tz) => (
-                <option key={tz} value={tz}>{tz}</option>
+                <option key={tz} value={tz}>
+                  {tz} · {TIMEZONE_CITY_LABELS[tz]}
+                </option>
               ))}
             </select>
           </div>

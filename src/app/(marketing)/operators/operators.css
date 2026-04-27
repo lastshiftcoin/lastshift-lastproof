@@ -683,6 +683,20 @@
   padding: 0;
 }
 
+/* ---- LOCKED STATE ---------------------------------------------------- */
+/* Visual lock — used in SHIFTBOT-ranked mode where the filter / sort
+   sidebar / chips / dropdown are disabled because Groq's pick is the
+   answer. Combine with the `disabled` HTML attribute on individual
+   buttons for keyboard a11y. */
+.g-locked {
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+.g-locked, .g-locked * {
+  pointer-events: none;
+  user-select: none;
+}
+
 /* ---- SHIFTBOT BANNER ------------------------------------------------- */
 /* Renders above the card list on /operators when ?q= is in URL (i.e.
    SHIFTBOT routed the user here). Mirrors the orange-tinted vocabulary
@@ -950,6 +964,23 @@ img.g-avatar.g-avatar-img {
   margin-left: 2px;
 }
 .g-card-meta .sep { color: var(--text-dim); opacity: .6; }
+
+/* Locale row — sits directly under .g-card-meta with a tighter gap.
+   Holds timezone + language(s). Same typographic treatment as the
+   counts row above, just nudged up for visual grouping. */
+.g-card-meta-locale {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: -4px 0 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.3px;
+}
+.g-card-meta-locale .m { display: inline-flex; align-items: center; gap: 5px; }
+.g-card-meta-locale .sep { color: var(--text-dim); opacity: .6; }
 
 .g-card-pitch {
   font-family: var(--sans);
