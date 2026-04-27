@@ -20,6 +20,103 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-27 13:30 MST — 🚀 Grid quiet-launched (12 days early)
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** coordinator (launch)
+**Commits:** `35914f7`
+**Migrations run in prod Supabase:** none
+**Impacts:** none on Terminal
+**Status:** ✅ live on prod. Foundation rebuild + smoke tests passed earlier in this session; this commit flips the noindex flag.
+
+### Why now (and why quiet)
+
+Per Kellen, mid-session: *"we quietly go launch now... no one will even
+know. no marketing announcements. right now its been a street team push
+to create profiles. we have enough profiles so it doesnt look empty."*
+
+Original launch date was 2026-05-08 (per `GRID_LAUNCH_DATE` references).
+With 31 published+paid profiles, the Grid no longer looks empty, so the
+"wait until May" gate was overly conservative. Quiet launch ships the
+surface to public-discoverable without external announcements — search
+engines find it, organic shares work, but no /status entry, no VERSION
+bump, no marketing push. Those land **later** as one coherent
+"announcing the Grid" commit.
+
+### Did
+
+- **`/grid` flipped from locked placeholder to entry door.** Boot
+  lines now reflect operational state ("Operator network active",
+  "Ready to enter the Grid"). Removed "FULL LAUNCH REVEAL // MAY 2026"
+  reveal copy. Single `ENTER GRID` button → `/operators`. BACK TO HOME
+  ghost button stays. **No cookie gate** — Kellen's reflection: "if
+  you already are at /operators... you have already experienced the
+  /grid at first visit anyways." `/grid` is now a branded front door,
+  not a mandatory checkpoint.
+
+- **`/operators` page metadata drops `robots: { index: false }`.** Was
+  set during Stage 1/2 iteration. Removed.
+
+- **`robots.ts` removes `/operators` from disallow.** Was belt-and-
+  suspenders alongside the per-page noindex.
+
+- **`sitemap.ts` adds `/operators`** at priority 0.9, daily change
+  frequency. Slots above the static marketing pages.
+
+- **VERSION held at 0.13.2; `data/updates.json` untouched.** Per
+  Kellen: skip /status entry for quiet launch. The 1.0.0 bump + "Grid
+  is live" updates entry will land together as one commit when he's
+  ready to announce.
+
+- **`IP_HASH_SALT` set on Vercel pre-launch** (Kellen, self-serve in
+  Vercel dashboard). Refusal logs (`shiftbot_refusals.ip_hash`) will
+  now populate with sha256(ip + salt) for the first public traffic.
+
+### Open / next
+
+- **`IP_HASH_SALT` validation:** trigger a SHIFTBOT refusal post-launch
+  (e.g. via the prompt-injection scenario from smoke test) and verify
+  `shiftbot_refusals.ip_hash` is non-NULL. If it's NULL, the env var
+  didn't take — re-set + redeploy.
+
+- **Eventually announce:** when Kellen wants public attention, single
+  commit bumps VERSION 0.13.2 → 1.0.0, adds `data/updates.json` entry
+  for the milestone, and any social / blog / etc. plays can follow.
+
+- **Stage 3 (cookie gate boot ritual):** still future. Quiet launch
+  works without it; if/when Kellen wants direct /operators visits to
+  bounce through /grid first, that's a separate build.
+
+- **Groq Dev tier:** still disabled by Groq. SHIFTBOT 503s under TPM
+  pressure now have graceful copy ("Use the filters in the sidebar to
+  keep exploring") so the failure mode is acceptable. Re-check Dev
+  tier availability monthly.
+
+### Gotchas for next session
+
+- **VERSION + `data/updates.json` are intentionally lagging behind
+  shipped reality.** This commit (`35914f7`) is user-visible behavior
+  that didn't follow the [update: …] convention because Kellen chose
+  to defer the announcement. Don't "fix" this by retroactively writing
+  a /status entry — it will land as part of Kellen's announce commit
+  when he's ready. If you ship MORE user-visible behavior before that
+  announce commit, decide with Kellen whether to follow convention
+  per-commit or also defer to one composite entry.
+
+- **`/grid` is no longer a "locked" page.** The pre-launch wireframe
+  `wireframes/scan-grid-locked.html` no longer matches the live page.
+  A `wireframes/scan-grid-unlocked.html` would be useful but isn't
+  blocking — the live code is canonical anyway.
+
+- **`GRID_LAUNCH_DATE` constant** referenced in CLAUDE.md may still be
+  set to 2026-05-08 in code somewhere. Worth a grep + reconciliation
+  pass when Kellen does the announce commit. Not urgent — quiet launch
+  doesn't depend on it.
+
+---
+
 ## 2026-04-27 11:45 MST — Grid foundation rebuild: URL-as-truth + canonical lang/tz lists (pre-launch)
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
