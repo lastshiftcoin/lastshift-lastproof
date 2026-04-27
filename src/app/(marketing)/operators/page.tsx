@@ -28,8 +28,6 @@ export const metadata: Metadata = {
   title: "Operators · LASTPROOF",
   description:
     "Discover verified web3 operators on LASTPROOF — filtered by tier, fee, language, and timezone.",
-  // Stage 2: still noindex during iteration. Removed at Stage 4 launch.
-  robots: { index: false, follow: false },
 };
 
 // Don't statically generate — Grid data is dynamic enough that we want a

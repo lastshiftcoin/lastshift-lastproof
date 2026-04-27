@@ -1,11 +1,17 @@
 import Link from "next/link";
 
 /**
- * /grid — locked boot-screen placeholder. Mirrors wireframes/scan-grid-locked.html.
- * Renders OUTSIDE the (marketing) route group so it gets its own terminal chrome
- * instead of the topbar + footer + shiftbot strip.
+ * /grid — branded entry door. Renders OUTSIDE the (marketing) route group so it
+ * gets its own terminal chrome instead of the topbar + footer + shiftbot strip.
+ *
+ * Pre-launch this page was the locked boot-screen with a "MAY 2026 reveal"
+ * placeholder. At quiet launch (2026-04-27) it became a functional entry door:
+ * boot lines reflect operational state, ENTER GRID button routes to /operators.
+ * No cookie gate — direct /operators visits stay valid; /grid is the branded
+ * front door for the SHIFTBOT canned response and for users discovering the
+ * site fresh. Mirrors wireframes/scan-grid-unlocked.html (TBD).
  */
-export default function GridLockedPage() {
+export default function GridPage() {
   return (
     <>
       <style>{gridStyles}</style>
@@ -17,7 +23,7 @@ export default function GridLockedPage() {
           <span>NODE // MAINNET</span>
         </div>
         <div className="sb-right">
-          <span className="orange">GRID // LOCKED</span>
+          <span className="orange">GRID // ONLINE</span>
           <span>SESSION // GUEST</span>
         </div>
       </div>
@@ -45,28 +51,23 @@ export default function GridLockedPage() {
               <div className="line">Initializing system...</div>
               <div className="line green">Grid node detected</div>
               <div className="line green">SHIFTBOT online</div>
-              <div className="line red">Grid access denied</div>
+              <div className="line green">Operator network active</div>
               <div className="line accent">
-                Awaiting reveal window...<span className="cursor" />
+                Ready to enter the Grid<span className="cursor" />
               </div>
             </div>
 
             <div className="divider" />
 
             <div className="reveal-wrap">
-              <div className="reveal-label">&gt;&gt; REVEAL WINDOW</div>
-              <p className="reveal">
-                <span className="white">FULL LAUNCH REVEAL</span>
-                <span className="sep">//</span>
-                <span className="orange">MAY 2026</span>
-              </p>
+              <div className="reveal-label">&gt;&gt; ACCESS GRANTED</div>
               <div className="ctas">
-                <Link className="btn btn-primary" href="/">
+                <Link className="btn btn-primary" href="/operators">
+                  ENTER GRID
+                </Link>
+                <Link className="btn btn-ghost" href="/">
                   BACK TO HOME
                 </Link>
-                <a className="btn btn-ghost" href="#">
-                  ACCESS TERMINAL
-                </a>
               </div>
             </div>
           </div>
