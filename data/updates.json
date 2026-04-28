@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.13.2",
+  "latest_version": "0.13.3",
   "entries": [
+    {
+      "version": "0.13.3",
+      "date": "2026-04-26",
+      "category": "improved",
+      "headline": "Ambassadors now earn $0.50 per confirmed referral, paid weekly",
+      "copy": "The ambassador report just got clearer. Each referral now shows a paid or pending status. Your amount owed updates live as new referrals come in, and the running tally resets to zero after every Monday payout. Solscan link for each payout is right on the report so you can see exactly which transaction paid you. Same rate across every ambassador — $0.50 per confirmed referral.",
+      "source_commits": []
+    },
     {
       "version": "0.13.2",
       "date": "2026-04-26",

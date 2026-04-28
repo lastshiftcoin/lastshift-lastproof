@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { supabaseService } from "@/lib/db/client";
-import { computePayoutTier } from "@/lib/ambassador-tiers";
+import {
+  RATE_PER_REFERRAL_USD,
+  computeAmountOwed,
+  formatUsd,
+  formatSolscanLink,
+} from "@/lib/ambassador-tiers";
 import "./report.css";
 
 /**
@@ -9,6 +14,12 @@ import "./report.css";
  *
  * Private, noindex. Each ambassador bookmarks their own report URL
  * (e.g. lastproof.app/5k/zerix-ops) to see referral stats and payouts.
+ *
+ * Payout model (as of 2026-04-26):
+ *   - Flat $0.50 per confirmed referral
+ *   - Each referral has a paid/unpaid status (`profiles.ambassador_paid_at`)
+ *   - Admin marks unpaid referrals as paid in bulk via /5k/god-ops
+ *   - "Amount Owed" = unpaid count × $0.50
  */
 
 interface PageProps {
@@ -37,22 +48,20 @@ export default async function AmbassadorReportPage({ params }: PageProps) {
 
   if (!amb) notFound();
 
-  // Fetch referred profiles
+  // Fetch referred profiles (newest first) including paid status
   const { data: referrals } = await sb
     .from("profiles")
-    .select("handle, ea_number, ea_claimed_at")
+    .select("handle, ea_number, ea_claimed_at, ambassador_paid_at, ambassador_payout_id")
     .eq("referred_by", amb.campaign_slug)
     .order("ea_claimed_at", { ascending: false });
 
   const allReferrals = referrals ?? [];
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const referrals7d = allReferrals.filter(
-    (r) => r.ea_claimed_at && r.ea_claimed_at >= sevenDaysAgo,
-  );
+  const unpaidReferrals = allReferrals.filter((r) => !r.ambassador_paid_at);
+  const paidReferrals = allReferrals.filter((r) => r.ambassador_paid_at);
 
-  const tier = computePayoutTier(referrals7d.length);
+  const amountOwed = computeAmountOwed(unpaidReferrals.length);
 
-  // Fetch payouts
+  // Fetch payouts (history table)
   const { data: payouts } = await sb
     .from("ambassador_payouts")
     .select("*")
@@ -74,6 +83,8 @@ export default async function AmbassadorReportPage({ params }: PageProps) {
           <h1 className="rpt-title">Hi {amb.tg_handle}</h1>
           <p className="rpt-sub">
             Below is your affiliate referral analytics report.
+            Earnings are <strong>{formatUsd(RATE_PER_REFERRAL_USD)} per confirmed referral</strong>,
+            paid weekly every Monday.
           </p>
         </div>
 
@@ -83,28 +94,34 @@ export default async function AmbassadorReportPage({ params }: PageProps) {
           {campaignUrl}
         </div>
 
-        {/* Payout tier */}
-        <div className={`rpt-tier ${tier.payoutUsd > 0 ? "rpt-tier-active" : "rpt-tier-zero"}`}>
-          TIER: {tier.label} &middot; ${tier.payoutUsd}/week
+        {/* Amount owed (this period) */}
+        <div className={`rpt-tier ${amountOwed > 0 ? "rpt-tier-active" : "rpt-tier-zero"}`}>
+          AMOUNT OWED: {formatUsd(amountOwed)}
+          {unpaidReferrals.length > 0 && (
+            <>
+              {" "}&middot; {unpaidReferrals.length} unpaid referral
+              {unpaidReferrals.length === 1 ? "" : "s"}
+            </>
+          )}
         </div>
 
         {/* Stats */}
         <div className="rpt-stats">
           <div className="rpt-stat">
-            <div className="rpt-stat-num accent">{referrals7d.length}</div>
-            <div className="rpt-stat-label">REFERRALS (7 DAYS)</div>
+            <div className="rpt-stat-num accent">{unpaidReferrals.length}</div>
+            <div className="rpt-stat-label">UNPAID</div>
+          </div>
+          <div className="rpt-stat">
+            <div className="rpt-stat-num">{paidReferrals.length}</div>
+            <div className="rpt-stat-label">PAID</div>
           </div>
           <div className="rpt-stat">
             <div className="rpt-stat-num">{allReferrals.length}</div>
             <div className="rpt-stat-label">REFERRALS (ALL TIME)</div>
           </div>
           <div className="rpt-stat">
-            <div className="rpt-stat-num green">${tier.payoutUsd}</div>
-            <div className="rpt-stat-label">EARNINGS THIS PERIOD</div>
-          </div>
-          <div className="rpt-stat">
-            <div className="rpt-stat-num green">${totalPaidUsd.toFixed(2)}</div>
-            <div className="rpt-stat-label">TOTAL EARNED (YTD)</div>
+            <div className="rpt-stat-num green">{formatUsd(totalPaidUsd)}</div>
+            <div className="rpt-stat-label">TOTAL EARNED</div>
           </div>
         </div>
 
@@ -119,6 +136,7 @@ export default async function AmbassadorReportPage({ params }: PageProps) {
                 <th>HANDLE</th>
                 <th>EA #</th>
                 <th>CLAIMED</th>
+                <th>STATUS</th>
               </tr>
             </thead>
             <tbody>
@@ -127,6 +145,13 @@ export default async function AmbassadorReportPage({ params }: PageProps) {
                   <td>@{r.handle}</td>
                   <td>{r.ea_number ?? "—"}</td>
                   <td>{r.ea_claimed_at ? new Date(r.ea_claimed_at).toLocaleDateString() : "—"}</td>
+                  <td>
+                    {r.ambassador_paid_at ? (
+                      <span className="rpt-paid">✓ PAID</span>
+                    ) : (
+                      <span className="rpt-unpaid">⏳ PENDING</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -149,36 +174,39 @@ export default async function AmbassadorReportPage({ params }: PageProps) {
               </tr>
             </thead>
             <tbody>
-              {allPayouts.map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    {new Date(p.period_start).toLocaleDateString()} – {new Date(p.period_end).toLocaleDateString()}
-                  </td>
-                  <td>{p.referral_count}</td>
-                  <td>${Number(p.payout_usd).toFixed(2)}</td>
-                  <td>
-                    {p.paid_at ? (
-                      <span className="rpt-paid">PAID</span>
-                    ) : (
-                      <span className="rpt-unpaid">PENDING</span>
-                    )}
-                  </td>
-                  <td>
-                    {p.tx_signature ? (
-                      <a
-                        href={`https://solscan.io/tx/${p.tx_signature}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rpt-tx-link"
-                      >
-                        {p.tx_signature.slice(0, 8)}&hellip;
-                      </a>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {allPayouts.map((p) => {
+                const txUrl = formatSolscanLink(p.tx_signature);
+                return (
+                  <tr key={p.id}>
+                    <td>
+                      {new Date(p.period_start).toLocaleDateString()} – {new Date(p.period_end).toLocaleDateString()}
+                    </td>
+                    <td>{p.referral_count}</td>
+                    <td>{formatUsd(Number(p.payout_usd))}</td>
+                    <td>
+                      {p.paid_at ? (
+                        <span className="rpt-paid">PAID</span>
+                      ) : (
+                        <span className="rpt-unpaid">PENDING</span>
+                      )}
+                    </td>
+                    <td>
+                      {txUrl ? (
+                        <a
+                          href={txUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rpt-tx-link"
+                        >
+                          view on solscan
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

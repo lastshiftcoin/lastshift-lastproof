@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { supabaseService } from "@/lib/db/client";
-import { computePayoutTier } from "@/lib/ambassador-tiers";
+import {
+  RATE_PER_REFERRAL_USD,
+  computeAmountOwed,
+  formatUsd,
+} from "@/lib/ambassador-tiers";
 import { AdminPayoutForm } from "./AdminPayoutForm";
 import "../[reportSlug]/report.css";
 
@@ -8,7 +12,13 @@ import "../[reportSlug]/report.css";
  * /5k/god-ops — Admin ambassador dashboard.
  *
  * Shows all ambassadors, individual + aggregate stats, and a form
- * to record payouts with Solscan tx signatures. noindex, admin-only.
+ * to mark all unpaid referrals as paid in a single atomic
+ * operation. noindex, admin-only.
+ *
+ * Payout model (as of 2026-04-26): flat $0.50 per confirmed
+ * referral. Each referral has a paid/unpaid status. Admin marks
+ * unpaid referrals as paid in bulk per ambassador, supplying a
+ * Solscan link as the on-chain receipt for transparency.
  */
 
 export const metadata: Metadata = {
@@ -26,51 +36,47 @@ export default async function AdminReportPage() {
     .order("created_at", { ascending: true });
 
   const allAmbassadors = ambassadors ?? [];
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-  // Build stats for each ambassador
+  // Build stats for each ambassador — paid/unpaid splits, total earned
   const stats = await Promise.all(
     allAmbassadors.map(async (amb) => {
       const { data: referrals } = await sb
         .from("profiles")
-        .select("handle, ea_number, ea_claimed_at")
-        .eq("referred_by", amb.campaign_slug)
-        .order("ea_claimed_at", { ascending: false });
+        .select("ambassador_paid_at")
+        .eq("referred_by", amb.campaign_slug);
 
       const all = referrals ?? [];
-      const last7d = all.filter(
-        (r) => r.ea_claimed_at && r.ea_claimed_at >= sevenDaysAgo,
-      );
+      const unpaid = all.filter((r) => !r.ambassador_paid_at).length;
+      const paid = all.length - unpaid;
+      const amountOwed = computeAmountOwed(unpaid);
 
       const { data: payouts } = await sb
         .from("ambassador_payouts")
-        .select("*")
-        .eq("ambassador_id", amb.id)
-        .order("period_end", { ascending: false });
+        .select("payout_usd, paid_at")
+        .eq("ambassador_id", amb.id);
 
       const totalPaid = (payouts ?? [])
         .filter((p) => p.paid_at)
         .reduce((sum, p) => sum + Number(p.payout_usd), 0);
-
-      const tier = computePayoutTier(last7d.length);
 
       return {
         id: amb.id,
         tgHandle: amb.tg_handle,
         campaignSlug: amb.campaign_slug,
         reportSlug: amb.report_slug,
-        referrals7d: last7d.length,
+        unpaidCount: unpaid,
+        paidCount: paid,
         referralsAllTime: all.length,
-        tier,
+        amountOwed,
         totalPaid,
       };
     }),
   );
 
   // Aggregates
-  const total7d = stats.reduce((s, a) => s + a.referrals7d, 0);
+  const totalUnpaid = stats.reduce((s, a) => s + a.unpaidCount, 0);
   const totalAllTime = stats.reduce((s, a) => s + a.referralsAllTime, 0);
-  const totalLiability = stats.reduce((s, a) => s + a.tier.payoutUsd, 0);
+  const totalLiability = stats.reduce((s, a) => s + a.amountOwed, 0);
   const totalPaidYtd = stats.reduce((s, a) => s + a.totalPaid, 0);
 
   return (
@@ -79,26 +85,29 @@ export default async function AdminReportPage() {
         <div className="rpt-header">
           <div className="rpt-eyebrow">&gt; GOD MODE</div>
           <h1 className="rpt-title">Ambassador Admin</h1>
-          <p className="rpt-sub">All ambassadors. Real-time stats. Mark payouts.</p>
+          <p className="rpt-sub">
+            All ambassadors. {formatUsd(RATE_PER_REFERRAL_USD)} per referral.
+            Mark all unpaid referrals as paid in one click.
+          </p>
         </div>
 
         {/* Aggregate stats */}
         <div className="rpt-stats">
           <div className="rpt-stat">
-            <div className="rpt-stat-num accent">{total7d}</div>
-            <div className="rpt-stat-label">TOTAL REFERRALS (7D)</div>
+            <div className="rpt-stat-num accent">{totalUnpaid}</div>
+            <div className="rpt-stat-label">UNPAID REFERRALS</div>
           </div>
           <div className="rpt-stat">
             <div className="rpt-stat-num">{totalAllTime}</div>
             <div className="rpt-stat-label">TOTAL REFERRALS (ALL)</div>
           </div>
           <div className="rpt-stat">
-            <div className="rpt-stat-num accent">${totalLiability}</div>
-            <div className="rpt-stat-label">PAYOUT LIABILITY (THIS PERIOD)</div>
+            <div className="rpt-stat-num accent">{formatUsd(totalLiability)}</div>
+            <div className="rpt-stat-label">TOTAL LIABILITY (UNPAID)</div>
           </div>
           <div className="rpt-stat">
-            <div className="rpt-stat-num green">${totalPaidYtd.toFixed(2)}</div>
-            <div className="rpt-stat-label">TOTAL PAID (YTD)</div>
+            <div className="rpt-stat-num green">{formatUsd(totalPaidYtd)}</div>
+            <div className="rpt-stat-label">TOTAL PAID</div>
           </div>
         </div>
 
@@ -109,11 +118,11 @@ export default async function AdminReportPage() {
             <tr>
               <th>HANDLE</th>
               <th>CAMPAIGN</th>
-              <th>7D</th>
+              <th>UNPAID</th>
+              <th>PAID</th>
               <th>ALL</th>
-              <th>TIER</th>
-              <th>EARNINGS</th>
-              <th>PAID YTD</th>
+              <th>OWED</th>
+              <th>TOTAL PAID</th>
               <th>REPORT</th>
             </tr>
           </thead>
@@ -122,11 +131,25 @@ export default async function AdminReportPage() {
               <tr key={a.id}>
                 <td>{a.tgHandle}</td>
                 <td style={{ fontSize: 10 }}>/{a.campaignSlug}</td>
-                <td style={{ color: a.referrals7d > 0 ? "#ff9100" : undefined }}>{a.referrals7d}</td>
+                <td
+                  style={{
+                    color: a.unpaidCount > 0 ? "#ff9100" : undefined,
+                    fontWeight: a.unpaidCount > 0 ? 700 : undefined,
+                  }}
+                >
+                  {a.unpaidCount}
+                </td>
+                <td className="rpt-paid">{a.paidCount}</td>
                 <td>{a.referralsAllTime}</td>
-                <td>{a.tier.label}</td>
-                <td>${a.tier.payoutUsd}</td>
-                <td className="rpt-paid">${a.totalPaid.toFixed(2)}</td>
+                <td
+                  style={{
+                    color: a.amountOwed > 0 ? "#ff9100" : undefined,
+                    fontWeight: a.amountOwed > 0 ? 700 : undefined,
+                  }}
+                >
+                  {formatUsd(a.amountOwed)}
+                </td>
+                <td className="rpt-paid">{formatUsd(a.totalPaid)}</td>
                 <td>
                   <a
                     href={`/5k/${a.reportSlug}`}
@@ -142,14 +165,14 @@ export default async function AdminReportPage() {
           </tbody>
         </table>
 
-        {/* Payout form */}
-        <div className="rpt-section-title">RECORD PAYOUT</div>
+        {/* Mark-as-paid form */}
+        <div className="rpt-section-title">MARK AS PAID</div>
         <AdminPayoutForm
           ambassadors={stats.map((a) => ({
             id: a.id,
             tgHandle: a.tgHandle,
-            referrals7d: a.referrals7d,
-            payoutUsd: a.tier.payoutUsd,
+            unpaidCount: a.unpaidCount,
+            amountOwed: a.amountOwed,
           }))}
         />
       </div>
