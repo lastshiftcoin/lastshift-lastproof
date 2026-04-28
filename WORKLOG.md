@@ -20,6 +20,132 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-27 22:20 MST — Ambassador payout model: per-referral $0.50, paid status per referral, atomic mark-paid
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** backend
+**Commits:** this commit (see git log)
+**Migrations run in prod Supabase:** **REQUIRED** — Kellen must run
+`supabase/migrations/0023_ambassador_per_referral_payout.sql` in
+the Supabase SQL Editor BEFORE this deploy lands. Migration adds two
+columns to `profiles`, an index, and a Postgres function. If the
+deploy lands first, the page renders fall back gracefully (selects
+on missing columns just return null) but the mark-paid endpoint
+returns RPC errors. Run the migration first.
+**Impacts:** none — internal ambassador system, no Terminal contract
+or shared-secret change
+**Status:** ✅ shipped (code) / 🟡 awaiting migration run
+
+### Did
+
+- **Replaced rolling-7-day tier model** with flat $0.50 per
+  confirmed referral, paid weekly Mondays. New
+  `RATE_PER_REFERRAL_USD = 0.5` constant in
+  `src/lib/ambassador-tiers.ts`. Old `computePayoutTier()` left as
+  a thin shim returning the same shape so any leftover imports
+  don't break the build during transition.
+- **Schema migration `0023`** — adds two columns to `profiles`:
+  - `ambassador_paid_at timestamptz` (NULL = unpaid)
+  - `ambassador_payout_id uuid` (FK → `ambassador_payouts.id`)
+  - Index `idx_profiles_referred_by_paid` for fast unpaid-list queries
+  - Postgres function `mark_ambassador_referrals_paid(uuid, text)`
+    that atomically inserts the payout row + flips every matching
+    profile's paid status in a single transaction.
+- **`/5k/[reportSlug]` (ambassador's own report)** rewritten:
+  - Top section: **AMOUNT OWED $X.XX** + unpaid count
+  - Stats grid: UNPAID / PAID / ALL TIME / TOTAL EARNED
+  - Per-referral table now shows ✓ PAID (green) or ⏳ PENDING
+    (orange) for every referral
+  - Payout history shows full Solscan link (uses new
+    `formatSolscanLink()` helper — accepts bare sigs or full URLs)
+- **`/5k/god-ops` (admin) rewritten:**
+  - Aggregate stats: UNPAID / TOTAL / LIABILITY / TOTAL PAID
+  - Per-ambassador table with unpaid/paid/owed columns, orange
+    highlight on amounts owing
+  - **MARK ALL AS PAID form** — pick ambassador, paste Solscan
+    link/sig, click → atomic payout via Server Action
+- **Server Action `markAmbassadorReferralsPaid()`** at
+  `src/app/(marketing)/5k/god-ops/actions.ts`. Calls the Postgres
+  RPC, wraps errors in friendly messages, calls `revalidatePath`
+  for both god-ops and the report page so counts update
+  immediately after submit.
+- **HTTP endpoint `POST /api/admin/ambassador-payout`** —
+  bearer-gated by `LASTPROOF_ADMIN_API_TOKEN`, same RPC, for any
+  future scripted/CLI access. Form goes through Server Action;
+  this exists for programmatic callers.
+
+### Today's "starting line" payout (operational runbook)
+
+1. **Run the migration** in Supabase SQL Editor
+   (`supabase/migrations/0023_ambassador_per_referral_payout.sql`).
+   Confirms when you see the `mark_ambassador_referrals_paid`
+   function listed under Database → Functions.
+2. Wait ~60s for Vercel deploy to land after this commit.
+3. Open `/5k/god-ops`. Verify the per-ambassador table shows
+   non-zero UNPAID counts (existing referrals haven't been paid yet,
+   so they all start as unpaid).
+4. For each of the 6 ambassadors:
+   a. Send the actual Solscan transaction (the on-chain transfer)
+   b. Copy the Solscan URL or transaction signature
+   c. In the MARK AS PAID form, select that ambassador
+   d. Paste the Solscan link/sig
+   e. Click MARK ALL AS PAID
+   f. Confirm: green success message, unpaid count drops to 0
+5. Refresh `/5k/god-ops`. All ambassadors should now show 0
+   unpaid, $0.00 owed.
+6. Each ambassador's individual report (`/5k/<slug>-ops`) now
+   shows ✓ PAID on every referral and the Solscan link in their
+   payout history.
+
+From that point forward: as new users sign up via ambassador
+links, those rows auto-stamp `referred_by` (existing pipeline)
+with NULL `ambassador_paid_at`. Ambassador's report shows them as
+PENDING with $0.50 each accruing. Next Monday, repeat steps 4–6.
+
+### Open / next
+
+- **Run the migration** (above). Without it, the deploy renders
+  pages OK but the mark-paid form errors with RPC failures.
+- **Validate end-to-end** after the first real payout — confirm
+  the Server Action's `revalidatePath` actually flushes the
+  ambassador report cache. Next 16 sometimes ignores partial
+  revalidation. If counts don't update on refresh, add a manual
+  refresh button or convert to a router-refresh pattern.
+- **Old `/api/ambassador/payout` endpoint** is now legacy — no
+  longer called by the form. Left in place for backward compat
+  but should be removed once we confirm no external scripts hit
+  it. Check Vercel logs over the next week.
+
+### Gotchas for next session
+
+- **Two payout endpoints exist now** — `/api/ambassador/payout`
+  (legacy, period-only writes, no per-referral status) and
+  `/api/admin/ambassador-payout` (new, bearer-gated, atomic via
+  RPC). Use the new one for everything. Form uses the Server
+  Action that calls the same RPC; HTTP endpoint is for scripts.
+- **Postgres function is `SECURITY DEFINER`** — runs with the
+  function-owner's privileges, not the calling user's. We're using
+  service-role anyway, so this doesn't matter operationally, but
+  worth noting if we ever switch to RLS-bounded callers.
+- **Migration is REQUIRED before deploy works correctly.** If a
+  deploy lands and the migration hasn't run, the report page
+  selects on missing columns and just gets null back (graceful
+  degradation: shows everyone as unpaid, no errors). The mark-paid
+  form errors with `function does not exist`. Run the migration
+  first.
+- **`computePayoutTier()` is a deprecated shim** that returns
+  the new flat-rate amount but in the old `{ label, payoutUsd }`
+  shape. Don't extend it — just delete after a sweep confirms
+  no other call sites import it. Currently zero call sites
+  (god-ops and report were rewritten).
+- **Solscan link rendering** uses `formatSolscanLink()` which
+  accepts either a bare base58 sig or a full URL. Don't add
+  validation upstream; per Kellen's spec, it's pure pass-through.
+
+---
+
 ## 2026-04-27 13:30 MST — 🚀 Grid quiet-launched (12 days early)
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
