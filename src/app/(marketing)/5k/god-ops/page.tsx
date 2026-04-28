@@ -26,6 +26,15 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// Force fresh render on every request. Without this, Next.js caches
+// the page (static path, no dynamic params) and the unpaid counts /
+// amount-owed values get stuck on whatever was rendered at build time
+// or first hit. Server Action's revalidatePath handles the post-payout
+// case, but doesn't reliably catch every visit. force-dynamic kills the
+// ambiguity — this page always reads live from Supabase.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function AdminReportPage() {
   const sb = supabaseService();
 
