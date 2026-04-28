@@ -183,10 +183,16 @@ export async function verifyAndRecordProof(
   }
 
   // ─── Post-check 7: Dev-path eligibility ───────────────────────────
+  //
+  // Mint resolution priority (must match dev-check route):
+  //   1. work_items.target_mint — operator-attested CA (set at dev-check time)
+  //   2. TOKEN_MINTS[ticker]    — legacy hardcoded tickers ($LASTSHFT, $USDT)
+  //   3. else → reject with `dev_mint_missing` so the operator knows to
+  //      go back through dev-check (which prompts for a CA)
   if (row.path === "dev") {
     const { data: wi } = await db
       .from("work_items")
-      .select("ticker")
+      .select("ticker, target_mint")
       .eq("id", row.work_item_id)
       .single();
 
@@ -195,13 +201,29 @@ export async function verifyAndRecordProof(
       return { ok: false, check: "dev_not_qualified", detail: "Work item has no associated token." };
     }
 
-    // Strip $ prefix if present — work items store "$LASTSHFT" but TOKEN_MINTS keys are "LASTSHFT"
+    // Strip $ prefix — work items store "$LASTSHFT" but TOKEN_MINTS keys are "LASTSHFT"
     const ticker = rawTicker.replace(/^\$/, "");
 
-    // Look up the mint address for this ticker
-    const mintAddress = TOKEN_MINTS[ticker as keyof typeof TOKEN_MINTS];
-    if (!mintAddress || mintAddress === "native") {
-      return { ok: false, check: "dev_not_qualified", detail: "No mint found for this token." };
+    let mintAddress: string | null = null;
+    if (wi?.target_mint) {
+      mintAddress = wi.target_mint;
+    } else {
+      const legacy = TOKEN_MINTS[ticker as keyof typeof TOKEN_MINTS];
+      if (legacy && legacy !== "native") {
+        mintAddress = legacy;
+      }
+    }
+
+    if (!mintAddress) {
+      // No CA attested AND no legacy hardcoded mint. Operator skipped
+      // (or pre-dates) the dev-check CA flow. Return a distinct check
+      // code with a helpful detail; the modal renders the detail
+      // verbatim via DENIAL_MESSAGES fallthrough.
+      return {
+        ok: false,
+        check: "dev_mint_missing",
+        detail: `Add the contract address for ${ticker} on this work item before submitting a dev proof.`,
+      };
     }
 
     const devResult = await verifyDevWallet(mintAddress, feePayer);

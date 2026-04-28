@@ -20,6 +20,117 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-28 00:59 MST — Dev-check unblocked for non-LASTSHFT tokens (CA paste flow)
+
+**Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** backend
+**Commits:** this commit (see git log)
+**Migrations run in prod Supabase:** `0026_work_items_target_mint.sql`
+— Kellen runs in Supabase SQL Editor. Additive (nullable column +
+partial index), safe against live data.
+**Impacts:** none — work_items column add, no Terminal contract change
+**Status:** ✅ shipped, awaiting Kellen's migration run + live test
+
+### Did
+
+- **Phase 1 (diagnose)** earlier today confirmed the bug empirically
+  via 3 live curl tests — XNEO, BTCRIP, DONALDGUMP all bailed at
+  `reason: "no_mint"` before Helius was consulted. CLAUDE.md flags
+  this gate as the most important logic in the app, and it had
+  effectively never run for the vast majority of tokens.
+- **Phase 2-3 (solution)** chose dual-input flow with Kellen:
+  no Jupiter / no auto-resolve, operator self-attests CA when their
+  ticker isn't in TOKEN_MINTS. Trust-safe (no impostor risk),
+  ⅓ the code of auto-resolve, no external dep, matches Kellen's
+  "users can ask their devs again" stance.
+- **Phase 3 verification** caught a sleeper: Helius DAS searchAssets
+  doesn't support `tokenSymbol` filtering. Would have wasted ~250
+  lines if we'd built that path before checking the docs.
+- **Layer 1 — Migration** `supabase/migrations/0026_work_items_target_mint.sql`
+  Nullable `target_mint text` column + partial index. Backward compat
+  preserved.
+- **Layer 2 — Mint validation helper** `src/lib/mint-validation.ts` (new)
+  - `detectChain(addr)` returns `solana | evm | unknown` by format
+  - `checkSolanaMint(rpcUrl, mint)` runs `getAccountInfo` to confirm
+    a real mint account (not wallet, not token account, not program)
+- **Layer 3 — Dev-check route** `src/app/api/proof/dev-check/route.ts`
+  Accepts optional `target_mint` body field. New response shapes:
+  `needs_ca`, `unsupported_chain`, `invalid_ca`, `not_a_mint`. Mint
+  resolution priority: body.target_mint → work_items.target_mint
+  (stored from prior attestation) → TOKEN_MINTS legacy. Persists CA
+  to work_items on attestation so subsequent calls AND post-payment
+  proof-verification reuse it.
+- **Layer 4 — Post-payment verification** `src/lib/proof-verification.ts`
+  Same priority chain. New failure code `dev_mint_missing` with helpful
+  detail — modal renders the detail string via existing
+  `DENIAL_MESSAGES[failCheck] ?? failDetail` fallthrough, so no
+  proof-modal code change needed to surface the new message.
+- **Layer 5 — Dev-check UI** `Screen1DevCheck.tsx`
+  Two new conditional states: `needs_ca` (CA input appears) and
+  `unsupported_chain` (yellow info box, multi-chain coming soon).
+  CHECK ELIGIBILITY button disabled until both wallet + CA populated
+  in the needs_ca state. **Other paste-verify screens UNTOUCHED**
+  per Kellen's explicit scope direction.
+- VERSION 0.13.3 → 0.13.4 (patch, fixed). data/updates.json entry
+  frames it from operator's perspective.
+
+### Current state
+
+- Code shipped. Migration awaiting Kellen.
+- Backward compat verified via code review: $LASTSHFT path falls
+  through TOKEN_MINTS, identical behavior to today.
+- Until migration runs, dev-check + proof-verification will error on
+  the `select("ticker, target_mint")` query (column doesn't exist
+  yet). **Run the migration during the Vercel build window so the
+  column exists before any request hits the new code.**
+
+### Open / next
+
+- **Live tests after deploy + migration:**
+  1. Regression: $LASTSHFT work item, real wallet → must return
+     `eligible: T/F` with `checks` populated, NOT `needs_ca`.
+  2. Happy path new: $XNEO + DnQU…7jQD wallet + real CA
+     8onSY…pump → first call `needs_ca`, second call with CA →
+     `eligible: true` with `deployer.ok: true`. work_items.target_mint
+     persisted.
+  3. Non-dev: $XNEO + random wallet + real CA → `eligible: false`
+     with checks.
+  4. EVM rejection: paste 0x address → `reason: "unsupported_chain"`.
+  5. Garbage CA: random string → `reason: "invalid_ca"`.
+  6. Wallet-as-CA: paste a wallet address into CA field →
+     `reason: "not_a_mint"` with detail.
+- **No backfill** — operators with affected work items will hit the
+  `needs_ca` flow on their next dev-check attempt. Per spec.
+- **Multi-chain (EVM) dev verification** is open future work. Today
+  ships detect-and-message-only.
+
+### Gotchas for next session
+
+- **Migration must run before code requests hit it.** If you see
+  500s on `/api/proof/dev-check` right after deploy, check the
+  Supabase SQL Editor for the column first.
+- **CA validation is two-stage:** `detectChain` (format) →
+  `checkSolanaMint` (RPC `getAccountInfo`, confirms it's a mint
+  account specifically). Step 2 catches "operator pasted their
+  wallet address" — surprisingly common.
+- **Multi-chain expansion path:** add `target_chain text` column
+  (or auto-detect from address format), add chain dispatcher in
+  `verifyDevWallet()`. Don't reuse the Solana-only RPC client
+  for EVM.
+- **`work_items.target_mint` is operator-attested**, not platform-
+  verified beyond the dev-check that just ran. If future features
+  derive other claims from it (Grid cards, public profile deep
+  links), gate them behind `is_dev = true` on the work item or a
+  separate attestation flow.
+- **5 affected work items don't get auto-fixed.** Their owners hit
+  the `needs_ca` flow next time they try a dev proof, paste their
+  CA, run the check, and from then on everything works for that
+  work item.
+
+---
+
 ## 2026-04-27 22:20 MST — Ambassador payout model: per-referral $0.50, paid status per referral, atomic mark-paid
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)

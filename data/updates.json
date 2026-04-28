@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.13.3",
+  "latest_version": "0.13.4",
   "entries": [
+    {
+      "version": "0.13.4",
+      "date": "2026-04-28",
+      "category": "fixed",
+      "headline": "Dev verification now works for any Solana token — paste your contract address",
+      "copy": "If you're claiming dev status for a token outside our default list (anything that isn't $LASTSHFT), the dev-check screen now asks you to paste your contract address so the system can verify your wallet against the actual token on-chain. Pump.fun tokens, new launches, anything with a Solana mint — pasting the CA works. EVM tokens get a clear \"multi-chain support coming soon\" message; that one's on the roadmap.",
+      "source_commits": []
+    },
     {
       "version": "0.13.3",
       "date": "2026-04-26",
