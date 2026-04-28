@@ -471,7 +471,7 @@ export default function PrivacyPolicyPage() {
             <div className="pp-privacy-contact-name">LASTSHIFT</div>
             <p style={{ margin: 0 }}>
               Email:{" "}
-              <a href="mailto:kt@lastshift.ai">kt@lastshift.ai</a>
+              <a href="mailto:privacy@lastshift.ai">privacy@lastshift.ai</a>
             </p>
           </div>
         </section>
