@@ -49,6 +49,7 @@ const AMBASSADOR_SLUGS = [
   "free-before-grid",
   "claim-before-launch",
   "free-early-access",
+  "free-profile-5k-claim",
 ];
 
 /**
@@ -74,6 +75,7 @@ const AMBASSADOR_PROFILE_HANDLES: Record<string, string> = {
   habilamar_ibn: "free-before-grid",
   joe_babs: "claim-before-launch",
   theleader: "free-early-access",
+  mason5: "free-profile-5k-claim",
 };
 
 const COOKIE_NAME = "lp_ref";
@@ -175,6 +177,7 @@ export const config = {
     "/free-before-grid",
     "/claim-before-launch",
     "/free-early-access",
+    "/free-profile-5k-claim",
 
     // Ambassador profile pages (the `/@handle` public URL shape, pre-rewrite)
     "/@investor_zerix",
@@ -183,5 +186,6 @@ export const config = {
     "/@habilamar_ibn",
     "/@joe_babs",
     "/@theleader",
+    "/@mason5",
   ],
 };
