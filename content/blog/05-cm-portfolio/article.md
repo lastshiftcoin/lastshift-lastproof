@@ -56,7 +56,7 @@ none of these elements require design skill. all of them require receipts.
 
 here's the actual sequence.
 
-**step 1: claim the handle.** lastproof.app/manage. free for the first 5,000 operators until 30 days after The Grid launches in may 2026; $10/month after (40% off when paying in $LASTSHFT, or pay in SOL or USDT). takes under two minutes. pick a handle you'll use across crypto.
+**step 1: claim the handle.** lastproof.app/manage. free forever for the first 5,000 operators; $10/month after that (40% off when paying in $LASTSHFT, or pay in SOL or USDT). takes under two minutes. pick a handle you'll use across crypto.
 
 **step 2: add every project you've ever worked on.** dead ones, live ones, rugged ones, successful ones. the full list is the portfolio. you're not bragging, you're building a record. include role (cm, mod, raid lead, etc), dates, and a link to the token if it still exists.
 
