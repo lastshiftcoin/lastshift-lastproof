@@ -1,0 +1,195 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LASTPROOF — Privacy Policy page styles
+   Responsive, readable, scoped under .pp-privacy-page so nothing leaks.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.pp-privacy-page {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--sans);
+  min-height: 100dvh;
+}
+
+.pp-privacy-container {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 48px 24px 96px;
+}
+
+.pp-privacy-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 0 0 12px;
+}
+
+.pp-privacy-eyebrow::before {
+  content: ">";
+  color: var(--accent);
+  margin-right: 8px;
+  opacity: 0.7;
+}
+
+.pp-privacy-title {
+  font-family: var(--sans);
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+  color: var(--text-primary);
+  margin: 0 0 18px;
+}
+
+.pp-privacy-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  margin: 0 0 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pp-privacy-meta strong {
+  color: var(--text-secondary);
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.pp-privacy-intro {
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin: 0 0 18px;
+}
+
+.pp-privacy-intro strong {
+  color: var(--text-primary);
+}
+
+.pp-privacy-section {
+  margin: 36px 0 0;
+  padding-top: 36px;
+  border-top: 1px solid var(--border);
+}
+
+.pp-privacy-section:first-of-type {
+  margin-top: 28px;
+}
+
+.pp-privacy-section h2 {
+  font-family: var(--sans);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: var(--text-primary);
+  margin: 0 0 16px;
+}
+
+.pp-privacy-section h2 .pp-privacy-num {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1px;
+  margin-right: 10px;
+}
+
+.pp-privacy-section h3 {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 24px 0 10px;
+}
+
+.pp-privacy-section p {
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--text-secondary);
+  margin: 0 0 14px;
+}
+
+.pp-privacy-section p strong {
+  color: var(--text-primary);
+}
+
+.pp-privacy-section ul,
+.pp-privacy-section ol {
+  margin: 0 0 14px;
+  padding-left: 22px;
+}
+
+.pp-privacy-section ul li,
+.pp-privacy-section ol li {
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin: 6px 0;
+}
+
+.pp-privacy-section ul li strong,
+.pp-privacy-section ol li strong {
+  color: var(--text-primary);
+}
+
+.pp-privacy-section a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  word-break: break-word;
+}
+
+.pp-privacy-section a:hover {
+  color: var(--text-primary);
+}
+
+.pp-privacy-contact {
+  margin-top: 14px;
+  padding: 18px 20px;
+  background: var(--bg-card, rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.pp-privacy-contact strong {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.pp-privacy-contact .pp-privacy-contact-name {
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+/* ── Mobile ─────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .pp-privacy-container { padding: 32px 18px 72px; }
+  .pp-privacy-title { font-size: 28px; }
+  .pp-privacy-meta { gap: 12px; font-size: 10px; }
+  .pp-privacy-section { margin-top: 28px; padding-top: 28px; }
+  .pp-privacy-section h2 { font-size: 18px; }
+  .pp-privacy-section h2 .pp-privacy-num { font-size: 12px; }
+  .pp-privacy-section h3 { font-size: 14px; }
+  .pp-privacy-intro { font-size: 14px; }
+  .pp-privacy-section p,
+  .pp-privacy-section ul li,
+  .pp-privacy-section ol li { font-size: 13px; }
+}

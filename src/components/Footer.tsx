@@ -27,6 +27,7 @@ export default function Footer() {
         <a href="https://lastproof.app/status" target="_blank" rel="noreferrer">STATUS</a>
         <Link href="https://lastshift.app">TERMINAL</Link>
         <Link href="https://lastshiftcoin.com">LASTSHIFTCOIN.COM</Link>
+        <Link href="/privacy">PRIVACY POLICY</Link>
       </div>
     </footer>
   );
