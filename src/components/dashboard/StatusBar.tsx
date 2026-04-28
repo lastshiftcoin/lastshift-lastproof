@@ -137,11 +137,11 @@ export function StatusBar({ profile, campaignSoldOut = false, campaignActive = f
               {config.label}
             </span>
           </div>
-          <span className="status-div" />
-          <div className="status-group">
-            <span className="status-note">expires in</span>
-            <span className="status-count">{countdown}</span>
-          </div>
+          {/* Subscription countdown removed — First 5,000 program is now
+              free forever, not 30-day-bounded. Backend owns clearing
+              `subscriptionExpiresAt` for EA profiles; the countdown
+              JSX is hidden here so no stale "X days remaining" leaks
+              through during the rollout. */}
         </div>
         <button
           type="button"

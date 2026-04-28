@@ -108,14 +108,13 @@ const FAQS: FaqEntry[] = [
   {
     q: "Is it free?",
     searchText:
-      "free cost pay subscription lastproof first 5000 early access grid launch 10 month lastshft proofs",
+      "free cost pay subscription lastproof first 5000 early access forever 10 month lastshft proofs",
     a: (
       <p>
-        Getting your Terminal ID is <strong>free</strong>. LASTPROOF: during the First
-        5,000 early-access campaign, your profile is{" "}
-        <strong>free until 30 days after the Grid launches</strong> (2026-06-07). After
-        that it&apos;s $10/mo ($6 in $LASTSHFT). Proofs cost $1 (paid by the verifier),
-        DEV proofs $5.
+        Getting your Terminal ID is <strong>free</strong>. LASTPROOF: the first
+        5,000 operators get the profile <strong>free forever</strong>. After
+        the 5,000 spots are claimed, new profiles are $10/mo ($6 in $LASTSHFT).
+        Proofs cost $1 (paid by the verifier), DEV proofs $5.
       </p>
     ),
   },
@@ -400,38 +399,17 @@ const FAQS: FaqEntry[] = [
     ),
   },
   {
-    q: "My First 5,000 profile just expired and dropped to FREE. Can I get my tier back?",
-    searchText:
-      "first 5000 expired free tier back pay subscription lastshft reactivate proof count reset",
-    a: (
-      <p>
-        Yes. Pay the subscription ($10/mo or $6 in $LASTSHFT) from /manage — everything
-        comes back instantly. Proof count never resets, only its visibility.
-      </p>
-    ),
-  },
-  {
-    q: "When exactly does my First 5,000 free window end?",
-    searchText:
-      "first 5000 free window end date 2026 06 07 grid launch 30 days clock starts claim",
-    a: (
-      <p>
-        <strong>2026-06-07</strong> — 30 days after Grid launch (2026-05-08). The clock
-        starts at Grid launch, <strong>NOT</strong> at claim time. Whether you claimed
-        in February or the day before launch, you get 30 days from May 8.
-      </p>
-    ),
-  },
-  {
     q: "I got a Telegram message from @LastShiftAuthBot about my profile expiring. Is this real?",
     searchText:
-      "telegram lastshiftauthbot profile expiring real reminder 3 days ea window banner",
+      "telegram lastshiftauthbot profile expiring real reminder 3 days subscription lapse banner",
     a: (
       <p>
-        Yes. 3 days before your EA free window closes, we send a reminder via{" "}
+        Yes. 3 days before your paid subscription lapses, we send a reminder via{" "}
         <span className="mono">@LastShiftAuthBot</span>. If you have a Telegram handle
         on your profile, it goes there. If not, we can only nudge via the in-app
-        banner. <strong>Add a Telegram handle now</strong> if you want the reminder.
+        banner. <strong>Add a Telegram handle now</strong> if you want the reminder.{" "}
+        <em>(First 5,000 / EA profiles don&apos;t expire and won&apos;t get this
+        message — it only fires for paid subscriptions.)</em>
       </p>
     ),
   },
@@ -1715,8 +1693,8 @@ export default function HelpPage() {
                 </ol>
                 <div className="help-callout help-callout-green">
                   <strong>First 5,000 note:</strong> if you&apos;re in the EA
-                  campaign, your profile is free until 30 days after Grid launch
-                  (2026-06-07). Telegram reminder 3 days before auto-conversion.
+                  campaign, your profile is free forever — no upgrade required,
+                  no recurring billing.
                 </div>
                 <p>
                   <strong>Reactivating:</strong> same flow. Pay, features come back
@@ -1848,7 +1826,7 @@ export default function HelpPage() {
             <span className="help-c-gold">FIRST 5,000 (EA)</span>
 {`   `}
             <span className="help-c-gold">gold</span>
-{`         "EA" ribbon + pill      not yet — free until 30d post-Grid
+{`         "EA" ribbon + pill      no — free forever (first 5,000 only)
 `}
             <span className="help-c-silver">FREE</span>
 {`               `}
@@ -1928,43 +1906,33 @@ export default function HelpPage() {
               url="lastproof.app/@you"
               src="lastproof-profile-5000.html"
               icon="★"
-              note="gold ribbon + countdown"
-              caption="Full profile + gold early-access ribbon + countdown."
+              note="gold ribbon"
+              caption="Full profile + gold early-access ribbon."
               image="/help/t4-first-5000-profile.png"
-              alt="First 5,000 EA profile — gold ribbon and countdown to conversion"
+              alt="First 5,000 EA profile — gold ribbon"
             />
             <div className="help-state-details">
               <p className="help-what-means">
-                <strong className="help-gold">What it means:</strong> You claimed a
-                spot before the Grid launched. Full Active Paid features — free until
-                30 days after Grid launch (2026-06-07).
+                <strong className="help-gold">What it means:</strong> You claimed
+                one of the first 5,000 spots. Full Active Paid features — free
+                forever, no recurring billing.
               </p>
               <h5>What shows publicly</h5>
               <ul>
                 <li>Everything ACTIVE PAID shows, plus:</li>
-                <li>Gold EA ribbon / badge</li>
-                <li>
-                  FOMO countdown timer (post Grid-launch) showing days until
-                  auto-conversion
-                </li>
+                <li>Gold EA / Founding 5K ribbon and badge</li>
               </ul>
-              <div className="help-callout help-callout-red" style={{ marginTop: 10 }}>
+              <div className="help-callout help-callout-green" style={{ marginTop: 10 }}>
                 <span className="help-prefix">&gt;</span>
-                <strong>Timing:</strong> the 30-day free window starts at{" "}
-                <strong>GRID LAUNCH (2026-05-08)</strong>, not at claim time. If you
-                claimed 2026-05-01, your window is &quot;May 8 → June 7,&quot; not
-                &quot;May 1 → May 31.&quot; 30 days from launch day, always.
-              </div>
-              <div className="help-callout help-callout-orange">
-                <span className="help-prefix">&gt;</span>3 days before your EA window
-                closes, we send a Telegram reminder via{" "}
-                <span className="mono">@LastShiftAuthBot</span>. Add a Telegram handle
-                so we can reach you.
+                <strong>Free forever:</strong> the first 5,000 operators keep
+                premium access at no cost — no 30-day window, no auto-conversion,
+                no expiry. Only the 5,000 cap is the gate.
               </div>
               <p>
-                <strong>Leave:</strong> don&apos;t pay by 2026-06-07 → drops to FREE.
-                URL, handle, bio stay. Proofs + tier + DEV badge + Grid visibility go
-                dark until you reactivate.
+                <strong>Leave:</strong> only if you choose to. Your spot persists
+                as long as the profile stays in good standing (no abuse / no 90+
+                days fully inactive on a defunct path). URL, handle, bio, proofs,
+                tier, DEV badge stay intact.
               </p>
             </div>
           </div>
@@ -2073,14 +2041,14 @@ export default function HelpPage() {
                     │
                     ▼
               ┌─────────────┐
-              │    FREE     │ ◄──── EA 30-day timer expires
-              └─────────────┘       subscription lapses
+              │    FREE     │ ◄──── subscription lapses (paid only)
+              └─────────────┘
                     │  ▲
         UPGRADE     │  │   stop paying / 90d no login
                     ▼  │
               ┌─────────────┐       ┌──────────────┐
-              │ ACTIVE PAID │ ◄────►│ FIRST 5,000  │ ──── pay by 2026-06-07 ──► ACTIVE PAID
-              └─────────────┘       │    (EA)      │ ──── don't pay ────────► FREE
+              │ ACTIVE PAID │       │ FIRST 5,000  │   free forever — no
+              └─────────────┘       │    (EA)      │   auto-conversion
                     │               └──────────────┘
          90+ days no login + no pay
                     │
@@ -2115,7 +2083,7 @@ export default function HelpPage() {
               </tr>
               <tr>
                 <td>FIRST 5,000</td>
-                <td>$0 until 2026-06-07, then $10/mo</td>
+                <td>$0 forever (first 5,000 only)</td>
                 <td>$100 or $60 $LASTSHFT</td>
                 <td>$1</td>
                 <td>$5</td>

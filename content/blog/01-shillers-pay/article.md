@@ -83,7 +83,7 @@ three things separate a $500 shiller from a $5,000 shiller at similar follower c
 
 ## what to do if you're reading this and you already shill
 
-claim a handle at lastproof.app/manage (free for the first 5,000 operators until 30 days after The Grid launches in may 2026; $10/month after). add every project you've worked on to your Proof of Work. ping your past collaborators and ask them to drop $1 standard proofs on your profile. ask the project devs you've worked with to drop a $5 DEV proof — every proof is a paid solana transaction, so it's click-through verifiable. all payments on the platform run in SOL, USDT, or $LASTSHFT, with 40% off subscriptions and proofs when paying in $LASTSHFT. when the next project dms you, send them your lastproof.app/@handle instead of a screenshot. better: get into The Grid and let shiftbot surface you directly.
+claim a handle at lastproof.app/manage (free forever for the first 5,000 operators; $10/month after that). add every project you've worked on to your Proof of Work. ping your past collaborators and ask them to drop $1 standard proofs on your profile. ask the project devs you've worked with to drop a $5 DEV proof — every proof is a paid solana transaction, so it's click-through verifiable. all payments on the platform run in SOL, USDT, or $LASTSHFT, with 40% off subscriptions and proofs when paying in $LASTSHFT. when the next project dms you, send them your lastproof.app/@handle instead of a screenshot. better: get into The Grid and let shiftbot surface you directly.
 
 the gap between a $500 nano shill and a $5,000 mid-tier shill isn't follower count. it's whether the next project can verify you. memecoins die. your reputation shouldn't.
 

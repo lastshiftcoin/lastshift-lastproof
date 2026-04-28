@@ -92,7 +92,7 @@ three moves raise a cm's rate.
 
 claim a handle at lastproof.app/manage. add every memecoin cm gig to your Proof of Work. message three past collaborators and ask them to drop $1 standard proofs on your profile. if you worked with the project dev directly, ask for a $5 DEV proof — the strongest signal on the platform because it's posted from the wallet tied to the token's mint authority or first-5 holder list and can't be faked.
 
-the first 5,000 operators get the profile free until 30 days after The Grid launches in may 2026. after that, it's $10/month, and standard/DEV proofs are $1/$5 each — all paid in SOL, USDT, or $LASTSHFT, with 40% off everything when paying in $LASTSHFT. the slot is free right now. the negotiating leverage it gives you when you walk into the next dm with a public handle instead of a screenshot is not.
+the first 5,000 operators get the profile free forever. after that, it's $10/month, and standard/DEV proofs are $1/$5 each — all paid in SOL, USDT, or $LASTSHFT, with 40% off everything when paying in $LASTSHFT. the slot is free right now. the negotiating leverage it gives you when you walk into the next dm with a public handle instead of a screenshot is not.
 
 ## FAQ
 

@@ -60,7 +60,7 @@ how it works: click `+ ADD CHAD` on someone's profile to send them an ask. the a
 
 every newly-published operator profile starts with one default chad: @lastshiftfounder. tom-from-myspace pattern. the chad management card on your dashboard is populated from day one, the feature reads as self-explanatory the moment you see it, and you can remove the default any time. if you re-add later, it goes through the normal ask flow.
 
-free profiles don't participate. they can't send asks, can't receive asks, don't appear in any army. asks targeting a free profile silently fail and the modal nudges the asker to upgrade. the chad loop is a paid feature — included in the $10/month profile (free for the first 5,000 operators until 30 days after The Grid launches in may 2026), discounted 40% if you pay in $LASTSHFT.
+free profiles don't participate. they can't send asks, can't receive asks, don't appear in any army. asks targeting a free profile silently fail and the modal nudges the asker to upgrade. the chad loop is a paid feature — included in the $10/month profile (free forever for the first 5,000 operators), discounted 40% if you pay in $LASTSHFT.
 
 if a chad lapses to free, they hide from your army automatically until they reactivate. the row stays in the database, just stays invisible. deny hard-deletes the relationship, so re-asks are possible later — there's no permanent block, just a one-strike-per-attempt design.
 
@@ -112,7 +112,7 @@ builders looking at chad armies should weight tier, not count.
 
 four things, in order.
 
-first, claim your handle on lastproof. if you're in the first 5,000, your profile is free until 30 days after The Grid launches in may 2026. claiming is a one-time wallet sign — no email, no kyc, your handle becomes `lastproof.app/@yourhandle` and it routes everywhere.
+first, claim your handle on lastproof. if you're in the first 5,000, your profile is free forever. claiming is a one-time wallet sign — no email, no kyc, your handle becomes `lastproof.app/@yourhandle` and it routes everywhere.
 
 second, post your first DEV proof. ask one project dev you've worked with to post a $5 DEV proof from the wallet tied to that project's mint authority. this is the strongest single signal you can carry. it's the difference between a NEW profile and a structurally-backed one.
 
@@ -141,7 +141,7 @@ you're one bad hire away from rugged work. the chad army is the cheapest way to 
 ## FAQ
 
 **is the chad loop free?**
-no. the chad loop is a premium-profile feature. free profiles can't send asks, can't receive asks, and don't appear in any army. profiles are free for the first 5,000 operators until 30 days after The Grid launches in may 2026, then $10/month — 40% off if you pay in $LASTSHFT.
+no. the chad loop is a premium-profile feature. free profiles can't send asks, can't receive asks, and don't appear in any army. profiles are free forever for the first 5,000 operators, then $10/month — 40% off if you pay in $LASTSHFT.
 
 **why does my new profile already have one chad?**
 @lastshiftfounder is the default first chad on every newly-published profile (tom-from-myspace pattern). it makes the chad management card on your dashboard read as a populated surface from day one so the feature is self-explanatory. you can remove it any time.
@@ -226,7 +226,7 @@ scan grid. get found. screenshots lie. every anon sounds the same.
 - All lowercase except product names (LASTPROOF, $LASTSHFT, The Grid, SHIFTBOT, NEW/VERIFIED/EXPERIENCED/LEGEND, Proof of Work, Red Flags, GET FOUND, SCAN GRID)
 - "DEV proof" used (not "dev verification")
 - Brand quotables included: "screenshots lie. every anon sounds the same.", "memecoins die. your reputation shouldn't.", "you're one bad hire away from rugged work.", "same marketer. different proof.", "scan grid. get found."
-- Pricing consistent: $10/month, free for first 5,000 until 30 days after The Grid launches may 2026, 40% off in $LASTSHFT
+- Pricing consistent: $10/month, free forever for first 5,000, 40% off in $LASTSHFT
 - Solana proof language: "every proof is a paid solana transaction, click-through verifiable on solscan"
 - DEV proof source: "wallet tied to the token's mint authority or first-five holder list"
 

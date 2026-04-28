@@ -118,7 +118,7 @@ this is also why the "take every gig" trap hurts you. a high-volume generalist w
 
 ## what to do this week
 
-pick a niche. post in it every day for 30 days. find five small projects in the niche. pitch them $100 posts with a $5 DEV proof on completion. claim a lastproof handle at /manage — free for the first 5,000 operators until 30 days after The Grid launches in may 2026; $10/month after, with 40% off (including proofs) when paying in $LASTSHFT, or pay in SOL or USDT at full price. add every gig as you complete it. ask for the DEV proof every time. at 90 days you'll have 15 gigs on your profile, tier 2 VERIFIED, a niche audience, and the leverage to raise rates. same marketer. different proof.
+pick a niche. post in it every day for 30 days. find five small projects in the niche. pitch them $100 posts with a $5 DEV proof on completion. claim a lastproof handle at /manage — free forever for the first 5,000 operators; $10/month after that, with 40% off (including proofs) when paying in $LASTSHFT, or pay in SOL or USDT at full price. add every gig as you complete it. ask for the DEV proof every time. at 90 days you'll have 15 gigs on your profile, tier 2 VERIFIED, a niche audience, and the leverage to raise rates. same marketer. different proof.
 
 ## FAQ
 

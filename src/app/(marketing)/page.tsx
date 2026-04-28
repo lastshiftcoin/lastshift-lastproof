@@ -155,8 +155,8 @@ export default async function HomePage() {
           <span className="orange">Start trusting proof.</span>
         </h2>
         <p>
-          EARLY ACCESS&nbsp;&nbsp;//&nbsp;&nbsp;FIRST 5,000 OPERATORS FREE UNTIL 30
-          DAYS AFTER GRID LAUNCH
+          EARLY ACCESS&nbsp;&nbsp;//&nbsp;&nbsp;FIRST 5,000 OPERATORS FREE
+          FOREVER&nbsp;&nbsp;//&nbsp;&nbsp;THEN $10/MO
         </p>
         <div className="hero-ctas">
           <Link className="btn btn-primary" href="/grid">

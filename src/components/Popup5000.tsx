@@ -116,7 +116,7 @@ export default function Popup5000() {
                 <div className="price">
                   <span className="now">$0</span>
                   <span className="was-note">
-                    until 30 days after Grid launch · then $10/mo
+                    forever — first 5,000 only · then $10/mo
                   </span>
                 </div>
                 <p className="loss">

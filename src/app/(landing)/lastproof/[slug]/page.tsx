@@ -50,7 +50,7 @@ export default async function AmbassadorLandingPage({ params }: PageProps) {
             Get verified<br />
             <span className="accent">before everyone else.</span>
           </h1>
-          <p className="af-hero-sub">Free for the first 5,000 operators.</p>
+          <p className="af-hero-sub">Free forever for the first 5,000 operators.</p>
           <a href={terminalUrl} className="af-cta-primary">
             BUILD YOUR PROFILE <span className="af-cta-arrow">&rarr;</span>
           </a>
@@ -62,7 +62,7 @@ export default async function AmbassadorLandingPage({ params }: PageProps) {
         {/* ═══ FREE PRICING STRIP ═══ */}
         <div className="af-pricing-strip">
           <div className="af-pricing-amount">$0</div>
-          <div className="af-pricing-sub">until 30 days after Grid launch — then $10/mo</div>
+          <div className="af-pricing-sub">forever — first 5,000 only · then $10/mo</div>
           <div className="af-pricing-note">No credit card. No email. Just your Solana wallet.</div>
         </div>
 
@@ -294,7 +294,7 @@ export default async function AmbassadorLandingPage({ params }: PageProps) {
           <div className="af-offer-card">
             <div className="af-offer-header">
               <span className="af-offer-title">The Early Access Deal</span>
-              <span className="af-offer-tag">FREE UNTIL GRID LAUNCH + 30 DAYS</span>
+              <span className="af-offer-tag">FREE FOREVER · FIRST 5,000 ONLY</span>
             </div>
             <div className="af-offer-body">
               <div className="af-offer-item"><span className="af-offer-check">+</span> Your profile goes live immediately — share it in DMs, bios, applications today</div>
@@ -306,7 +306,7 @@ export default async function AmbassadorLandingPage({ params }: PageProps) {
               <div className="af-offer-item"><span className="af-offer-check">+</span> Auto-listed on the Grid at launch — ranked by proofs already stacked</div>
             </div>
             <div className="af-offer-price">
-              <span className="af-offer-free">$0</span> until 30 days after Grid launch — then <span className="af-offer-paid">$10/mo</span>
+              <span className="af-offer-free">$0</span> forever for the first 5,000 — then <span className="af-offer-paid">$10/mo</span>
             </div>
           </div>
         </section>

@@ -125,7 +125,7 @@ everyone starts here. the way out is fast.
 
 **specialize.** the fastest track record is a niche one. "i run memecoin telegrams" is harder to rank up in than "i run solana ai agent token telegrams." the specialist track record is shorter to build because the pool of competitors is smaller.
 
-**claim early.** lastproof is giving the first 5,000 operators a free profile until 30 days after The Grid launches in may 2026. after that, it's $10/month for the profile, $1 per standard proof, $5 per DEV proof — all paid in SOL, USDT, or $LASTSHFT, with 40% off everything when paying in $LASTSHFT. hit GET FOUND on the lastproof homepage to claim your handle. the slot is free right now. the leverage it creates compounds every time a founder queries shiftbot for someone in your niche and your profile is one of the ones that surfaces. same marketer. different proof.
+**claim early.** lastproof is giving the first 5,000 operators a free profile forever. after that, it's $10/month for the profile, $1 per standard proof, $5 per DEV proof — all paid in SOL, USDT, or $LASTSHFT, with 40% off everything when paying in $LASTSHFT. hit GET FOUND on the lastproof homepage to claim your handle. the slot is free right now. the leverage it creates compounds every time a founder queries shiftbot for someone in your niche and your profile is one of the ones that surfaces. same marketer. different proof.
 
 ## FAQ
 
