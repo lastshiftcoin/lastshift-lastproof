@@ -12,7 +12,11 @@ export function CtaStrip({ variant = "default", campaignSlug }: CtaStripProps = 
 
   return (
     <section className={`pp-cta-strip${variant === "free" ? " pp-cta-strip-free" : ""}`}>
-      <div className="pp-cta-eyebrow">LASTPROOF · THE OPERATOR GRID</div>
+      <div className="pp-cta-eyebrow">
+        {variant === "free"
+          ? "FREE FOREVER · FIRST 5,000 OPERATORS · THEN $10/MO"
+          : "LASTPROOF · THE OPERATOR GRID"}
+      </div>
       <h2 className="pp-cta-headline">
         Hire <span className="pp-accent">proven operators.</span> Or become one.
       </h2>
