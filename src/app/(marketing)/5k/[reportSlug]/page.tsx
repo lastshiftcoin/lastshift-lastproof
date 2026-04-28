@@ -22,6 +22,13 @@ import "./report.css";
  *   - "Amount Owed" = unpaid count × $0.50
  */
 
+// Always read fresh from Supabase. Without this, ambassador report
+// counts can lag after a payout — the dynamic route helps but isn't
+// guaranteed to bypass all caching layers. force-dynamic kills the
+// ambiguity.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface PageProps {
   params: Promise<{ reportSlug: string }>;
 }
