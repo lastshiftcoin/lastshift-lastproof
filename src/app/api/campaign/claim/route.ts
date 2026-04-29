@@ -12,24 +12,17 @@
  *   - At grid launch: 30-day countdown begins for all free-claimed profiles
  *   - Idempotent: re-claiming when already claimed is a no-op success
  *
- * Referral attribution (server-side primary + legacy fallbacks):
- *   Primary: reads `operators.referred_by` stamped at wallet-gate/register-tid
- *            time, when the URL was still /manage?ref=<slug>. This is the
- *            reliable path — immune to client-side URL drops.
- *   Fallback A: reads `ref` from POST body (URL param still in client URL)
- *   Fallback B: reads `lp_ref` cookie (broken under Next 16 Server Component
- *               set() but kept as a harmless read for any legacy cookie)
- *   Any source → validates against ambassadors table → writes profiles.referred_by
- *   First-touch wins: never overwrites an existing non-null referred_by.
+ * Attribution note (2026-04-28): no longer touches referred_by. The
+ * onboarding modal now captures it explicitly via the "Referred by" field
+ * and writes it directly to profiles.referred_by at onboarding time —
+ * before the user ever reaches this endpoint.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { readSession } from "@/lib/session";
 import { supabaseService } from "@/lib/db/client";
 import { GRID_LAUNCH_DATE, EA_FREE_WINDOW_DAYS } from "@/lib/constants";
-import { cookies } from "next/headers";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
-import { logReferralEvent } from "@/lib/referral-events";
 
 const claimLimiter = createRateLimiter({ window: 60_000, max: 3 });
 
@@ -52,7 +45,7 @@ export async function POST(req: NextRequest) {
   // Look up operator by wallet, then profile by operator ID
   const { data: operator } = await sb
     .from("operators")
-    .select("id, referred_by")
+    .select("id")
     .eq("terminal_wallet", session.walletAddress)
     .maybeSingle();
 
@@ -99,49 +92,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, reason: "sold_out" });
   }
 
-  // ─── Referral attribution ──────────────────────────────────────────
-  // Primary: operators.referred_by, stamped server-side at wallet-gate /
-  // register-tid time. This is the canonical source.
-  let validatedSlug: string | null = operator.referred_by ?? null;
-  let attributionSource: "operator" | "body" | "cookie" | null =
-    validatedSlug ? "operator" : null;
-
-  // Fallback: if operator wasn't stamped (e.g. pre-fix account), try the
-  // legacy URL/cookie paths one last time. Validate against ambassadors.
-  if (!validatedSlug) {
-    const body = await req.json().catch(() => ({}));
-    const bodyRef = (body as { ref?: string }).ref ?? null;
-
-    const cookieStore = await cookies();
-    const cookieRef = cookieStore.get("lp_ref")?.value ?? null;
-
-    const rawSlug = bodyRef || cookieRef;
-
-    if (rawSlug) {
-      const { data: ambassador } = await sb
-        .from("ambassadors")
-        .select("campaign_slug")
-        .eq("campaign_slug", rawSlug)
-        .eq("is_active", true)
-        .maybeSingle();
-
-      if (ambassador) {
-        validatedSlug = ambassador.campaign_slug;
-        attributionSource = bodyRef ? "body" : "cookie";
-
-        // Backfill operator row so subsequent calls stay consistent.
-        await sb
-          .from("operators")
-          .update({ referred_by: validatedSlug })
-          .eq("id", operator.id)
-          .is("referred_by", null);
-      }
-
-      // Consume the cookie regardless (one-time capture)
-      cookieStore.delete("lp_ref");
-    }
-  }
-
   // Compute subscription expiry
   const now = new Date();
   let subscriptionExpiresAt: string | null = null;
@@ -164,7 +114,6 @@ export async function POST(req: NextRequest) {
       is_early_adopter: true,
       tier: 1,
       published_at: now.toISOString(),
-      ...(validatedSlug ? { referred_by: validatedSlug } : {}),
     })
     .eq("id", profile.id);
 
@@ -181,26 +130,6 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
-
-  if (validatedSlug) {
-    console.log(`[campaign/claim] referral attributed — profile=${profile.id} slug=${validatedSlug} source=${attributionSource}`);
-  }
-
-  logReferralEvent({
-    type: "campaign_claim",
-    walletAddress: session.walletAddress,
-    operatorId: operator.id,
-    campaignSlug: validatedSlug,
-    source: attributionSource ?? "none",
-    outcome: validatedSlug ? "stamped" : "no_ref",
-    metadata: {
-      profileId: profile.id,
-      eaNumber,
-      // Tracks whether the fallback paths ever fire in prod. If these
-      // stay at 0 long-term, we can rip out the legacy cookie read.
-      fallbackUsed: attributionSource === "body" || attributionSource === "cookie",
-    },
-  });
 
   return NextResponse.json({
     ok: true,

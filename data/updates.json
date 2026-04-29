@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.13.4",
+  "latest_version": "0.13.5",
   "entries": [
+    {
+      "version": "0.13.5",
+      "date": "2026-04-28",
+      "category": "improved",
+      "headline": "Referral attribution now happens at onboarding — just paste your operator's profile link",
+      "copy": "Cookie-based attribution had too many sharp edges (different browsers, mobile wallet redirects, ad blockers, private mode), so we replaced the whole chain with a single field on the onboarding modal: \"Referred by an operator? @handle or lastproof.app/@handle.\" Paste a link or a handle and it confirms in real time — green check if the operator exists, extra confirmation when they're an ambassador. Optional, always visible. Street-team operators are responsible for walking new users through it during onboarding.",
+      "source_commits": []
+    },
     {
       "version": "0.13.4",
       "date": "2026-04-28",

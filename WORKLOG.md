@@ -20,6 +20,71 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-28 — v0.13.5 — Replaced cookie/?ref= attribution with onboarding-modal field
+
+**Device:** Kellen's Mac mini
+**Platform:** Claude Code
+**Role:** fullstack builder
+**Commits:** this commit
+**Migrations run in prod Supabase:** none (no schema changes)
+**Impacts:** none
+**Status:** ✅ shipped
+
+### Did
+
+- **Architectural shift (Path B + Option C atomic ship)**: deleted the
+  entire cookie + `?ref=` URL chain in favor of a single explicit field
+  on the onboarding modal. Street-team operators walk new users
+  through entering their referrer's profile link.
+- **Backend deletes:**
+  - `src/proxy.ts` — removed entirely
+  - `wallet-gate/route.ts` — removed `body.ref`, cookie reads, attribution
+    branch, cookie deletion
+  - `register-tid/route.ts` — same surgery; operators row no longer
+    stamped with `referred_by`
+  - `campaign/claim/route.ts` — removed cookie + body.ref fallback chain;
+    no longer touches `referred_by` (already stamped at onboarding time)
+  - `manage/page.tsx` — no more lp_ref cookie write
+- **Frontend deletes:**
+  - `ManageTerminal.tsx` — dropped `ref_slug` prop, localStorage stash,
+    `?ref=` forwarding to wallet-gate / register-tid
+  - `(landing)/lastproof/[slug]/page.tsx` — `/manage?ref=...` → `/manage`
+  - `(landing)/[campaignSlug]/page.tsx` — same
+- **New:**
+  - `src/lib/referral-lookup.ts` — `parseReferralHandle()` (handles bare,
+    @-prefixed, and full lastproof.app URLs) + `AMBASSADOR_PROFILE_HANDLES`
+    map (moved from proxy.ts)
+  - `src/app/api/onboarding/lookup-handle/route.ts` — debounced live
+    lookup endpoint returning `{ kind: "ambassador" | "operator" |
+    "not_found" | "invalid" | "empty", … }`
+  - `OnboardingModal.tsx` — new "Referred by an operator?" field on
+    Step 1 with debounced (400ms) live feedback
+  - `onboarding/route.ts` — accepts `referredByHandle`, parses, looks
+    up against ambassadors (via slug map) and profiles, stamps
+    `profiles.referred_by` (campaign_slug for ambassadors, bare handle
+    for ordinary operators), logs `onboarding_submit` event
+- **Observability:** added `onboarding_submit` event type to
+  `referral-events.ts`; legacy types kept and tagged `[LEGACY]`.
+
+### Did NOT do
+
+- No data migration. Existing `profiles.referred_by` rows untouched.
+- No `npm run lint` (pre-existing breakage in repo's lint script).
+  `npx tsc --noEmit` passes.
+
+### Why this approach
+
+- Cookie-based attribution had cross-browser / mobile-wallet-redirect /
+  ad-blocker / private-mode failure modes Kellen kept hitting.
+- Trade: lost attribution if street team forgets to ask. User accepts —
+  that's the team's job. Reduces complexity ~250 LOC.
+- Ambassador report queries still work unchanged: they join on
+  `profiles.referred_by = ambassadors.campaign_slug`. Non-ambassador
+  referrals stamp the bare handle, which won't match any payout slug
+  but is queryable for cohort analytics.
+
+---
+
 ## 2026-04-28 00:59 MST — Dev-check unblocked for non-LASTSHFT tokens (CA paste flow)
 
 **Device:** Kellen's Mac mini (`Kellens-Mac-mini.local`, macOS 15.3.1)

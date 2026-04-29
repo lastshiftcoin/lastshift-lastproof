@@ -354,6 +354,23 @@ textarea.ob-field-input {
   box-shadow: 0 0 6px var(--red, #ff5470);
 }
 
+/* ─── Referral status (Step 1, below "Referred by an operator?" input) ── */
+.ob-ref-status {
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  color: var(--text-dim, #5a5e73);
+}
+.ob-ref-status.ok {
+  color: var(--green, #00e676);
+  text-shadow: 0 0 6px rgba(0, 230, 118, 0.35);
+}
+.ob-ref-status.taken {
+  color: var(--red, #ff5470);
+}
+
 /* ─── Fee callout ──────────────────────────────────────────────────────── */
 .ob-fee-callout {
   display: flex;

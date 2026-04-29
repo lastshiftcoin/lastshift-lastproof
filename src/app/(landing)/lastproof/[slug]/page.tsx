@@ -13,8 +13,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function AmbassadorLandingPage({ params }: PageProps) {
-  const { slug } = await params;
-  const terminalUrl = `/manage?ref=${slug}`;
+  await params; // slug still used for routing; attribution captured at onboarding
+  // Attribution moved to the onboarding modal on 2026-04-28 — landing
+  // pages no longer carry a ?ref= query param into /manage.
+  const terminalUrl = "/manage";
 
   return (
     <div className="af-page">

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { validateTerminalId } from "@/lib/terminal-client";
 import { writeSession, readSession } from "@/lib/session";
-import { logReferralEvent } from "@/lib/referral-events";
 
 /**
  * POST /api/auth/wallet-gate
@@ -21,7 +19,7 @@ import { logReferralEvent } from "@/lib/referral-events";
  *   { ok: false, reason: "...", message: "..." } — other failure
  */
 export async function POST(req: NextRequest) {
-  let body: { walletAddress?: string; ref?: string };
+  let body: { walletAddress?: string };
   try {
     body = await req.json();
   } catch {
@@ -29,19 +27,6 @@ export async function POST(req: NextRequest) {
   }
 
   const walletAddress = (body.walletAddress || "").trim();
-
-  // Attribution source priority (first-non-null wins):
-  //   1. body.ref         — URL ?ref= relayed by the client
-  //   2. lp_ref cookie    — set by src/proxy.ts on ambassador landing visits
-  // See register-tid/route.ts for the companion logic + rationale.
-  const cookieStore = await cookies();
-  const cookieRef = cookieStore.get("lp_ref")?.value ?? null;
-  const rawRef = ((body.ref || "").trim() || null) ?? cookieRef;
-  const refSource: "body" | "cookie" | "none" = body.ref
-    ? "body"
-    : cookieRef
-      ? "cookie"
-      : "none";
 
   if (!walletAddress) {
     return NextResponse.json({ error: "wallet_required" }, { status: 400 });
@@ -71,105 +56,17 @@ export async function POST(req: NextRequest) {
   }
 
   if (!operator || !operator.terminal_id) {
-    // Log new-wallet attempts so we still see the funnel entry even when no
-    // operators row exists yet. Without this, unknown wallets would arrive
-    // silently and we'd only see them later at register_tid. Outcome=no_ref
-    // is informational here — attribution (if any) happens at register_tid.
-    logReferralEvent({
-      type: "wallet_gate",
-      walletAddress,
-      campaignSlug: rawRef,
-      source: refSource,
-      outcome: "no_ref",
-      metadata: { newWallet: true, hasIncomingRef: !!rawRef, refSource },
-    });
     return NextResponse.json(
       { ok: false, reason: "no_terminal", message: "No terminal ID bound to this wallet" },
       { status: 404 },
     );
   }
 
-  // First-touch attribution: if operator has no referred_by yet and the
-  // visitor arrived via a valid ambassador URL, stamp it now. Wallet-gate
-  // is called on every wallet connect, so this catches returning users who
-  // first authenticated before this fix shipped.
-  if (!rawRef) {
-    // Returning user (or direct /manage visit) with no ref in the URL.
-    // Not an error — just means no attribution signal to capture here.
-    logReferralEvent({
-      type: "wallet_gate",
-      walletAddress,
-      operatorId: operator.id,
-      campaignSlug: operator.referred_by ?? null,
-      source: operator.referred_by ? "operator" : "none",
-      outcome: operator.referred_by ? "already_stamped" : "no_ref",
-    });
-  } else if (operator.referred_by) {
-    // Ref present but operator already attributed — first-touch wins.
-    logReferralEvent({
-      type: "wallet_gate",
-      walletAddress,
-      operatorId: operator.id,
-      campaignSlug: operator.referred_by,
-      source: "operator",
-      outcome: "already_stamped",
-      metadata: { incomingRef: rawRef },
-    });
-  } else {
-    const { data: amb } = await sb
-      .from("ambassadors")
-      .select("campaign_slug")
-      .eq("campaign_slug", rawRef)
-      .eq("is_active", true)
-      .maybeSingle();
-    if (!amb) {
-      logReferralEvent({
-        type: "wallet_gate",
-        walletAddress,
-        operatorId: operator.id,
-        campaignSlug: rawRef,
-        source: refSource,
-        outcome: "invalid_slug",
-      });
-    } else {
-      const { error: stampErr } = await sb
-        .from("operators")
-        .update({ referred_by: amb.campaign_slug })
-        .eq("id", operator.id)
-        .is("referred_by", null); // double-guard against races
-      if (stampErr) {
-        console.error("[wallet-gate] referral stamp failed:", stampErr.message);
-        logReferralEvent({
-          type: "wallet_gate",
-          walletAddress,
-          operatorId: operator.id,
-          campaignSlug: amb.campaign_slug,
-          source: refSource,
-          outcome: "error",
-          metadata: { error: stampErr.message },
-        });
-      } else {
-        console.log(`[wallet-gate] referral attributed — operator=${operator.id} slug=${amb.campaign_slug}`);
-        logReferralEvent({
-          type: "wallet_gate",
-          walletAddress,
-          operatorId: operator.id,
-          campaignSlug: amb.campaign_slug,
-          source: refSource,
-          outcome: "stamped",
-        });
-      }
-    }
-  }
-
-  // Consume the lp_ref cookie once attribution has been evaluated — whether
-  // or not we stamped (first-touch may already be set, or no operator row
-  // yet). Subsequent wallet-gate calls shouldn't re-trigger the branch.
-  // If no operator row exists yet (the early return above), the cookie is
-  // intentionally preserved so register-tid can read it on the next step.
-  if (refSource === "cookie") {
-    cookieStore.delete("lp_ref");
-  }
+  // Attribution is no longer captured here. As of 2026-04-28, the
+  // ambassador-attribution mechanism moved entirely to the onboarding
+  // modal — user states their referrer explicitly. wallet-gate just
+  // resolves wallet → operator → session and returns; it does not
+  // touch operators.referred_by.
 
   // 3. Validate via Terminal
   const result = await validateTerminalId(walletAddress, operator.terminal_id, {
