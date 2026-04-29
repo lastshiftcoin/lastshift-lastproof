@@ -36,8 +36,6 @@ type Phase =
 
 interface ManageTerminalProps {
   initialSession: Session | null;
-  /** Ambassador campaign slug from ?ref= URL param. Carried through onboarding. */
-  ref_slug?: string | null;
 }
 
 // ─── Boot lines ───────────────────────────────────────────────────────────────
@@ -56,7 +54,7 @@ const CONNECT_DELAY = 4400;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function ManageTerminal({ initialSession, ref_slug }: ManageTerminalProps) {
+export default function ManageTerminal({ initialSession }: ManageTerminalProps) {
   const { select, wallets, publicKey, connected, connecting, disconnect } = useWallet();
 
   const [phase, setPhase] = useState<Phase>(initialSession ? "granted" : "boot");
@@ -70,23 +68,6 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
   const [tidInput, setTidInput] = useState("");
   const [tidError, setTidError] = useState("");
   const [walletAddr, setWalletAddr] = useState("");
-
-  // Stash the ref slug in localStorage on every fresh URL visit so it
-  // survives the mobile-wallet-return roundtrip. Phantom/Solflare opening
-  // the wallet app and returning to the dapp often strips the query string
-  // on return — that's how @coreops lost attribution on 2026-04-18.
-  //
-  // localStorage is NOT a cookie: never auto-sent to the server, client
-  // controlled, origin-scoped. Acts only as a memory cell across the
-  // wallet deep-link hop. Read back inline before each auth POST.
-  useEffect(() => {
-    if (!ref_slug) return;
-    try {
-      window.localStorage.setItem("lp_ref_slug", ref_slug);
-    } catch {
-      // Private mode / storage disabled — degrade silently.
-    }
-  }, [ref_slug]);
 
   const validatingRef = useRef(false);
 
@@ -201,22 +182,12 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
       // The wallet-gate endpoint queries Supabase for the operator's TID,
       // then validates it via the Terminal API in one round-trip.
       //
-      // Attribution: forward ref_slug so first-touch ambassador referral
-      // gets stamped on the operators row here, not later at claim time
-      // where ?ref= may have been lost. URL is still /manage?ref=<slug>
-      // at this exact moment — no navigation has happened.
-      // Pull freshest effective ref: prefer the prop, fall back to localStorage.
-      // Read directly here (not via closure) so the mobile-wallet-return case
-      // where the page re-rendered with ref_slug=null still captures the
-      // localStorage-stashed value.
-      let refForPost: string | null = ref_slug ?? null;
-      if (!refForPost) {
-        try { refForPost = window.localStorage.getItem("lp_ref_slug"); } catch { /* noop */ }
-      }
+      // (Ambassador attribution moved to the onboarding modal on
+      // 2026-04-28; no `ref` is forwarded here anymore.)
       const lookupRes = await fetch("/api/auth/wallet-gate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress, ref: refForPost ?? undefined }),
+        body: JSON.stringify({ walletAddress }),
       });
 
       const body = await lookupRes.json();
@@ -300,16 +271,12 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
     addLine("Authenticating terminal ID...", "accent");
 
     try {
-      // Pull freshest effective ref: prop → localStorage fallback (see validateTerminal)
-      let refForPost: string | null = ref_slug ?? null;
-      if (!refForPost) {
-        try { refForPost = window.localStorage.getItem("lp_ref_slug"); } catch { /* noop */ }
-      }
+      // (Ambassador attribution moved to the onboarding modal on
+      // 2026-04-28; no `ref` is forwarded here anymore.)
       const res = await fetch("/api/auth/register-tid", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // Forward ref for first-touch ambassador attribution on operator insert.
-        body: JSON.stringify({ walletAddress: walletAddr, terminalId: tid, ref: refForPost ?? undefined }),
+        body: JSON.stringify({ walletAddress: walletAddr, terminalId: tid }),
       });
       const body = await res.json();
 
@@ -499,7 +466,7 @@ export default function ManageTerminal({ initialSession, ref_slug }: ManageTermi
                 <div className="mg-reveal-text">
                   ACCESS GRANTED // <span className="accent">LASTPROOF</span>
                 </div>
-                <Link href={ref_slug ? `/manage/profile?ref=${ref_slug}` : "/manage/profile"} className="mg-cta-btn">
+                <Link href="/manage/profile" className="mg-cta-btn">
                   MANAGE PROFILE
                 </Link>
                 {session && (

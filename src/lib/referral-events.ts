@@ -14,11 +14,12 @@
 import { supabaseService } from "@/lib/db/client";
 
 export type ReferralEventType =
-  | "landing_visit"    // campaign-slug page (e.g. /free-before-grid) rendered a Server Component
-  | "proxy_touch"      // proxy.ts saw a request on ANY ambassador surface (campaign OR profile); earliest observable signal
-  | "wallet_gate"
-  | "register_tid"
+  | "landing_visit"      // campaign-slug page (e.g. /free-before-grid) rendered a Server Component
+  | "proxy_touch"        // [LEGACY pre-2026-04-28] proxy.ts cookie stamp
+  | "wallet_gate"        // [LEGACY pre-2026-04-28] cookie/?ref= chain
+  | "register_tid"       // [LEGACY pre-2026-04-28] cookie/?ref= chain
   | "campaign_claim"
+  | "onboarding_submit"  // explicit "Referred by" field on onboarding modal (2026-04-28+)
   | "attribution_drop";
 
 export type ReferralEventSource =

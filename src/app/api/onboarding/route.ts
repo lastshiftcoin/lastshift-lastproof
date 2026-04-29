@@ -8,6 +8,8 @@ import {
   HANDLE_REJECTION_MESSAGE,
   DISPLAY_NAME_REJECTION_MESSAGE,
 } from "@/lib/handle-validation";
+import { parseReferralHandle, ambassadorSlugForHandle } from "@/lib/referral-lookup";
+import { logReferralEvent } from "@/lib/referral-events";
 
 /**
  * POST /api/onboarding
@@ -37,6 +39,7 @@ export async function POST(request: Request) {
     timezone: string;
     language: string;
     oneLiner: string | null;
+    referredByHandle?: string | null;
   };
 
   try {
@@ -45,7 +48,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  const { operatorId, handle, displayName, category, timezone, language, oneLiner } = body;
+  const { operatorId, handle, displayName, category, timezone, language, oneLiner, referredByHandle } = body;
 
   // Basic validation
   if (!operatorId || !handle || !displayName) {
@@ -109,6 +112,53 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "handle_taken" }, { status: 409 });
   }
 
+  // ─── Referral attribution ──────────────────────────────────────────
+  // 2026-04-28: explicit field on the modal replaced cookie/?ref= chain.
+  // Ambassador lookup uses AMBASSADOR_PROFILE_HANDLES → campaign_slug;
+  // for non-ambassador operators we still record the handle so the
+  // referrer is visible in the data, but no payout fires.
+  let resolvedReferredBy: string | null = null;
+  let referralKind: "ambassador" | "operator" | "not_found" | "invalid" | "none" = "none";
+  let referredHandleParsed: string | null = null;
+
+  if (referredByHandle && referredByHandle.trim()) {
+    referredHandleParsed = parseReferralHandle(referredByHandle);
+    if (!referredHandleParsed) {
+      referralKind = "invalid";
+    } else {
+      const ambSlug = ambassadorSlugForHandle(referredHandleParsed);
+      if (ambSlug) {
+        // Verify the ambassador row is active before stamping
+        const { data: amb } = await sb
+          .from("ambassadors")
+          .select("campaign_slug")
+          .eq("campaign_slug", ambSlug)
+          .eq("is_active", true)
+          .maybeSingle();
+        if (amb) {
+          resolvedReferredBy = amb.campaign_slug;
+          referralKind = "ambassador";
+        } else {
+          referralKind = "not_found";
+        }
+      } else {
+        // Non-ambassador — confirm a profile exists with this handle,
+        // then stamp the bare handle (won't match any campaign payout).
+        const { data: refProfile } = await sb
+          .from("profiles")
+          .select("handle")
+          .ilike("handle", referredHandleParsed)
+          .maybeSingle();
+        if (refProfile) {
+          resolvedReferredBy = refProfile.handle;
+          referralKind = "operator";
+        } else {
+          referralKind = "not_found";
+        }
+      }
+    }
+  }
+
   try {
     // 1. Create profile
     const profile: ProfileRow = await upsertProfileByOperator({
@@ -125,6 +175,40 @@ export async function POST(request: Request) {
       timezone: timezone || null,
       language: language || null,
       bioStatement: oneLiner || null,
+    });
+
+    // 2b. Stamp referred_by on the new profile (first-touch — only if
+    // not already set by some other path; defensive guard).
+    if (resolvedReferredBy) {
+      await sb
+        .from("profiles")
+        .update({ referred_by: resolvedReferredBy })
+        .eq("id", profile.id)
+        .is("referred_by", null);
+    }
+
+    logReferralEvent({
+      type: "onboarding_submit",
+      walletAddress: session.walletAddress,
+      operatorId,
+      campaignSlug: referralKind === "ambassador" ? resolvedReferredBy : null,
+      source: referredByHandle ? "body" : "none",
+      outcome:
+        referralKind === "ambassador"
+          ? "stamped"
+          : referralKind === "operator"
+            ? "stamped"
+            : referralKind === "invalid"
+              ? "invalid_slug"
+              : referralKind === "not_found"
+                ? "invalid_slug"
+                : "no_ref",
+      metadata: {
+        profileId: profile.id,
+        kind: referralKind,
+        rawInput: referredByHandle ?? null,
+        parsedHandle: referredHandleParsed,
+      },
     });
 
     // 3. Insert primary category (if selected)

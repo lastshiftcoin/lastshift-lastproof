@@ -78,7 +78,9 @@ export default async function CampaignLandingPage({ params }: PageProps) {
     },
   });
 
-  const manageUrl = `/manage?ref=${campaignSlug}`;
+  // Attribution moved to the onboarding modal on 2026-04-28 — campaign
+  // landing pages no longer carry a ?ref= query param into /manage.
+  const manageUrl = "/manage";
 
   return (
     <div className="af-page">

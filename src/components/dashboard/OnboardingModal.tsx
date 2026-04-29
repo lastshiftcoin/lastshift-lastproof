@@ -57,6 +57,15 @@ interface OnboardingModalProps {
 
 type HandleStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
+type ReferralLookup =
+  | { kind: "idle" }
+  | { kind: "checking" }
+  | { kind: "empty" }
+  | { kind: "invalid" }
+  | { kind: "ambassador"; handle: string; tgHandle: string | null; campaignSlug: string }
+  | { kind: "operator"; handle: string }
+  | { kind: "not_found"; handle: string };
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function OnboardingModal({ session, operatorId, onComplete, onDisconnect }: OnboardingModalProps) {
@@ -71,6 +80,11 @@ export function OnboardingModal({ session, operatorId, onComplete, onDisconnect 
   const [handle, setHandle] = useState("");
   const [handleStatus, setHandleStatus] = useState<HandleStatus>("idle");
   const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Step 1 — referral (street-team / operator referral capture)
+  const [referredByInput, setReferredByInput] = useState("");
+  const [referralLookup, setReferralLookup] = useState<ReferralLookup>({ kind: "idle" });
+  const referralTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Step 2 — identity
   const [displayName, setDisplayName] = useState("");
@@ -112,8 +126,62 @@ export function OnboardingModal({ session, operatorId, onComplete, onDisconnect 
   useEffect(() => {
     return () => {
       if (checkTimer.current) clearTimeout(checkTimer.current);
+      if (referralTimer.current) clearTimeout(referralTimer.current);
     };
   }, []);
+
+  // ─── Referral lookup (debounced 400ms) ───────────────────────────────────
+  const checkReferral = useCallback((val: string) => {
+    if (referralTimer.current) clearTimeout(referralTimer.current);
+
+    const trimmed = val.trim();
+    if (!trimmed) {
+      setReferralLookup({ kind: "idle" });
+      return;
+    }
+
+    setReferralLookup({ kind: "checking" });
+    referralTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/onboarding/lookup-handle", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ input: trimmed }),
+        });
+        const data = await res.json();
+        setReferralLookup(data);
+      } catch {
+        setReferralLookup({ kind: "idle" });
+      }
+    }, 400);
+  }, []);
+
+  function handleReferralChange(val: string) {
+    // Cap length to keep things sane (full URL fits in ~80 chars)
+    const clean = val.slice(0, 120);
+    setReferredByInput(clean);
+    checkReferral(clean);
+  }
+
+  function getReferralStatusText(): string {
+    switch (referralLookup.kind) {
+      case "checking": return "CHECKING…";
+      case "ambassador":
+        return referralLookup.tgHandle
+          ? `✓ NICE — REFERRED BY ${referralLookup.tgHandle.toUpperCase()}`
+          : `✓ AMBASSADOR @${referralLookup.handle.toUpperCase()}`;
+      case "operator": return `✓ FOUND @${referralLookup.handle.toUpperCase()}`;
+      case "not_found": return "✗ NO PROFILE WITH THAT HANDLE";
+      case "invalid": return "✗ NOT A VALID HANDLE OR LINK";
+      default: return "";
+    }
+  }
+
+  function getReferralStatusClass(): string {
+    if (referralLookup.kind === "ambassador" || referralLookup.kind === "operator") return "ob-ref-status ok";
+    if (referralLookup.kind === "not_found" || referralLookup.kind === "invalid") return "ob-ref-status taken";
+    return "ob-ref-status";
+  }
 
   function handleHandleChange(val: string) {
     // Only allow alphanumeric + underscore
@@ -155,6 +223,7 @@ export function OnboardingModal({ session, operatorId, onComplete, onDisconnect 
           timezone,
           language,
           oneLiner: oneLiner.trim() || null,
+          referredByHandle: referredByInput.trim() || null,
         }),
       });
 
@@ -336,6 +405,28 @@ export function OnboardingModal({ session, operatorId, onComplete, onDisconnect 
                     {getHandleStatusText()}
                   </div>
                 </div>
+              </div>
+
+              {/* Operator referral — explicit, manual capture (replaced the
+                  cookie/URL chain on 2026-04-28). Always visible; optional. */}
+              <div className="ob-field">
+                <label className="ob-field-key">
+                  REFERRED BY AN OPERATOR? <span className="ob-char-count">OPTIONAL</span>
+                </label>
+                <input
+                  className="ob-field-input"
+                  type="text"
+                  value={referredByInput}
+                  onChange={(e) => handleReferralChange(e.target.value)}
+                  placeholder="@handle or lastproof.app/@handle"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+                {referralLookup.kind !== "idle" && (
+                  <div className={getReferralStatusClass()}>
+                    {getReferralStatusText()}
+                  </div>
+                )}
               </div>
 
               <div className="ob-fee-callout">
