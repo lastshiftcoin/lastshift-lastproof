@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.13.5",
+  "latest_version": "0.13.6",
   "entries": [
+    {
+      "version": "0.13.6",
+      "date": "2026-04-30",
+      "category": "improved",
+      "headline": "First 5,000 is free FOREVER — no 30-day timer, no expiry",
+      "copy": "We changed the early-access offer: instead of a 30-day window starting at Grid launch, your First-5,000 profile is free forever. Existing EA profiles got the silent retroactive upgrade — no action needed, the timer is just gone. The 5,000 cap stays. The countdown UI on dashboards is reserved for paid subscribers only — EA profiles never expire and never see it.",
+      "source_commits": []
+    },
     {
       "version": "0.13.5",
       "date": "2026-04-28",

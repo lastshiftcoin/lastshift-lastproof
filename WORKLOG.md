@@ -20,6 +20,39 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-04-30 — v0.13.6 — First-5,000 program: free FOREVER (kill the 30-day timer)
+
+**Did:**
+- Product semantics shift: First-5,000 EA program changed from "free for 30 days post-Grid-launch" → "free forever for the first 5,000 operators." 5,000 cap stays. Frontend already shipped the copy/UI pass (commits `abb7896`, `b79d71d`); this is the backend catch-up handoff (`BACKEND-HANDOFF-5K-FREE-FOREVER.md`).
+- `src/lib/constants.ts` — deleted `EA_FREE_WINDOW_DAYS`. Kept `GRID_LAUNCH_DATE` as a marketing anchor.
+- `src/lib/subscription.ts` — deleted `eaPublishExpiry()` function. Updated module docblock to reflect new semantics (EA = `expiresAt: null`, isPaid set explicitly by callers).
+- `src/app/api/campaign/claim/route.ts` — removed `GRID_LAUNCH_DATE` + `EA_FREE_WINDOW_DAYS` imports. Replaced the conditional pre/post-Grid-launch expiry math with unconditional `subscription_expires_at = null`. Updated header comment.
+- `src/app/api/profile/publish/route.ts` — removed `eaPublishExpiry` import. EA-grant branch now writes `subscriptionExpiresAt = null` AND explicitly `isPaid = true` (since null expiry can't derive `isPaid` via `isPaidNow`). Updated docblock.
+- `tests/unit/subscription.test.ts` — deleted the `eaPublishExpiry === 2026-06-07` assertion, removed the now-unused import. Added two new tests pinning the contract: `deriveState({ expiresAt: null }) === "none"` and `isPaidNow({ expiresAt: null }) === false`.
+- `supabase/migrations/0027_ea_subscription_forever.sql` — written but NOT YET RUN. Snapshots existing EA rows into `_backup_ea_subs_2026_04_30`, sets `subscription_expires_at = null` on every EA row that still has an expiry, post-flight verifies zero remain. Idempotent. **User runs in Supabase SQL Editor manually.**
+- `VERSION` 0.13.5 → 0.13.6. `data/updates.json` new entry.
+
+**Open:**
+- Migration `0027_ea_subscription_forever.sql` not yet run by user. Code is forward-safe (writes null on new claims), but existing EA rows still have `2026-06-07` stamped until the migration runs. Cron's `isEaWithNoExpiry` guard only skips rows with NULL — non-null EA rows would be downgraded if `expires_at < now()` triggers (~38 days runway from today before that risk materializes).
+- `freeSubUntil` field still passed through 4 auth routes from Terminal → session, displayed on `ManageGate.tsx:160` as a debug row. Structurally dead on lastproof side. Cleanup deferred — would require Terminal-side coordination.
+- Telegram bot lapse-reminder code does NOT exist yet on lastproof side. Help-page copy describes future behavior (3-day reminder for paid subscribers, never for EA). Per Kellen: defer — 1-2 weeks runway before 5K cap hits and the reminder becomes relevant.
+- Frontend StatusBar countdown JSX is currently commented out per `BACKEND-HANDOFF-5K-FREE-FOREVER.md` § B-1; helpers (`daysUntilExpiry`, `countdown` state, `deriveStatus`) remain alive. Frontend will re-enable for paid subscribers post-cap with a `{!isEarlyAdopter && ...}` guard. Backend has no work here — data is already shaped correctly.
+- `operators.referred_by` column still dead post-v0.13.5; future cleanup migration when convenient.
+
+**Gotchas:**
+- **Order of operations matters.** Code shipped first (this commit), migration runs after Vercel build is live. If reversed, there's a window where the cron could downgrade an EA user before the new code suppresses new non-null writes. Today's date (2026-04-30) is well before the existing rows' 2026-06-07 expiry, so the order isn't time-pressured — but the discipline still matters.
+- **`is_paid` must be set explicitly on EA grant in `publish/route.ts`.** Previously `isPaidNow(expiresAt)` returned true because `2026-06-07 > now`. With null expiry, `isPaidNow` returns false. Without the new explicit `patch.isPaid = true`, EA users who reached publish-without-claim path would have ended up `is_paid = false`. The new test `isPaidNow({ expiresAt: null }) === false` pins this.
+- **Cron guard logic is correct but narrow.** `isEaWithNoExpiry = isEarlyAdopter && !subscriptionExpiresAt`. It only protects rows where BOTH conditions hold. Migration 0027 ensures all EA rows satisfy this.
+- **Frontend's open questions are answered:**
+  1. 5K cap rejection works (`/api/campaign/claim:91` — `count >= MAX_CLAIMS` returns `sold_out`).
+  2. Paid-subscriber lapse-to-FREE remains intended; cron still flips them.
+  3. EA badge isn't tied to expiry — gates on `is_early_adopter` only. Lifelong correct.
+  4. No code path auto-flips EA → FREE besides the cron, which the guard now protects.
+
+**Impacts:** None for Terminal — `freeSubUntil` is still passed through unchanged on the wire. Terminal-side cleanup of that field is a separate ticket.
+
+---
+
 ## 2026-04-28 — v0.13.5 — Replaced cookie/?ref= attribution with onboarding-modal field
 
 **Device:** Kellen's Mac mini

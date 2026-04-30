@@ -19,13 +19,17 @@
  *
  * EA publish (first publish while firstFiveThousand === true):
  *
- *   newExpiresAt = freeSubUntil    (from Terminal validate)
- *   lastPaymentAt = null            (charge-free window)
- *   isPaid = true                   (if freeSubUntil is still in the future)
+ *   newExpiresAt = null             (free forever — no expiry on EA)
+ *   lastPaymentAt = null            (charge-free)
+ *   isPaid = true                   (set explicitly; not derived from expiry)
  *
- * NOTE: LASTPROOF's 30-day timer is NOT the same as Terminal's
- * `subscriptionStatus`. Terminal owns EA / `free_ea` / `active`. LASTPROOF
- * owns the 30-day window and Grid visibility. Do not conflate them.
+ * NOTE: As of 2026-04-30 the First-5,000 program is "free forever." EA
+ * profiles never expire. This module's `deriveState` returns "none" for
+ * `expiresAt = null`, so the cron at `/api/subscription/cron` MUST guard
+ * EA rows (`isEarlyAdopter && !subscriptionExpiresAt`) before flipping
+ * isPaid. Don't conflate Terminal's `subscriptionStatus` with LASTPROOF's
+ * subscription window — LASTPROOF owns the paid-subscriber 30-day window;
+ * Terminal owns EA eligibility (firstFiveThousand boolean).
  */
 
 export type SubscriptionState = "none" | "active" | "warning" | "expired";
@@ -71,23 +75,6 @@ export function rolloverOnPayment(input: DeriveInput): string {
   // active or warning → stack from current expiry
   const current = new Date(input.expiresAt as string).getTime();
   return new Date(current + thirtyDaysMs).toISOString();
-}
-
-/**
- * EA publish: subscription window ends 30 days after Grid launch.
- *
- * LASTPROOF owns this date — Terminal only tells us whether the user
- * qualifies (firstFiveThousand boolean). The campaign window is a
- * LASTPROOF business rule, not a Terminal concern.
- */
-export function eaPublishExpiry(): string {
-  // Grid launch: 2026-05-08. EA window: +30 days = 2026-06-07.
-  // Hardcoded here to keep this module zero-import. If GRID_LAUNCH_DATE
-  // or EA_FREE_WINDOW_DAYS change, update src/lib/constants.ts AND here.
-  const GRID_LAUNCH = new Date("2026-05-08T00:00:00Z");
-  const EA_WINDOW_DAYS = 30;
-  const expiryMs = GRID_LAUNCH.getTime() + EA_WINDOW_DAYS * MS_PER_DAY;
-  return new Date(expiryMs).toISOString();
 }
 
 /**

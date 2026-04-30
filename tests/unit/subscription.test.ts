@@ -10,7 +10,6 @@ import {
   deriveState,
   isPaidNow,
   rolloverOnPayment,
-  eaPublishExpiry,
   daysRemaining,
   MS_PER_DAY,
   SUBSCRIPTION_PERIOD_DAYS,
@@ -124,12 +123,18 @@ test("subscription: double-pay stacks to 60 days from first expiry", () => {
   assert.equal(second, expected);
 });
 
-// ─── eaPublishExpiry() ─────────────────────────────────────────────────────
+// ─── EA "free forever" semantics (replaces old eaPublishExpiry test) ──────
+// As of 2026-04-30 the First-5,000 program is free forever — EA profiles
+// have `subscription_expires_at = null`. deriveState on null returns "none",
+// and the cron's isEaWithNoExpiry guard keeps these rows from being
+// downgraded. These tests pin the contract.
 
-test("subscription: EA publish expiry is Grid launch + 30 days", () => {
-  // Grid launch: 2026-05-08, +30d = 2026-06-07
-  const expected = new Date("2026-06-07T00:00:00Z").toISOString();
-  assert.equal(eaPublishExpiry(), expected);
+test("subscription: EA profile (null expiry) derives state 'none'", () => {
+  assert.equal(deriveState({ expiresAt: null, now }), "none");
+});
+
+test("subscription: EA profile (null expiry) is not isPaidNow (callers must set isPaid explicitly)", () => {
+  assert.equal(isPaidNow({ expiresAt: null, now }), false);
 });
 
 // ─── daysRemaining() ───────────────────────────────────────────────────────

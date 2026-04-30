@@ -7,9 +7,9 @@
  * Rules (see memory: project_5000_campaign.md):
  *   - Counts profiles that CLAIMED the free upgrade (ea_claimed = true)
  *   - When 5,000 are claimed, returns { ok: false, reason: "sold_out" }
- *   - 30-day timer does NOT start until GRID_LAUNCH_DATE (2026-05-08)
- *   - Pre-launch: profile becomes paid with no expiration until grid launch
- *   - At grid launch: 30-day countdown begins for all free-claimed profiles
+ *   - EA profiles are FREE FOREVER — `subscription_expires_at` is always
+ *     written as `null` on claim. The cron's `isEaWithNoExpiry` guard
+ *     keeps these rows from ever being downgraded to FREE.
  *   - Idempotent: re-claiming when already claimed is a no-op success
  *
  * Attribution note (2026-04-28): no longer touches referred_by. The
@@ -21,7 +21,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readSession } from "@/lib/session";
 import { supabaseService } from "@/lib/db/client";
-import { GRID_LAUNCH_DATE, EA_FREE_WINDOW_DAYS } from "@/lib/constants";
 import { createRateLimiter, getClientIp } from "@/lib/rate-limit";
 
 const claimLimiter = createRateLimiter({ window: 60_000, max: 3 });
@@ -92,14 +91,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, reason: "sold_out" });
   }
 
-  // Compute subscription expiry
+  // EA = free forever. No expiry. The cron's isEaWithNoExpiry guard
+  // (subscription/cron/route.ts:51) keeps these rows from ever being
+  // downgraded as long as `subscription_expires_at` stays null.
   const now = new Date();
-  let subscriptionExpiresAt: string | null = null;
-
-  if (now >= GRID_LAUNCH_DATE) {
-    const expires = new Date(now.getTime() + EA_FREE_WINDOW_DAYS * 24 * 60 * 60 * 1000);
-    subscriptionExpiresAt = expires.toISOString();
-  }
+  const subscriptionExpiresAt: string | null = null;
 
   const eaNumber = (count ?? 0) + 1;
 
