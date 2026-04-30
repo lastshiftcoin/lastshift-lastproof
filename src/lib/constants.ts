@@ -8,11 +8,11 @@ export const LASTSHFT_MINT =
 
 export const TOOL_SLUG = process.env.TOOL_SLUG || "lastproof";
 
-/** Grid launch date — anchor for EA subscription window. */
+/** Grid launch date — marketing/copy anchor only.
+ * As of 2026-04-30 the First-5,000 program is "free forever for the first
+ * 5,000 operators." There is no EA expiry window. This constant is kept
+ * for marketing copy that still references the launch date. */
 export const GRID_LAUNCH_DATE = new Date("2026-05-08T00:00:00Z");
-
-/** EA free window: 30 days after Grid launch. */
-export const EA_FREE_WINDOW_DAYS = 30;
 
 /** SPL token mints we accept. `native` is the sentinel for SOL. */
 export const TOKEN_MINTS = {

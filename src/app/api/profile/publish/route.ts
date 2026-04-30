@@ -5,7 +5,7 @@ import {
   updateProfile,
   getProfileByOperatorId,
 } from "@/lib/profiles-store";
-import { eaPublishExpiry, isPaidNow } from "@/lib/subscription";
+import { isPaidNow } from "@/lib/subscription";
 import { recalcProfileTier } from "@/lib/tier-recalc";
 import { enqueueAffiliateConfirm } from "@/lib/affiliate-queue";
 import { tryAddDefaultChad } from "@/lib/chads/default-chad";
@@ -18,10 +18,10 @@ import { tryAddDefaultChad } from "@/lib/chads/default-chad";
  *   1. Require session (cookie from skeleton #1).
  *   2. Upsert profile keyed by operatorId (== session.walletAddress for now —
  *      operator id gets a real UUID when Supabase is wired).
- *   3. If firstFiveThousand AND freeSubUntil present AND profile has never
- *      been published → grant the EA window (subscriptionExpiresAt = freeSubUntil),
- *      no payment required.
- *   4. Set publishedAt = now, is_paid derived from expiry.
+ *   3. If firstFiveThousand AND profile has never been published → grant
+ *      EA "free forever" status (subscriptionExpiresAt = null, isPaid = true).
+ *      No payment required, no expiry.
+ *   4. Set publishedAt = now, is_paid derived from expiry (or kept true for EA).
  *   5. Affiliate confirm callback is NOT called here — that lands in
  *      skeleton #8 (queue + retry).
  *
@@ -70,13 +70,17 @@ export async function POST(req: NextRequest) {
     publishedAt: now.toISOString(),
   };
 
-  // EA window gift — only on first publish, only if EA.
-  // LASTPROOF owns the expiry date (Grid launch + 30 days).
-  // Terminal only provides the firstFiveThousand boolean.
+  // EA "free forever" gift — only on first publish, only if EA.
+  // 2026-04-30: First-5,000 program shifted from a 30-day window to no
+  // expiry at all. We explicitly write null here. The cron's
+  // isEaWithNoExpiry guard (subscription/cron/route.ts:51) keeps these
+  // rows from being downgraded. Terminal only provides the
+  // firstFiveThousand boolean — LASTPROOF owns the EA grant policy.
   if (firstPublish && session.firstFiveThousand) {
-    patch.subscriptionExpiresAt = eaPublishExpiry();
+    patch.subscriptionExpiresAt = null;
     patch.subscriptionStartedAt = now.toISOString();
-    patch.lastPaymentAt = null; // charge-free EA window
+    patch.lastPaymentAt = null; // charge-free, no expiry
+    patch.isPaid = true;        // explicit — null expiry can't derive isPaid
   }
 
   const updated = (await updateProfile(profile.id, patch))!;
