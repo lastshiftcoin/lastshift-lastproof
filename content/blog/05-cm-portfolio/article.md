@@ -156,12 +156,44 @@ a functional portfolio with 3-5 verified projects takes one to three months of a
   "@context": "https://schema.org",
   "@type": "HowTo",
   "name": "How to build a crypto community manager portfolio",
+  "description": "Build a verifiable on-chain crypto community manager portfolio that gets you hired in 2026, using LASTPROOF wallet-locked profiles and proof-of-work verifications.",
+  "totalTime": "PT2H",
+  "estimatedCost": {
+    "@type": "MonetaryAmount",
+    "currency": "USD",
+    "value": "10"
+  },
   "step": [
-    {"@type": "HowToStep", "name": "Claim the handle", "text": "..."},
-    {"@type": "HowToStep", "name": "Add every project", "text": "..."},
-    {"@type": "HowToStep", "name": "Message past collaborators", "text": "..."},
-    {"@type": "HowToStep", "name": "Request DEV proofs", "text": "..."},
-    {"@type": "HowToStep", "name": "Keep updated", "text": "..."}
+    {
+      "@type": "HowToStep",
+      "position": 1,
+      "name": "Claim the handle",
+      "text": "Go to lastproof.app/manage, connect your Solana wallet, and claim a handle that matches the name founders already know you by. The handle is wallet-locked and becomes the canonical link you share everywhere."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 2,
+      "name": "Add every project you have actually worked on",
+      "text": "List each past or current project as a Proof of Work entry with role, dates, and outcome. Be specific about scope so collaborators can verify the exact work."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 3,
+      "name": "Message past collaborators for verification",
+      "text": "DM founders, mods, and ops you actually shipped with and ask them to verify the corresponding proof. Each $1 collaborator proof writes a permanent on-chain receipt to your profile."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 4,
+      "name": "Request DEV proofs from project deployers",
+      "text": "Ask the deployer wallet, mint authority, or treasury multisig signer of the projects you worked on for a $5 DEV proof. DEV proofs are the strongest trust signal because they cannot be coordinated between friends."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 5,
+      "name": "Keep the profile updated and pinned",
+      "text": "Add new projects as you ship, request fresh proofs each gig, and pin your lastproof.app profile link in every social bio. SHIFTBOT ranks operators by recency, so consistency compounds."
+    }
   ]
 }
 ```

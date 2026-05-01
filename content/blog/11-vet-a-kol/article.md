@@ -155,13 +155,39 @@ rates correlate with tier and niche match. $50-$500 for nano accounts (under 10k
   "@context": "https://schema.org",
   "@type": "HowTo",
   "name": "How to vet a crypto kol before paying them",
+  "description": "A 10-minute checklist to vet a crypto KOL before paying them — count DEV proofs, audit engagement quality, verify niche match, and reference-check past devs.",
   "totalTime": "PT10M",
   "step": [
-    {"@type": "HowToStep", "name": "Check the public profile and DEV proofs", "text": "..."},
-    {"@type": "HowToStep", "name": "Audit standard proofs and click a past project", "text": "..."},
-    {"@type": "HowToStep", "name": "Scan x activity and engagement quality", "text": "..."},
-    {"@type": "HowToStep", "name": "Verify niche match and rug-coverage ratio", "text": "..."},
-    {"@type": "HowToStep", "name": "Reference-check past dev and compare rate to tier", "text": "..."}
+    {
+      "@type": "HowToStep",
+      "position": 1,
+      "name": "Check the public profile and DEV proofs",
+      "text": "Open lastproof.app/@handle, look at tier, count DEV proofs (project deployer-signed), and check recency. Zero DEV proofs at Tier 3+ is a red flag — they're fishing."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 2,
+      "name": "Audit standard proofs and click a past project",
+      "text": "Scan their collaborator proofs and pick one past project to verify in detail. Confirm the role, dates, and outcome are consistent across the proof and the project's public history."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 3,
+      "name": "Scan their X activity and engagement quality",
+      "text": "Look for organic replies (real humans, not bot loops), consistent posting cadence, and crypto-native conversations. Buying-followers tells are detectable in seconds — uniform posting times, replies all from the same engagement pod."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 4,
+      "name": "Verify niche match and rug-coverage ratio",
+      "text": "Check that their past projects match the niche you're hiring into (memecoins vs. DeFi vs. NFT). If most past projects rugged, that's a co-signing pattern — they don't filter who they shill for."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 5,
+      "name": "Reference-check past dev and compare rate to tier",
+      "text": "DM one of their past project deployers for a reference (fast, devs respond to short specific asks). Then compare the KOL's quoted rate to their tier — Tier 4 LEGEND can charge 5x what Tier 2 VERIFIED charges."
+    }
   ]
 }
 ```

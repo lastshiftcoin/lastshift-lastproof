@@ -142,8 +142,51 @@ check their public profile, count DEV proofs from past projects, spot-check one 
 ### Schema markup
 - Article schema: standard
 - FAQPage schema: 5 Q&As
-- HowTo schema recommended for five-minute vetting process
+- HowTo schema: ADDED 2026-05-01 — maps the "five-minute vetting process" H2 into per-step schema
 - BreadcrumbList schema: Home > Blog > Builders > This post
+
+### HowTo schema structure
+```json howto
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "How to find legit crypto marketers without paying an agency",
+  "description": "A five-minute per-candidate vetting process to source and verify crypto marketers directly — without an agency middleman, using on-chain proofs of past work.",
+  "totalTime": "PT5M",
+  "step": [
+    {
+      "@type": "HowToStep",
+      "position": 1,
+      "name": "Source candidates from operator search tools",
+      "text": "Use SHIFTBOT on lastproof.app to query the Grid for marketers in your niche, tier, and chain. Open-call hiring posts in TG groups attract grifters first; tool-based sourcing surfaces operators with verifiable receipts."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 2,
+      "name": "Open the public profile and count DEV proofs",
+      "text": "Visit each candidate's lastproof.app/@handle profile. Count DEV proofs — verifications signed by past project deployer wallets. DEV proofs cannot be coordinated between friends and are the strongest trust signal."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 3,
+      "name": "Spot-check one past project for consistency",
+      "text": "Click into one past project on the candidate's profile. Confirm the role and dates match the project's public history. Inconsistency between profile claims and on-chain reality is an immediate disqualifier."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 4,
+      "name": "Review their social activity for real engagement",
+      "text": "Open their X account. Look for organic conversations, niche-specific takes, and consistent posting cadence. Engagement-pod replies and uniform timing are buying-followers tells you can spot in seconds."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 5,
+      "name": "Reference-check one past dev",
+      "text": "DM one of the candidate's past project deployers for a short reference. Crypto devs respond to specific asks. A two-line yes from a real deployer is worth more than five generic LinkedIn endorsements."
+    }
+  ]
+}
+```
 
 ### Internal links
 - Link "lastproof.app" to `/`

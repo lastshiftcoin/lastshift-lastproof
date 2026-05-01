@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.13.6",
+  "latest_version": "0.13.7",
   "entries": [
+    {
+      "version": "0.13.7",
+      "date": "2026-05-01",
+      "category": "improved",
+      "headline": "Search-engine and LLM citation surface — schema + /llms.txt deploy",
+      "copy": "Backend SEO ship. Replaced the incorrect @lastshft handle sitewide with @lastshiftai. Rewrote the Organization schema to declare LASTPROOF as a child of LASTSHIFT.AI with the full ecosystem same-as graph. Added SoftwareApplication and WebSite/SearchAction blocks on the homepage so engines surface a sitelinks search box pointing at /operators. Added a FAQPage block on /how-it-works grounded in the live page (tiers NEW/VERIFIED/EXPERIENCED/LEGEND, 15 categories, real prices). Enriched the @lastshiftfounder profile schema with KT canonical name + ecosystem links, and the same enrichment is automatic on every blog byline. Added HowTo schema to six procedural blog posts (vet a KOL, hire a CM, build a CM portfolio, get hired in web3 marketing, become a KOL, find legit marketers without an agency). Created /llms.txt at root for explicit LLM crawler guidance. No visible UI or behavior change.",
+      "source_commits": []
+    },
     {
       "version": "0.13.6",
       "date": "2026-04-30",

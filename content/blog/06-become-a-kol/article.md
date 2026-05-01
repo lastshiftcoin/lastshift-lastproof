@@ -157,8 +157,51 @@ no. bought followers are detectable during vetting, and crypto projects that do 
 ### Schema markup
 - Article schema: standard
 - FAQPage schema: 5 Q&As
-- HowTo schema: recommended for the 5-step playbook (step one through step five)
+- HowTo schema: ADDED 2026-05-01 — maps the article's "step one" through "step five" H2s
 - BreadcrumbList schema
+
+### HowTo schema structure
+```json howto
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "How to become a crypto KOL in 2026",
+  "description": "A five-step playbook to become a credible crypto KOL in 2026 without buying followers or faking engagement — niche, content, first paid posts, rate raises, and getting on short lists.",
+  "totalTime": "P3M",
+  "step": [
+    {
+      "@type": "HowToStep",
+      "position": 1,
+      "name": "Pick a niche you can own",
+      "text": "Choose one chain (Solana, EVM, Bitcoin L2) plus one vertical (memecoins, DeFi, NFT, infra). Niche commitment beats follower count — a 5,000-follower account specialized in Solana memecoins gets paid more than a 50,000-follower generalist."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 2,
+      "name": "Build the feed founders actually pay for",
+      "text": "Post specific takes on tokens, founders, and trades — not generic motivation. Mix original analysis with reposts of credible voices in your niche. Engagement quality (real conversations) matters more than reach."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 3,
+      "name": "Take your first five paid posts at any rate",
+      "text": "Charge $100-$500 per post in stablecoin to start. The receipts matter more than the rate. Claim a handle at lastproof.app/manage and have each project verify the work with a collaborator or DEV proof."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 4,
+      "name": "Raise rates with every completed project",
+      "text": "After every paid project, get the proof, update your profile, and raise your published rate. Tier 2 VERIFIED (10+ proofs) and Tier 3 EXPERIENCED (25+ proofs) earn 2-5x the Tier 1 rate."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 5,
+      "name": "Get on the short lists",
+      "text": "Make sure your lastproof.app profile is indexed in SHIFTBOT for your niche, get listed on the public Grid, and pin your profile link in your X bio. Founders running KOL outreach in 2026 search the operator search tools first."
+    }
+  ]
+}
+```
 
 ### Internal links
 - Link "lastproof.app" to `/`

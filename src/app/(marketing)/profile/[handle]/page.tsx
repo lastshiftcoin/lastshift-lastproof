@@ -47,6 +47,54 @@ interface PageProps {
 function buildProfileJsonLd(view: PublicProfileView): Record<string, unknown> {
   const profileUrl = `https://lastproof.app/@${view.handle}`;
 
+  // ─── Founder special-case ────────────────────────────────────────
+  // The @lastshiftfounder profile is the canonical Person entity for
+  // KT (sole builder of LASTSHIFT.AI). Per LASTSHIFT_Brand_Entity_
+  // Reference v1.0 the canonical name is "KT" and @lastshiftfounder
+  // is alternateName. Emitting a richer Person here lets blog bylines,
+  // Builder Journal posts, and external citations (paragraph.com,
+  // lastshiftcoin.com) collapse to a single author entity in search-
+  // engine knowledge graphs. Avatar comes from the DB row
+  // (view.avatarUrl) so updating the avatar via the Manage flow
+  // propagates here automatically — no hardcoded image path.
+  if (view.handle === "lastshiftfounder") {
+    return {
+      "@context": "https://schema.org",
+      "@type": "ProfilePage",
+      url: profileUrl,
+      mainEntity: {
+        "@type": "Person",
+        name: "KT",
+        alternateName: ["@lastshiftfounder"],
+        url: profileUrl,
+        ...(view.avatarUrl ? { image: view.avatarUrl } : {}),
+        jobTitle: "Founder",
+        description:
+          "Pseudonymous founder of LASTSHIFT.AI. Sole builder of the LASTSHIFT Terminal, $LASTSHFT, and LASTPROOF. Public byline on the Builder Journal and Shift Report.",
+        worksFor: {
+          "@type": "Organization",
+          name: "LASTSHIFT.AI",
+          url: "https://lastshift.ai",
+        },
+        sameAs: [
+          "https://t.me/lastshiftfounder",
+          "https://paragraph.com/@lastshiftcoin",
+          "https://lastshiftcoin.com/journal.html",
+          "https://lastshiftcoin.com/shift-report.html",
+        ],
+        knowsAbout: [
+          "Web3 marketing",
+          "Memecoin community management",
+          "On-chain verification",
+          "Solana ecosystem",
+          "Crypto operator hiring",
+          "AI-driven community automation",
+        ],
+      },
+    };
+  }
+
+  // ─── Standard operator profile ───────────────────────────────────
   // sameAs lists verified cross-platform identities + the operator's
   // own website. Only verified socials are included — Google uses
   // sameAs to build the entity's identity graph; unverified claims
