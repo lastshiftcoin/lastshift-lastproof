@@ -77,7 +77,7 @@ twq('config','rc4w7');`}
       <section className="wall-wrap">
         <div className="wall-head">
           <div className="section-label" style={{ margin: 0 }}>
-            LASTPROOF GRID — OVER 100K+ PROFILES
+            LASTPROOF GRID — VIEW OPERATOR PROFILES
           </div>
           <Link className="reshuffle" href="/grid">RESHUFFLE</Link>
         </div>
