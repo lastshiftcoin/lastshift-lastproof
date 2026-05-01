@@ -26,7 +26,17 @@ twq('config','rc4w7');`}
       </Script>
 
       <section className="hero">
-        <div className="hero-eyebrow">FULL LAUNCH REVEAL&nbsp;&nbsp;//&nbsp;&nbsp;MAY 2026</div>
+        <div className="hero-eyebrow">
+          THE GRID NOW OPEN&nbsp;&nbsp;//&nbsp;&nbsp;
+          <a
+            href="https://lastshift.ai"
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: "inherit", textDecoration: "underline", textUnderlineOffset: 3 }}
+          >
+            LASTSHIFT.AI
+          </a>
+        </div>
         <h1>
           Discover <span className="green">Trusted Web3 Marketers</span>
           <br />
@@ -37,7 +47,7 @@ twq('config','rc4w7');`}
           ON-CHAIN VERIFIED&nbsp;&nbsp;//&nbsp;&nbsp;PROOF OF WORK&nbsp;&nbsp;//&nbsp;&nbsp;EARNED TRUST
         </div>
         <p className="body-text">
-          Every operator backed by real on-chain verifications. No screenshots. No trust-me
+          Operators backed by real on-chain verifications. No screenshots. No trust-me
           DMs. Just proof.
         </p>
         <div className="hero-ctas">
@@ -49,7 +59,7 @@ twq('config','rc4w7');`}
           </Link>
         </div>
         <span className="microcopy">
-          Free to browse. Connect wallet only to save profiles.
+          Free to browse. Click Hire to message.
         </span>
       </section>
 
