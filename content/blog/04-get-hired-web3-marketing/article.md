@@ -166,8 +166,51 @@ specialize in a narrow niche, claim a lastproof handle at /manage, get proofs fr
 ### Schema markup
 - Article schema: standard (match post 1 template)
 - FAQPage schema: 5 Q&As
-- HowTo schema: optional, could be added for the "modern portfolio" or "first dm" sections
+- HowTo schema: ADDED 2026-05-01 — covers the full hiring funnel (specialize → claim → proofs → indexed → outreach)
 - BreadcrumbList schema: Home > Blog > Operators > This post
+
+### HowTo schema structure
+```json howto
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "How to get hired in web3 marketing in 2026",
+  "description": "The 2026 path into web3 marketing without agency gatekeepers or warm referrals: specialize, build a verifiable on-chain track record, and get indexed where founders search.",
+  "totalTime": "P2W",
+  "step": [
+    {
+      "@type": "HowToStep",
+      "position": 1,
+      "name": "Specialize in a narrow niche you can credibly own",
+      "text": "Pick one operator role (community manager, raid leader, KOL, mod, etc.) on one chain (Solana memecoins, EVM DeFi, NFT) and one community size (sub-5K, 5-50K, 50K+). Generalists lose; specialists get DM'd."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 2,
+      "name": "Claim a wallet-locked operator handle",
+      "text": "Go to lastproof.app/manage, connect your Solana wallet, and claim a handle. The handle is permanent, wallet-locked, and becomes the canonical link you put in every bio and DM."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 3,
+      "name": "Get on-chain proofs from at least three past collaborators plus one DEV",
+      "text": "DM founders and ops you actually shipped with. Each $1 collaborator proof and each $5 DEV proof writes a permanent on-chain receipt to your profile. Three collaborator proofs plus one DEV proof is the minimum credible threshold."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 4,
+      "name": "Get indexed in operator search tools founders use",
+      "text": "Make sure your category, tier, and proof recency put you in SHIFTBOT's top results when a founder searches your niche. Update the profile after every gig — recency is a ranking signal."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 5,
+      "name": "Send a focused first message when you do reach out",
+      "text": "When you DM a project, lead with your lastproof.app/@handle link, name a specific operator you'd replicate the work of, and propose a one-week paid trial with defined deliverables. Don't ask for an introduction — show the receipts."
+    }
+  ]
+}
+```
 
 ### Internal links
 - Link "lastproof.app" to `/`

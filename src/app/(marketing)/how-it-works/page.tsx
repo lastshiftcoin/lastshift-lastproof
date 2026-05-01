@@ -9,13 +9,104 @@ import "./how-it-works.css";
  * Mirrors wireframes/how-it-works.html section-for-section.
  * Toggle switches between "For Devs & Teams" and "For Operators" panes.
  * The topbar, footer, and SHIFTBOT strip come from the (marketing) layout.
+ *
+ * FAQPage JSON-LD below is grounded in the page's actual visible content
+ * (tier names NEW/VERIFIED/EXPERIENCED/LEGEND from the tier showcase
+ * section, 15 operator categories from src/lib/homepage-data.ts,
+ * confirmed pricing $1/$5/$10 with 40% $LASTSHFT discount). If the
+ * visible copy diverges, update this block — Google will demote pages
+ * whose FAQ schema misrepresents the visible page.
  */
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "What is LASTPROOF?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "LASTPROOF is a verification platform for web3 operators built on Solana. Operators build wallet-locked profiles backed by paid on-chain proofs from past collaborators and project deployers. Devs and founders use The Grid (with AI-ranked search via SHIFTBOT) to hire operators with verifiable track records. LASTPROOF is the first tool released in the LASTSHIFT Terminal product ecosystem developed by LASTSHIFT.AI.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Do I need a LASTSHIFT Terminal ID to use LASTPROOF?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Browsing The Grid is free with no Terminal ID required. To create an operator profile, claim a handle, or use SHIFTBOT, you need a LASTSHIFT Terminal ID. Get one by connecting your Solana wallet at lastshift.app, then bring the Terminal ID to lastproof.app to unlock profile features. The same Terminal ID works across every current and future LASTSHIFT tool.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How do I verify someone's work on LASTPROOF?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Open any operator's profile at lastproof.app/@handle, scroll to their Proof of Work section, and click VERIFY THIS WORK on the job you collaborated on. No login or wallet connect required. You pay $1 (collaborator proof) or $5 (DEV proof) from any Solana wallet you control. The wallet you send from becomes your verifier identity on the proof. The proof writes permanently to the chain.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What is a DEV proof?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "A DEV proof is a verification signed by a wallet that deployed the token, holds mint authority, or is a multisig signer on the founder treasury. It is the strongest trust signal on LASTPROOF because it cannot be coordinated between friends. The wallet's role is checked on-chain post-payment. If the check fails, no proof is created and the payment is held for manual refund.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What are the LASTPROOF tiers?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Tier 1 NEW (0+ proofs) — just joined, a starting point not a risk signal. Tier 2 VERIFIED (10+ proofs) — shipped real work on real projects. Tier 3 EXPERIENCED (25+ proofs) — a track record hard to fake and easy to verify. Tier 4 LEGEND (50+ proofs) — top of the ladder, the ones you fight to hire. Tiers are earned, not bought; SHIFTBOT ranks operators by tier, DEV proofs, recency, and category match.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How much does LASTPROOF cost?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Browsing The Grid is free with no wallet connect. Operator profiles are $10 per month, or 40% off when paid in $LASTSHFT. Collaborator proofs are $1, DEV proofs are $5. Devs and founders never pay to scan or hire — operators pay to build proof. All fees route to the LASTSHIFT.AI accounts receivable wallet, where 25% is permanently burned weekly.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What operator categories does LASTPROOF support?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "LASTPROOF supports 15 operator categories: Community Manager, Mod, Raid Leader, Shiller, Alpha Caller, KOL / Influencer, Space Host / AMA Host, Content Creator, Collab Manager, Growth / Paid Media, Brand / Creative, BD / Partnerships, PR / Comms, Vibe Coder / Builder, and Token Dev / Tokenomics.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What is SHIFTBOT?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "SHIFTBOT is the AI-ranked operator search layer over The Grid. Devs describe a hire in plain English (for example, find a raid leader Tier 3+ with DEV proofs on Solana memecoins) and SHIFTBOT returns a ranked shortlist weighted by DEV proof count, recency, and category match.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Can I hire operators directly without going through LASTPROOF?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. Clicking HIRE on any profile routes the conversation to that operator's Telegram. There is no middleman, no commission, and no platform tax on the deal. LASTPROOF is the verification layer, not the escrow or payments layer.",
+      },
+    },
+  ],
+};
+
 export default function HowItWorksPage() {
   const [mode, setMode] = useState<"dev" | "op" | "verify">("dev");
   const [showFlowDetails, setShowFlowDetails] = useState(false);
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+
       {/* ═══ HERO ═══ */}
       <div className="hiw-hero">
         <div className="hero-eyebrow">

@@ -20,6 +20,72 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-05-01 — v0.13.7 — Schema/SEO ship: identity correction + LLM citation surface
+
+**Did:**
+
+- **Identity correction (sitewide).** `src/app/layout.tsx:28` `twitter:site` flipped from incorrect `@lastshft` → `@lastshiftai`. Same file's Organization JSON-LD `sameAs` array rebuilt to match LASTSHIFT_Brand_Entity_Reference v1.0 — now lists lastshift.ai (parent), lastshiftcoin.com, lastshift.app, x.com/lastshiftai, x.com/LASTSHIFTCOIN, t.me/LastShiftCoin, t.me/LastShiftCoinBreakroom. Org schema also gained `parentOrganization` (LASTSHIFT.AI) and `logo` field.
+
+- **Homepage `SoftwareApplication` + `WebSite/SearchAction` blocks.** `src/app/(marketing)/page.tsx` now emits two additional JSON-LD blocks (homepage-only, NOT in layout). SoftwareApp declares offers ($10/mo profile, $1 collab proof, $5 DEV proof), feature list (Solana POW, SHIFTBOT, Grid, direct-to-TG hiring, tiers, 15 categories — corrected from spec's wrong 16), publisher (LASTSHIFT.AI), and `isPartOf` LASTSHIFT Terminal. WebSite block has SearchAction with `urlTemplate: lastproof.app/operators?q={search_term_string}` — verified `/operators` actually accepts `?q=` (OperatorsClient.tsx:117).
+
+- **`/how-it-works` FAQPage block.** Added 9 Q&As on the page. Grounded against live page copy: tier names NEW/VERIFIED/EXPERIENCED/LEGEND with 0/10/25/50 thresholds (verified at how-it-works/page.tsx:248-263), $10 profile / $1 collab / $5 DEV (verified lines 864, 1265), 15 categories (verified `OPERATOR_CATEGORIES` in homepage-data.ts). Spec said 16 categories — wrong; live count is 15. Page is `"use client"`, JSON-LD injected via `dangerouslySetInnerHTML` (Googlebot still parses fine).
+
+- **Founder Person schema enriched.** `buildProfileJsonLd()` in `profile/[handle]/page.tsx` now branches on `view.handle === "lastshiftfounder"` and emits canonical KT identity (name: "KT", alternateName: ["@lastshiftfounder"], jobTitle: "Founder", worksFor: LASTSHIFT.AI, knowsAbout array, sameAs to t.me/lastshiftfounder + paragraph.com/@lastshiftcoin + lastshiftcoin.com bylines). Avatar comes from DB `view.avatarUrl` — no hardcoded path; updating the avatar via /manage propagates automatically.
+
+- **Blog author Person enriched.** `src/lib/blog/jsonld.ts` got new `authorPersonJsonLd()` helper. When frontmatter author === `@lastshiftfounder` it emits the same canonical KT shape (name, alternateName, sameAs). For other authors it emits the minimal Person. Display author unchanged in UI — only the JSON-LD payload is enriched.
+
+- **HowTo schema on 6 procedural blog posts.** Added `\`\`\`json howto` blocks to dev-notes sections of:
+  - `04-get-hired-web3-marketing` (5 steps: specialize, claim, proofs, get indexed, outreach)
+  - `05-cm-portfolio` (5 steps: claim, add projects, collaborator proofs, DEV proofs, keep updated)
+  - `06-become-a-kol` (5 steps: niche, feed, first 5 paid posts, raise rates, short lists)
+  - `08-find-legit-marketers` (5 steps: source, count DEV proofs, spot-check, social audit, reference-check)
+  - `10-hire-a-cm` (5 steps: scope, source, vet 30min, week trial, contract)
+  - `11-vet-a-kol` (5 steps: profile/DEV, audit proofs, X engagement, niche match, reference)
+  - Each step has 1-2 sentence text grounded in the article. Blog parser pipeline already existed at `src/lib/blog/parse.ts:227` (`extractHowToJsonLd`) — pure content addition, no code change to render.
+
+- **`/llms.txt` at root.** Static file at `public/llms.txt` per emerging LLM crawler convention. Includes core pages list, blog index, key concepts, pricing, parent ecosystem, contact, and KT byline. /operators URL used (not /grid) per user direction. 15-category count (corrected from spec's 16).
+
+- **VERSION 0.13.6 → 0.13.7.** New `data/updates.json` entry (category: "improved").
+
+**Verification (post-deploy, run after Vercel green):**
+
+- `curl https://lastproof.app/llms.txt` → expect 200 with content
+- `curl -s https://lastproof.app/ | grep -c "@lastshft\b"` → expect 0 (no occurrences of the bad handle anywhere)
+- `curl -s https://lastproof.app/ | grep -c "application/ld+json"` → expect ≥ 3 (Org from layout + SoftwareApp + WebSite)
+- `curl -s https://lastproof.app/how-it-works | grep -c "FAQPage"` → expect 1
+- `curl -s https://lastproof.app/@lastshiftfounder | grep -c "\"name\":\"KT\""` → expect 1
+- For each of the 6 blog post URLs: `curl -s <url> | grep -c "\"@type\":\"HowTo\""` → expect 1
+- Validate one homepage URL at https://validator.schema.org/ — no errors
+
+**Open / future:**
+
+- Spec also called for site-search box visibility — the SearchAction block enables it but Google's algorithm decides whether to actually render the sitelinks search box on SERP. Could take days/weeks to surface.
+- HowTo schema rewards depend on Google deciding the steps are "useful" — sometimes they collapse to a single rich result, sometimes they expand to step-by-step carousel. Track via Search Console.
+- Did NOT touch sitemap.xml. `/llms.txt` is intentionally separate from sitemap and doesn't need an entry there (LLM crawlers find it at the well-known path).
+- Did NOT migrate to `next/font` despite hook recommendation — out of scope for this SEO ship.
+
+**Files touched:**
+
+```
+src/app/layout.tsx                                            (twitter:site, Org schema rewrite)
+src/app/(marketing)/page.tsx                                  (SoftwareApp + WebSite blocks)
+src/app/(marketing)/how-it-works/page.tsx                     (FAQPage block)
+src/app/(marketing)/profile/[handle]/page.tsx                 (founder Person enrichment)
+src/lib/blog/jsonld.ts                                        (authorPersonJsonLd helper)
+content/blog/04-get-hired-web3-marketing/article.md           (HowTo block in dev-notes)
+content/blog/05-cm-portfolio/article.md                       (HowTo block expanded)
+content/blog/06-become-a-kol/article.md                       (HowTo block in dev-notes)
+content/blog/08-find-legit-marketers/article.md               (HowTo block in dev-notes)
+content/blog/10-hire-a-cm/article.md                          (HowTo block expanded)
+content/blog/11-vet-a-kol/article.md                          (HowTo block expanded)
+public/llms.txt                                               (NEW — static file at root)
+VERSION                                                       (0.13.6 → 0.13.7)
+data/updates.json                                             (new entry at top)
+WORKLOG.md                                                    (this entry)
+```
+
+---
+
 ## 2026-04-30 — v0.13.6 — First-5,000 program: free FOREVER (kill the 30-day timer)
 
 **Did:**

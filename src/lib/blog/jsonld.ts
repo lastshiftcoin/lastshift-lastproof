@@ -5,6 +5,41 @@ const ORG_NAME = "LASTPROOF";
 const ORG_LOGO = `${SITE}/shiftbot-logo.png`;
 
 /**
+ * Build the author Person schema for a blog post.
+ *
+ * Special-case: when the frontmatter author is "@lastshiftfounder",
+ * emit the canonical KT identity per LASTSHIFT_Brand_Entity_Reference v1.0
+ * (KT is the canonical name; @lastshiftfounder is alternateName). This
+ * ties blog bylines to the same Person entity used on the founder
+ * profile page and the Builder Journal on lastshiftcoin.com so search
+ * engines build a single author authority graph rather than two
+ * disconnected ones.
+ *
+ * For any other author value, emit the minimal Person shape — those
+ * are guest contributors or pseudonymous operators where we don't have
+ * a canonical-name mapping.
+ */
+function authorPersonJsonLd(author: string, authorUrl: string): Record<string, unknown> {
+  if (author === "@lastshiftfounder") {
+    return {
+      "@type": "Person",
+      name: "KT",
+      alternateName: "@lastshiftfounder",
+      url: authorUrl,
+      sameAs: [
+        "https://t.me/lastshiftfounder",
+        "https://paragraph.com/@lastshiftcoin",
+      ],
+    };
+  }
+  return {
+    "@type": "Person",
+    name: author,
+    url: authorUrl,
+  };
+}
+
+/**
  * JSON-LD builders for /blog surfaces.
  *
  * All functions return plain objects. Pages serialize with
@@ -93,11 +128,7 @@ export function blogPostingJsonLd(post: BlogPost) {
       name: ORG_NAME,
       logo: { "@type": "ImageObject", url: ORG_LOGO },
     },
-    author: {
-      "@type": "Person",
-      name: frontmatter.author,
-      url: frontmatter.author_url,
-    },
+    author: authorPersonJsonLd(frontmatter.author, frontmatter.author_url),
     articleSection: categoryDisplayName(frontmatter.category),
     keywords: frontmatter.target_keyword,
   };

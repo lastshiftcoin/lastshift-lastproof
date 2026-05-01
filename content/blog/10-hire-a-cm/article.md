@@ -169,12 +169,39 @@ skipping the vetting step. founders in a hurry to launch hire the first cm who d
   "@context": "https://schema.org",
   "@type": "HowTo",
   "name": "How to hire a community manager for your memecoin",
+  "description": "A five-step process for hiring a verifiable, non-rugger community manager for a memecoin project — sourcing, vetting, trialing, and contracting using on-chain proofs.",
+  "totalTime": "P1W",
   "step": [
-    {"@type": "HowToStep", "name": "Decide what you need", "text": "..."},
-    {"@type": "HowToStep", "name": "Source candidates", "text": "..."},
-    {"@type": "HowToStep", "name": "Vet in 30 minutes", "text": "..."},
-    {"@type": "HowToStep", "name": "Run a one-week trial", "text": "..."},
-    {"@type": "HowToStep", "name": "Sign contract structure", "text": "..."}
+    {
+      "@type": "HowToStep",
+      "position": 1,
+      "name": "Decide what you actually need",
+      "text": "Define hours per week, channels owned (Telegram, X, Discord), and the specific outcomes you'll measure. A memecoin in launch week needs a different operator than one in steady-state."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 2,
+      "name": "Source candidates from operator search tools",
+      "text": "Use SHIFTBOT on lastproof.app to query the Grid for community managers with the right tier, category match, and DEV proofs. Avoid open-call hiring posts in TG groups — they attract grifters first."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 3,
+      "name": "Vet in 30 minutes",
+      "text": "For each shortlisted candidate, open their lastproof.app/@handle profile, count DEV proofs from past projects, click through to one past project for consistency, and DM one past dev for a reference. Reject anyone with zero DEV proofs."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 4,
+      "name": "Run a one-week paid trial",
+      "text": "Pay a fixed weekly fee for a defined scope. Watch how they respond to FUD, handle a launch announcement, and engage with the community. Track engagement quality, not vanity metrics."
+    },
+    {
+      "@type": "HowToStep",
+      "position": 5,
+      "name": "Sign a contract with clear scope and termination",
+      "text": "Fixed monthly fee in stablecoin (USDC/USDT) plus optional vested token bonus. Include a 30-day notice clause both ways and explicit deliverables. Avoid token-only payment — it correlates with operator dumping on launch."
+    }
   ]
 }
 ```

@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    site: "@lastshft",
+    site: "@lastshiftai",
     title: TITLE,
     description: DESCRIPTION,
     images: ["/og-image.png"],
@@ -46,15 +46,33 @@ export const metadata: Metadata = {
  * pages like /grid can opt out and render their own terminal chrome.
  */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // Sitewide Organization schema. Per LASTSHIFT_Brand_Entity_Reference v1.0:
+  // - LASTPROOF is a child of LASTSHIFT.AI (the parent dev org)
+  // - Canonical X handles are @lastshiftai (company) + @LASTSHIFTCOIN (token)
+  // - The "@lastshft" handle that lived here previously was incorrect
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: SITE_NAME,
     url: SITE_URL,
-    description: DESCRIPTION,
+    logo: `${SITE_URL}/shiftbot-logo.png`,
+    description:
+      "Web3 operator verification platform built on Solana. First tool in the LASTSHIFT Terminal ecosystem developed by LASTSHIFT.AI.",
+    parentOrganization: {
+      "@type": "Organization",
+      name: "LASTSHIFT.AI",
+      url: "https://lastshift.ai",
+      description:
+        "Pseudonymous software developer building the LASTSHIFT Terminal — an AI tool platform for web3 operators on Solana.",
+    },
     sameAs: [
-      "https://x.com/lastshft",
-      "https://t.me/lastshft",
+      "https://lastshift.ai",
+      "https://lastshiftcoin.com",
+      "https://lastshift.app",
+      "https://x.com/lastshiftai",
+      "https://x.com/LASTSHIFTCOIN",
+      "https://t.me/LastShiftCoin",
+      "https://t.me/LastShiftCoinBreakroom",
     ],
   };
 

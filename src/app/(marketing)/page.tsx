@@ -9,9 +9,105 @@ import Popup5000 from "@/components/Popup5000";
  * First-5000 popup shows on first visit after 1s delay (once per session).
  */
 export default async function HomePage() {
+  // Homepage-only JSON-LD: SoftwareApplication (LASTPROOF as a tool) +
+  // WebSite/SearchAction (so search engines surface a sitelinks search
+  // box pointing at /operators?q=). Sitewide Organization schema lives
+  // in src/app/layout.tsx — do NOT duplicate it here.
+  const softwareAppJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "LASTPROOF",
+    applicationCategory: "BusinessApplication",
+    applicationSubCategory: "Web3 Operator Verification Platform",
+    operatingSystem: "Web",
+    url: "https://lastproof.app",
+    description:
+      "On-chain verified profiles for web3 operators. Hire community managers, KOLs, raid leaders, mods, and 12 other operator types backed by immutable Solana proofs of work. Requires a LASTSHIFT Terminal ID for full access.",
+    image: "https://lastproof.app/og-image.png",
+    screenshot: "https://lastproof.app/og-image.png",
+    offers: [
+      {
+        "@type": "Offer",
+        name: "Operator Profile",
+        price: "10",
+        priceCurrency: "USD",
+        priceSpecification: {
+          "@type": "UnitPriceSpecification",
+          price: "10",
+          priceCurrency: "USD",
+          billingDuration: "P1M",
+        },
+        description:
+          "Wallet-locked operator profile with unlimited proofs, tier ranking, and SHIFTBOT visibility. 40% off when paid in $LASTSHFT.",
+      },
+      {
+        "@type": "Offer",
+        name: "Collaborator Proof",
+        price: "1",
+        priceCurrency: "USD",
+        description: "On-chain verification from a past collaborator",
+      },
+      {
+        "@type": "Offer",
+        name: "DEV Proof",
+        price: "5",
+        priceCurrency: "USD",
+        description: "On-chain verification signed by a project deployer wallet",
+      },
+    ],
+    featureList: [
+      "Wallet-locked operator profiles",
+      "On-chain proof of work verification on Solana",
+      "DEV proofs from project deployers",
+      "AI-ranked operator search via SHIFTBOT",
+      "Public Grid directory",
+      "Direct-to-Telegram hiring (no platform fees)",
+      "Tier system based on verified proofs (Tier 1 New through Tier 4 Legend)",
+      "15 operator categories",
+    ],
+    publisher: {
+      "@type": "Organization",
+      name: "LASTSHIFT.AI",
+      url: "https://lastshift.ai",
+    },
+    isPartOf: {
+      "@type": "WebApplication",
+      name: "LASTSHIFT Terminal",
+      url: "https://lastshift.app",
+    },
+  };
+
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "LASTPROOF",
+    url: "https://lastproof.app",
+    publisher: {
+      "@type": "Organization",
+      name: "LASTSHIFT.AI",
+      url: "https://lastshift.ai",
+    },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: "https://lastproof.app/operators?q={search_term_string}",
+      },
+      "query-input": "required name=search_term_string",
+    },
+  };
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
+
       {/* X (Twitter) Ads universal pixel — homepage only by design.
           Used to build a retargeting audience for paid X campaigns.
           Do NOT lift this into (marketing)/layout.tsx or app/layout.tsx —
