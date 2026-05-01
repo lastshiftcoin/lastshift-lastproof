@@ -291,9 +291,13 @@ export default function OperatorsClient({ cards, ticker, categoryChips }: Props)
               <ActiveFilterChips chips={chips} onRemove={onRemoveChip} />
             </div>
             <div className="right">
-              <span className="g-result-count">
-                <b>{totalCount}</b> Profiles
-              </span>
+              {/* Profile count hidden temporarily per Kellen 2026-04-27 —
+                  remove the `false &&` guard to restore. */}
+              {false && (
+                <span className="g-result-count">
+                  <b>{totalCount}</b> Profiles
+                </span>
+              )}
               <SortDropdown active={sort} onChange={onChangeSort} locked={locked} />
             </div>
           </div>
