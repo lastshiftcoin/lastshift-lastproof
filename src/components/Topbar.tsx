@@ -45,7 +45,10 @@ export default function Topbar() {
           <span>HOW IT WORKS</span>
         </Link>
         <Link href="/manage" className="pp-topbar-btn">
-          <span>MANAGE PROFILE</span>
+          <span>CREATE PROFILE</span>
+        </Link>
+        <Link href="/manage" className="pp-topbar-btn">
+          <span>SIGN IN</span>
         </Link>
       </div>
     </div>
