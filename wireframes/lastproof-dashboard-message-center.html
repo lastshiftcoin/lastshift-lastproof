@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LASTPROOF — Dashboard Message Center (wireframe v0.1)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  /* ═══════════════════════════════════════════════════════════════════════
+     LASTPROOF — Dashboard Message Center (wireframe v0.1)
+     Lives directly under StatusBar, above the rest of dashboard content.
+     Two distinct content types share the same visual chrome:
+
+       1. PERSONALIZED NUDGES  (state-driven, automatic, non-dismissible —
+                                 they auto-clear when state changes)
+       2. COMPANY ANNOUNCEMENTS (broadcast, manual, dismissible)
+
+     Priority stack — only ONE message visible at a time:
+       a. Critical company announcement (downtime / breaking) — undismissible
+       b. Personalized nudge — by priority order
+       c. Company news — dismissible
+
+     Dot color signals category:
+       orange (--accent) = nudge / action required
+       green             = announcement / positive news
+       gold              = founder/EA-specific
+       red               = critical / alert
+       purple            = upgrade nudge
+
+     Wireframe-only state toggle at the bottom cycles through 8 example
+     states so reviewers can see every variant.
+     ═══════════════════════════════════════════════════════════════════════ */
+  :root {
+    --bg:#0a0b0f;--bg-2:#12131a;--bg-card:#161822;--bg-input:#1a1c28;
+    --border:#1e2030;--border-2:#2a2d42;
+    --text:#e2e4ed;--text-2:#8b8fa3;--text-dim:#5a5e73;
+    --accent:#ff9100;--green:#00e676;--red:#ff5470;--gold:#ffd700;--purple:#a78bfa;
+    --green-dim:rgba(0,230,118,.1);--orange-dim:rgba(255,145,0,.1);
+    --gold-dim:rgba(255,215,0,.1);--purple-dim:rgba(167,139,250,.1);
+    --red-dim:rgba(255,84,112,.1);
+    --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+    --sans:'Inter',-apple-system,sans-serif;
+    --r-card:8px;--r-btn:6px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100dvh;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(30,32,48,.35) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30,32,48,.35) 1px, transparent 1px);
+    background-size: 60px 60px; pointer-events: none; z-index: 0;
+  }
+  body::after {
+    content: ""; position: fixed;
+    top: -200px; right: -200px; width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(255,145,0,.06) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+  .scanlines {
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.05) 2px, rgba(0,0,0,.05) 4px);
+    pointer-events: none; z-index: 9999;
+  }
+  .shell { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 28px 32px 80px; }
+
+  /* ═══ FAUX STATUSBAR (just so the message-center has spatial context) ═══ */
+  .fake-status-bar {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 12px 16px; margin-bottom: 14px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-card);
+  }
+  .fake-status-bar .fsb-key {
+    font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+    letter-spacing: 1.5px; text-transform: uppercase;
+  }
+  .fake-status-bar .fsb-pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 11px; background: var(--green-dim); border: 1px solid var(--green);
+    border-radius: var(--r-btn);
+    font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+    color: var(--green); text-transform: uppercase;
+  }
+  .fake-status-bar .fsb-pill .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+  }
+  .fake-status-bar .fsb-spacer { flex: 1; }
+  .fake-status-bar .fsb-cta {
+    font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+    padding: 8px 14px; background: var(--accent); color: #0a0b0f;
+    border: none; border-radius: var(--r-btn); cursor: pointer; text-transform: uppercase;
+  }
+
+  /* ═══ MESSAGE CENTER ═══ */
+  .mc {
+    display: flex; align-items: stretch; gap: 14px;
+    padding: 16px 18px; margin-bottom: 14px;
+    background: var(--bg-card); border: 1px solid var(--border-2); border-radius: var(--r-card);
+    position: relative; overflow: hidden;
+    transition: border-color .15s;
+  }
+  .mc:hover { border-color: var(--text-dim); }
+  .mc::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent); /* color overridden per-variant below */
+  }
+  .mc-icon {
+    flex-shrink: 0; width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--orange-dim); border: 1px solid var(--accent);
+    border-radius: 50%;
+    color: var(--accent);
+  }
+  .mc-icon svg { width: 18px; height: 18px; }
+  .mc-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .mc-eyebrow {
+    font-family: var(--mono); font-size: 9px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent);
+  }
+  .mc-headline {
+    font-family: var(--sans); font-size: 14px; font-weight: 700;
+    color: var(--text); line-height: 1.35; margin: 0;
+  }
+  .mc-sub {
+    font-family: var(--sans); font-size: 12px;
+    color: var(--text-2); line-height: 1.5; margin: 2px 0 0;
+  }
+  .mc-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .mc-cta {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 1.2px; text-transform: uppercase;
+    padding: 9px 14px; background: var(--orange-dim); color: var(--accent);
+    border: 1px solid var(--accent); border-radius: var(--r-btn); cursor: pointer;
+    white-space: nowrap; text-decoration: none;
+    transition: all .12s;
+  }
+  .mc-cta:hover { background: var(--accent); color: #0a0b0f; }
+  .mc-dismiss {
+    font-family: var(--mono); font-size: 16px; line-height: 1;
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; color: var(--text-dim);
+    border: 1px solid var(--border); border-radius: var(--r-btn); cursor: pointer;
+    transition: all .12s;
+  }
+  .mc-dismiss:hover { color: var(--text); border-color: var(--text-dim); }
+
+  /* ═══ COLOR VARIANTS (left bar + icon + eyebrow + cta) ═══ */
+  .mc.mc-green::before { background: var(--green); }
+  .mc.mc-green .mc-icon { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+  .mc.mc-green .mc-eyebrow { color: var(--green); }
+  .mc.mc-green .mc-cta { background: var(--green-dim); color: var(--green); border-color: var(--green); }
+  .mc.mc-green .mc-cta:hover { background: var(--green); color: #0a0b0f; }
+
+  .mc.mc-gold::before { background: var(--gold); }
+  .mc.mc-gold .mc-icon { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+  .mc.mc-gold .mc-eyebrow { color: var(--gold); }
+  .mc.mc-gold .mc-cta { background: var(--gold-dim); color: var(--gold); border-color: var(--gold); }
+  .mc.mc-gold .mc-cta:hover { background: var(--gold); color: #0a0b0f; }
+
+  .mc.mc-red::before { background: var(--red); }
+  .mc.mc-red .mc-icon { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+  .mc.mc-red .mc-eyebrow { color: var(--red); }
+  .mc.mc-red .mc-cta { background: var(--red-dim); color: var(--red); border-color: var(--red); }
+  .mc.mc-red .mc-cta:hover { background: var(--red); color: #0a0b0f; }
+
+  .mc.mc-purple::before { background: var(--purple); }
+  .mc.mc-purple .mc-icon { background: var(--purple-dim); border-color: var(--purple); color: var(--purple); }
+  .mc.mc-purple .mc-eyebrow { color: var(--purple); }
+  .mc.mc-purple .mc-cta { background: var(--purple-dim); color: var(--purple); border-color: var(--purple); }
+  .mc.mc-purple .mc-cta:hover { background: var(--purple); color: #0a0b0f; }
+
+  /* ═══ FAUX REST OF DASHBOARD (so the strip sits in context) ═══ */
+  .fake-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px;
+  }
+  .fake-stat {
+    padding: 14px 16px; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--r-btn);
+  }
+  .fake-stat .fk { font-family: var(--mono); font-size: 9px; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }
+  .fake-stat .fv { font-family: var(--mono); font-size: 22px; font-weight: 700; color: #fff; }
+
+  /* ═══ WIREFRAME-ONLY STATE TOGGLE (NOT shipped) ═══ */
+  .wf-toggle {
+    position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+    z-index: 10000; display: flex; align-items: center; gap: 6px;
+    padding: 8px 12px; background: rgba(10,11,15,.92);
+    border: 1px dashed var(--border-2); border-radius: 8px;
+    backdrop-filter: blur(6px);
+    max-width: calc(100vw - 28px); overflow-x: auto;
+  }
+  .wf-toggle .lbl {
+    font-family: var(--mono); font-size: 8px; color: var(--text-dim);
+    letter-spacing: 1.5px; text-transform: uppercase;
+    padding-right: 6px; border-right: 1px solid var(--border-2); margin-right: 2px;
+    white-space: nowrap;
+  }
+  .wf-toggle button {
+    background: transparent; border: 1px solid var(--border-2); color: var(--text-dim);
+    font-family: var(--mono); font-size: 9px; letter-spacing: .8px;
+    padding: 5px 9px; border-radius: 4px; cursor: pointer;
+    text-transform: uppercase; white-space: nowrap;
+  }
+  .wf-toggle button.active {
+    color: var(--accent); border-color: var(--accent); background: var(--orange-dim);
+  }
+
+  @media (max-width: 720px) {
+    .shell { padding: 18px 14px 80px; }
+    .fake-grid { grid-template-columns: repeat(2, 1fr); }
+    .mc { flex-direction: column; align-items: flex-start; }
+    .mc-actions { width: 100%; justify-content: space-between; }
+    .mc-cta { flex: 1; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="scanlines" aria-hidden="true"></div>
+
+<div class="shell">
+
+  <!-- Faux StatusBar so the message-center sits in context -->
+  <div class="fake-status-bar">
+    <span class="fsb-key">Profile Status</span>
+    <span class="fsb-pill"><span class="dot"></span>ACTIVE</span>
+    <span class="fsb-spacer"></span>
+    <button class="fsb-cta">UPGRADE PROFILE</button>
+  </div>
+
+  <!-- ═══ MESSAGE CENTER — single visible slot, content swapped via JS ═══ -->
+  <div id="mc-slot"></div>
+
+  <!-- Faux rest of dashboard (stat strip) so the message strip lands in context -->
+  <div class="fake-grid">
+    <div class="fake-stat"><div class="fk">PROOFS</div><div class="fv">0</div></div>
+    <div class="fake-stat"><div class="fk">DEV</div><div class="fv">0</div></div>
+    <div class="fake-stat"><div class="fk">TIER</div><div class="fv">1</div></div>
+    <div class="fake-stat"><div class="fk">ARMY</div><div class="fv">1</div></div>
+  </div>
+
+</div>
+
+<!-- ═══ WIREFRAME-ONLY STATE TOGGLE (NOT SHIPPED) ═══ -->
+<div class="wf-toggle">
+  <span class="lbl">WIREFRAME · STATE</span>
+  <button data-state="no-proofs" class="active">1·NO PROOFS</button>
+  <button data-state="no-avatar">2·NO AVATAR</button>
+  <button data-state="no-dev">3·NO DEV</button>
+  <button data-state="not-published">4·NOT PUBLISHED</button>
+  <button data-state="verify">5·VERIFY HANDLES</button>
+  <button data-state="ea-eligible">6·EA ELIGIBLE</button>
+  <button data-state="announce">7·ANNOUNCE</button>
+  <button data-state="critical">8·CRITICAL</button>
+</div>
+
+<script>
+(function(){
+  /* SVG icons — single source of truth */
+  var ICONS = {
+    badge: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>',
+    user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+    rocket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
+    alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+  };
+
+  /* Message variants — what each state renders.
+     Each entry: { color, icon, eyebrow, headline, sub, cta, dismissible }
+     - color: orange | green | gold | red | purple
+     - dismissible: true for announcements, false for nudges
+     - cta: { label, href? } — href is wireframe-only mock
+  */
+  var VARIANTS = {
+    'no-proofs': {
+      color: '', // orange = default
+      icon: 'badge',
+      eyebrow: 'TIER UP',
+      headline: 'Get your first proof. Move from TIER 1 → TIER 2.',
+      sub: 'Send a request to one past collaborator. They pay $1, you get the proof, your profile gains its first trust signal.',
+      cta: { label: 'GET MY FIRST PROOF →' },
+      dismissible: false
+    },
+    'no-avatar': {
+      color: 'mc-green',
+      icon: 'user',
+      eyebrow: 'PROFILE GAP',
+      headline: 'Add an avatar.',
+      sub: 'Profiles with avatars get 4× the click-through. Takes 10 seconds.',
+      cta: { label: 'ADD AVATAR →' },
+      dismissible: false
+    },
+    'no-dev': {
+      color: 'mc-green',
+      icon: 'badge',
+      eyebrow: 'STRONGEST SIGNAL',
+      headline: 'Earn the DEV badge.',
+      sub: 'Ask one of your past project devs for a $5 DEV proof. The strongest trust signal on the platform.',
+      cta: { label: 'REQUEST DEV PROOF →' },
+      dismissible: false
+    },
+    'not-published': {
+      color: 'mc-red',
+      icon: 'alert',
+      eyebrow: 'NOT LIVE',
+      headline: 'Hit publish to go live.',
+      sub: 'Your profile is saved but not visible on the Grid yet. Hirers can\'t find you until you publish.',
+      cta: { label: 'PUBLISH NOW →' },
+      dismissible: false
+    },
+    'verify': {
+      color: '',
+      icon: 'check',
+      eyebrow: 'BLUE CHECK',
+      headline: 'Verify X + Telegram for the blue check.',
+      sub: 'Linking your X and Telegram handles to the same wallet earns the verification badge.',
+      cta: { label: 'VERIFY HANDLES →' },
+      dismissible: false
+    },
+    'ea-eligible': {
+      color: 'mc-gold',
+      icon: 'star',
+      eyebrow: 'FOUNDING 5,000',
+      headline: 'You\'re eligible — claim your free-forever spot.',
+      sub: 'The first 5,000 operators get the premium profile free, forever. No upgrade required.',
+      cta: { label: 'CLAIM MY SPOT →' },
+      dismissible: false
+    },
+    'announce': {
+      color: 'mc-green',
+      icon: 'rocket',
+      eyebrow: 'ANNOUNCEMENT',
+      headline: 'Chad Function is live.',
+      sub: 'Build your social proof network. Send and receive chad asks from any operator on the Grid.',
+      cta: { label: 'TRY IT →' },
+      dismissible: true
+    },
+    'critical': {
+      color: 'mc-red',
+      icon: 'alert',
+      eyebrow: 'MAINTENANCE',
+      headline: 'Scheduled maintenance — Tuesday 9am UTC.',
+      sub: 'Profile actions and proof submissions will be unavailable for ~15 minutes.',
+      cta: null,
+      dismissible: false
+    }
+  };
+
+  function render(state) {
+    var v = VARIANTS[state];
+    var slot = document.getElementById('mc-slot');
+    var html = '';
+    html += '<div class="mc ' + (v.color || '') + '">';
+    html += '  <div class="mc-icon">' + ICONS[v.icon] + '</div>';
+    html += '  <div class="mc-body">';
+    html += '    <div class="mc-eyebrow">' + v.eyebrow + '</div>';
+    html += '    <h3 class="mc-headline">' + v.headline + '</h3>';
+    if (v.sub) html += '    <p class="mc-sub">' + v.sub + '</p>';
+    html += '  </div>';
+    html += '  <div class="mc-actions">';
+    if (v.cta) html += '    <a class="mc-cta" href="#" onclick="return false;">' + v.cta.label + '</a>';
+    if (v.dismissible) html += '    <button class="mc-dismiss" title="Dismiss" onclick="return false;">×</button>';
+    html += '  </div>';
+    html += '</div>';
+    slot.innerHTML = html;
+  }
+
+  /* Initial render */
+  render('no-proofs');
+
+  /* Toggle wiring */
+  document.querySelectorAll('.wf-toggle button').forEach(function(b) {
+    b.addEventListener('click', function() {
+      document.querySelectorAll('.wf-toggle button').forEach(function(x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      render(b.dataset.state);
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
