@@ -18,6 +18,7 @@ import { StatQuad } from "./StatQuad";
 import { TrustTierRow } from "./TrustTierRow";
 import { StatusBar } from "./StatusBar";
 import { CampaignFomoStrip } from "./CampaignFomoStrip";
+import { AnnouncementsBoard } from "./AnnouncementsBoard";
 import { IdentityCard } from "./IdentityCard";
 import { ChadManagementStrip } from "@/components/chad/ChadManagementStrip";
 import { CategoriesCard } from "./CategoriesCard";
@@ -118,6 +119,10 @@ export function DashboardContent({ profile, primaryCategory, additionalCategorie
         campaignActive={!profile.isPaid}
         onProfileUpdate={onProfileUpdate}
       />
+
+      {/* ═══ ANNOUNCEMENTS BOARD — company broadcasts; hides itself
+            when all messages dismissed (per-wallet localStorage) ═══ */}
+      <AnnouncementsBoard walletAddress={profile.terminalWallet} />
 
       {/* ═══ CHAD MANAGEMENT — feature-flag-gated, self-fetches counts ═══ */}
       <ChadManagementStrip />

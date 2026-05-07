@@ -805,3 +805,93 @@ textarea.field-input{font-family:var(--sans);font-size:13px;resize:vertical;min-
   border-color: var(--text-2, #9ca3af);
   background: rgba(156, 163, 175, .08);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ANNOUNCEMENTS BOARD — dashboard message strip
+   Component: src/components/dashboard/AnnouncementsBoard.tsx
+   Wireframe: wireframes/lastproof-dashboard-message-center.html (v0.3)
+   ═══════════════════════════════════════════════════════════════════════ */
+.db-page .ann-board {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 18px 12px;
+  margin: 0 0 14px;
+}
+.db-page .ann-header {
+  display: flex; align-items: center; gap: 10px;
+  padding-bottom: 12px; margin-bottom: 12px;
+  border-bottom: 1px dashed var(--border);
+}
+.db-page .ann-header-icon {
+  width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(255, 145, 0, .1);
+  border: 1px solid rgba(255, 145, 0, .4);
+  border-radius: 6px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.db-page .ann-header-icon svg { width: 14px; height: 14px; }
+.db-page .ann-header-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.db-page .ann-list { display: flex; flex-direction: column; gap: 10px; }
+.db-page .ann-msg {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, .015);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  position: relative;
+  transition: border-color .15s, background .15s;
+}
+.db-page .ann-msg:hover { background: rgba(255, 255, 255, .03); }
+.db-page .ann-msg-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.db-page .ann-msg-meta {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--mono); font-size: 9px; font-weight: 700;
+  letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--text-dim);
+}
+.db-page .ann-msg-tag { color: var(--accent); }
+.db-page .ann-msg-title {
+  font-family: var(--sans); font-size: 14px; font-weight: 700;
+  color: var(--text); line-height: 1.35; margin: 0;
+}
+.db-page .ann-msg-sub {
+  font-family: var(--sans); font-size: 12px;
+  color: var(--text-2); line-height: 1.55; margin: 2px 0 0;
+}
+.db-page .ann-msg-dismiss {
+  flex-shrink: 0;
+  font-family: var(--mono); font-size: 16px; line-height: 1;
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; color: var(--text-dim);
+  border: 1px solid transparent; border-radius: 6px; cursor: pointer;
+  transition: all .12s;
+  padding: 0;
+}
+.db-page .ann-msg:hover .ann-msg-dismiss { border-color: var(--border); }
+.db-page .ann-msg-dismiss:hover {
+  color: var(--text); border-color: var(--text-dim) !important;
+}
+
+/* Color variants — left border + tag color */
+.db-page .ann-msg.ann-color-default { border-left-color: var(--accent); }
+.db-page .ann-msg.ann-color-default .ann-msg-tag { color: var(--accent); }
+.db-page .ann-msg.ann-color-green { border-left-color: var(--green); }
+.db-page .ann-msg.ann-color-green .ann-msg-tag { color: var(--green); }
+.db-page .ann-msg.ann-color-gold { border-left-color: var(--gold); }
+.db-page .ann-msg.ann-color-gold .ann-msg-tag { color: var(--gold); }
+.db-page .ann-msg.ann-color-red { border-left-color: var(--red); }
+.db-page .ann-msg.ann-color-red .ann-msg-tag { color: var(--red); }
+.db-page .ann-msg.ann-color-purple { border-left-color: var(--purple); }
+.db-page .ann-msg.ann-color-purple .ann-msg-tag { color: var(--purple); }
