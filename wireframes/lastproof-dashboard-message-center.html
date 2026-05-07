@@ -119,15 +119,6 @@
     font-family: var(--mono); font-size: 11px; font-weight: 700;
     color: var(--text); letter-spacing: 1.5px; text-transform: uppercase;
   }
-  .mb-header-count {
-    margin-left: auto;
-    font-family: var(--mono); font-size: 10px; font-weight: 700;
-    color: var(--text-dim); letter-spacing: 1px;
-    padding: 4px 8px;
-    border: 1px solid var(--border); border-radius: var(--r-btn);
-    background: rgba(255,255,255,.02);
-  }
-
   /* Message list */
   .mb-list { display: flex; flex-direction: column; gap: 10px; }
   .mb-msg {
@@ -149,8 +140,6 @@
     color: var(--text-dim);
   }
   .mb-msg-tag { color: var(--accent); }
-  .mb-msg-date { color: var(--text-dim); }
-  .mb-msg-date::before { content: "·"; margin-right: 8px; opacity: .5; }
   .mb-msg-title {
     font-family: var(--sans); font-size: 14px; font-weight: 700;
     color: var(--text); line-height: 1.35; margin: 0;
@@ -266,8 +255,7 @@
           <line x1="8" y1="17" x2="13" y2="17"/>
         </svg>
       </span>
-      <span class="mb-header-title">MESSAGE BOARD</span>
-      <span class="mb-header-count" id="mb-count">3 MESSAGES</span>
+      <span class="mb-header-title">LASTPROOF ANNOUNCEMENTS</span>
     </div>
     <div class="mb-list" id="mb-list"></div>
   </div>
@@ -293,37 +281,32 @@
 
 <script>
 (function(){
-  /* Sample announcements pool. Each: { color, tag, date, title, sub }
+  /* Sample announcements pool. Each: { color, tag, title, sub }
      - color: '' (orange default) | 'mb-green' | 'mb-gold' | 'mb-red' | 'mb-purple'
      - tag: short eyebrow label
-     - date: short relative or short ISO
   */
   var ALL = {
     grid: {
       color: 'mb-green',
       tag: 'LAUNCH',
-      date: 'TODAY',
       title: 'The Grid is now open.',
-      sub: 'Find operators, get found, get hired. Live as of 2026-05-01.'
+      sub: 'Find operators, get found, get hired.'
     },
     chad: {
       color: 'mb-green',
       tag: 'NEW FEATURE',
-      date: '2 DAYS AGO',
       title: 'Chad Function is live.',
       sub: 'Build your social proof network — send and receive chad asks from any operator on the Grid.'
     },
     forever: {
       color: 'mb-gold',
       tag: 'FOUNDING 5,000',
-      date: '5 DAYS AGO',
       title: 'First 5,000 profiles are now free forever.',
       sub: 'No 30-day timer. No auto-conversion. Claim your spot before the cap closes.'
     },
     maintenance: {
       color: 'mb-red',
       tag: 'MAINTENANCE',
-      date: 'TUE 9AM UTC',
       title: 'Scheduled downtime — 15 min window.',
       sub: 'Profile actions and proof submissions will be unavailable during the window.'
     }
@@ -340,13 +323,10 @@
   function render(state) {
     var keys = STATES[state] || [];
     var list = document.getElementById('mb-list');
-    var count = document.getElementById('mb-count');
     if (keys.length === 0) {
-      list.innerHTML = '<div class="mb-empty">No messages right now</div>';
-      count.textContent = '0 MESSAGES';
+      list.innerHTML = '<div class="mb-empty">No announcements right now</div>';
       return;
     }
-    count.textContent = keys.length === 1 ? '1 MESSAGE' : (keys.length + ' MESSAGES');
     var html = keys.map(function(k) {
       var m = ALL[k];
       return '' +
@@ -354,7 +334,6 @@
         '  <div class="mb-msg-body">' +
         '    <div class="mb-msg-meta">' +
         '      <span class="mb-msg-tag">' + m.tag + '</span>' +
-        '      <span class="mb-msg-date">' + m.date + '</span>' +
         '    </div>' +
         '    <h3 class="mb-msg-title">' + m.title + '</h3>' +
         '    <p class="mb-msg-sub">' + m.sub + '</p>' +
