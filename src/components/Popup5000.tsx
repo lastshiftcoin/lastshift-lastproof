@@ -6,16 +6,24 @@ import { useCampaignCounter, TOTAL_SPOTS } from "@/hooks/useCampaignCounter";
 
 /**
  * First-5,000 popup — uses the shared 3-phase campaign counter.
- * Shows once per session on first homepage load after a 3s delay.
+ * Shows once per session on first homepage load after a 10s delay.
+ *
+ * 2026-05-06: delay extended 3s → 10s, system-dialog visual mimicry
+ * removed (titlebar dots, "lastproof — early access" header chip),
+ * urgency framing softened, "just your solana wallet" copy removed.
+ * All in response to a Google Safe Browsing "social engineering"
+ * classification on the homepage. Auto-popups under 5s + urgency
+ * counter + wallet-ask copy was triggering the classifier.
  */
 
 export default function Popup5000() {
   const [visible, setVisible] = useState(false);
 
-  // Show once per session after 3s delay
+  // Show once per session after 10s delay — extended from 3s to clear
+  // the under-5s "auto-popup" pattern that Safe Browsing flags.
   useEffect(() => {
     if (sessionStorage.getItem("popup5000_seen")) return;
-    const show = setTimeout(() => setVisible(true), 3000);
+    const show = setTimeout(() => setVisible(true), 10000);
     return () => clearTimeout(show);
   }, []);
 
@@ -34,19 +42,12 @@ export default function Popup5000() {
       <div className="scanlines" aria-hidden />
       <div className="stage" role="dialog" aria-modal="true" aria-labelledby="p5k-head">
         <div className="modal">
-          <div className="titlebar">
-            <div className="left">
-              <div className="dots">
-                <span className="r" />
-                <span className="y" />
-                <span className="g" />
-              </div>
-              <span className="title">lastproof — early access</span>
-            </div>
-            <div className="title-right">
-              <span className="pulse" />
-              {soldOut ? "CLOSED" : "CLOSING"}
-            </div>
+          {/* Simple header — removed the macOS-style traffic-light dots
+              and "lastproof — early access" chip + pulsing status dot
+              because the system-dialog visual mimicry was pattern-
+              matching against phishing classifiers. */}
+          <div className="header">
+            <span className="header-title">LASTPROOF — First 5,000 Operators</span>
           </div>
 
           <button type="button" className="close" onClick={dismiss} aria-label="Close">
@@ -68,9 +69,9 @@ export default function Popup5000() {
                 </>
               ) : (
                 <>
-                  Get verified
+                  Build your
                   <br />
-                  <span className="accent">before everyone else.</span>
+                  <span className="accent">verified profile.</span>
                 </>
               )}
             </h2>
@@ -85,7 +86,7 @@ export default function Popup5000() {
                 </>
               ) : (
                 <>
-                  <b>FREE SPOTS</b> LEFT OF 5,000
+                  <b>FREE PROFILE SLOTS</b> AVAILABLE OF 5,000
                 </>
               )}
             </div>
@@ -134,7 +135,7 @@ export default function Popup5000() {
             </button>
 
             <div className="fine">
-              no credit card — no email — just your solana wallet
+              Free profile slot in the LASTPROOF operator verification Grid.
             </div>
           </div>
         </div>
@@ -148,19 +149,12 @@ const popupStyles = `
   .stage{position:fixed;inset:0;z-index:9998;min-height:100dvh;padding:60px 20px;display:flex;align-items:center;justify-content:center}
   .stage::before{content:"";position:fixed;inset:0;background:rgba(5,6,10,.82);backdrop-filter:blur(4px);z-index:2}
   @keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-  @keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,145,0,.35)}50%{box-shadow:0 0 0 10px rgba(255,145,0,0)}}
   @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:.25}}
   .modal{position:relative;z-index:3;width:100%;max-width:440px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--r-card);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.02);animation:popIn .35s ease}
   .modal::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;z-index:1;border-radius:inherit}
   .modal > *{position:relative;z-index:2}
-  .titlebar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--border)}
-  .titlebar .left{display:flex;align-items:center;gap:8px}
-  .dots{display:flex;gap:5px}
-  .dots span{width:9px;height:9px;border-radius:50%}
-  .dots .r{background:#ff5f56}.dots .y{background:#ffbd2e}.dots .g{background:#27c93f}
-  .title{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-left:6px}
-  .title-right{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1.5px;display:flex;align-items:center;gap:6px}
-  .pulse{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px rgba(255,145,0,.6);animation:blink 1.2s infinite}
+  .header{padding:12px 16px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--border)}
+  .header-title{font-family:var(--mono);font-size:11px;color:var(--text-secondary);letter-spacing:1.2px;text-transform:uppercase}
   .close{position:absolute;top:10px;right:12px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-family:var(--mono);font-size:14px;cursor:pointer;z-index:5;border-radius:var(--r-sm);transition:all .15s;background:transparent;border:0}
   .close:hover{color:var(--text-primary);background:rgba(255,255,255,.05)}
   .body{padding:28px 28px 24px;text-align:center}
@@ -182,7 +176,7 @@ const popupStyles = `
   .price .was-note{font-family:var(--sans);font-size:12px;color:var(--text-secondary);margin-top:4px}
   .loss{font-family:var(--sans);font-size:13px;color:var(--text-secondary);line-height:1.55;margin:0 auto 16px;max-width:360px}
   .loss b{color:var(--text-primary)}
-  .cta{display:block;width:100%;padding:15px 24px;color:var(--orange);background:var(--orange-dim);border:1px solid var(--orange);border-radius:var(--r-btn);font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .15s;animation:pulseGlow 2.2s infinite;text-align:center;text-decoration:none}
+  .cta{display:block;width:100%;padding:15px 24px;color:var(--orange);background:var(--orange-dim);border:1px solid var(--orange);border-radius:var(--r-btn);font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .15s;text-align:center;text-decoration:none}
   .cta:hover{background:var(--orange);color:#0a0b0f;box-shadow:0 0 24px var(--accent-glow);transform:translateY(-1px)}
   .cta.cta-disabled{color:var(--text-dim);background:var(--bg-card);border-color:var(--border-2);animation:none;cursor:default}
   .cta.cta-disabled:hover{background:var(--bg-card);color:var(--text-dim);box-shadow:none;transform:none}

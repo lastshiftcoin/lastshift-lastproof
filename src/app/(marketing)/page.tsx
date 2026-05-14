@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Script from "next/script";
 import ResultCard from "@/components/ResultCard";
 import { HOMEPAGE_CARDS, OPERATOR_CATEGORIES } from "@/lib/homepage-data";
 import Popup5000 from "@/components/Popup5000";
@@ -108,18 +107,14 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
       />
 
-      {/* X (Twitter) Ads universal pixel — homepage only by design.
-          Used to build a retargeting audience for paid X campaigns.
-          Do NOT lift this into (marketing)/layout.tsx or app/layout.tsx —
-          we explicitly do not want it firing on /grid, /help, /privacy,
-          profile pages, or anywhere else. Disclosure lives at /privacy.
-          Pixel ID `rc4w7` is public (visible in browser source). */}
-      <Script id="x-ads-pixel" strategy="afterInteractive">
-        {`!function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);
-},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.src='https://static.ads-twitter.com/uwt.js',
-a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
-twq('config','rc4w7');`}
-      </Script>
+      {/* X (Twitter) Ads pixel temporarily REMOVED 2026-05-06.
+          Google Safe Browsing flagged the homepage as "social engineering"
+          on 2026-05-05. Multiple third-party trackers + auto-popup +
+          urgency counter + wallet-ask copy stacked into the classic
+          drainer-phishing fingerprint. Pulling the pixel during the
+          review window removes one variable. Restore (re-add the
+          <Script id="x-ads-pixel" ...> block from commit 7dd4be0) only
+          after Google clears the site via Search Console review. */}
 
       <section className="hero">
         <div className="hero-eyebrow">
