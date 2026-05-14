@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import type { GridCardView } from "@/lib/grid/grid-view";
 
 const TIER_NAME: Record<number, string> = {
@@ -38,11 +40,13 @@ export default function GridCard({ card }: { card: GridCardView }) {
     >
       <div className="g-card-grid">
         {card.avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             className="g-avatar g-avatar-img"
             src={card.avatarUrl}
             alt={card.displayName}
+            width={60}
+            height={60}
+            sizes="(max-width: 768px) 48px, 60px"
           />
         ) : (
           <div className="g-avatar" data-av={av}>
