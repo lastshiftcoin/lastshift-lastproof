@@ -53,6 +53,17 @@ const ANNOUNCEMENTS: Announcement[] = [
       "Every profile pumps proof volume. Every proof feeds the burn. " +
       "Every holder strengthens the floor. The flywheel only spins if we all push.",
   },
+  {
+    id: "telegram-or-invisible-2026-05",
+    color: "red",
+    tag: "TELEGRAM",
+    title: "No Telegram. No hire. No exception.",
+    sub:
+      "The HIRE button on every Grid profile opens Telegram. No handle = devs " +
+      "can't reach you. They scroll to the next operator. Every cold ask you " +
+      "miss is a paid gig that went elsewhere. Don't be invisible — connect " +
+      "Telegram today.",
+  },
 ];
 
 interface Props {
