@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ProfileVariant, PublicProfileView } from "@/lib/public-profile-view";
 import { prettyWebsiteLabel } from "@/lib/url-utils";
@@ -73,8 +74,15 @@ export function ProfileHero(props: Props) {
     <section className="pp-hero">
       <div className="pp-avatar-wrap">
         {props.avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img className="pp-avatar" src={props.avatarUrl} alt={props.displayName} />
+          <Image
+            className="pp-avatar"
+            src={props.avatarUrl}
+            alt={props.displayName}
+            width={140}
+            height={140}
+            sizes="140px"
+            priority
+          />
         ) : (
           <div className="pp-avatar pp-avatar-default">{props.avatarMonogram}</div>
         )}
