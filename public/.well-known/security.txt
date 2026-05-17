@@ -6,7 +6,7 @@
 # Policy URL. Public acknowledgments for credited researchers live at
 # the Acknowledgments URL.
 
-Contact: mailto:security@lastproof.app
+Contact: mailto:security@lastshift.ai
 Expires: 2027-05-16T00:00:00Z
 Preferred-Languages: en
 Canonical: https://lastproof.app/.well-known/security.txt

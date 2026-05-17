@@ -66,7 +66,7 @@ export default function AcknowledgmentsPage() {
 
         <p className="pp-privacy-intro">
           If you have found a vulnerability, please email{" "}
-          <a href="mailto:security@lastproof.app">security@lastproof.app</a>{" "}
+          <a href="mailto:security@lastshift.ai">security@lastshift.ai</a>{" "}
           before disclosing publicly. We commit to acknowledgment within five
           business days.
         </p>
@@ -81,8 +81,8 @@ export default function AcknowledgmentsPage() {
             <p>
               No public acknowledgments yet. Be the first — report a verified
               issue to{" "}
-              <a href="mailto:security@lastproof.app">
-                security@lastproof.app
+              <a href="mailto:security@lastshift.ai">
+                security@lastshift.ai
               </a>{" "}
               and we will credit you here (with your permission) once
               remediated.
