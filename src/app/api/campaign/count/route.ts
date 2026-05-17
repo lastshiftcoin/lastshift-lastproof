@@ -5,9 +5,10 @@ import { createClient } from "@supabase/supabase-js";
  * GET /api/campaign/count
  *
  * Returns the number of profiles that have claimed the free premium upgrade.
- * Used by useCampaignCounter consumers (FomoCtaStrip, Dashboard FOMO
- * strip, AmbassadorCounter) to check real claim count once the
- * theatrical counter drops below the low-stock threshold (~200).
+ * Used by useCampaignCounter (consumed by the auth-gated Dashboard
+ * FOMO strip and FomoCtaStrip's soldOut check) to verify real claim
+ * count once the theatrical counter drops below the low-stock
+ * threshold (~200).
  *
  * Queries: profiles where ea_claimed = true (column to be added when
  * the claim flow is built). Until then, returns 0 so the popup stays

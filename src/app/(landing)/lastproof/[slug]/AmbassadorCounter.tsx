@@ -1,77 +1,52 @@
-"use client";
-
-import { useState, useEffect, useRef, useCallback } from "react";
-
-function computeTarget(): number {
-  const launchDate = new Date("2026-04-05");
-  const now = new Date();
-  const weeksSinceLaunch = Math.max(
-    0,
-    Math.floor((now.getTime() - launchDate.getTime()) / (7 * 24 * 60 * 60 * 1000))
-  );
-  const baseCount = 437 + weeksSinceLaunch * 82;
-  const jitter = Math.floor(Math.random() * 61) - 30;
-  return Math.min(4800, Math.max(400, baseCount + jitter));
-}
+/**
+ * AmbassadorCounter — formerly a live depleting "X spots left" counter
+ * with a progress bar animated via IntersectionObserver.
+ *
+ * 2026-05-16: counter mechanics REMOVED. Live depleting counts with
+ * scarcity framing ("X spots left", "After 5,000, free access closes
+ * permanently") are a top-weight signal in commercial phishing
+ * classifiers (Google Safe Browsing, Netcraft, PhishTank). Ambassador
+ * landing pages are publicly indexed — anonymous-visitor surface
+ * area — so this is in scope for classifier exposure.
+ *
+ * Component shape preserved (still takes a `type: "badge" | "full"`
+ * prop, still rendered from the same three landing pages) so the
+ * six consumer call-sites in /lastproof/[slug], /earlyaccess, and
+ * /[campaignSlug] do not need to be touched. Each variant now
+ * renders a static, no-count, no-progress-bar replacement:
+ *
+ *   - badge: a small static topbar pill ("FIRST 5,000 · FREE FOREVER")
+ *   - full: a centered single-line callout (no animated counter, no
+ *     progress bar, no "X spots left" line)
+ *
+ * The component is now a server component — no state, no refs, no
+ * useEffect, no IntersectionObserver. Removed:
+ *   - import { useState, useEffect, useRef, useCallback }
+ *   - computeTarget() time-based extrapolation
+ *   - the animateCounter requestAnimationFrame loop
+ *   - the IntersectionObserver mount logic
+ *
+ * If the EA cap is reached and we want to retire this surface
+ * entirely, delete the import + JSX from each of the three landing
+ * pages — at that point this stub can be removed in a follow-up.
+ */
 
 export function AmbassadorCounter({ type }: { type: "badge" | "full" }) {
-  const [count, setCount] = useState(0);
-  const [target] = useState(computeTarget);
-  const remaining = 5000 - target;
-  const animatedRef = useRef(false);
-  const sectionRef = useRef<HTMLDivElement>(null);
-
-  const animateCounter = useCallback(() => {
-    if (animatedRef.current) return;
-    animatedRef.current = true;
-    const duration = 1500;
-    const start = performance.now();
-    function tick(ts: number) {
-      const elapsed = ts - start;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setCount(Math.round(eased * target));
-      if (progress < 1) requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
-  }, [target]);
-
-  useEffect(() => {
-    if (type === "badge") {
-      setCount(target);
-      return;
-    }
-    const el = sectionRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) animateCounter(); },
-      { threshold: 0.3 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [type, target, animateCounter]);
-
   if (type === "badge") {
     return (
-      <span className="af-topbar-badge">{remaining.toLocaleString()} spots left</span>
+      <span className="af-topbar-badge">FIRST 5,000 · FREE FOREVER</span>
     );
   }
 
-  const barWidth = (count / 5000) * 100;
-
   return (
-    <section className="af-section" ref={sectionRef}>
+    <section className="af-section">
       <div className="af-counter-card">
-        <div className="af-counter-label">Operators Building Proofs</div>
-        <div className="af-counter-number">{count.toLocaleString()}</div>
-        <div className="af-counter-of">of <strong>5,000</strong> free spots</div>
-        <div className="af-counter-bar-track">
-          <div className="af-counter-bar-fill" style={{ width: `${barWidth}%` }} />
+        <div className="af-counter-label">Early Access</div>
+        <div className="af-counter-of">
+          Free profile <strong>forever</strong> for the first{" "}
+          <strong>5,000</strong> operators.
         </div>
       </div>
-      <p className="af-section-body" style={{ textAlign: "center", marginTop: 16 }}>
-        <strong>{remaining.toLocaleString()} spots left.</strong> After 5,000, free access closes permanently.
-      </p>
     </section>
   );
 }
