@@ -1,7 +1,6 @@
 import Link from "next/link";
 import ResultCard from "@/components/ResultCard";
 import { HOMEPAGE_CARDS, OPERATOR_CATEGORIES } from "@/lib/homepage-data";
-import Popup5000 from "@/components/Popup5000";
 
 /**
  * LASTPROOF homepage — mirrors wireframes/homepage.html section-for-section.
@@ -283,7 +282,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <Popup5000 />
     </>
   );
 }

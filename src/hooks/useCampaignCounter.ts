@@ -5,7 +5,9 @@ import { useEffect, useState, useCallback } from "react";
 /**
  * Shared 3-phase campaign counter hook.
  *
- * Used by: Popup5000, FomoCtaStrip (legend profile footer), Dashboard FOMO strip.
+ * Used by: FomoCtaStrip (legend profile footer), Dashboard FOMO strip,
+ * AmbassadorCounter (ambassador landing). Homepage Popup5000 was
+ * removed on 2026-05-16.
  *
  * Phase 1 (theatrical): Time-based decay from 5,000 over ~30 days.
  *   Each day reduces by a seeded-random amount in the 150-170 range.
