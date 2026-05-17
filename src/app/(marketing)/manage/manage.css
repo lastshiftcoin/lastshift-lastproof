@@ -126,9 +126,12 @@
   border-radius: 50%;
 }
 
-.mg-dot-red { background: #ff5f57; }
-.mg-dot-yellow { background: #febc2e; }
-.mg-dot-green { background: #28c840; }
+/* R/Y/G dot fill removed 2026-05-16 — phishing-classifier mitigation
+ * (macOS-window-mimicry pattern on the wallet-connect surface). Size,
+ * gap, and titlebar layout preserved by base .mg-dot rule above. */
+.mg-dot-red { background: transparent; }
+.mg-dot-yellow { background: transparent; }
+.mg-dot-green { background: transparent; }
 
 .mg-titlebar-title {
   flex: 1;

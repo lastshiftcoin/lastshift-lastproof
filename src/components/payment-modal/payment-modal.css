@@ -50,9 +50,10 @@
 .pay-bar-title { font-weight: 400; text-transform: lowercase; }
 .pay-dots { display: flex; gap: 5px; }
 .pay-dots span { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-.pay-dot-r { background: #ff5f56; }
-.pay-dot-y { background: #ffbd2e; }
-.pay-dot-g { background: #27c93f; }
+/* R/Y/G dot fill removed 2026-05-16 — phishing-classifier mitigation. Size/gap preserved by .pay-dots span above. */
+.pay-dot-r { background: transparent; }
+.pay-dot-y { background: transparent; }
+.pay-dot-g { background: transparent; }
 .pay-bar-close {
   background: none;
   border: 1px solid var(--pm-line);

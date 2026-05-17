@@ -84,9 +84,10 @@
 .hc-bar-title { font-weight: 400; }
 .hc-dots { display: flex; gap: 5px; }
 .hc-dots span { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-.hc-dot-r { background: #ff5f56; }
-.hc-dot-y { background: #ffbd2e; }
-.hc-dot-g { background: #27c93f; }
+/* R/Y/G dot fill removed 2026-05-16 — phishing-classifier mitigation. Size/gap preserved by .hc-dots span above. */
+.hc-dot-r { background: transparent; }
+.hc-dot-y { background: transparent; }
+.hc-dot-g { background: transparent; }
 .hc-bar-right { display: flex; align-items: center; gap: 8px; }
 .hc-bar-close {
   background: none; border: 1px solid var(--hc-line); color: var(--hc-dim);

@@ -98,7 +98,8 @@ const gridStyles = `
   .titlebar .tb-left{display:flex;align-items:center;gap:8px}
   .dots{display:flex;gap:6px}
   .dots span{width:10px;height:10px;border-radius:50%}
-  .dots .r{background:#ff5f56}.dots .y{background:#ffbd2e}.dots .g{background:#27c93f}
+  /* R/Y/G dot fill removed 2026-05-16 — phishing-classifier mitigation. Size/gap preserved by .dots span above. */
+  .dots .r{background:transparent}.dots .y{background:transparent}.dots .g{background:transparent}
   .title{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-left:8px}
   .title-right{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1px}
   .tbody{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px 24px;overflow-y:auto;position:relative}

@@ -216,9 +216,12 @@
 }
 .af-browser-dots { display: flex; gap: 6px; }
 .af-dot { width: 10px; height: 10px; border-radius: 50%; }
-.af-dot.r { background: #ff5f57; }
-.af-dot.y { background: #ffbd2e; }
-.af-dot.g { background: #28ca41; }
+/* R/Y/G dot fill removed 2026-05-16 — phishing-classifier mitigation.
+ * Size/gap preserved by .af-dot above so the browser-chrome frame
+ * keeps its same footprint. */
+.af-dot.r { background: transparent; }
+.af-dot.y { background: transparent; }
+.af-dot.g { background: transparent; }
 .af-browser-url {
   flex: 1; margin-left: 8px; padding: 5px 12px;
   background: var(--bg-primary); border-radius: 4px;

@@ -121,9 +121,10 @@
 .um-bar-right { display: flex; align-items: center; gap: 8px; font-size: 9px; letter-spacing: 0.15em; }
 .um-dots      { display: flex; gap: 5px; }
 .um-dots span { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-.um-dot-r     { background: #ff5f56; }
-.um-dot-y     { background: #ffbd2e; }
-.um-dot-g     { background: #27c93f; }
+/* R/Y/G dot fill removed 2026-05-16 — phishing-classifier mitigation. Size/gap preserved by .um-dots span above. */
+.um-dot-r     { background: transparent; }
+.um-dot-y     { background: transparent; }
+.um-dot-g     { background: transparent; }
 .um-bar-title {
   color: var(--um-dim);
   font-weight: 400;
