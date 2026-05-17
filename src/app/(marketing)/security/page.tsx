@@ -50,7 +50,7 @@ export default function SecurityPolicyPage() {
           </h2>
           <p>
             Email reports to{" "}
-            <a href="mailto:security@lastproof.app">security@lastproof.app</a>.
+            <a href="mailto:security@lastshift.ai">security@lastshift.ai</a>.
             Include:
           </p>
           <ol>
@@ -77,8 +77,8 @@ export default function SecurityPolicyPage() {
           <ol>
             <li>
               reports a vulnerability privately to{" "}
-              <a href="mailto:security@lastproof.app">
-                security@lastproof.app
+              <a href="mailto:security@lastshift.ai">
+                security@lastshift.ai
               </a>{" "}
               and gives us a reasonable opportunity to remediate before public
               disclosure,
@@ -210,7 +210,7 @@ export default function SecurityPolicyPage() {
           <p>
             We do not currently publish a PGP key. Reports may be sent in
             plaintext to{" "}
-            <a href="mailto:security@lastproof.app">security@lastproof.app</a>{" "}
+            <a href="mailto:security@lastshift.ai">security@lastshift.ai</a>{" "}
             over standard transport-encrypted email. If you require PGP, contact
             us first to coordinate key exchange.
           </p>
