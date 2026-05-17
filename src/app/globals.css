@@ -1186,11 +1186,15 @@ footer.lp-footer a:hover { color: var(--text-primary); }
 }
 .add-chad-modal > * { position: relative; z-index: 2; }
 
-/* Titlebar — macOS dot palette (not status colors) + right-side pulse */
+/* Titlebar — R/Y/G dot fill removed 2026-05-16 (phishing-classifier
+ * mitigation, macOS-window-mimicry pattern). Element width/height/
+ * border-radius are set by the base .acm-dot rule, so layout/spacing
+ * around the title text is preserved — dots are now invisible 9×9
+ * placeholders. */
 .acm-titlebar { background: rgba(0, 0, 0, 0.3); }
-.acm-dot-r { background: #ff5f56; }
-.acm-dot-y { background: #ffbd2e; }
-.acm-dot-g { background: #27c93f; }
+.acm-dot-r { background: transparent; }
+.acm-dot-y { background: transparent; }
+.acm-dot-g { background: transparent; }
 .acm-titlebar-right {
   margin-left: auto;
   font-family: var(--mono);

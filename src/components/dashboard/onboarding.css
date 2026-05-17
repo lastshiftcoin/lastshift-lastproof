@@ -84,9 +84,10 @@
   height: 9px;
   border-radius: 50%;
 }
-.ob-dots .r { background: #ff5f56; }
-.ob-dots .y { background: #ffbd2e; }
-.ob-dots .g { background: #27c93f; }
+/* R/Y/G dot fill removed 2026-05-16 — phishing-classifier mitigation. Size preserved by .ob-dots span above. */
+.ob-dots .r { background: transparent; }
+.ob-dots .y { background: transparent; }
+.ob-dots .g { background: transparent; }
 .ob-title {
   font-family: var(--mono);
   font-size: 10px;
