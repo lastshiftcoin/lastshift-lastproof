@@ -13,10 +13,14 @@
  * page if they're an ambassador, otherwise to /manage.
  */
 
-import { useCampaignCounter, TOTAL_SPOTS } from "@/hooks/useCampaignCounter";
+import { useCampaignCounter } from "@/hooks/useCampaignCounter";
 
 export function FomoCtaStrip({ campaignSlug }: { campaignSlug?: string | null }) {
-  const { spots, soldOut, filledPct } = useCampaignCounter(true);
+  // Still consult the counter so the entire strip disappears once the
+  // 5,000 cap is hit — but the depleting "X SPOTS LEFT" widget itself
+  // was removed on 2026-05-16 (phishing-classifier urgency-pattern
+  // mitigation). The hook's `soldOut` is the only field we now read.
+  const { soldOut } = useCampaignCounter(true);
 
   // Strip disappears completely when sold out
   if (soldOut) return null;
@@ -25,7 +29,7 @@ export function FomoCtaStrip({ campaignSlug }: { campaignSlug?: string | null })
     <section className="pp-cta-strip pp-fomo-strip">
       <div className="pp-fomo-alert">
         <span className="pp-fomo-dot" />
-        {spots <= 80 ? "EARLY ACCESS · CLOSING SOON" : "EARLY ACCESS · FIRST 5,000 OPERATORS"}
+        EARLY ACCESS · FIRST 5,000 OPERATORS
       </div>
 
       <h2 className="pp-cta-headline">
@@ -42,24 +46,6 @@ export function FomoCtaStrip({ campaignSlug }: { campaignSlug?: string | null })
         <div className="pp-fpc-num">$0</div>
         <div className="pp-fpc-line">forever — first 5,000 only · then $10/mo</div>
         <div className="pp-fpc-fine">NO CREDIT CARD · NO EMAIL · JUST YOUR SOLANA WALLET</div>
-      </div>
-
-      <div className="pp-fomo-counter">
-        <div className="pp-fomo-counter-row">
-          <span>OPERATORS CLAIMED</span>
-          <span className="pp-fomo-counter-num">
-            <span>{(TOTAL_SPOTS - spots).toLocaleString()}</span> / {TOTAL_SPOTS.toLocaleString()}
-          </span>
-        </div>
-        <div className="pp-fomo-bar">
-          <div
-            className="pp-fomo-bar-fill"
-            style={{ width: `${Math.min(filledPct, 100).toFixed(2)}%` }}
-          />
-        </div>
-        <div className="pp-fomo-counter-foot">
-          <b>{spots.toLocaleString()}</b> SPOTS LEFT BEFORE EARLY ACCESS CLOSES
-        </div>
       </div>
 
       <a
