@@ -1,0 +1,14 @@
+# LASTPROOF — Security Contact (RFC 9116)
+#
+# If you have discovered a security vulnerability or potential abuse
+# affecting lastproof.app, please report it via the Contact channel
+# below. Full disclosure policy and safe-harbor terms live at the
+# Policy URL. Public acknowledgments for credited researchers live at
+# the Acknowledgments URL.
+
+Contact: mailto:security@lastproof.app
+Expires: 2027-05-16T00:00:00Z
+Preferred-Languages: en
+Canonical: https://lastproof.app/.well-known/security.txt
+Policy: https://lastproof.app/security
+Acknowledgments: https://lastproof.app/acknowledgments
