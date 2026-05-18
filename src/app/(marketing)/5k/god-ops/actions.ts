@@ -134,7 +134,7 @@ export async function recordWeeklyPayout(
     // Verify the ambassador is on the weekly_flat model
     const { data: amb, error: ambErr } = await sb
       .from("ambassadors")
-      .select("id, campaign_slug, payout_model")
+      .select("id, campaign_slug, payout_model, weekly_program_started_at")
       .eq("id", id)
       .eq("is_active", true)
       .maybeSingle();
@@ -173,12 +173,20 @@ export async function recordWeeklyPayout(
       };
     }
 
+    // Floor at program start so a partial first week doesn't include
+    // backlog claims from before the model launched.
+    const programStart = amb.weekly_program_started_at
+      ? new Date(amb.weekly_program_started_at)
+      : null;
+    const effectiveStart =
+      programStart && programStart > start ? programStart : start;
+
     // Snapshot the count for the week
     const { count, error: countErr } = await sb
       .from("profiles")
       .select("id", { count: "exact", head: true })
       .eq("referred_by", amb.campaign_slug)
-      .gte("ea_claimed_at", start.toISOString())
+      .gte("ea_claimed_at", effectiveStart.toISOString())
       .lte("ea_claimed_at", end.toISOString());
 
     if (countErr) {

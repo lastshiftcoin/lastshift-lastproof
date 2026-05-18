@@ -68,6 +68,7 @@ type Amb = {
   tg_handle: string;
   weekly_referral_target?: number | null;
   display_timezone?: string | null;
+  weekly_program_started_at?: string | null;
 };
 
 export default async function AmbassadorReportPage({ params }: PageProps) {
@@ -302,12 +303,18 @@ function WeeklyFlatReport({
   const target = amb.weekly_referral_target ?? 250;
   const { start, end } = getCurrentWeekWindowPT();
 
+  // Floor the count at the program start date so historical EA claims
+  // from before the new weekly model launched don't pre-fill the bar.
+  const programStartMs = amb.weekly_program_started_at
+    ? new Date(amb.weekly_program_started_at).getTime()
+    : 0;
+  const effectiveStartMs = Math.max(start.getTime(), programStartMs);
   const startMs = start.getTime();
   const endMs = end.getTime();
   const weekReferrals = allReferrals.filter((r) => {
     if (!r.ea_claimed_at) return false;
     const t = new Date(r.ea_claimed_at).getTime();
-    return t >= startMs && t <= endMs;
+    return t >= effectiveStartMs && t <= endMs;
   });
 
   const pct = Math.min(100, Math.round((weekReferrals.length / target) * 100));
@@ -402,7 +409,7 @@ function WeeklyFlatReport({
               {allReferrals.map((r, i) => {
                 const claimed = r.ea_claimed_at ? new Date(r.ea_claimed_at) : null;
                 const inThisWeek = claimed
-                  ? claimed.getTime() >= startMs && claimed.getTime() <= endMs
+                  ? claimed.getTime() >= effectiveStartMs && claimed.getTime() <= endMs
                   : false;
                 return (
                   <tr key={i}>
