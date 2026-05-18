@@ -84,10 +84,9 @@
 .hc-bar-title { font-weight: 400; }
 .hc-dots { display: flex; gap: 5px; }
 .hc-dots span { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-/* R/Y/G dot fill removed 2026-05-16 — phishing-classifier mitigation. Size/gap preserved by .hc-dots span above. */
-.hc-dot-r { background: transparent; }
-.hc-dot-y { background: transparent; }
-.hc-dot-g { background: transparent; }
+/* Per-color dot rules (.hc-dot-r/y/g) fully removed 2026-05-17 —
+ * JSX no longer applies those classes. .hc-dots span above sizes
+ * all child spans. */
 .hc-bar-right { display: flex; align-items: center; gap: 8px; }
 .hc-bar-close {
   background: none; border: 1px solid var(--hc-line); color: var(--hc-dim);

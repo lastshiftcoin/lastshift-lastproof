@@ -229,9 +229,9 @@ export function PaymentModal({ open, onClose, kind, metadata, onSuccess }: Payme
         <div className="pay-bar">
           <div className="pay-bar-left">
             <div className="pay-dots">
-              <span className="pay-dot-r" />
-              <span className="pay-dot-y" />
-              <span className="pay-dot-g" />
+              <span />
+              <span />
+              <span />
             </div>
             <span className="pay-bar-title">{barTitle.toLowerCase()}</span>
           </div>

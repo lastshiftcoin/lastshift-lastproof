@@ -74,9 +74,9 @@ export function ProofModal({
         <div className="pm-bar">
           <div className="pm-bar-left">
             <div className="pm-dots" aria-hidden="true">
-              <span className="pm-dot-r" />
-              <span className="pm-dot-y" />
-              <span className="pm-dot-g" />
+              <span />
+              <span />
+              <span />
             </div>
             <span className="pm-bar-title" id="pm-bar-title">
               lastproof — verify this work

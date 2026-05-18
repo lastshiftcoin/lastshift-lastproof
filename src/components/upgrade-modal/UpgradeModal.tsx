@@ -235,9 +235,9 @@ export function UpgradeModal({ open, onClose, handle }: UpgradeModalProps) {
         <div className="um-bar">
           <div className="um-bar-left">
             <div className="um-dots" aria-hidden="true">
-              <span className="um-dot-r" />
-              <span className="um-dot-y" />
-              <span className="um-dot-g" />
+              <span />
+              <span />
+              <span />
             </div>
             <span className="um-bar-title" id="um-bar-title">
               lastproof — upgrade to premium

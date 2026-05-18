@@ -929,9 +929,8 @@ footer.lp-footer a:hover { color: var(--text-primary); }
   border-bottom: 1px solid var(--border);
 }
 .acm-dot { width: 10px; height: 10px; border-radius: 50%; }
-.acm-dot-r { background: var(--red); }
-.acm-dot-y { background: var(--gold); }
-.acm-dot-g { background: var(--green); }
+/* Per-color dot rules (.acm-dot-r/y/g) fully removed 2026-05-17 —
+ * JSX uses bare .acm-dot. Dimensions come from .acm-dot above. */
 .acm-title {
   margin-left: 12px;
   font-family: var(--mono);
@@ -1186,15 +1185,10 @@ footer.lp-footer a:hover { color: var(--text-primary); }
 }
 .add-chad-modal > * { position: relative; z-index: 2; }
 
-/* Titlebar — R/Y/G dot fill removed 2026-05-16 (phishing-classifier
- * mitigation, macOS-window-mimicry pattern). Element width/height/
- * border-radius are set by the base .acm-dot rule, so layout/spacing
- * around the title text is preserved — dots are now invisible 9×9
- * placeholders. */
+/* Titlebar background only. Per-color dot rules (.acm-dot-r/y/g)
+ * fully removed 2026-05-17 — JSX no longer applies those classes;
+ * dot dimensions live on the base .acm-dot rule above. */
 .acm-titlebar { background: rgba(0, 0, 0, 0.3); }
-.acm-dot-r { background: transparent; }
-.acm-dot-y { background: transparent; }
-.acm-dot-g { background: transparent; }
 .acm-titlebar-right {
   margin-left: auto;
   font-family: var(--mono);

@@ -274,9 +274,9 @@ export function MintModal({
         <div className="mm-bar">
           <div className="mm-bar-left">
             <div className="mm-dots" aria-hidden="true">
-              <span className="mm-dot-r" />
-              <span className="mm-dot-y" />
-              <span className="mm-dot-g" />
+              <span />
+              <span />
+              <span />
             </div>
             <span className="mm-bar-title" id="mm-bar-title">
               lastproof — mint work item

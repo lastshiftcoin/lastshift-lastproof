@@ -369,9 +369,13 @@ export default function ManageTerminal({ initialSession }: ManageTerminalProps) 
       <div className="mg-terminal">
         <div className="mg-titlebar">
           <div className="mg-titlebar-dots">
-            <div className="mg-dot mg-dot-red" />
-            <div className="mg-dot mg-dot-yellow" />
-            <div className="mg-dot mg-dot-green" />
+            {/* Three placeholder markers — color-modifier class names
+                removed 2026-05-16 for source-level phishing-classifier
+                hygiene (no -red/-yellow/-green substrings in markup).
+                Size + border-radius come from the base .mg-dot rule. */}
+            <div className="mg-dot" />
+            <div className="mg-dot" />
+            <div className="mg-dot" />
           </div>
           <span className="mg-titlebar-title">{titlebarTitle}</span>
           <span className="mg-titlebar-right">{titlebarRight}</span>

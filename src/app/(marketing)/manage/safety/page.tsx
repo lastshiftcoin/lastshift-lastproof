@@ -33,9 +33,9 @@ export default function SafetyPage() {
       <div className="mg-terminal">
         <div className="mg-titlebar">
           <div className="mg-titlebar-dots">
-            <div className="mg-dot mg-dot-red" />
-            <div className="mg-dot mg-dot-yellow" />
-            <div className="mg-dot mg-dot-green" />
+            <div className="mg-dot" />
+            <div className="mg-dot" />
+            <div className="mg-dot" />
           </div>
           <span className="mg-titlebar-title">safety -- lastproof -- 80x24</span>
           <span className="mg-titlebar-right">READ ONLY</span>

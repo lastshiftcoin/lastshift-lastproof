@@ -94,10 +94,9 @@
 .mm-bar-right { display: flex; align-items: center; gap: 8px; font-size: 9px; letter-spacing: 0.15em; }
 .mm-dots { display: flex; gap: 5px; }
 .mm-dots span { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-/* R/Y/G dot fill removed 2026-05-16 — phishing-classifier mitigation. Size/gap preserved by .mm-dots span above. */
-.mm-dot-r { background: transparent; }
-.mm-dot-y { background: transparent; }
-.mm-dot-g { background: transparent; }
+/* Per-color dot rules (.mm-dot-r/y/g) fully removed 2026-05-17 —
+ * JSX no longer applies those classes. .mm-dots span above sizes
+ * all child spans. */
 .mm-bar-title { color: var(--mm-dim); font-weight: 400; margin-left: 6px; text-transform: lowercase; }
 .mm-pulse {
   width: 6px; height: 6px; border-radius: 50%;

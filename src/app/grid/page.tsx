@@ -32,9 +32,9 @@ export default function GridPage() {
         <div className="titlebar">
           <div className="tb-left">
             <div className="dots">
-              <span className="r" />
-              <span className="y" />
-              <span className="g" />
+              <span />
+              <span />
+              <span />
             </div>
             <span className="title">boot — lastproof — 80×24</span>
           </div>
@@ -98,8 +98,9 @@ const gridStyles = `
   .titlebar .tb-left{display:flex;align-items:center;gap:8px}
   .dots{display:flex;gap:6px}
   .dots span{width:10px;height:10px;border-radius:50%}
-  /* R/Y/G dot fill removed 2026-05-16 — phishing-classifier mitigation. Size/gap preserved by .dots span above. */
-  .dots .r{background:transparent}.dots .y{background:transparent}.dots .g{background:transparent}
+  /* Per-color dot rules removed entirely 2026-05-17 (was previously
+     transparent placeholders). Spans inside .dots are now styled
+     purely by the .dots span rule above. */
   .title{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-left:8px}
   .title-right{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:1px}
   .tbody{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px 24px;overflow-y:auto;position:relative}

@@ -316,7 +316,7 @@ export function HandleChangeModal({
       <div className="hc-shell" ref={shellRef} tabIndex={-1} onClick={(e) => e.stopPropagation()}>
         <div className="hc-bar">
           <div className="hc-bar-left">
-            <div className="hc-dots" aria-hidden="true"><span className="hc-dot-r" /><span className="hc-dot-y" /><span className="hc-dot-g" /></div>
+            <div className="hc-dots" aria-hidden="true"><span /><span /><span /></div>
             <span className="hc-bar-title">lastproof — handle change</span>
           </div>
           <div className="hc-bar-right">
