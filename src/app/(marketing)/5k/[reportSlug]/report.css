@@ -145,3 +145,104 @@
   color: #6b7280;
   font-size: 12px;
 }
+
+/* ─── Weekly progress (Habilamar / weekly_flat ambassadors) ─── */
+.rpt-week-window {
+  margin: 20px 0 10px;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+.rpt-progress-card {
+  position: relative;
+  padding: 18px 20px;
+  border: 1px solid rgba(255, 145, 0, 0.35);
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, rgba(255, 145, 0, 0.04) 0%, rgba(255, 145, 0, 0) 60%),
+    #0e1014;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+.rpt-progress-card.hit {
+  border-color: rgba(0, 230, 118, 0.45);
+  background:
+    linear-gradient(135deg, rgba(0, 230, 118, 0.06) 0%, rgba(0, 230, 118, 0) 60%),
+    #0e1014;
+}
+
+.rpt-progress-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.rpt-progress-count {
+  font-size: 32px;
+  font-weight: 700;
+  color: #ff9100;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+.rpt-progress-card.hit .rpt-progress-count {
+  color: #00e676;
+}
+.rpt-progress-of {
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 400;
+  margin-left: 6px;
+}
+.rpt-progress-pct {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #9ca3af;
+  font-weight: 700;
+}
+
+.rpt-progress-track {
+  position: relative;
+  height: 10px;
+  background: #1a1c24;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.rpt-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff9100 0%, #ffa733 100%);
+  border-radius: 5px;
+  transition: width 0.6s ease;
+  box-shadow: 0 0 12px rgba(255, 145, 0, 0.55);
+  position: relative;
+}
+.rpt-progress-card.hit .rpt-progress-fill {
+  background: linear-gradient(90deg, #00e676 0%, #33f08e 100%);
+  box-shadow: 0 0 12px rgba(0, 230, 118, 0.55);
+}
+/* Subtle pulse on the leading edge while still in progress */
+.rpt-progress-card.active .rpt-progress-fill::after {
+  content: "";
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.85);
+  animation: rpt-pulse 1.4s ease-in-out infinite;
+}
+@keyframes rpt-pulse {
+  0%, 100% { opacity: 0.2; }
+  50%      { opacity: 1; }
+}
+
+.rpt-progress-foot {
+  margin-top: 10px;
+  font-size: 11px;
+  color: #9ca3af;
+  letter-spacing: 0.05em;
+}
+.rpt-progress-hit {
+  color: #00e676;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}

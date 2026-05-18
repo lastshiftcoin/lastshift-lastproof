@@ -1,6 +1,14 @@
 {
-  "latest_version": "0.13.7",
+  "latest_version": "0.13.9",
   "entries": [
+    {
+      "version": "0.13.9",
+      "date": "2026-05-17",
+      "category": "improved",
+      "headline": "Ambassador reports now support weekly-quota retainers with FOMO progress bar",
+      "copy": "Ambassador report pages can now run on either a per-referral payout (existing flat $0.50 model) or a weekly-quota retainer model. The new view shows a big progress bar against a weekly referral target that resets every Sunday 8:00 PM Pacific. Times render in the ambassador's local timezone so it reads correctly wherever they are. Each referred profile is now clickable so the ambassador can verify the actual handle. Admins record a Solscan tx for each week's retainer payout from /5k/god-ops — appears as a Solscan receipt on the report.",
+      "source_commits": []
+    },
     {
       "version": "0.13.7",
       "date": "2026-05-01",

@@ -6,6 +6,8 @@ import {
   formatUsd,
 } from "@/lib/ambassador-tiers";
 import { AdminPayoutForm } from "./AdminPayoutForm";
+import { AdminWeeklyPayoutForm } from "./AdminWeeklyPayoutForm";
+import { getCurrentWeekWindowPT, formatInTz, tzOffsetLabel } from "@/lib/weekly-window";
 import "../[reportSlug]/report.css";
 
 /**
@@ -46,9 +48,18 @@ export default async function AdminReportPage() {
 
   const allAmbassadors = ambassadors ?? [];
 
+  // Split by payout model — weekly_flat ambassadors render in a
+  // separate panel with weekly-quota math instead of $0.50 math.
+  const perReferralAmbs = allAmbassadors.filter(
+    (a) => (a.payout_model ?? "per_referral") === "per_referral",
+  );
+  const weeklyFlatAmbs = allAmbassadors.filter(
+    (a) => a.payout_model === "weekly_flat",
+  );
+
   // Build stats for each ambassador — paid/unpaid splits, total earned
   const stats = await Promise.all(
-    allAmbassadors.map(async (amb) => {
+    perReferralAmbs.map(async (amb) => {
       const { data: referrals } = await sb
         .from("profiles")
         .select("ambassador_paid_at")
@@ -78,6 +89,48 @@ export default async function AdminReportPage() {
         referralsAllTime: all.length,
         amountOwed,
         totalPaid,
+      };
+    }),
+  );
+
+  // Weekly-flat stats — count referrals in the current Sun-8pm-PT window
+  const weekWindow = getCurrentWeekWindowPT();
+  const weeklyStats = await Promise.all(
+    weeklyFlatAmbs.map(async (amb) => {
+      const { count: weekCount } = await sb
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("referred_by", amb.campaign_slug)
+        .gte("ea_claimed_at", weekWindow.start.toISOString())
+        .lte("ea_claimed_at", weekWindow.end.toISOString());
+
+      const { count: allTime } = await sb
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("referred_by", amb.campaign_slug);
+
+      const { data: paidThisWeek } = await sb
+        .from("ambassador_payouts")
+        .select("id")
+        .eq("ambassador_id", amb.id)
+        .eq("period_start", weekWindow.start.toISOString())
+        .maybeSingle();
+
+      const tz = amb.display_timezone ?? "America/Los_Angeles";
+      const weekWindowLabel =
+        `${formatInTz(weekWindow.start, tz)} → ` +
+        `${formatInTz(weekWindow.end, tz)} (${tzOffsetLabel(tz)})`;
+
+      return {
+        id: amb.id,
+        tgHandle: amb.tg_handle,
+        campaignSlug: amb.campaign_slug,
+        reportSlug: amb.report_slug,
+        weeklyTarget: amb.weekly_referral_target ?? 0,
+        weekReferrals: weekCount ?? 0,
+        referralsAllTime: allTime ?? 0,
+        alreadyPaidThisWeek: !!paidThisWeek,
+        weekWindowLabel,
       };
     }),
   );
@@ -174,8 +227,8 @@ export default async function AdminReportPage() {
           </tbody>
         </table>
 
-        {/* Mark-as-paid form */}
-        <div className="rpt-section-title">MARK AS PAID</div>
+        {/* Mark-as-paid form (per-referral $0.50 model) */}
+        <div className="rpt-section-title">MARK AS PAID (PER-REFERRAL)</div>
         <AdminPayoutForm
           ambassadors={stats.map((a) => ({
             id: a.id,
@@ -184,6 +237,73 @@ export default async function AdminReportPage() {
             amountOwed: a.amountOwed,
           }))}
         />
+
+        {/* Weekly-flat ambassadors (e.g. Habilamar — $80/mo retainer, 250/wk quota) */}
+        {weeklyStats.length > 0 && (
+          <>
+            <div className="rpt-section-title" style={{ marginTop: 32 }}>
+              WEEKLY RETAINER AMBASSADORS
+            </div>
+            <table className="rpt-table">
+              <thead>
+                <tr>
+                  <th>HANDLE</th>
+                  <th>CAMPAIGN</th>
+                  <th>THIS WEEK</th>
+                  <th>TARGET</th>
+                  <th>ALL-TIME</th>
+                  <th>PAID THIS WEEK?</th>
+                  <th>REPORT</th>
+                </tr>
+              </thead>
+              <tbody>
+                {weeklyStats.map((a) => {
+                  const pct = a.weeklyTarget
+                    ? Math.min(100, Math.round((a.weekReferrals / a.weeklyTarget) * 100))
+                    : 0;
+                  return (
+                    <tr key={a.id}>
+                      <td>{a.tgHandle}</td>
+                      <td style={{ fontSize: 10 }}>/{a.campaignSlug}</td>
+                      <td
+                        style={{
+                          color: a.weekReferrals >= a.weeklyTarget ? "#00e676" : "#ff9100",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {a.weekReferrals} ({pct}%)
+                      </td>
+                      <td>{a.weeklyTarget}</td>
+                      <td>{a.referralsAllTime}</td>
+                      <td>
+                        {a.alreadyPaidThisWeek ? (
+                          <span className="rpt-paid">✓ PAID</span>
+                        ) : (
+                          <span className="rpt-unpaid">⏳ PENDING</span>
+                        )}
+                      </td>
+                      <td>
+                        <a
+                          href={`/5k/${a.reportSlug}`}
+                          className="rpt-tx-link"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          view &rarr;
+                        </a>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            <div className="rpt-section-title" style={{ marginTop: 16 }}>
+              RECORD WEEKLY PAYOUT
+            </div>
+            <AdminWeeklyPayoutForm ambassadors={weeklyStats} />
+          </>
+        )}
       </div>
     </div>
   );
