@@ -335,7 +335,7 @@ function WeeklyFlatReport({
           <h1 className="rpt-title">Hi {amb.tg_handle}</h1>
           <p className="rpt-sub">
             Your weekly goal: <strong>{target} confirmed referrals</strong>. The
-            week resets every Sunday at 8:00 PM Pacific. Every paid week shows
+            week resets every Sunday at 7:00 PM Pacific. Every paid week shows
             below as a Solscan receipt.
           </p>
         </div>
