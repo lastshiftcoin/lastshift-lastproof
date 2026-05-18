@@ -84,10 +84,9 @@
   height: 9px;
   border-radius: 50%;
 }
-/* R/Y/G dot fill removed 2026-05-16 — phishing-classifier mitigation. Size preserved by .ob-dots span above. */
-.ob-dots .r { background: transparent; }
-.ob-dots .y { background: transparent; }
-.ob-dots .g { background: transparent; }
+/* Per-color dot rules (.ob-dots .r/.y/.g) fully removed 2026-05-17 —
+ * JSX no longer applies those classes. .ob-dots span above sizes
+ * all child spans. */
 .ob-title {
   font-family: var(--mono);
   font-size: 10px;

@@ -318,9 +318,9 @@ export function OnboardingModal({ session, operatorId, onComplete, onDisconnect 
         <div className="ob-titlebar">
           <div className="ob-titlebar-left">
             <div className="ob-dots">
-              <span className="r" />
-              <span className="y" />
-              <span className="g" />
+              <span />
+              <span />
+              <span />
             </div>
             <span className="ob-title">lastproof — onboarding</span>
           </div>

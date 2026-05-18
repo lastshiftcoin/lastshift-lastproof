@@ -165,7 +165,7 @@ export default function EarlyAccessLandingPage() {
           <div className="af-browser-frame">
             <div className="af-browser-bar">
               <div className="af-browser-dots">
-                <span className="af-dot r" /><span className="af-dot y" /><span className="af-dot g" />
+                <span className="af-dot" /><span className="af-dot" /><span className="af-dot" />
               </div>
               <div className="af-browser-url">
                 lastproof.app/<span className="af-url-hl">grid</span>

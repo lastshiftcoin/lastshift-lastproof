@@ -126,12 +126,9 @@
   border-radius: 50%;
 }
 
-/* R/Y/G dot fill removed 2026-05-16 — phishing-classifier mitigation
- * (macOS-window-mimicry pattern on the wallet-connect surface). Size,
- * gap, and titlebar layout preserved by base .mg-dot rule above. */
-.mg-dot-red { background: transparent; }
-.mg-dot-yellow { background: transparent; }
-.mg-dot-green { background: transparent; }
+/* Per-color dot rules (.mg-dot-red/yellow/green) fully removed
+ * 2026-05-17 — JSX no longer applies those classes. Dot dimensions
+ * live on the base .mg-dot rule above. */
 
 .mg-titlebar-title {
   flex: 1;

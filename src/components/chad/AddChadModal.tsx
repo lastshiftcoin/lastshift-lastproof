@@ -264,9 +264,9 @@ export function AddChadModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="acm-titlebar">
-          <span className="acm-dot acm-dot-r" />
-          <span className="acm-dot acm-dot-y" />
-          <span className="acm-dot acm-dot-g" />
+          <span className="acm-dot" />
+          <span className="acm-dot" />
+          <span className="acm-dot" />
           <span className="acm-title">lastproof — add chad</span>
           <span className="acm-titlebar-right">
             <span className="acm-titlebar-pulse" />
