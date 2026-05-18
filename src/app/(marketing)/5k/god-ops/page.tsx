@@ -97,11 +97,21 @@ export default async function AdminReportPage() {
   const weekWindow = getCurrentWeekWindowPT();
   const weeklyStats = await Promise.all(
     weeklyFlatAmbs.map(async (amb) => {
+      // Floor the count at the program start date so backlog claims
+      // don't pre-fill the bar (see migration 0030).
+      const programStart = amb.weekly_program_started_at
+        ? new Date(amb.weekly_program_started_at)
+        : null;
+      const effectiveStart =
+        programStart && programStart > weekWindow.start
+          ? programStart
+          : weekWindow.start;
+
       const { count: weekCount } = await sb
         .from("profiles")
         .select("id", { count: "exact", head: true })
         .eq("referred_by", amb.campaign_slug)
-        .gte("ea_claimed_at", weekWindow.start.toISOString())
+        .gte("ea_claimed_at", effectiveStart.toISOString())
         .lte("ea_claimed_at", weekWindow.end.toISOString());
 
       const { count: allTime } = await sb
