@@ -1,10 +1,10 @@
 /**
- * Weekly ambassador window — Sunday 20:00 America/Los_Angeles boundary.
+ * Weekly ambassador window — Sunday 19:00 America/Los_Angeles boundary.
  *
  * Habilamar's $80/month retainer is structured around a 250-referral
- * weekly quota. Weeks run from Sunday 8:00pm Pacific Time (anchor:
+ * weekly quota. Weeks run from Sunday 7:00pm Pacific Time (anchor:
  * America/Los_Angeles, so DST is handled automatically by the runtime)
- * to the following Sunday at 7:59:59pm Pacific.
+ * to the following Sunday at 6:59:59pm Pacific.
  *
  * `getCurrentWeekWindowPT(now?)` returns the boundaries as plain UTC
  * Date objects so they can be passed to Supabase queries unmodified.
@@ -30,12 +30,12 @@ const WEEKDAY_INDEX: Record<string, number> = {
 };
 
 const PT_TZ = "America/Los_Angeles";
-const WEEK_BOUNDARY_HOUR = 20; // 8pm
+const WEEK_BOUNDARY_HOUR = 19; // 7pm
 
 export interface WeekWindow {
-  /** Sunday 20:00:00 Pacific, in UTC. Inclusive lower bound. */
+  /** Sunday 19:00:00 Pacific, in UTC. Inclusive lower bound. */
   start: Date;
-  /** Following Sunday 19:59:59 Pacific, in UTC. Inclusive upper bound. */
+  /** Following Sunday 18:59:59 Pacific, in UTC. Inclusive upper bound. */
   end: Date;
 }
 
@@ -64,8 +64,8 @@ export function getCurrentWeekWindowPT(now: Date = new Date()): WeekWindow {
 
   const dayIdx = WEEKDAY_INDEX[weekday];
 
-  // Days back to the most recent Sunday 20:00 PT.
-  // If today is Sunday and clock hasn't passed 20:00 yet, the week
+  // Days back to the most recent Sunday 19:00 PT.
+  // If today is Sunday and clock hasn't passed 19:00 yet, the week
   // started LAST Sunday (7 days back).
   let daysBack: number;
   if (dayIdx === 0) {
@@ -74,8 +74,8 @@ export function getCurrentWeekWindowPT(now: Date = new Date()): WeekWindow {
     daysBack = dayIdx;
   }
 
-  // Wall-clock seconds elapsed since the boundary (Sunday 20:00 PT).
-  // For (Sunday, hour < 20), daysBack=7 covers the negative (hour-20).
+  // Wall-clock seconds elapsed since the boundary (Sunday 19:00 PT).
+  // For (Sunday, hour < 19), daysBack=7 covers the negative (hour-19).
   const elapsedSeconds =
     daysBack * 86_400 + (hour - WEEK_BOUNDARY_HOUR) * 3_600 + minute * 60 + second;
 
