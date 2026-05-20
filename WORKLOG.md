@@ -20,6 +20,63 @@ When this file exceeds ~500 lines, roll the oldest half into
 
 ---
 
+## 2026-05-20 00:24 MST — Grid: surface isEarlyAdopter on GridCardView (homepage-wall enablement)
+
+**Device:** the operator's Mac mini (`the operators-Mac-mini.local`, macOS 15.3.1)
+**Platform:** Claude Desktop (`CLAUDE_CODE_ENTRYPOINT=claude-desktop`)
+**Model:** claude-opus-4-6
+**Role:** grid-builder (one-shot, task-specific)
+**Commits:** `5a596e0`
+**Migrations run in prod Supabase:** none
+**Impacts:** none on Terminal
+**Status:** ✅ shipped. Frontend session is now unblocked to build the homepage wall sampler.
+
+### Why
+
+Frontend session is replacing the hardcoded `HOMEPAGE_CARDS` array in
+`src/lib/homepage-data.ts` with real data sampled from `grid_operators`.
+They opened a 7-question relay via the operator for me to answer before
+building. One of their needs is the EA badge on homepage wall cards,
+which required `isEarlyAdopter` to be on `GridCardView`. The field was
+already in the `grid_operators` view + the adapter's row interface,
+just dropped during `transformRow` mapping. Plumbing was three lines.
+
+### Did
+
+- `src/lib/grid/grid-view.ts` — added `isEarlyAdopter: boolean` to
+  `GridCardView` interface with a docstring noting where it surfaces.
+- `src/lib/grid/grid-adapter.ts` — `transformRow` now maps
+  `Boolean(r.is_early_adopter)` into `isEarlyAdopter`.
+- `src/lib/mock/grid-mock.ts` — 10 fixtures updated with
+  `isEarlyAdopter: false` (all false; mock isn't currently imported
+  anywhere — confirmed via grep). Type-compatibility only.
+
+### What I told Frontend (via the operator relay)
+
+Full Q&A is in the chat transcript (this session). Key decisions
+they're adopting:
+
+1. **Sampling lives in `grid-adapter.ts`** as `getHomepageWallSample(n, minWithProofs)` — not the homepage page itself. Single source for any Grid-derived Supabase fetch.
+2. **Fetch-all-shuffle-slice** sampling (Option 1 of their three). Cheap at 33 rows; switch to `ORDER BY random()` RPC if pool exceeds ~1000.
+3. **Stratified `minWithProofs` floor**: bucket A = `proofs_confirmed > 0`, bucket B = no proofs. Shuffle each, pull `min(floor, A.length)` from A, top up from A-remainder + B, final shuffle for display order.
+4. **No moderation filter needed** — grepped `profiles` migrations for any `is_suspended/is_hidden/is_flagged/is_banned/moderation` column, zero hits. View's `is_paid AND published_at AND tier != 5` is complete visibility filter.
+5. **ISR cache the full 33-row list at 60s, then random-slice on every render** — true per-visit randomness with 1 DB query / minute.
+6. **`years` field gets dropped** from homepage wall (replaced with `{projectsCount} projects`). No `years_in_field` column on profiles; computing from `publishedAt` would mislead since LASTPROOF is new.
+
+### Open / next
+
+- **Frontend builds `getHomepageWallSample()` + homepage wiring** next, consuming the now-live `isEarlyAdopter`. They confirmed via the operator they'll proceed as soon as `5a596e0` deploys.
+- **`GRID_MOCK` in `src/lib/mock/grid-mock.ts` is dead code.** No imports anywhere. Worth a cleanup commit in a quiet session — deletes 230 lines.
+- **`grid_operators` view itself unchanged.** The `is_early_adopter` column has been in the view since `0022_grid_view.sql`; this commit just stops dropping it on the way through the adapter.
+
+### Gotchas for next session
+
+- **The new field is required, not optional.** Anything that constructs a `GridCardView` literal (mocks, tests, fixtures) must now include `isEarlyAdopter`. Only one such place exists today (`GRID_MOCK`); I patched it.
+- **Existing `/operators` Grid cards silently gain the field** but don't render it. `GridCard.tsx` doesn't reference `isEarlyAdopter`. If you want an EA badge on /operators cards too, that's a separate visual decision; the data is already flowing.
+- **No /status entry, no VERSION bump** on this commit — it's internal type plumbing with no user-visible change yet. The visible change ships when Frontend lands the homepage wall.
+
+---
+
 ## 2026-05-01 — v0.13.7 — Schema/SEO ship: identity correction + LLM citation surface
 
 **Did:**
