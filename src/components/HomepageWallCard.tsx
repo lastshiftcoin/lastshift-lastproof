@@ -1,51 +1,38 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { type MouseEvent } from "react";
+import Link from "next/link";
 import GridCard from "@/components/grid/GridCard";
 import type { GridCardView } from "@/lib/grid/grid-view";
 
 /**
- * HomepageWallCard — renders the canonical `<GridCard />` but intercepts
- * every click so the homepage wall always sends visitors to /grid
- * instead of opening the individual profile. Per the operator's call: homepage
- * cards are a teaser surface, not a navigation surface.
+ * HomepageWallCard — renders the canonical `<GridCard />` but routes
+ * EVERY interaction (left-click, middle-click, right-click "Open in new
+ * tab", drag-link, copy-link, etc.) to `/grid` instead of the profile.
  *
- * Implementation notes:
- *   - `onClickCapture` (not `onClick`) is essential because GridCard's
- *     inner anchor uses `target="_blank"`. Browsers handle target=_blank
- *     navigation SYNCHRONOUSLY on click — bubble-phase preventDefault
- *     fires too late and the new tab still opens. Capture-phase fires
- *     BEFORE the click reaches the anchor target, so preventDefault is
- *     honored.
- *   - We also handle `onAuxClickCapture` (middle-click) for the same
- *     reason: middle-click on target=_blank anchors opens a new tab
- *     instantly. Capture-phase intercept stops it.
- *   - Right-click "Open link in new tab" from the browser context menu
- *     STILL works (no JS hook for it). That's an OS/browser action,
- *     not a click event. If you need that closed too, GridCard itself
- *     needs a `linkBehavior` / `hrefOverride` prop — GRID builder
- *     territory.
+ * Strategy: overlay a clickable `<Link href="/grid">` over the entire
+ * card and disable the inner GridCard anchor via `pointer-events: none`.
+ * The browser no longer recognizes the inner `<a href="/@handle">` as
+ * interactive — no context menu, no hover preview, no copy-link. The
+ * overlay is the only interactive element, and its href is /grid.
+ *
+ * Hover styles for `.g-card` would normally not fire because the mouse
+ * hovers the overlay layer, not the inner anchor. We mirror the hover
+ * effects via a `.hp-wall-card-wrap:hover .g-card` rule in dashboard
+ * CSS so the visual feedback is preserved.
+ *
+ * Equal heights: the wrap is `display: flex` column with the inner card
+ * `flex: 1` so the anchor stretches to whatever min-height
+ * `HomepageWall` measures and sets on the wrapper.
  */
 export default function HomepageWallCard({ card }: { card: GridCardView }) {
-  const router = useRouter();
-
-  function intercept(e: MouseEvent<HTMLDivElement>) {
-    e.preventDefault();
-    e.stopPropagation();
-    // Modifier-click on the new-tab anchor should still go to /grid per
-    // spec — if the operator wants cmd-click to open /grid in a new tab,
-    // swap router.push for window.open("/grid", "_blank").
-    router.push("/grid");
-  }
-
   return (
-    <div
-      className="hp-wall-card-wrap"
-      onClickCapture={intercept}
-      onAuxClickCapture={intercept}
-    >
+    <div className="hp-wall-card-wrap">
       <GridCard card={card} />
+      <Link
+        href="/grid"
+        className="hp-wall-card-overlay"
+        aria-label="Open the operator Grid"
+      />
     </div>
   );
 }

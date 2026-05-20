@@ -1528,3 +1528,37 @@ footer.lp-footer a:hover { color: var(--text-primary); }
   letter-spacing: 1px;
 }
 @media (max-width: 600px) { .acm-fine { padding: 0 18px 16px; } }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   HOMEPAGE WALL CARD — overlay-link wrapper around GridCard
+   Component: src/components/HomepageWallCard.tsx
+   Inner GridCard's <a href="/@handle"> is disabled via pointer-events;
+   the overlay <Link href="/grid"> sits on top and captures every
+   interaction (click, middle-click, right-click context menu).
+   ═══════════════════════════════════════════════════════════════════════ */
+.hp-wall-card-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.hp-wall-card-wrap > .g-card {
+  flex: 1;             /* fill the JS-measured min-height set by HomepageWall */
+  pointer-events: none; /* kill all interactions on the inner anchor */
+}
+.hp-wall-card-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  text-indent: -9999px; /* hide aria-label text from layout */
+  overflow: hidden;
+}
+/* Mirror .g-card:hover effects (from operators.css) onto the wrap because
+   the mouse is over the overlay, not the inner anchor. */
+.hp-wall-card-wrap:hover > .g-card {
+  background: rgba(255, 145, 0, 0.03);
+  border-color: var(--orange);
+  transform: translateX(2px);
+}
+.hp-wall-card-wrap:hover > .g-card .g-card-view {
+  color: var(--orange);
+}
