@@ -1,5 +1,5 @@
 import Link from "next/link";
-import HomepageWallCard from "@/components/HomepageWallCard";
+import HomepageWall from "@/components/HomepageWall";
 import { OPERATOR_CATEGORIES } from "@/lib/homepage-data";
 import { getHomepageWallSample } from "@/lib/grid/grid-adapter";
 // Reuses the canonical Grid card styles from /operators — single source
@@ -193,11 +193,7 @@ export default async function HomePage() {
           </div>
           <Link className="reshuffle" href="/grid">RESHUFFLE</Link>
         </div>
-        <div className="wall">
-          {wallCards.map((card) => (
-            <HomepageWallCard key={card.handle} card={card} />
-          ))}
-        </div>
+        <HomepageWall cards={wallCards} />
         <div className="wall-foot">
           <Link href="/grid">ENTER THE GRID →</Link>
         </div>
