@@ -82,6 +82,7 @@ function transformRow(r: GridOperatorRow): GridCardView {
     avatarMonogram: monogramFor(displayName),
     tier,
     isVerified: Boolean(r.is_verified),
+    isEarlyAdopter: Boolean(r.is_early_adopter),
     proofsConfirmed: r.proofs_confirmed,
     devProofsConfirmed: r.dev_proofs_confirmed,
     projectsCount: r.projects_count,

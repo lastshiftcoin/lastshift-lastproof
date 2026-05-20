@@ -31,6 +31,11 @@ export interface GridCardView {
   tier: GridTier;
   /** True only if BOTH x_verified AND telegram_verified. */
   isVerified: boolean;
+  /** True if the operator is in the first-5K Early Adopter cohort.
+   *  Sourced from `profiles.is_early_adopter` via the grid_operators view.
+   *  Surfaced as an "EA" badge on homepage wall cards; not currently
+   *  rendered on /operators Grid cards. */
+  isEarlyAdopter: boolean;
 
   // Counts (derived from joins/aggregates in Stage 2)
   proofsConfirmed: number;
