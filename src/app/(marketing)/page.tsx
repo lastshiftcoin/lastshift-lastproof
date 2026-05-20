@@ -1,12 +1,34 @@
 import Link from "next/link";
-import ResultCard from "@/components/ResultCard";
-import { HOMEPAGE_CARDS, OPERATOR_CATEGORIES } from "@/lib/homepage-data";
+import GridCard from "@/components/grid/GridCard";
+import { OPERATOR_CATEGORIES } from "@/lib/homepage-data";
+import { getHomepageWallSample } from "@/lib/grid/grid-adapter";
+// Reuses the canonical Grid card styles from /operators — single source
+// of truth for `.g-card*` so homepage and Grid stay visually identical
+// without duplication.
+import "@/app/(marketing)/operators/operators.css";
+
+/**
+ * Page revalidates at most once per minute. Inside the 60s cache window
+ * every render calls `getHomepageWallSample()` against the cached Grid
+ * list, so visitors within the same minute see different random
+ * selections — true per-visit variety at minimal DB cost (one query per
+ * minute, not per visit).
+ */
+export const revalidate = 60;
 
 /**
  * LASTPROOF homepage — mirrors wireframes/homepage.html section-for-section.
  * First-5000 popup shows on first visit after 1s delay (once per session).
+ *
+ * Wall section pulls real Grid-eligible operators from the live
+ * `grid_operators` view via `getHomepageWallSample(8, 4)` — guarantees
+ * at least 4 of the 8 cards have confirmed proofs. Cards render with
+ * the canonical `<GridCard />` component (same one /operators uses) so
+ * the visual stays consistent without a homepage-only adapter shape.
  */
 export default async function HomePage() {
+  const wallCards = await getHomepageWallSample(8, 4);
+
   // Homepage-only JSON-LD: SoftwareApplication (LASTPROOF as a tool) +
   // WebSite/SearchAction (so search engines surface a sitelinks search
   // box pointing at /operators?q=). Sitewide Organization schema lives
@@ -171,9 +193,9 @@ export default async function HomePage() {
           </div>
           <Link className="reshuffle" href="/grid">RESHUFFLE</Link>
         </div>
-        <div className="wall">
-          {HOMEPAGE_CARDS.map((card) => (
-            <ResultCard key={card.handle} card={card} />
+        <div className="g-cardlist">
+          {wallCards.map((card) => (
+            <GridCard key={card.handle} card={card} />
           ))}
         </div>
         <div className="wall-foot">

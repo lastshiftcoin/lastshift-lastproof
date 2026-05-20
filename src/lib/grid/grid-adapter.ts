@@ -64,6 +64,62 @@ export async function getGridList(): Promise<GridCardView[]> {
   return (data ?? []).map(transformRow);
 }
 
+/**
+ * Sample N Grid-eligible operators for the homepage wall. Stratified by
+ * proof count so the wall always shows at least `minWithProofs` cards
+ * with confirmed proofs (avoids a homepage full of tier-1 / no-proof
+ * profiles, which would undersell the platform).
+ *
+ * Algorithm (per GRID builder's recommendation):
+ *   1. Fetch full Grid list (cached at view level)
+ *   2. Split into bucketA (proofs > 0) and bucketB (no proofs)
+ *   3. Shuffle each bucket independently
+ *   4. Take min(minWithProofs, bucketA.length) from bucketA
+ *   5. Top up to N from bucketA-remainder + bucketB
+ *   6. Shuffle the final N so proof-rich cards aren't always first
+ *
+ * Homepage callsite wraps this in ISR (`revalidate = 60`) so it executes
+ * at most once per minute, with random selection per render giving
+ * per-visit variation within the minute. Empty array on DB error is
+ * intentional — homepage renders an empty wall rather than throwing.
+ */
+export async function getHomepageWallSample(
+  n: number,
+  minWithProofs: number,
+): Promise<GridCardView[]> {
+  const all = await getGridList();
+  if (all.length === 0) return [];
+
+  const withProofs = all.filter((c) => c.proofsConfirmed > 0);
+  const withoutProofs = all.filter((c) => c.proofsConfirmed === 0);
+
+  shuffleInPlace(withProofs);
+  shuffleInPlace(withoutProofs);
+
+  // Floor first — take up to minWithProofs from the proof-rich pool.
+  const floor = Math.min(minWithProofs, withProofs.length);
+  const picked = withProofs.slice(0, floor);
+
+  // Top up to N from the remainder of bucketA, then bucketB.
+  const remainder = withProofs.slice(floor).concat(withoutProofs);
+  for (let i = 0; picked.length < n && i < remainder.length; i++) {
+    picked.push(remainder[i]!);
+  }
+
+  // Final shuffle so the floor-cards aren't always first.
+  shuffleInPlace(picked);
+  return picked;
+}
+
+/** Fisher-Yates shuffle, in-place. Math.random is fine here — this is a
+ * cosmetic homepage rotation, not a security or fairness boundary. */
+function shuffleInPlace<T>(arr: T[]): void {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j]!, arr[i]!];
+  }
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────
 
 /**
