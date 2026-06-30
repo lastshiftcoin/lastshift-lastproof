@@ -43,7 +43,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .from("profiles")
     .select("handle, updated_at")
     .not("published_at", "is", null)
-    .eq("is_paid", true);
+    .eq("is_paid", true)
+    .eq("is_test_fixture", false);   // exclude LASTBURN fixture (migration 0031)
 
   const profilePages: MetadataRoute.Sitemap = (profiles ?? []).map((p) => ({
     url: `${base}/@${p.handle}`,

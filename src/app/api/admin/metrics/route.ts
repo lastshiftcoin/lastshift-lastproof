@@ -83,7 +83,7 @@ async function countForRange(startIso: string): Promise<RangeMetrics> {
     newMintsRes,
     revenueUsd,
   ] = await Promise.all([
-    sb.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", startIso),
+    sb.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", startIso).eq("is_test_fixture", false),
     sb
       .from("proofs")
       .select("*", { count: "exact", head: true })
@@ -142,13 +142,15 @@ export async function GET(request: Request): Promise<NextResponse> {
       mtdMetrics,
       ytdMetrics,
     ] = await Promise.all([
-      sb.from("profiles").select("*", { count: "exact", head: true }),
+      // is_test_fixture filter excludes the LASTBURN test row (migration 0031).
+      sb.from("profiles").select("*", { count: "exact", head: true }).eq("is_test_fixture", false),
       // Upgraded = is_paid AND subscription_expires_at > now
       sb
         .from("profiles")
         .select("*", { count: "exact", head: true })
         .eq("is_paid", true)
-        .gt("subscription_expires_at", nowIso),
+        .gt("subscription_expires_at", nowIso)
+        .eq("is_test_fixture", false),
       sb
         .from("proofs")
         .select("*", { count: "exact", head: true })

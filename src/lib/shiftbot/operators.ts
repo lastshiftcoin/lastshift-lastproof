@@ -54,6 +54,7 @@ export async function getOperatorsForSearch(): Promise<OperatorSearchInput[]> {
     .eq("is_paid", true)
     .not("published_at", "is", null)
     .neq("tier", 5)
+    .eq("is_test_fixture", false)   // exclude LASTBURN fixture (migration 0031)
     .returns<RawRow[]>();
 
   if (error) {

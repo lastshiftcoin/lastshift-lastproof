@@ -33,3 +33,25 @@ export function tokenForMint(mint: string): "LASTSHFT" | "USDT" | null {
   if (mint === TOKEN_MINTS.USDT) return "USDT";
   return null;
 }
+
+/**
+ * Test-fixture wallet pubkeys.
+ *
+ * These wallets exist as synthetic database rows ONLY — they hold no
+ * SOL, never sign, never participate in real payment or proof flows.
+ * They exist to drive cross-tool verification suites (LASTBURN Sprint
+ * 4.4 needs to exercise the LASTPROOF subscription-state endpoint's
+ * `active_paid` branch pre-5000-cap, which is otherwise structurally
+ * uncoverable since every paid+published profile pre-cap is EA).
+ *
+ * Database rows are tagged `is_test_fixture = true` and filtered out
+ * of every public-facing read path. Provisioned by migration 0031.
+ *
+ * If the LASTBURN endpoint at /api/internal/lastburn/subscription-state
+ * is queried with one of these pubkeys, it intentionally returns the
+ * real `state` value for that fixture — that's the whole point.
+ */
+export const TEST_FIXTURE_WALLETS = {
+  /** Tagged is_test_fixture=true, returns state: "active_paid" via §8.1. */
+  LASTBURN_ACTIVE_PAID: "52y6FQvkRsNbbF6cJz6JWThsmTMSNmDUyxbKXQ3CHmLZ",
+} as const;
