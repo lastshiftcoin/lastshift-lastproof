@@ -113,7 +113,14 @@ WHERE p.is_paid = true
 -- will re-flag the view as SECURITY DEFINER).
 alter view grid_operators set (security_invoker = true);
 
--- ─── 3. Provision the active_paid test fixture row ────────────────────
+-- ─── 3. Provision the active_paid test fixture row (idempotent) ───────
+--
+-- v1 used `ON CONFLICT (terminal_wallet) DO NOTHING` which failed in
+-- production with "42P10: there is no unique or exclusion constraint
+-- matching the ON CONFLICT specification" — operators.terminal_wallet
+-- doesn't have an explicit UNIQUE constraint declared.
+-- v2 uses WHERE NOT EXISTS guards instead, which work without any
+-- constraint dependency and are equally idempotent.
 
 -- Operator row first (profiles.operator_id FK depends on it).
 insert into operators (
@@ -121,13 +128,16 @@ insert into operators (
   terminal_id,
   first_five_thousand,
   is_test_fixture
-) values (
+)
+select
   '52y6FQvkRsNbbF6cJz6JWThsmTMSNmDUyxbKXQ3CHmLZ',
   'FIXT-0000-0000-0000-PAID',
   false,
   true
-)
-on conflict (terminal_wallet) do nothing;
+where not exists (
+  select 1 from operators
+  where terminal_wallet = '52y6FQvkRsNbbF6cJz6JWThsmTMSNmDUyxbKXQ3CHmLZ'
+);
 
 -- Profile row — looks like an active_paid user from the LASTBURN endpoint's
 -- perspective (is_paid=true, is_early_adopter=false, published_at set,
@@ -155,7 +165,10 @@ select
   true                                              -- is_test_fixture
 from operators o
 where o.terminal_wallet = '52y6FQvkRsNbbF6cJz6JWThsmTMSNmDUyxbKXQ3CHmLZ'
-on conflict (operator_id) do nothing;
+  and not exists (
+    select 1 from profiles
+    where operator_id = o.id
+  );
 
 -- ─── 4. Post-flight verification (NOTICES tab) ────────────────────────
 
